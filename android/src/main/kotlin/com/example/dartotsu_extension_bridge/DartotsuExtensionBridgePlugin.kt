@@ -57,7 +57,7 @@ class DartotsuExtensionBridgePlugin: FlutterPlugin, MethodCallHandler {
 
         val searchResult = source.getSearchAnime(1, "op", AnimeFilterList())
         val titles = searchResult.animes.map { it.title }
-
+        print(titles.toString())
         // Return result to Dart
         withContext(Dispatchers.Main) {
           resultHolder.success(titles)
