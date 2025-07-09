@@ -6,7 +6,7 @@ class DartotsuExtensionBridge {
 
   Future<void> fetchAnimeTitles() async {
     try {
-      final List<dynamic> result = await platform.invokeMethod('getInstalledExtensions');
+      final dynamic result = await platform.invokeMethod('getInstalledExtensions');
       print('Anime titles: $result');
     } catch (e) {
       print('Error: $e');

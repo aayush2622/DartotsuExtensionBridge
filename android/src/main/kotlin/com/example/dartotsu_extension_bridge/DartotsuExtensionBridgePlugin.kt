@@ -43,7 +43,7 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin, MethodCallHandler {
       "getInstalledExtensions" -> {
         val extensionManager = Injekt.get<ExtensionManager>()
         val installedExtensions = extensionManager.getInstalledExtensions()
-        result.success(installedExtensions)
+        result.success(installedExtensions?.map { it.iconUrl })
       }
       else -> result.notImplemented()
     }

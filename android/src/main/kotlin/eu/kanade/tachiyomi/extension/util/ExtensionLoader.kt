@@ -187,7 +187,7 @@ internal object ExtensionLoader {
             sources = sources,
             pkgFactory = appInfo.metaData.getString("${ANIME_PACKAGE}${XX_METADATA_SOURCE_FACTORY}"),
             isUnofficial = true,
-            icon = context.getApplicationIcon(pkgName),
+            iconUrl = context.getApplicationIcon(pkgName),
         )
         return AnimeLoadResult.Success(extension)
     }
