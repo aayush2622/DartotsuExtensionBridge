@@ -197,7 +197,7 @@ fun Context.getApplicationIcon(pkgName: String): String? {
     return try {
         val drawable = packageManager.getApplicationIcon(pkgName)
         val bitmap = (drawable as BitmapDrawable).bitmap
-        val file = File(cacheDir, "icon.png")
+        val file = File(cacheDir, "${pkgName}_icon.png")
         val output = FileOutputStream(file)
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
         output.close()
