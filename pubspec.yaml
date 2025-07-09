@@ -41,7 +41,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.example.dartotsu_extension_bridge
+        package: com.aayush262.dartotsu_extension_bridge
         pluginClass: DartotsuExtensionBridgePlugin
       ios:
         pluginClass: DartotsuExtensionBridgePlugin
