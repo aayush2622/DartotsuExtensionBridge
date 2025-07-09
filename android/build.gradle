@@ -77,4 +77,5 @@ dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
     implementation 'androidx.compose.runtime:runtime-android:1.8.3'
     implementation 'androidx.preference:preference-ktx:1.2.1'
+
 }

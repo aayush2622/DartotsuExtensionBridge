@@ -3,6 +3,8 @@ package eu.kanade.tachiyomi.extension.util
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import dalvik.system.PathClassLoader
@@ -13,6 +15,8 @@ import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import java.io.File
+import java.io.FileOutputStream
 
 /**
  * Class that handles the loading of the extensions. Supports two kinds of extensions:
@@ -134,7 +138,7 @@ internal object ExtensionLoader {
         val classLoader = try{
             PathClassLoader(appInfo.sourceDir, null, context.classLoader)
         } catch (e: Throwable) {
-
+            println("Error creating class loader for $pkgName: ${e.message}")
             return AnimeLoadResult.Error
         }
         val sources = appInfo.metaData.getString("$ANIME_PACKAGE$XX_METADATA_SOURCE_CLASS")!!
@@ -189,10 +193,17 @@ internal object ExtensionLoader {
     }
 }
 
-fun Context.getApplicationIcon(pkgName: String): Drawable? {
+fun Context.getApplicationIcon(pkgName: String): String? {
     return try {
-        packageManager.getApplicationIcon(pkgName)
+        val drawable = packageManager.getApplicationIcon(pkgName)
+        val bitmap = (drawable as BitmapDrawable).bitmap
+        val file = File(cacheDir, "icon.png")
+        val output = FileOutputStream(file)
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+        output.close()
+        file.absolutePath
     } catch (e: PackageManager.NameNotFoundException) {
+        println("Error getting icon for $pkgName: ${e.message}")
         null
     }
 }

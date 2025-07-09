@@ -28,7 +28,7 @@ sealed class AnimeExtension {
         override val hasChangelog: Boolean,
         val pkgFactory: String?,
         val sources: List<AnimeSource>,
-        val icon: Drawable?,
+        val icon: String?,
         val hasUpdate: Boolean = false,
         val isObsolete: Boolean = false,
         val isUnofficial: Boolean = false,

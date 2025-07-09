@@ -12,6 +12,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -19,33 +20,38 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addSingletonFactory
+import uy.kohesive.injekt.api.get
 
 /** DartotsuExtensionBridgePlugin */
-class DartotsuExtensionBridgePlugin: FlutterPlugin, MethodCallHandler {
+class DartotsuExtensionBridgePlugin : FlutterPlugin, MethodCallHandler {
   private lateinit var context: Context
-  private lateinit var resultHolder: MethodChannel.Result
 
   override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     val channel = MethodChannel(binding.binaryMessenger, "test")
     channel.setMethodCallHandler(this)
     context = binding.applicationContext
+
     Injekt.addSingletonFactory<Application> { context as Application }
     Injekt.addSingletonFactory { NetworkHelper(context) }
     Injekt.addSingletonFactory { NetworkHelper(context).client }
+    Injekt.addSingletonFactory { ExtensionManager(context) }
   }
 
   override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
-    if (call.method == "getAnimeTitles") {
-      resultHolder = result // hold result for async use
-      loadAndReturnTitles()
-    } else {
-      result.notImplemented()
+    when (call.method) {
+      "getAnimeTitles" -> loadAndReturnTitles(result)
+      "getInstalledExtensions" -> {
+        val extensionManager = Injekt.get<ExtensionManager>()
+        val installedExtensions = extensionManager.getInstalledExtensions()
+        result.success(installedExtensions)
+      }
+      else -> result.notImplemented()
     }
   }
 
-  @OptIn(DelicateCoroutinesApi::class)
-  private fun loadAndReturnTitles() {
-    GlobalScope.launch {
+
+  private fun loadAndReturnTitles(result: MethodChannel.Result) {
+    CoroutineScope(Dispatchers.Default).launch  {
       try {
         val extensions = ExtensionLoader.loadAnimeExtensions(context)
         val source = extensions
@@ -57,15 +63,14 @@ class DartotsuExtensionBridgePlugin: FlutterPlugin, MethodCallHandler {
 
         val searchResult = source.getSearchAnime(1, "op", AnimeFilterList())
         val titles = searchResult.animes.map { it.title }
-        print(titles.toString())
-        // Return result to Dart
+
         withContext(Dispatchers.Main) {
-          resultHolder.success(titles)
+          result.success(titles)
         }
       } catch (e: Exception) {
         e.printStackTrace()
         withContext(Dispatchers.Main) {
-          resultHolder.error("EXTENSION_ERROR", e.message, null)
+          result.error("EXTENSION_ERROR", e.message, null)
         }
       }
     }
