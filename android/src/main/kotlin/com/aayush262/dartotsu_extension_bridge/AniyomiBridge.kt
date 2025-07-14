@@ -1,4 +1,4 @@
-package com.example.dartotsu_extension_bridge
+package com.aayush262.dartotsu_extension_bridge
 
 import android.content.Context
 import uy.kohesive.injekt.Injekt

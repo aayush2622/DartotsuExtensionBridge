@@ -1,4 +1,4 @@
-package com.example.dartotsu_extension_bridge
+package com.aayush262.dartotsu_extension_bridge
 
 import android.content.Context
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
@@ -9,9 +9,9 @@ import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.parseAs
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import com.example.dartotsu_extension_bridge.models.ExtensionJsonObject
-import com.example.dartotsu_extension_bridge.models.toAnimeExtensions
-import com.example.dartotsu_extension_bridge.models.toMangaExtensions
+import com.aayush262.dartotsu_extension_bridge.models.ExtensionJsonObject
+import com.aayush262.dartotsu_extension_bridge.models.toAnimeExtensions
+import com.aayush262.dartotsu_extension_bridge.models.toMangaExtensions
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
 import kotlinx.serialization.json.Json

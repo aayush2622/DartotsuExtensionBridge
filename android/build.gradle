@@ -1,4 +1,4 @@
-group = "com.example.dartotsu_extension_bridge"
+group = "com.aayush262.dartotsu_extension_bridge"
 version = "1.0-SNAPSHOT"
 
 
@@ -33,7 +33,7 @@ apply plugin: "kotlin-android"
 apply plugin: "org.jetbrains.kotlin.plugin.serialization"
 
 android {
-    namespace = "com.example.dartotsu_extension_bridge"
+    namespace = "com.aayush262.dartotsu_extension_bridge"
 
     compileSdk = 36
 
@@ -53,6 +53,7 @@ android {
 
     defaultConfig {
         minSdk = 21
+        consumerProguardFiles 'proguard-rules.pro'
     }
 
     dependencies {

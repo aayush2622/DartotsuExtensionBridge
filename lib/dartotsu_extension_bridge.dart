@@ -11,7 +11,6 @@ class DartotsuExtensionBridge {
       final dynamic result = await platform.invokeMethod(
         'getInstalledAnimeExtensions',
       );
-      print(result.runtimeType);
       print(result);
     } catch (e) {
       print('Error fetching anime extensions: $e');
@@ -23,7 +22,6 @@ class DartotsuExtensionBridge {
       final dynamic result = await platform.invokeMethod(
         'getInstalledMangaExtensions',
       );
-      print(result.runtimeType);
       print(result);
     } catch (e) {
       print('Error fetching manga extensions: $e');
@@ -36,7 +34,6 @@ class DartotsuExtensionBridge {
       result = await platform.invokeMethod('fetchAnimeExtensions', [
         'https://raw.githubusercontent.com/yuzono/anime-repo/repo/index.min.json',
       ]);
-      print(result.runtimeType);
       print(result);
     } catch (e) {
       print('Error fetching anime extensions: $e');
@@ -50,7 +47,6 @@ class DartotsuExtensionBridge {
       result = await platform.invokeMethod('fetchMangaExtensions', [
         'https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json',
       ]);
-      print(result.runtimeType);
       print(result);
     } catch (e) {
       print('Error fetching manga extensions: $e');

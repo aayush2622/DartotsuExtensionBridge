@@ -1,7 +1,8 @@
-package com.example.dartotsu_extension_bridge
+package com.aayush262.dartotsu_extension_bridge
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import eu.kanade.tachiyomi.network.NetworkHelper
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodChannel
@@ -16,6 +17,7 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
     private lateinit var aniyomiBridge: AniyomiBridge
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        Log.d("PluginDebug", "Plugin attached to engine")
         context = binding.applicationContext
 
         Injekt.addSingletonFactory<Application> { context as Application }

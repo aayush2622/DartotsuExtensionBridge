@@ -1,4 +1,4 @@
-package com.example.dartotsu_extension_bridge.models
+package com.aayush262.dartotsu_extension_bridge.models
 
 import android.annotation.SuppressLint
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
