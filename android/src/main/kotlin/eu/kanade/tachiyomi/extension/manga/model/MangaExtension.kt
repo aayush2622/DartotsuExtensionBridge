@@ -15,6 +15,7 @@ sealed class MangaExtension {
     abstract val isNsfw: Boolean
     abstract val hasReadme: Boolean
     abstract val hasChangelog: Boolean
+    abstract val iconUrl: String?
 
     data class Installed(
         override val name: String,
@@ -28,7 +29,7 @@ sealed class MangaExtension {
         override val hasChangelog: Boolean,
         val pkgFactory: String?,
         val sources: List<MangaSource>,
-        val icon: Drawable?,
+        override val iconUrl: String?,
         val hasUpdate: Boolean = false,
         val isObsolete: Boolean = false,
         val isUnofficial: Boolean = false,
@@ -46,7 +47,7 @@ sealed class MangaExtension {
         override val hasChangelog: Boolean,
         val sources: List<AvailableMangaSources>,
         val apkName: String,
-        val iconUrl: String,
+        override val iconUrl: String?,
         val repository: String
     ) : MangaExtension()
 
@@ -61,6 +62,7 @@ sealed class MangaExtension {
         override val isNsfw: Boolean = false,
         override val hasReadme: Boolean = false,
         override val hasChangelog: Boolean = false,
+        override val iconUrl: String?,
     ) : MangaExtension()
 }
 

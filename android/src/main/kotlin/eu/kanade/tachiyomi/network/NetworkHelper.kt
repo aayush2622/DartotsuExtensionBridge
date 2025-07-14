@@ -15,7 +15,6 @@ class NetworkHelper(
     context: Context
 ) {
     val cookieJar = AndroidCookieJar()
-
     val client: OkHttpClient = run {
         val builder = OkHttpClient.Builder()
             .cookieJar(cookieJar)
@@ -32,21 +31,8 @@ class NetworkHelper(
             .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
             .addNetworkInterceptor(IgnoreGzipInterceptor())
             .addNetworkInterceptor(BrotliInterceptor)
-
-        class ConsoleLogger : HttpLoggingInterceptor.Logger {
-            override fun log(message: String) {
-
-            }
-        }
-
-
-
-
-
         builder.build()
     }
-
-    val downloadClient = client.newBuilder().callTimeout(20, TimeUnit.MINUTES).build()
 
     /**
      * @deprecated Since extension-lib 1.5
@@ -57,6 +43,6 @@ class NetworkHelper(
 
 
     companion object {
-        fun defaultUserAgentProvider() = ""
+        fun defaultUserAgentProvider() = "Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36"
     }
 }
