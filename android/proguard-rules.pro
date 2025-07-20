@@ -28,3 +28,5 @@
 -keepclassmembers class uy.kohesive.injekt.api.FullTypeReference {
     <init>(...);
 }
+-keep class org.jsoup.** { *; }
+-keepclassmembers class org.jsoup.nodes.Document { *; }

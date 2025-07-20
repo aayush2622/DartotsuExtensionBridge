@@ -1,29 +1,28 @@
-package com.aayush262.dartotsu_extension_bridge
+package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import android.content.Context
+import com.aayush262.dartotsu_extension_bridge.aniyomi.models.ExtensionJsonObject
+import com.aayush262.dartotsu_extension_bridge.aniyomi.models.toAnimeExtensions
+import com.aayush262.dartotsu_extension_bridge.aniyomi.models.toMangaExtensions
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
+import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
+import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
 import eu.kanade.tachiyomi.extension.util.ExtensionLoader
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.parseAs
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import com.aayush262.dartotsu_extension_bridge.models.ExtensionJsonObject
-import com.aayush262.dartotsu_extension_bridge.models.toAnimeExtensions
-import com.aayush262.dartotsu_extension_bridge.models.toMangaExtensions
-import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
-import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
-
 
 class AniyomiExtensionManager(var context: Context) {
     lateinit var installedAnimeExtensions: List<AnimeExtension.Installed>
-    lateinit var availableAnimeExtension: List<AnimeExtension.Available>
-    lateinit var installedMangaExtension : List<MangaExtension.Installed>
-    lateinit var availableMangaExtension: List<MangaExtension.Available>
+    lateinit var availableAnimeExtensions: List<AnimeExtension.Available>
+    lateinit var installedMangaExtensions : List<MangaExtension.Installed>
+    lateinit var availableMangaExtensions: List<MangaExtension.Available>
     private val json: Json by injectLazy()
 
     fun fetchInstalledAnimeExtensions(): List<AnimeExtension.Installed>? {
@@ -35,9 +34,9 @@ class AniyomiExtensionManager(var context: Context) {
 
     fun fetchInstalledMangaExtensions(): List<MangaExtension.Installed>? {
         val sources = ExtensionLoader.loadMangaExtensions(context)
-        installedMangaExtension =
+        installedMangaExtensions =
             sources.filterIsInstance<MangaLoadResult.Success>().map { it.extension }
-        return installedMangaExtension
+        return installedMangaExtensions
     }
 
     suspend fun findAvailableAnimeExtensions(repos: List<String>): List<AnimeExtension.Available> {
@@ -76,7 +75,7 @@ class AniyomiExtensionManager(var context: Context) {
         }.flatten()
 
         return extensions.filter { it.pkgName.isNotEmpty() }
-            .also { availableAnimeExtension = it }
+            .also { availableAnimeExtensions = it }
     }
 
     suspend fun findAvailableMangaExtensions(repos: List<String>): List<MangaExtension.Available> {
@@ -115,7 +114,7 @@ class AniyomiExtensionManager(var context: Context) {
         }.flatten()
 
         return extensions.filter { it.pkgName.isNotEmpty() }
-            .also { availableMangaExtension = it }
+            .also { availableMangaExtensions = it }
     }
 
     fun registerNewExtension(extension: AnimeExtension.Installed) {
