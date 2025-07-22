@@ -63,15 +63,33 @@ class AniyomiExtensions extends Extension {
         .toList();
   }
 
-  Future<Extension> init() async {
-    installedAnimeExtensions.value = await getInstalledAnimeExtensions();
-    installedMangaExtensions.value = await getInstalledMangaExtensions();
-    availableAnimeExtensions.value = await fetchAvailableAnimeExtensions([
-      'https://raw.githubusercontent.com/yuzono/anime-repo/repo/index.min.json',
-    ]);
-    availableMangaExtensions.value = await fetchAvailableMangaExtensions([
-      'https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json',
-    ]);
-    return this;
+  @override
+  Future<void> initialize() async {
+    if (isInitialized.value) return;
+    isInitialized.value = true;
+    getInstalledAnimeExtensions();
+    getInstalledMangaExtensions();
+    getInstalledNovelExtensions();
+    fetchAvailableAnimeExtensions(null);
+    fetchAvailableMangaExtensions(null);
+    fetchAvailableNovelExtensions(null);
+  }
+
+  @override
+  Future<void> installSource(Source source) {
+    // TODO: implement installSource
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> uninstallSource(Source source) {
+    // TODO: implement uninstallSource
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateSource(Source source) {
+    // TODO: implement updateSource
+    throw UnimplementedError();
   }
 }

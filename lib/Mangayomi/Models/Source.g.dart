@@ -128,34 +128,39 @@ const MSourceSchema = CollectionSchema(
       name: r'name',
       type: IsarType.string,
     ),
-    r'sourceCode': PropertySchema(
+    r'repo': PropertySchema(
       id: 22,
+      name: r'repo',
+      type: IsarType.string,
+    ),
+    r'sourceCode': PropertySchema(
+      id: 23,
       name: r'sourceCode',
       type: IsarType.string,
     ),
     r'sourceCodeLanguage': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'sourceCodeLanguage',
       type: IsarType.byte,
       enumMap: _MSourcesourceCodeLanguageEnumValueMap,
     ),
     r'sourceCodeUrl': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'sourceCodeUrl',
       type: IsarType.string,
     ),
     r'typeSource': PropertySchema(
-      id: 25,
+      id: 26,
       name: r'typeSource',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 26,
+      id: 27,
       name: r'version',
       type: IsarType.string,
     ),
     r'versionLast': PropertySchema(
-      id: 27,
+      id: 28,
       name: r'versionLast',
       type: IsarType.string,
     )
@@ -241,6 +246,12 @@ int _mSourceEstimateSize(
     }
   }
   {
+    final value = object.repo;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.sourceCode;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -301,12 +312,13 @@ void _mSourceSerialize(
   writer.writeString(offsets[19], object.lang);
   writer.writeBool(offsets[20], object.lastUsed);
   writer.writeString(offsets[21], object.name);
-  writer.writeString(offsets[22], object.sourceCode);
-  writer.writeByte(offsets[23], object.sourceCodeLanguage.index);
-  writer.writeString(offsets[24], object.sourceCodeUrl);
-  writer.writeString(offsets[25], object.typeSource);
-  writer.writeString(offsets[26], object.version);
-  writer.writeString(offsets[27], object.versionLast);
+  writer.writeString(offsets[22], object.repo);
+  writer.writeString(offsets[23], object.sourceCode);
+  writer.writeByte(offsets[24], object.sourceCodeLanguage.index);
+  writer.writeString(offsets[25], object.sourceCodeUrl);
+  writer.writeString(offsets[26], object.typeSource);
+  writer.writeString(offsets[27], object.version);
+  writer.writeString(offsets[28], object.versionLast);
 }
 
 MSource _mSourceDeserialize(
@@ -340,15 +352,16 @@ MSource _mSourceDeserialize(
     lang: reader.readStringOrNull(offsets[19]),
     lastUsed: reader.readBoolOrNull(offsets[20]),
     name: reader.readStringOrNull(offsets[21]),
-    sourceCode: reader.readStringOrNull(offsets[22]),
-    sourceCodeUrl: reader.readStringOrNull(offsets[24]),
-    typeSource: reader.readStringOrNull(offsets[25]),
-    version: reader.readStringOrNull(offsets[26]),
-    versionLast: reader.readStringOrNull(offsets[27]),
+    repo: reader.readStringOrNull(offsets[22]),
+    sourceCode: reader.readStringOrNull(offsets[23]),
+    sourceCodeLanguage: _MSourcesourceCodeLanguageValueEnumMap[
+            reader.readByteOrNull(offsets[24])] ??
+        SourceCodeLanguage.dart,
+    sourceCodeUrl: reader.readStringOrNull(offsets[25]),
+    typeSource: reader.readStringOrNull(offsets[26]),
+    version: reader.readStringOrNull(offsets[27]),
+    versionLast: reader.readStringOrNull(offsets[28]),
   );
-  object.sourceCodeLanguage = _MSourcesourceCodeLanguageValueEnumMap[
-          reader.readByteOrNull(offsets[23])] ??
-      SourceCodeLanguage.dart;
   return object;
 }
 
@@ -407,16 +420,18 @@ P _mSourceDeserializeProp<P>(
     case 22:
       return (reader.readStringOrNull(offset)) as P;
     case 23:
+      return (reader.readStringOrNull(offset)) as P;
+    case 24:
       return (_MSourcesourceCodeLanguageValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SourceCodeLanguage.dart) as P;
-    case 24:
-      return (reader.readStringOrNull(offset)) as P;
     case 25:
       return (reader.readStringOrNull(offset)) as P;
     case 26:
       return (reader.readStringOrNull(offset)) as P;
     case 27:
+      return (reader.readStringOrNull(offset)) as P;
+    case 28:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2399,6 +2414,152 @@ extension MSourceQueryFilter
     });
   }
 
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'repo',
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'repo',
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'repo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'repo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'repo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'repo',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'repo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'repo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'repo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'repo',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'repo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterFilterCondition> repoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'repo',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<MSource, MSource, QAfterFilterCondition> sourceCodeIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -3461,6 +3622,18 @@ extension MSourceQuerySortBy on QueryBuilder<MSource, MSource, QSortBy> {
     });
   }
 
+  QueryBuilder<MSource, MSource, QAfterSortBy> sortByRepo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterSortBy> sortByRepoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repo', Sort.desc);
+    });
+  }
+
   QueryBuilder<MSource, MSource, QAfterSortBy> sortBySourceCode() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sourceCode', Sort.asc);
@@ -3812,6 +3985,18 @@ extension MSourceQuerySortThenBy
     });
   }
 
+  QueryBuilder<MSource, MSource, QAfterSortBy> thenByRepo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MSource, MSource, QAfterSortBy> thenByRepoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repo', Sort.desc);
+    });
+  }
+
   QueryBuilder<MSource, MSource, QAfterSortBy> thenBySourceCode() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sourceCode', Sort.asc);
@@ -4031,6 +4216,13 @@ extension MSourceQueryWhereDistinct
     });
   }
 
+  QueryBuilder<MSource, MSource, QDistinct> distinctByRepo(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'repo', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<MSource, MSource, QDistinct> distinctBySourceCode(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -4211,6 +4403,12 @@ extension MSourceQueryProperty
   QueryBuilder<MSource, String?, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
+    });
+  }
+
+  QueryBuilder<MSource, String?, QQueryOperations> repoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'repo');
     });
   }
 

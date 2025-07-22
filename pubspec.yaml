@@ -2,6 +2,7 @@ name: dartotsu_extension_bridge
 description: "A new Flutter plugin project."
 version: 0.0.2
 homepage:
+publish_to: none
 
 environment:
   sdk: ^3.8.1
@@ -15,6 +16,24 @@ dependencies:
   isar_flutter_libs: 3.1.0+1
   d4rt: ^0.0.8
   get: ^4.7.2
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  http_interceptor: ^2.0.0
+  intl: ^0.20.2
+  flutter_inappwebview: ^6.2.0-beta.2
+  pseudom: ^1.0.1
+  encrypt: ^5.0.3
+  xpath_selector_html_parser: ^3.0.1
+  js_packer: ^0.0.6
+  crypto: ^3.0.6
+  flutter_qjs:
+    git:
+      url: https://github.com/kodjodevf/flutter_qjs.git
+      ref: main
+  epubx:
+    git:
+      url: https://github.com/kodjodevf/epubx.dart.git
+      ref: dev
 dev_dependencies:
   flutter_test:
     sdk: flutter

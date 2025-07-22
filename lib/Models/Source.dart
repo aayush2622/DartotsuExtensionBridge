@@ -1,5 +1,3 @@
-import '../Mangayomi/Models/Source.dart';
-
 class Source {
   String? id;
 
@@ -21,7 +19,9 @@ class Source {
 
   bool? isObsolete;
 
-  MSource? mSource;
+  String? repo;
+
+  bool? hasUpdate;
 
   Source({
     this.id = '',
@@ -34,13 +34,14 @@ class Source {
     this.versionLast = "0.0.1",
     this.itemType = ItemType.manga,
     this.isObsolete = false,
-    this.mSource,
+    this.repo,
+    this.hasUpdate = false,
   });
 
   Source.fromJson(Map<String, dynamic> json) {
     baseUrl = json['baseUrl'];
     iconUrl = json['iconUrl'];
-    id = json['id'];
+    id = json['id'].toString();
     itemType = ItemType.values[json['itemType'] ?? 0];
     isNsfw = json['isNsfw'];
     lang = json['lang'];
@@ -48,9 +49,8 @@ class Source {
     version = json['version'];
     versionLast = json['versionLast'];
     isObsolete = json['isObsolete'];
-    mSource = json['mSource'] != null
-        ? MSource.fromJson(json['mSource'])
-        : null;
+    repo = json['repo'];
+    hasUpdate = json['hasUpdate'] ?? false;
   }
 
   Map<String, dynamic> toJson() => {
@@ -64,7 +64,8 @@ class Source {
     'versionLast': versionLast,
     'itemType': itemType?.index ?? 0,
     'isObsolete': isObsolete,
-    'mSource': mSource?.toJson(),
+    'repo': repo,
+    'hasUpdate': hasUpdate,
   };
 }
 

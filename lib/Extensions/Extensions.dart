@@ -26,4 +26,12 @@ abstract class Extension extends GetxController {
 
   Future<List<Source>> fetchAvailableNovelExtensions(List<String>? repos) =>
       Future.value([]);
+
+  Future<void> initialize();
+
+  Future<void> installSource(Source source);
+
+  Future<void> uninstallSource(Source source);
+
+  Future<void> updateSource(Source source);
 }

@@ -1,5 +1,7 @@
 import 'package:isar/isar.dart';
 
+import '../../Models/Source.dart';
+
 part 'Source.g.dart';
 
 @collection
@@ -60,6 +62,7 @@ class MSource {
 
   bool? isObsolete;
 
+  String? repo;
   @enumerated
   SourceCodeLanguage sourceCodeLanguage = SourceCodeLanguage.dart;
 
@@ -91,6 +94,8 @@ class MSource {
     this.additionalParams = "",
     this.isLocal = false,
     this.isObsolete = false,
+    this.sourceCodeLanguage = SourceCodeLanguage.dart,
+    this.repo,
   });
 
   MSource.fromJson(Map<String, dynamic> json) {
@@ -123,6 +128,7 @@ class MSource {
     isLocal = json['isLocal'];
     sourceCodeLanguage =
         SourceCodeLanguage.values[json['sourceCodeLanguage'] ?? 0];
+    repo = json['repo'];
   }
 
   Map<String, dynamic> toJson() => {
@@ -154,11 +160,25 @@ class MSource {
     'sourceCodeLanguage': sourceCodeLanguage.index,
     'isObsolete': isObsolete,
     'isLocal': isLocal,
+    'repo': repo,
   };
 
   bool get isTorrent => (typeSource?.toLowerCase() ?? "") == "torrent";
+
+  MSource toMSource() {
+    return MSource(
+      id: id,
+      name: name,
+      hasCloudflare: hasCloudflare,
+      isFullData: isFullData,
+      lang: lang,
+      baseUrl: baseUrl,
+      apiUrl: apiUrl,
+      dateFormat: dateFormat,
+      dateFormatLocale: dateFormatLocale,
+      additionalParams: additionalParams,
+    );
+  }
 }
 
 enum SourceCodeLanguage { dart, javascript }
-
-enum ItemType { manga, anime, novel }

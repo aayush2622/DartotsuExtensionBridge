@@ -15,7 +15,7 @@ class AniyomiSourceMethods implements SourceMethods {
   static const platform = MethodChannel('aniyomiExtensionBridge');
 
   @override
-  late Source source;
+  Source source;
 
   AniyomiSourceMethods(this.source);
 
