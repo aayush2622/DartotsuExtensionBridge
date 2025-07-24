@@ -1,47 +1,78 @@
 import 'dart:io';
 
+import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:get/get.dart';
 
 import 'Aniyomi/AniyomiExtensions.dart';
+import 'Aniyomi/AniyomiSourceMethods.dart';
 import 'Extensions/Extensions.dart';
+import 'Extensions/SourceMethods.dart';
 import 'Mangayomi/MangayomiExtensions.dart';
+import 'Mangayomi/MangayomiSourceMethods.dart';
+import 'Models/Source.dart';
+import 'dartotsu_extension_bridge.dart';
 
 class ExtensionManager extends GetxController {
-  static final ExtensionManager _instance = ExtensionManager._internal();
+  ExtensionManager() {
+    initialize();
+  }
 
-  factory ExtensionManager() => _instance;
-
-  ExtensionManager._internal();
-
-  final Rx<Extension> _currentManager =
-      getSupportedExtensions.first.manager.obs;
+  late final Rx<Extension> _currentManager;
 
   Extension get currentManager => _currentManager.value;
 
+  void initialize() {
+    final settings = isar.bridgeSettings.getSync(26);
+    final savedType = ExtensionType.fromString(settings?.currentManager);
+    _currentManager = savedType.getManager().obs;
+  }
+
   void setCurrentManager(ExtensionType type) {
-    _currentManager.value = type.manager;
-    update();
+    _currentManager.value = type.getManager();
+    final settings = isar.bridgeSettings.getSync(26) ?? BridgeSettings();
+    isar.writeTxnSync(() {
+      isar.bridgeSettings.putSync(settings..currentManager = type.name);
+    });
   }
 }
 
-List<ExtensionType> get getSupportedExtensions {
-  if (Platform.isAndroid) {
-    return [ExtensionType.mangayomi, ExtensionType.aniyomi];
-  } else {
-    return [ExtensionType.mangayomi];
-  }
+SourceMethods currentSourceMethods(Source source) {
+  final manager = Get.find<ExtensionManager>().currentManager;
+  return manager is MangayomiExtensions
+      ? MangayomiSourceMethods(source)
+      : AniyomiSourceMethods(source);
 }
+
+List<ExtensionType> get getSupportedExtensions =>
+    Platform.isAndroid ? ExtensionType.values : [ExtensionType.mangayomi];
 
 enum ExtensionType {
   aniyomi,
   mangayomi;
 
-  Extension get manager {
+  Extension getManager() {
     switch (this) {
       case ExtensionType.aniyomi:
-        return Get.put(AniyomiExtensions(), tag: 'aniyomi');
+        return Get.find<AniyomiExtensions>(tag: 'AniyomiExtensions');
       case ExtensionType.mangayomi:
-        return Get.put(MangayomiExtensions(), tag: 'mangayomi');
+        return Get.find<MangayomiExtensions>(tag: 'MangayomiExtensions');
     }
+  }
+
+  @override
+  String toString() {
+    switch (this) {
+      case ExtensionType.aniyomi:
+        return 'Aniyomi';
+      case ExtensionType.mangayomi:
+        return 'Mangayomi';
+    }
+  }
+
+  static ExtensionType fromString(String? name) {
+    return ExtensionType.values.firstWhere(
+      (e) => e.toString() == name,
+      orElse: () => getSupportedExtensions.first,
+    );
   }
 }

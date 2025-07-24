@@ -6,7 +6,7 @@ part 'Settings.g.dart';
 @Name("BridgeSettings")
 class BridgeSettings {
   Id? id;
-
+  String? currentManager;
   List<String> sortedAnimeExtensions;
   List<String> sortedMangaExtensions;
   List<String> sortedNovelExtensions;
@@ -18,6 +18,7 @@ class BridgeSettings {
   List<String> mangayomiNovelExtensions;
 
   BridgeSettings({
+    this.currentManager,
     this.sortedAnimeExtensions = const [],
     this.sortedMangaExtensions = const [],
     this.sortedNovelExtensions = const [],

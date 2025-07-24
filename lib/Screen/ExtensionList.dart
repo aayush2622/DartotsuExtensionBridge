@@ -20,7 +20,7 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
   final controller = ScrollController();
   var sortedList = <String>[];
 
-  var manager = Get.put(ExtensionManager()).currentManager;
+  var manager = Get.find<ExtensionManager>().currentManager;
 
   ExtensionConfig get config => widget as ExtensionConfig;
 

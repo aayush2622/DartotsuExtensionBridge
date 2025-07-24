@@ -1,6 +1,7 @@
 import 'package:isar/isar.dart';
 
 import '../../Models/Source.dart';
+import '../Eval/dart/model/m_source.dart' as m;
 
 part 'Source.g.dart';
 
@@ -165,8 +166,8 @@ class MSource {
 
   bool get isTorrent => (typeSource?.toLowerCase() ?? "") == "torrent";
 
-  MSource toMSource() {
-    return MSource(
+  m.MSource toMSource() {
+    return m.MSource(
       id: id,
       name: name,
       hasCloudflare: hasCloudflare,

@@ -10,7 +10,7 @@ import '../Models/Source.dart';
 abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     with TickerProviderStateMixin {
   late TabController _tabBarController;
-  var manager = Get.put(ExtensionManager()).currentManager;
+  var manager = Get.find<ExtensionManager>().currentManager;
   final _selectedLanguage = 'All'.obs;
   final _textEditingController = TextEditingController();
 

@@ -24,11 +24,11 @@ class MangayomiSourceMethods implements SourceMethods {
   MangayomiSourceMethods(this.source);
 
   T _ensureSource<T>(T Function(MSource mSource) fn) {
-    var manager = Get.put(MangayomiExtensionManager());
-    final sources = source.itemType?.index == 1
-        ? manager.installedAnimeExtensions
-        : source.itemType?.index == 2
+    var manager = Get.find<MangayomiExtensionManager>();
+    final sources = source.itemType?.index == 0
         ? manager.installedMangaExtensions
+        : source.itemType?.index == 1
+        ? manager.installedAnimeExtensions
         : manager.installedNovelExtensions;
 
     final mSource = sources.value.firstWhereOrNull(
