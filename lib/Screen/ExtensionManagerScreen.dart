@@ -11,7 +11,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     with TickerProviderStateMixin {
   late TabController _tabBarController;
   var manager = Get.put(ExtensionManager()).currentManager;
-  final _selectedLanguage = 'all'.obs;
+  final _selectedLanguage = 'All'.obs;
   final _textEditingController = TextEditingController();
 
   @override
@@ -96,7 +96,9 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
                 _tabBarController,
                 _selectedLanguage.value,
                 onRepoSaved,
-                (lang) => setState(() => _selectedLanguage.value = lang),
+                (lang) {
+                  setState(() => _selectedLanguage.value = lang);
+                },
               ),
               const SizedBox(width: 8),
             ],
@@ -114,7 +116,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
               ),
               const SizedBox(height: 8),
               searchBar(context, _textEditingController, (value) {
-                setState(() => _textEditingController.text = value);
+                setState(() {});
               }),
               const SizedBox(height: 8),
               Obx(

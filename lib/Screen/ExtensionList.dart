@@ -57,7 +57,7 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      List<Source> fullList = switch (itemType) {
+      final fullList = switch (itemType) {
         ItemType.anime =>
           isInstalled
               ? manager.installedAnimeExtensions.value
@@ -71,9 +71,21 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
               ? manager.installedNovelExtensions.value
               : manager.availableNovelExtensions.value,
       };
+
+      final search = searchQuery.toLowerCase();
+      final filterLang = selectedLanguage == 'All' || selectedLanguage == 'all'
+          ? null
+          : selectedLanguage;
+
       final Map<String, List<Source>> grouped = {};
-      for (var source in fullList) {
+      for (final source in fullList) {
         final lang = source.lang ?? 'Unknown';
+        if (filterLang != null && lang != filterLang) continue;
+        if (search.isNotEmpty &&
+            !(source.name?.toLowerCase().contains(search) ?? false)) {
+          continue;
+        }
+
         grouped.putIfAbsent(lang, () => []).add(source);
       }
 
@@ -93,6 +105,7 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
           flattenedList.add((isHeader: false, lang: entry.key, source: source));
         }
       }
+
       return RefreshIndicator(
         onRefresh: _refreshData,
         child: CustomScrollView(
@@ -101,10 +114,13 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
             SliverPadding(
               padding: const EdgeInsets.all(8.0),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final item = flattenedList[index];
-                  return extensionItem(item.isHeader, item.lang, item.source);
-                }, childCount: flattenedList.length),
+                delegate: SliverChildBuilderDelegate(
+                  childCount: flattenedList.length,
+                  (context, index) {
+                    final item = flattenedList[index];
+                    return extensionItem(item.isHeader, item.lang, item.source);
+                  },
+                ),
               ),
             ),
           ],
