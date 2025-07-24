@@ -17,18 +17,43 @@ const BridgeSettingsSchema = CollectionSchema(
   name: r'BridgeSettings',
   id: 8010510632874811587,
   properties: {
-    r'sortedAnimeExtensions': PropertySchema(
+    r'aniyomiAnimeExtensions': PropertySchema(
       id: 0,
+      name: r'aniyomiAnimeExtensions',
+      type: IsarType.stringList,
+    ),
+    r'aniyomiMangaExtensions': PropertySchema(
+      id: 1,
+      name: r'aniyomiMangaExtensions',
+      type: IsarType.stringList,
+    ),
+    r'mangayomiAnimeExtensions': PropertySchema(
+      id: 2,
+      name: r'mangayomiAnimeExtensions',
+      type: IsarType.stringList,
+    ),
+    r'mangayomiMangaExtensions': PropertySchema(
+      id: 3,
+      name: r'mangayomiMangaExtensions',
+      type: IsarType.stringList,
+    ),
+    r'mangayomiNovelExtensions': PropertySchema(
+      id: 4,
+      name: r'mangayomiNovelExtensions',
+      type: IsarType.stringList,
+    ),
+    r'sortedAnimeExtensions': PropertySchema(
+      id: 5,
       name: r'sortedAnimeExtensions',
       type: IsarType.stringList,
     ),
     r'sortedMangaExtensions': PropertySchema(
-      id: 1,
+      id: 6,
       name: r'sortedMangaExtensions',
       type: IsarType.stringList,
     ),
     r'sortedNovelExtensions': PropertySchema(
-      id: 2,
+      id: 7,
       name: r'sortedNovelExtensions',
       type: IsarType.stringList,
     )
@@ -53,6 +78,41 @@ int _bridgeSettingsEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.aniyomiAnimeExtensions.length * 3;
+  {
+    for (var i = 0; i < object.aniyomiAnimeExtensions.length; i++) {
+      final value = object.aniyomiAnimeExtensions[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.aniyomiMangaExtensions.length * 3;
+  {
+    for (var i = 0; i < object.aniyomiMangaExtensions.length; i++) {
+      final value = object.aniyomiMangaExtensions[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.mangayomiAnimeExtensions.length * 3;
+  {
+    for (var i = 0; i < object.mangayomiAnimeExtensions.length; i++) {
+      final value = object.mangayomiAnimeExtensions[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.mangayomiMangaExtensions.length * 3;
+  {
+    for (var i = 0; i < object.mangayomiMangaExtensions.length; i++) {
+      final value = object.mangayomiMangaExtensions[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.mangayomiNovelExtensions.length * 3;
+  {
+    for (var i = 0; i < object.mangayomiNovelExtensions.length; i++) {
+      final value = object.mangayomiNovelExtensions[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.sortedAnimeExtensions.length * 3;
   {
     for (var i = 0; i < object.sortedAnimeExtensions.length; i++) {
@@ -83,9 +143,14 @@ void _bridgeSettingsSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeStringList(offsets[0], object.sortedAnimeExtensions);
-  writer.writeStringList(offsets[1], object.sortedMangaExtensions);
-  writer.writeStringList(offsets[2], object.sortedNovelExtensions);
+  writer.writeStringList(offsets[0], object.aniyomiAnimeExtensions);
+  writer.writeStringList(offsets[1], object.aniyomiMangaExtensions);
+  writer.writeStringList(offsets[2], object.mangayomiAnimeExtensions);
+  writer.writeStringList(offsets[3], object.mangayomiMangaExtensions);
+  writer.writeStringList(offsets[4], object.mangayomiNovelExtensions);
+  writer.writeStringList(offsets[5], object.sortedAnimeExtensions);
+  writer.writeStringList(offsets[6], object.sortedMangaExtensions);
+  writer.writeStringList(offsets[7], object.sortedNovelExtensions);
 }
 
 BridgeSettings _bridgeSettingsDeserialize(
@@ -95,9 +160,14 @@ BridgeSettings _bridgeSettingsDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = BridgeSettings(
-    sortedAnimeExtensions: reader.readStringList(offsets[0]) ?? const [],
-    sortedMangaExtensions: reader.readStringList(offsets[1]) ?? const [],
-    sortedNovelExtensions: reader.readStringList(offsets[2]) ?? const [],
+    aniyomiAnimeExtensions: reader.readStringList(offsets[0]) ?? const [],
+    aniyomiMangaExtensions: reader.readStringList(offsets[1]) ?? const [],
+    mangayomiAnimeExtensions: reader.readStringList(offsets[2]) ?? const [],
+    mangayomiMangaExtensions: reader.readStringList(offsets[3]) ?? const [],
+    mangayomiNovelExtensions: reader.readStringList(offsets[4]) ?? const [],
+    sortedAnimeExtensions: reader.readStringList(offsets[5]) ?? const [],
+    sortedMangaExtensions: reader.readStringList(offsets[6]) ?? const [],
+    sortedNovelExtensions: reader.readStringList(offsets[7]) ?? const [],
   );
   object.id = id;
   return object;
@@ -115,6 +185,16 @@ P _bridgeSettingsDeserializeProp<P>(
     case 1:
       return (reader.readStringList(offset) ?? const []) as P;
     case 2:
+      return (reader.readStringList(offset) ?? const []) as P;
+    case 3:
+      return (reader.readStringList(offset) ?? const []) as P;
+    case 4:
+      return (reader.readStringList(offset) ?? const []) as P;
+    case 5:
+      return (reader.readStringList(offset) ?? const []) as P;
+    case 6:
+      return (reader.readStringList(offset) ?? const []) as P;
+    case 7:
       return (reader.readStringList(offset) ?? const []) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -218,6 +298,460 @@ extension BridgeSettingsQueryWhere
 extension BridgeSettingsQueryFilter
     on QueryBuilder<BridgeSettings, BridgeSettings, QFilterCondition> {
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'aniyomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'aniyomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'aniyomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'aniyomiAnimeExtensions',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'aniyomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'aniyomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'aniyomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'aniyomiAnimeExtensions',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'aniyomiAnimeExtensions',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'aniyomiAnimeExtensions',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiAnimeExtensions',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiAnimeExtensions',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiAnimeExtensions',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiAnimeExtensions',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiAnimeExtensions',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiAnimeExtensionsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiAnimeExtensions',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'aniyomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'aniyomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'aniyomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'aniyomiMangaExtensions',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'aniyomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'aniyomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'aniyomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'aniyomiMangaExtensions',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'aniyomiMangaExtensions',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'aniyomiMangaExtensions',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiMangaExtensions',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiMangaExtensions',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiMangaExtensions',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiMangaExtensions',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiMangaExtensions',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      aniyomiMangaExtensionsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'aniyomiMangaExtensions',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
       idIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -287,6 +821,687 @@ extension BridgeSettingsQueryFilter
         upper: upper,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mangayomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'mangayomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'mangayomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'mangayomiAnimeExtensions',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'mangayomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'mangayomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'mangayomiAnimeExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'mangayomiAnimeExtensions',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mangayomiAnimeExtensions',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'mangayomiAnimeExtensions',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiAnimeExtensions',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiAnimeExtensions',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiAnimeExtensions',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiAnimeExtensions',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiAnimeExtensions',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiAnimeExtensionsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiAnimeExtensions',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mangayomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'mangayomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'mangayomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'mangayomiMangaExtensions',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'mangayomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'mangayomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'mangayomiMangaExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'mangayomiMangaExtensions',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mangayomiMangaExtensions',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'mangayomiMangaExtensions',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiMangaExtensions',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiMangaExtensions',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiMangaExtensions',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiMangaExtensions',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiMangaExtensions',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiMangaExtensionsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiMangaExtensions',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mangayomiNovelExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'mangayomiNovelExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'mangayomiNovelExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'mangayomiNovelExtensions',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'mangayomiNovelExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'mangayomiNovelExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'mangayomiNovelExtensions',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'mangayomiNovelExtensions',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mangayomiNovelExtensions',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'mangayomiNovelExtensions',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiNovelExtensions',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiNovelExtensions',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiNovelExtensions',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiNovelExtensions',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiNovelExtensions',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      mangayomiNovelExtensionsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'mangayomiNovelExtensions',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
     });
   }
 
@@ -999,6 +2214,41 @@ extension BridgeSettingsQuerySortThenBy
 extension BridgeSettingsQueryWhereDistinct
     on QueryBuilder<BridgeSettings, BridgeSettings, QDistinct> {
   QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
+      distinctByAniyomiAnimeExtensions() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'aniyomiAnimeExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
+      distinctByAniyomiMangaExtensions() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'aniyomiMangaExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
+      distinctByMangayomiAnimeExtensions() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'mangayomiAnimeExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
+      distinctByMangayomiMangaExtensions() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'mangayomiMangaExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
+      distinctByMangayomiNovelExtensions() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'mangayomiNovelExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
       distinctBySortedAnimeExtensions() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sortedAnimeExtensions');
@@ -1025,6 +2275,41 @@ extension BridgeSettingsQueryProperty
   QueryBuilder<BridgeSettings, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
+      aniyomiAnimeExtensionsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'aniyomiAnimeExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
+      aniyomiMangaExtensionsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'aniyomiMangaExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
+      mangayomiAnimeExtensionsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'mangayomiAnimeExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
+      mangayomiMangaExtensionsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'mangayomiMangaExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
+      mangayomiNovelExtensionsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'mangayomiNovelExtensions');
     });
   }
 

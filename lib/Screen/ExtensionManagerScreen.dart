@@ -50,7 +50,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
   Widget searchBar(
     BuildContext context,
     TextEditingController textEditingController,
-    void Function(String value) onChanged,
+    void Function() onChanged,
   );
 
   Future<void> onRepoSaved(List<String> repoUrl, ItemType type) async {
@@ -96,9 +96,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
                 _tabBarController,
                 _selectedLanguage.value,
                 onRepoSaved,
-                (lang) {
-                  setState(() => _selectedLanguage.value = lang);
-                },
+                (lang) => setState(() => _selectedLanguage.value = lang),
               ),
               const SizedBox(width: 8),
             ],
@@ -115,9 +113,13 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
                 ),
               ),
               const SizedBox(height: 8),
-              searchBar(context, _textEditingController, (value) {
-                setState(() {});
-              }),
+              searchBar(
+                context,
+                _textEditingController,
+                () => setState(
+                  () {},
+                ), // Trigger rebuild on search change _textEditingController handles the text input
+              ),
               const SizedBox(height: 8),
               Obx(
                 () => Expanded(

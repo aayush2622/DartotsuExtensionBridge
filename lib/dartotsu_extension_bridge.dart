@@ -49,6 +49,15 @@ class DartotsuExtensionBridge {
     } else {
       isar = isarInstance;
     }
+    final settings = await isar.bridgeSettings
+        .filter()
+        .idEqualTo(26)
+        .findFirst();
+    if (settings == null) {
+      isar.writeTxnSync(
+        () => isar.bridgeSettings.putSync(BridgeSettings()..id = 26),
+      );
+    }
     if (Platform.isWindows) {
       final availableVersion = await WebViewEnvironment.getAvailableVersion();
       if (availableVersion != null) {

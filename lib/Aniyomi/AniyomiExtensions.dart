@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
+import '../Settings/Settings.dart';
+import '../dartotsu_extension_bridge.dart';
+
 class AniyomiExtensions extends Extension {
   AniyomiExtensions() {
     initialize();
@@ -24,6 +27,12 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) {
+    var settings = isar.bridgeSettings.getSync(26)!;
+    isar.writeTxnSync(
+      () => isar.bridgeSettings.putSync(
+        settings..aniyomiAnimeExtensions = repos ?? [],
+      ),
+    );
     return _loadExtensions(
       'fetchAnimeExtensions',
       availableAnimeExtensions,
@@ -41,6 +50,12 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<List<Source>> fetchAvailableMangaExtensions(List<String>? repos) {
+    var settings = isar.bridgeSettings.getSync(26)!;
+    isar.writeTxnSync(
+      () => isar.bridgeSettings.putSync(
+        settings..aniyomiMangaExtensions = repos ?? [],
+      ),
+    );
     return _loadExtensions(
       'fetchMangaExtensions',
       availableMangaExtensions,
@@ -74,12 +89,12 @@ class AniyomiExtensions extends Extension {
   Future<void> initialize() async {
     if (isInitialized.value) return;
     isInitialized.value = true;
+    var settings = isar.bridgeSettings.getSync(26) ?? BridgeSettings();
     getInstalledAnimeExtensions();
     getInstalledMangaExtensions();
     getInstalledNovelExtensions();
-    fetchAvailableAnimeExtensions(null);
-    fetchAvailableMangaExtensions(null);
-    fetchAvailableNovelExtensions(null);
+    fetchAvailableAnimeExtensions(settings.aniyomiAnimeExtensions);
+    fetchAvailableMangaExtensions(settings.aniyomiMangaExtensions);
   }
 
   @override
