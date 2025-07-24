@@ -69,4 +69,20 @@ class Source {
   };
 }
 
-enum ItemType { manga, anime, novel }
+enum ItemType {
+  manga,
+  anime,
+  novel;
+
+  @override
+  String toString() {
+    switch (this) {
+      case ItemType.manga:
+        return 'Manga';
+      case ItemType.anime:
+        return 'Anime';
+      case ItemType.novel:
+        return 'Novel';
+    }
+  }
+}

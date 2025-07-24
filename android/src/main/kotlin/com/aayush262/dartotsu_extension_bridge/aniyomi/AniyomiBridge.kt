@@ -19,6 +19,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         context // just to keep the context reference alive
+        Log.d("AniyomiBridge", "Method called: ${call.method} with args: ${call.arguments}")
         when (call.method) {
             "getInstalledAnimeExtensions" -> getInstalledAnimeExtensions(result)
             "getInstalledMangaExtensions" -> getInstalledMangaExtensions(result)
@@ -103,11 +104,11 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "supportedLanguages" to ext.sources.map { it.lang },
                         "lang" to ext.lang,
                         "isNsfw" to ext.isNsfw,
-                        "icon" to ext.iconUrl,
+                        "iconUrl" to ext.iconUrl,
                         "itemType" to 1,
                     )
                 }
-
+                Log.d("AniyomiBridge", "Fetched ${mapped.size} anime extensions")
                 withContext(Dispatchers.Main) {
                     result.success(mapped)
                 }
@@ -141,11 +142,11 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "supportedLanguages" to ext.sources.map { it.lang },
                         "lang" to ext.lang,
                         "isNsfw" to ext.isNsfw,
-                        "icon" to ext.iconUrl,
+                        "iconUrl" to ext.iconUrl,
                         "itemType" to 0,
                     )
                 }
-
+                Log.d("AniyomiBridge", "Fetched ${mapped.size} manga extensions")
                 withContext(Dispatchers.Main) {
                     result.success(mapped)
                 }

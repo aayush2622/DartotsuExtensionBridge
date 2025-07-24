@@ -5,7 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
 class AniyomiExtensions extends Extension {
+  AniyomiExtensions() {
+    initialize();
+  }
+
   static const platform = MethodChannel('aniyomiExtensionBridge');
+
+  @override
+  bool get supportsNovel => false;
 
   @override
   Future<List<Source>> getInstalledAnimeExtensions() {

@@ -5,6 +5,10 @@ import '../Models/Source.dart';
 abstract class Extension extends GetxController {
   var isInitialized = false.obs;
 
+  bool get supportsAnime => true;
+  bool get supportsManga => true;
+  bool get supportsNovel => true;
+
   final Rx<List<Source>> installedAnimeExtensions = Rx([]);
   final Rx<List<Source>> installedMangaExtensions = Rx([]);
   final Rx<List<Source>> installedNovelExtensions = Rx([]);

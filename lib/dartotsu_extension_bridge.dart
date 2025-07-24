@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -19,7 +20,7 @@ class DartotsuExtensionBridge {
   ///
   /// import 'package:dartotsu_extension_bridge/Mangayomi/Eval/dart/model/source_preference.dart';
   /// import 'package:dartotsu_extension_bridge/Mangayomi/Models/Source.dart';
-  ///
+  /// import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
   ///
   /// 🧩 Add these models when opening your Isar instance:
   ///
@@ -28,24 +29,29 @@ class DartotsuExtensionBridge {
   ///   MSourceSchema,
   //    SourcePreferenceSchema,
   //    SourcePreferenceStringValueSchema,
+  //    BridgeSettingsSchema,
   /// ]);
   ///
   ///
   /// 🚀 Then pass the initialized `isar` instance to init method
   Future<void> init(Isar? isarInstance) async {
+    var document = await getApplicationDocumentsDirectory();
     if (isarInstance == null) {
-      isar = Isar.openSync([
-        MSourceSchema,
-        SourcePreferenceSchema,
-        SourcePreferenceStringValueSchema,
-      ], directory: (await getApplicationDocumentsDirectory()).path);
+      isar = Isar.openSync(
+        [
+          MSourceSchema,
+          SourcePreferenceSchema,
+          SourcePreferenceStringValueSchema,
+          BridgeSettingsSchema,
+        ],
+        directory: p.join(document.path, 'isar'),
+      ); //may crash app if directory does not exist, have to test
     } else {
       isar = isarInstance;
     }
     if (Platform.isWindows) {
       final availableVersion = await WebViewEnvironment.getAvailableVersion();
       if (availableVersion != null) {
-        final document = await getApplicationDocumentsDirectory();
         webViewEnvironment = await WebViewEnvironment.create(
           settings: WebViewEnvironmentSettings(
             userDataFolder: p.join(document.path, 'flutter_inappwebview'),

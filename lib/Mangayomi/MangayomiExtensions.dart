@@ -3,6 +3,7 @@ import 'package:dartotsu_extension_bridge/Models/Source.dart';
 import 'package:get/get.dart';
 
 import 'MangayomiExtensionManager.dart';
+import 'Models/Source.dart';
 
 class MangayomiExtensions extends Extension {
   MangayomiExtensions() {
@@ -26,7 +27,9 @@ class MangayomiExtensions extends Extension {
         .map((source) => Source.fromJson(source.toJson()))
         .where((source) => !idMap.contains(source.id))
         .toList();
+
     availableAnimeExtensions.value = sourceList;
+    checkForUpdates(ItemType.anime);
     return sourceList;
   }
 
@@ -44,7 +47,6 @@ class MangayomiExtensions extends Extension {
         .asBroadcastStream();
 
     installedAnimeExtensions.bindStream(stream);
-
     return await stream.first;
   }
 
@@ -65,7 +67,9 @@ class MangayomiExtensions extends Extension {
         .map((source) => Source.fromJson(source.toJson()))
         .where((source) => !idMap.contains(source.id))
         .toList();
+
     availableMangaExtensions.value = sourceList;
+    checkForUpdates(ItemType.manga);
     return sourceList;
   }
 
@@ -82,7 +86,6 @@ class MangayomiExtensions extends Extension {
         )
         .asBroadcastStream();
     installedMangaExtensions.bindStream(stream);
-
     return await stream.first;
   }
 
@@ -103,7 +106,9 @@ class MangayomiExtensions extends Extension {
         .map((source) => Source.fromJson(source.toJson()))
         .where((source) => !idMap.contains(source.id))
         .toList();
+
     availableNovelExtensions.value = sourceList;
+    checkForUpdates(ItemType.novel);
     return sourceList;
   }
 
@@ -121,7 +126,6 @@ class MangayomiExtensions extends Extension {
         .asBroadcastStream();
 
     installedNovelExtensions.bindStream(stream);
-
     return stream.first;
   }
 
@@ -169,14 +173,126 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<void> uninstallSource(Source source) {
-    // TODO: implement uninstallSource
-    throw UnimplementedError();
+  Future<void> uninstallSource(Source source) async {
+    final manager = Get.put(MangayomiExtensionManager());
+
+    if (source.id == null || source.id!.isEmpty) {
+      return Future.error('Source ID is required for uninstallation.');
+    }
+
+    await manager.uninstallSource(source);
+
+    // put back into available extensions if repo has the source
+    void updateExtensions(
+      Rx<List<Source>> extensions,
+      List<MSource> availableSources,
+    ) {
+      final availableMap = {for (var s in availableSources) s.id: s};
+      final idInt = int.tryParse(source.id!);
+      if (idInt != null && availableMap.containsKey(idInt)) {
+        extensions.value = extensions.value..add(source);
+      }
+    }
+
+    switch (source.itemType!) {
+      case ItemType.anime:
+        updateExtensions(
+          availableAnimeExtensions,
+          manager.availableAnimeExtensions.value,
+        );
+        break;
+      case ItemType.manga:
+        updateExtensions(
+          availableMangaExtensions,
+          manager.availableMangaExtensions.value,
+        );
+        break;
+      case ItemType.novel:
+        updateExtensions(
+          availableNovelExtensions,
+          manager.availableNovelExtensions.value,
+        );
+        break;
+    }
   }
 
   @override
-  Future<void> updateSource(Source source) {
-    // TODO: implement updateSource
-    throw UnimplementedError();
+  Future<void> updateSource(Source source) async {
+    final manager = Get.put(MangayomiExtensionManager());
+    if (source.id == null || source.id!.isEmpty) {
+      return Future.error('Source ID is required for update.');
+    }
+    await manager.updateSource(source);
   }
+
+  Future<void> checkForUpdates(ItemType type) async {
+    final manager = Get.put(MangayomiExtensionManager());
+
+    List<MSource> availableList;
+    Rx<List<Source>> installedRx;
+
+    switch (type) {
+      case ItemType.anime:
+        availableList = manager.availableAnimeExtensions.value;
+        installedRx = installedAnimeExtensions;
+        break;
+      case ItemType.manga:
+        availableList = manager.availableMangaExtensions.value;
+        installedRx = installedMangaExtensions;
+        break;
+      case ItemType.novel:
+        availableList = manager.availableNovelExtensions.value;
+        installedRx = installedNovelExtensions;
+        break;
+    }
+
+    final availableMap = {for (var source in availableList) source.id: source};
+
+    final updatedList = installedRx.value.map((installed) {
+      final available = availableMap[int.tryParse(installed.id ?? '')];
+      if (available != null &&
+          installed.version != null &&
+          available.version != null &&
+          compareVersions(installed.version!, available.version!) < 0) {
+        return installed
+          ..hasUpdate = true
+          ..versionLast = available.version;
+      }
+      return installed;
+    }).toList();
+
+    installedRx.value = updatedList;
+  }
+}
+
+int compareVersions(String version1, String version2) {
+  List<String> v1Components = version1.split('.');
+  List<String> v2Components = version2.split('.');
+
+  for (int i = 0; i < v1Components.length && i < v2Components.length; i++) {
+    int v1Value = int.parse(
+      v1Components.length == i + 1 && v1Components[i].length == 1
+          ? "${v1Components[i]}0"
+          : v1Components[i],
+    );
+    int v2Value = int.parse(
+      v2Components.length == i + 1 && v2Components[i].length == 1
+          ? "${v2Components[i]}0"
+          : v2Components[i],
+    );
+
+    if (v1Value < v2Value) {
+      return -1;
+    } else if (v1Value > v2Value) {
+      return 1;
+    }
+  }
+
+  if (v1Components.length < v2Components.length) {
+    return -1;
+  } else if (v1Components.length > v2Components.length) {
+    return 1;
+  }
+
+  return 0;
 }
