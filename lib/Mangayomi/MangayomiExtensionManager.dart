@@ -53,7 +53,9 @@ class MangayomiExtensionManager extends GetxController {
       }
       final sourceList = (jsonDecode(req.body) as List)
           .map((e) => MSource.fromJson(e)..repo = repo)
+          .where((source) => source.itemType == itemType)
           .toList();
+
       sources.addAll(sourceList);
     }
     switch (itemType) {

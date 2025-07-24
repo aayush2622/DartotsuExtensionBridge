@@ -1,4 +1,3 @@
-import 'package:dartotsu_extension_bridge/Screen/ExtensionList.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -24,6 +23,14 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     if (manager.supportsNovel) totalTabs += 2;
     _tabBarController = TabController(length: totalTabs, vsync: this);
     _tabBarController.animateTo(0);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _tabBarController.dispose();
+    _textEditingController.dispose();
+    _selectedLanguage.close();
   }
 
   Text get title;
