@@ -58,28 +58,31 @@ class MangayomiSourceMethods implements SourceMethods {
     final data = await _ensureSource(
       (mSource) => getExtensionService(mSource).getDetail(media.url!),
     );
-
-    return DMedia(
-      title: data.name,
-      url: data.link,
-      cover: data.imageUrl,
+    var mediaData = DMedia(
+      title: media.title,
+      url: media.url,
+      cover: media.cover,
       description: data.description,
       artist: data.artist,
       author: data.author,
       genre: data.genre,
-      episodes: data.chapters?.map((e) {
-        return DEpisode(
-          name: e.name,
-          url: e.url,
-          episodeNumber: ChapterRecognition.parseChapterNumber(
-            data.name!,
-            e.name!,
-          ),
-          dateUpload: e.dateUpload,
-          scanlator: e.scanlator,
-        );
-      }).toList(),
+      episodes: data.chapters
+          ?.where((e) => e.name != null && e.url != null)
+          .map(
+            (e) => DEpisode(
+              name: e.name!,
+              url: e.url!,
+              episodeNumber: ChapterRecognition.parseChapterNumber(
+                media.title ?? '',
+                e.name!,
+              ).toString(),
+              dateUpload: e.dateUpload,
+              scanlator: e.scanlator,
+            ),
+          )
+          .toList(),
     );
+    return mediaData;
   }
 
   @override

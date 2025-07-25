@@ -5,7 +5,8 @@ class DEpisode {
   String? scanlator;
   String? thumbnail;
   String? description;
-  double? episodeNumber;
+  bool? filler;
+  String episodeNumber;
 
   DEpisode({
     this.url,
@@ -14,7 +15,8 @@ class DEpisode {
     this.scanlator,
     this.thumbnail,
     this.description,
-    this.episodeNumber,
+    this.filler,
+    required this.episodeNumber,
   });
 
   factory DEpisode.fromJson(Map<String, dynamic> json) {
@@ -25,11 +27,11 @@ class DEpisode {
       scanlator: json['scanlator'],
       thumbnail: json['thumbnail'],
       description: json['description'],
-      episodeNumber: json['episodeNumber'] != null
-          ? double.tryParse(json['episodeNumber'].toString())
-          : json['episode_number'] != null
-          ? double.tryParse(json['episode_number'].toString())
-          : null,
+      filler: json['filler'],
+      episodeNumber:
+          (double.tryParse(json['episodeNumber'].toString()) ??
+                  double.tryParse(json['episode_number'].toString()))!
+              .toString(),
     );
   }
 
@@ -40,6 +42,7 @@ class DEpisode {
     'scanlator': scanlator,
     'thumbnail': thumbnail,
     'description': description,
+    'filler': filler,
     'episodeNumber': episodeNumber,
   };
 }

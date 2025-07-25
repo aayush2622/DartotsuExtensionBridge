@@ -38,4 +38,15 @@ abstract class Extension extends GetxController {
   Future<void> uninstallSource(Source source);
 
   Future<void> updateSource(Source source);
+
+  Rx<List<Source>> getSortedInstalledExtension(ItemType itemType) {
+    switch (itemType) {
+      case ItemType.anime:
+        return installedAnimeExtensions;
+      case ItemType.manga:
+        return installedMangaExtensions;
+      case ItemType.novel:
+        return installedNovelExtensions;
+    }
+  }
 }
