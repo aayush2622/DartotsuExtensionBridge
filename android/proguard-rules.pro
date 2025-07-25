@@ -29,7 +29,12 @@
 -keepclassmembers class uy.kohesive.injekt.api.FullTypeReference {
     <init>(...);
 }
+-keep class okhttp3.** { *; }
+-dontwarn okhttp3.**
 
+# --- Okio (BufferedSource etc.) ---
+-keep class okio.** { *; }
+-dontwarn okio.**
 
 -keepattributes *Annotation*
 -keepattributes EnclosingMethod
