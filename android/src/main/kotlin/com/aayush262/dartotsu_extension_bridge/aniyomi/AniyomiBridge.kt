@@ -11,6 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Headers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -355,7 +356,9 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             scanlator = mediaUrl["scanlator"] as? String
         }
         val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
-
+        fun Headers.toMap(): Map<String, String> {
+            return this.names().associateWith { name -> this[name] ?: "" }
+        }
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val res = media.getVideoList(episode)
@@ -364,6 +367,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "title" to video.videoTitle,
                         "url" to video.videoUrl,
                         "quality" to video.resolution,
+                        "headers" to video.headers?.toMap(),
                         "subtitle" to video.subtitleTracks.map { track ->
                             mapOf(
                                 "file" to track.url,

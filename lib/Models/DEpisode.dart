@@ -20,6 +20,18 @@ class DEpisode {
   });
 
   factory DEpisode.fromJson(Map<String, dynamic> json) {
+    double? episodeNum =
+        double.tryParse(json['episodeNumber']?.toString() ?? '') ??
+        double.tryParse(json['episode_number']?.toString() ?? '');
+
+    String episodeStr;
+    if (episodeNum != null) {
+      episodeStr = episodeNum == episodeNum.toInt()
+          ? episodeNum.toInt().toString()
+          : episodeNum.toString();
+    } else {
+      episodeStr = '';
+    }
     return DEpisode(
       url: json['url'],
       name: json['name'],
@@ -28,10 +40,7 @@ class DEpisode {
       thumbnail: json['thumbnail'],
       description: json['description'],
       filler: json['filler'],
-      episodeNumber:
-          (double.tryParse(json['episodeNumber'].toString()) ??
-                  double.tryParse(json['episode_number'].toString()))!
-              .toString(),
+      episodeNumber: episodeStr,
     );
   }
 
