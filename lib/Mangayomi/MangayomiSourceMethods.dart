@@ -9,10 +9,12 @@ import 'package:dartotsu_extension_bridge/Models/Pages.dart';
 import 'package:dartotsu_extension_bridge/Models/Source.dart';
 
 import 'package:dartotsu_extension_bridge/Models/Video.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../Extensions/SourceMethods.dart';
 import 'ChapterRecognition.dart';
+import 'Eval/dart/model/m_manga.dart';
 import 'MangayomiExtensionManager.dart';
 import 'Models/Source.dart';
 import 'lib.dart';
@@ -58,15 +60,12 @@ class MangayomiSourceMethods implements SourceMethods {
     final data = await _ensureSource(
       (mSource) => getExtensionService(mSource).getDetail(media.url!),
     );
-    var mediaData = DMedia(
-      title: media.title,
-      url: media.url,
-      cover: media.cover,
-      description: data.description,
-      artist: data.artist,
-      author: data.author,
-      genre: data.genre,
-      episodes: data.chapters
+
+    DMedia createMediaData(Map<String, dynamic> args) {
+      final media = args['media'] as DMedia;
+      final data = args['data'] as MManga;
+
+      final episodes = data.chapters
           ?.where((e) => e.name != null && e.url != null)
           .map(
             (e) => DEpisode(
@@ -80,8 +79,23 @@ class MangayomiSourceMethods implements SourceMethods {
               scanlator: e.scanlator,
             ),
           )
-          .toList(),
-    );
+          .toList();
+      return DMedia(
+        title: media.title,
+        url: media.url,
+        cover: media.cover,
+        description: data.description,
+        artist: data.artist,
+        author: data.author,
+        genre: data.genre,
+        episodes: episodes,
+      );
+    }
+
+    final mediaData = await compute(createMediaData, {
+      'media': media,
+      'data': data,
+    });
     return mediaData;
   }
 
