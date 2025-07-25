@@ -19,6 +19,7 @@
     public static <1> INSTANCE;
     kotlinx.serialization.KSerializer serializer(...);
 }
+-keepattributes Signature
 -keep class uy.kohesive.injekt.** { *; }
 -keep class eu.kanade.tachiyomi.** { *; }
 -keep class com.aayush262.dartotsu_extension_bridge.** { *; }
@@ -28,5 +29,11 @@
 -keepclassmembers class uy.kohesive.injekt.api.FullTypeReference {
     <init>(...);
 }
+
+
+-keepattributes *Annotation*
+-keepattributes EnclosingMethod
 -keep class org.jsoup.** { *; }
 -keepclassmembers class org.jsoup.nodes.Document { *; }
+
+-keepattributes RuntimeVisibleAnnotations,AnnotationDefault
