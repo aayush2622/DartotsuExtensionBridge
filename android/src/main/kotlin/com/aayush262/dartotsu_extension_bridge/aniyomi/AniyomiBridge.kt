@@ -2,10 +2,9 @@ package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import android.content.Context
 import android.util.Log
-import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
-import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
+import eu.kanade.tachiyomi.source.model.SChapter
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.CoroutineScope
@@ -21,19 +20,21 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
         context // just to keep the context reference alive
         Log.d("AniyomiBridge", "Method called: ${call.method} with args: ${call.arguments}")
         when (call.method) {
-            "getInstalledAnimeExtensions" -> getInstalledAnimeExtensions(result)
-            "getInstalledMangaExtensions" -> getInstalledMangaExtensions(result)
+            "getInstalledAnimeExtensions" -> getInstalledAnimeExtensions(call, result)
+            "getInstalledMangaExtensions" -> getInstalledMangaExtensions(call, result)
             "fetchAnimeExtensions" -> fetchAnimeExtensions(call, result)
             "fetchMangaExtensions" -> fetchMangaExtensions(call, result)
             "getLatestUpdates" -> getLatestUpdates(call, result)
             "getPopular" -> getPopular(call, result)
             "getDetail" -> getDetail(call, result)
             "getVideoList" -> getVideoList(call, result)
+            "getPageList" -> getPageList(call, result)
+            "search" -> search(call, result)
             else -> result.notImplemented()
         }
     }
 
-    private fun getInstalledAnimeExtensions(result: MethodChannel.Result) {
+    private fun getInstalledAnimeExtensions(call: MethodCall, result: MethodChannel.Result) {
         val extensionManager = Injekt.get<AniyomiExtensionManager>()
         try {
             val installedExtensions = extensionManager.fetchInstalledAnimeExtensions()
@@ -54,13 +55,14 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                     )
                 }
             result.success(installedExtensions)
+            Log.d("AniyomiBridge", "Method called: ${call.method} returned ${installedExtensions?.size ?: 0} extensions")
         } catch (e: Exception) {
             e.printStackTrace()
             result.error("ERROR", "Failed to get installed extensions: ${e.message}", null)
         }
     }
 
-    private fun getInstalledMangaExtensions(result: MethodChannel.Result) {
+    private fun getInstalledMangaExtensions(call: MethodCall, result: MethodChannel.Result) {
         val extensionManager = Injekt.get<AniyomiExtensionManager>()
         try {
             val installedExtensions = extensionManager.fetchInstalledMangaExtensions()
@@ -81,6 +83,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                     )
                 }
             result.success(installedExtensions)
+            Log.d("AniyomiBridge", "Method called: ${call.method} returned ${installedExtensions?.size ?: 0} extensions")
         } catch (e: Exception) {
             e.printStackTrace()
             result.error("ERROR", "Failed to get installed extensions: ${e.message}", null)
@@ -108,9 +111,9 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "itemType" to 1,
                     )
                 }
-                Log.d("AniyomiBridge", "Fetched ${mapped.size} anime extensions")
                 withContext(Dispatchers.Main) {
                     result.success(mapped)
+                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $mapped")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -149,6 +152,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 Log.d("AniyomiBridge", "Fetched ${mapped.size} manga extensions")
                 withContext(Dispatchers.Main) {
                     result.success(mapped)
+                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $mapped")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -218,6 +222,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 )
                 withContext(Dispatchers.Main) {
                     result.success(resultMap)
+                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultMap")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -265,6 +270,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 )
                 withContext(Dispatchers.Main) {
                     result.success(resultMap)
+                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultMap")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -312,6 +318,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 )
                 withContext(Dispatchers.Main) {
                     result.success(resultMap)
+                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultMap")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -373,6 +380,100 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 }
                 withContext(Dispatchers.Main) {
                     result.success(resultList)
+                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultList")
+
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    result.error("ERROR", "Failed to get video list: ${e.message}", null)
+                }
+            }
+        }
+    }
+    private fun search(call: MethodCall, result: MethodChannel.Result){
+        val args = call.arguments as? Map<*, *> ?: return result.error(
+            "INVALID_ARGS",
+            "Arguments were null or invalid",
+            null
+        )
+        val sourceId = args["sourceId"] as? String
+        val isAnime = args["isAnime"] as? Boolean
+        val query = args["query"] as? String
+        val page = args["page"] as? Int
+        if (sourceId == null || isAnime == null || query == null || page== null )  {
+            return result.error("INVALID_ARGS", "Missing required parameters", null)
+        }
+        val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val res = media.getSearchResults(query,page)
+                val resultMap = mapOf(
+                    "list" to res.animes.map {
+                        mapOf(
+                            "title" to it.title,
+                            "url" to it.url,
+                            "cover" to it.thumbnail_url,
+                            "artist" to it.artist,
+                            "author" to it.author,
+                            "description" to it.description,
+                            "genre" to it.getGenres(),
+                            "status" to it.status,
+                        )
+                    },
+                    "hasNextPage" to res.hasNextPage
+                )
+                withContext(Dispatchers.Main) {
+                    result.success(resultMap)
+                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultMap")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    result.error("ERROR", "Failed to get video list: ${e.message}", null)
+                }
+            }
+        }
+
+    }
+    private fun getPageList(call: MethodCall, result: MethodChannel.Result) {
+        val args = call.arguments as? Map<*, *> ?: return result.error(
+            "INVALID_ARGS",
+            "Arguments were null or invalid",
+            null
+        )
+
+        val sourceId = args["sourceId"] as? String
+        val isAnime = args["isAnime"] as? Boolean
+        val mediaUrl = args["episode"] as? Map<*, *>
+
+        if (sourceId == null || isAnime == null || mediaUrl == null) {
+            return result.error("INVALID_ARGS", "Missing required parameters", null)
+        }
+        val episode = SChapter.create().apply {
+            name = mediaUrl["name"] as? String ?: ""
+            url = mediaUrl["url"] as? String ?: return result.error(
+                "EMPTY_URL",
+                "Url cant be empty",
+                null
+            )
+            date_upload = (mediaUrl["date_upload"] as? Long)?.takeIf { it > 0 } ?: 0L
+            chapter_number = (mediaUrl["episode_number"] as? Double)?.toFloat() ?: 0f
+            scanlator = mediaUrl["scanlator"] as? String
+        }
+        val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val res = media.getPageList(episode)
+                val resultList = res.map { chapter ->
+                    mapOf(
+                        "url" to chapter.url,
+                    )
+                }
+                withContext(Dispatchers.Main) {
+                    result.success(resultList)
+                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultList")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

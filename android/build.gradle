@@ -21,10 +21,10 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        maven {
+       /* maven {
             url 'http://download.flutter.io'
             allowInsecureProtocol=true
-        }
+        }*/
     }
 }
 
@@ -87,5 +87,5 @@ dependencies {
     implementation 'androidx.compose.runtime:runtime-android:1.8.3'
     implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-    api "io.flutter:flutter_embedding_debug:1.0.0-035a0cadb952f66550bb9b633271d8ee14e8ea5b"
+    //api "io.flutter:flutter_embedding_debug:1.0.0-035a0cadb952f66550bb9b633271d8ee14e8ea5b"
 }

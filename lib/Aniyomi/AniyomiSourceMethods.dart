@@ -90,18 +90,47 @@ class AniyomiSourceMethods implements SourceMethods {
   }
 
   @override
-  Future<List<PageUrl>> getPageList(DEpisode episode) {
-    throw UnimplementedError();
+  Future<List<PageUrl>> getPageList(DEpisode episode) async {
+    final result = await platform.invokeMethod('getPageList', {
+      'sourceId': source.id,
+      'isAnime': isAnime,
+      'episode': {
+        'name': episode.name,
+        'url': episode.url,
+        'date_upload': episode.dateUpload,
+        'description': episode.description,
+        'episode_number': episode.episodeNumber,
+        'scanlator': episode.scanlator,
+      },
+    });
+
+    return compute(parsePageUrls, List<dynamic>.from(result));
   }
 
   @override
-  Future<Pages> search(String query, int page, List filters) {
-    throw UnimplementedError();
+  Future<Pages> search(String query, int page, List filters) async {
+    final result = await platform.invokeMethod('search', {
+      'sourceId': source.id,
+      'isAnime': isAnime,
+      'query': query,
+      'page': page,
+    });
+
+    return await compute(
+      Pages.fromJson,
+      Map<String, dynamic>.from(result as Map),
+    );
   }
 
   List<Video> parseVideos(List<dynamic> list) {
     return list
         .map((e) => Video.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  List<PageUrl> parsePageUrls(List<dynamic> list) {
+    return list
+        .map((e) => PageUrl.fromJson(Map<String, dynamic>.from(e)))
         .toList();
   }
 }

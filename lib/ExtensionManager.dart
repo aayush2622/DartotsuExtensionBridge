@@ -75,4 +75,13 @@ enum ExtensionType {
       orElse: () => getSupportedExtensions.first,
     );
   }
+
+  static ExtensionType fromManager(Extension manager) {
+    if (manager is AniyomiExtensions) {
+      return ExtensionType.aniyomi;
+    } else if (manager is MangayomiExtensions) {
+      return ExtensionType.mangayomi;
+    }
+    throw Exception('Unknown extension manager type');
+  }
 }
