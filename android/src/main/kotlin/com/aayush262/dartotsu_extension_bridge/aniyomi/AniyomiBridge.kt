@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
+import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -14,6 +15,8 @@ import kotlinx.coroutines.withContext
 import okhttp3.Headers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.UnsupportedEncodingException
+import java.net.URLDecoder
 
 class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHandler {
 
@@ -441,6 +444,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
         }
 
     }
+
     private fun getPageList(call: MethodCall, result: MethodChannel.Result) {
         val args = call.arguments as? Map<*, *> ?: return result.error(
             "INVALID_ARGS",
@@ -466,13 +470,16 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             chapter_number = (mediaUrl["episode_number"] as? Double)?.toFloat() ?: 0f
             scanlator = mediaUrl["scanlator"] as? String
         }
+
         val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val res = media.getPageList(episode)
                 val resultList = res.map { chapter ->
+                    val (url, headers) = pageToUrlAndHeaders(chapter)
                     mapOf(
-                        "url" to chapter.imageUrl,
+                        "url" to url,
+                        "headers" to headers,
                     )
                 }
                 withContext(Dispatchers.Main) {
@@ -486,5 +493,30 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 }
             }
         }
+    }
+    fun pageToUrlAndHeaders(page: Page): Pair<String, Map<String, String>> {
+        var headersMap = emptyMap<String, String>()
+        var url = ""
+
+        page.imageUrl?.let {
+            url = it
+            val splitUrl = it.split("&")
+            headersMap = splitUrl.mapNotNull { part ->
+                val idx = part.indexOf("=")
+                if (idx != -1) {
+                    try {
+                        val key = URLDecoder.decode(part.substring(0, idx), "UTF-8")
+                        val value = URLDecoder.decode(part.substring(idx + 1), "UTF-8")
+                        Pair(key, value)
+                    } catch (e: UnsupportedEncodingException) {
+                        Log.e("AniyomiBridge", "Error decoding URL part: $part", e)
+                        null
+                    }
+                } else {
+                    null
+                }
+            }.toMap()
+        }
+        return Pair(url, headersMap)
     }
 }
