@@ -31,7 +31,7 @@ class ExtensionManager extends GetxController {
     _currentManager.value = type.getManager();
     final settings = isar.bridgeSettings.getSync(26)!;
     isar.writeTxnSync(() {
-      isar.bridgeSettings.putSync(settings..currentManager = type.name);
+      isar.bridgeSettings.putSync(settings..currentManager = type.toString());
     });
   }
 }
