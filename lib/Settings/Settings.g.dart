@@ -27,33 +27,38 @@ const BridgeSettingsSchema = CollectionSchema(
       name: r'aniyomiMangaExtensions',
       type: IsarType.stringList,
     ),
-    r'mangayomiAnimeExtensions': PropertySchema(
+    r'currentManager': PropertySchema(
       id: 2,
+      name: r'currentManager',
+      type: IsarType.string,
+    ),
+    r'mangayomiAnimeExtensions': PropertySchema(
+      id: 3,
       name: r'mangayomiAnimeExtensions',
       type: IsarType.stringList,
     ),
     r'mangayomiMangaExtensions': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'mangayomiMangaExtensions',
       type: IsarType.stringList,
     ),
     r'mangayomiNovelExtensions': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'mangayomiNovelExtensions',
       type: IsarType.stringList,
     ),
     r'sortedAnimeExtensions': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'sortedAnimeExtensions',
       type: IsarType.stringList,
     ),
     r'sortedMangaExtensions': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'sortedMangaExtensions',
       type: IsarType.stringList,
     ),
     r'sortedNovelExtensions': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'sortedNovelExtensions',
       type: IsarType.stringList,
     )
@@ -90,6 +95,12 @@ int _bridgeSettingsEstimateSize(
     for (var i = 0; i < object.aniyomiMangaExtensions.length; i++) {
       final value = object.aniyomiMangaExtensions[i];
       bytesCount += value.length * 3;
+    }
+  }
+  {
+    final value = object.currentManager;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
     }
   }
   bytesCount += 3 + object.mangayomiAnimeExtensions.length * 3;
@@ -145,12 +156,13 @@ void _bridgeSettingsSerialize(
 ) {
   writer.writeStringList(offsets[0], object.aniyomiAnimeExtensions);
   writer.writeStringList(offsets[1], object.aniyomiMangaExtensions);
-  writer.writeStringList(offsets[2], object.mangayomiAnimeExtensions);
-  writer.writeStringList(offsets[3], object.mangayomiMangaExtensions);
-  writer.writeStringList(offsets[4], object.mangayomiNovelExtensions);
-  writer.writeStringList(offsets[5], object.sortedAnimeExtensions);
-  writer.writeStringList(offsets[6], object.sortedMangaExtensions);
-  writer.writeStringList(offsets[7], object.sortedNovelExtensions);
+  writer.writeString(offsets[2], object.currentManager);
+  writer.writeStringList(offsets[3], object.mangayomiAnimeExtensions);
+  writer.writeStringList(offsets[4], object.mangayomiMangaExtensions);
+  writer.writeStringList(offsets[5], object.mangayomiNovelExtensions);
+  writer.writeStringList(offsets[6], object.sortedAnimeExtensions);
+  writer.writeStringList(offsets[7], object.sortedMangaExtensions);
+  writer.writeStringList(offsets[8], object.sortedNovelExtensions);
 }
 
 BridgeSettings _bridgeSettingsDeserialize(
@@ -162,12 +174,13 @@ BridgeSettings _bridgeSettingsDeserialize(
   final object = BridgeSettings(
     aniyomiAnimeExtensions: reader.readStringList(offsets[0]) ?? const [],
     aniyomiMangaExtensions: reader.readStringList(offsets[1]) ?? const [],
-    mangayomiAnimeExtensions: reader.readStringList(offsets[2]) ?? const [],
-    mangayomiMangaExtensions: reader.readStringList(offsets[3]) ?? const [],
-    mangayomiNovelExtensions: reader.readStringList(offsets[4]) ?? const [],
-    sortedAnimeExtensions: reader.readStringList(offsets[5]) ?? const [],
-    sortedMangaExtensions: reader.readStringList(offsets[6]) ?? const [],
-    sortedNovelExtensions: reader.readStringList(offsets[7]) ?? const [],
+    currentManager: reader.readStringOrNull(offsets[2]),
+    mangayomiAnimeExtensions: reader.readStringList(offsets[3]) ?? const [],
+    mangayomiMangaExtensions: reader.readStringList(offsets[4]) ?? const [],
+    mangayomiNovelExtensions: reader.readStringList(offsets[5]) ?? const [],
+    sortedAnimeExtensions: reader.readStringList(offsets[6]) ?? const [],
+    sortedMangaExtensions: reader.readStringList(offsets[7]) ?? const [],
+    sortedNovelExtensions: reader.readStringList(offsets[8]) ?? const [],
   );
   object.id = id;
   return object;
@@ -185,7 +198,7 @@ P _bridgeSettingsDeserializeProp<P>(
     case 1:
       return (reader.readStringList(offset) ?? const []) as P;
     case 2:
-      return (reader.readStringList(offset) ?? const []) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
       return (reader.readStringList(offset) ?? const []) as P;
     case 4:
@@ -195,6 +208,8 @@ P _bridgeSettingsDeserializeProp<P>(
     case 6:
       return (reader.readStringList(offset) ?? const []) as P;
     case 7:
+      return (reader.readStringList(offset) ?? const []) as P;
+    case 8:
       return (reader.readStringList(offset) ?? const []) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -748,6 +763,160 @@ extension BridgeSettingsQueryFilter
         upper,
         includeUpper,
       );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'currentManager',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'currentManager',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currentManager',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'currentManager',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'currentManager',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'currentManager',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'currentManager',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'currentManager',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'currentManager',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'currentManager',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currentManager',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+      currentManagerIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'currentManager',
+        value: '',
+      ));
     });
   }
 
@@ -2194,10 +2363,38 @@ extension BridgeSettingsQueryLinks
     on QueryBuilder<BridgeSettings, BridgeSettings, QFilterCondition> {}
 
 extension BridgeSettingsQuerySortBy
-    on QueryBuilder<BridgeSettings, BridgeSettings, QSortBy> {}
+    on QueryBuilder<BridgeSettings, BridgeSettings, QSortBy> {
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterSortBy>
+      sortByCurrentManager() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentManager', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterSortBy>
+      sortByCurrentManagerDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentManager', Sort.desc);
+    });
+  }
+}
 
 extension BridgeSettingsQuerySortThenBy
     on QueryBuilder<BridgeSettings, BridgeSettings, QSortThenBy> {
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterSortBy>
+      thenByCurrentManager() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentManager', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterSortBy>
+      thenByCurrentManagerDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentManager', Sort.desc);
+    });
+  }
+
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -2224,6 +2421,14 @@ extension BridgeSettingsQueryWhereDistinct
       distinctByAniyomiMangaExtensions() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'aniyomiMangaExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
+      distinctByCurrentManager({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'currentManager',
+          caseSensitive: caseSensitive);
     });
   }
 
@@ -2289,6 +2494,13 @@ extension BridgeSettingsQueryProperty
       aniyomiMangaExtensionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'aniyomiMangaExtensions');
+    });
+  }
+
+  QueryBuilder<BridgeSettings, String?, QQueryOperations>
+      currentManagerProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'currentManager');
     });
   }
 

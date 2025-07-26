@@ -22,14 +22,14 @@ class ExtensionManager extends GetxController {
   Extension get currentManager => _currentManager.value;
 
   void initialize() {
-    final settings = isar.bridgeSettings.getSync(26);
-    final savedType = ExtensionType.fromString(settings?.currentManager);
+    final settings = isar.bridgeSettings.getSync(26)!;
+    final savedType = ExtensionType.fromString(settings.currentManager);
     _currentManager = savedType.getManager().obs;
   }
 
   void setCurrentManager(ExtensionType type) {
     _currentManager.value = type.getManager();
-    final settings = isar.bridgeSettings.getSync(26) ?? BridgeSettings();
+    final settings = isar.bridgeSettings.getSync(26)!;
     isar.writeTxnSync(() {
       isar.bridgeSettings.putSync(settings..currentManager = type.name);
     });
@@ -47,8 +47,8 @@ List<ExtensionType> get getSupportedExtensions =>
     Platform.isAndroid ? ExtensionType.values : [ExtensionType.mangayomi];
 
 enum ExtensionType {
-  aniyomi,
-  mangayomi;
+  mangayomi,
+  aniyomi;
 
   Extension getManager() {
     switch (this) {
