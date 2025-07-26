@@ -472,7 +472,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 val res = media.getPageList(episode)
                 val resultList = res.map { chapter ->
                     mapOf(
-                        "url" to chapter.url,
+                        "url" to chapter.imageUrl,
                     )
                 }
                 withContext(Dispatchers.Main) {
