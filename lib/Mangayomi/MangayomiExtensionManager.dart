@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:dartotsu_extension_bridge/Mangayomi/Models/Source.dart';
-import 'package:dartotsu_extension_bridge/Models/Source.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:isar/isar.dart';
