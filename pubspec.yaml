@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   plugin_platform_interface: ^2.0.2
+  http: ^1.4.0
   isar: 3.1.0+1
   isar_flutter_libs: 3.1.0+1
   d4rt: ^0.0.8

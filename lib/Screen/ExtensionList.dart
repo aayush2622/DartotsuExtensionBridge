@@ -1,9 +1,6 @@
-import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../ExtensionManager.dart';
-import '../Models/Source.dart';
 import '../dartotsu_extension_bridge.dart';
 
 abstract class ExtensionConfig {

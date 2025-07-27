@@ -1,10 +1,7 @@
-import 'package:dartotsu_extension_bridge/Extensions/Extensions.dart';
-import 'package:dartotsu_extension_bridge/Models/Source.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
-import '../Settings/Settings.dart';
 import '../dartotsu_extension_bridge.dart';
 
 class AniyomiExtensions extends Extension {

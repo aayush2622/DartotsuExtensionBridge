@@ -1,15 +1,9 @@
 import 'dart:io';
 
-import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:get/get.dart';
 
 import 'Aniyomi/AniyomiExtensions.dart';
-import 'Aniyomi/AniyomiSourceMethods.dart';
-import 'Extensions/Extensions.dart';
-import 'Extensions/SourceMethods.dart';
 import 'Mangayomi/MangayomiExtensions.dart';
-import 'Mangayomi/MangayomiSourceMethods.dart';
-import 'Models/Source.dart';
 import 'dartotsu_extension_bridge.dart';
 
 class ExtensionManager extends GetxController {
