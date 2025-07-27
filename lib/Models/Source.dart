@@ -1,3 +1,11 @@
+import 'package:get/get.dart';
+
+import '../Aniyomi/AniyomiSourceMethods.dart';
+import '../ExtensionManager.dart';
+import '../Extensions/SourceMethods.dart';
+import '../Mangayomi/MangayomiExtensions.dart';
+import '../Mangayomi/MangayomiSourceMethods.dart';
+
 class Source {
   String? id;
 
@@ -67,6 +75,15 @@ class Source {
     'repo': repo,
     'hasUpdate': hasUpdate,
   };
+}
+
+extension SMethods on Source {
+  SourceMethods get methods {
+    final manager = Get.find<ExtensionManager>().currentManager;
+    return manager is MangayomiExtensions
+        ? MangayomiSourceMethods(this)
+        : AniyomiSourceMethods(this);
+  }
 }
 
 enum ItemType {
