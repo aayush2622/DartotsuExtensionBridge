@@ -3,7 +3,7 @@ import 'package:dartotsu_extension_bridge/Models/Source.dart';
 import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:get/get.dart';
 
-import '../dartotsu_extension_bridge.dart';
+import '../extension_bridge.dart';
 import 'MangayomiExtensionManager.dart';
 import 'Models/Source.dart';
 

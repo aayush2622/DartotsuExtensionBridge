@@ -1,93 +1,15 @@
-import 'dart:io';
+// Main Class
+export './extension_bridge.dart';
+export './ExtensionManager.dart';
 
-import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:get/get.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:isar/isar.dart';
+// Main Class Types
+export './Extensions/Extensions.dart';
+export './Extensions/SourceMethods.dart';
 
-import 'Aniyomi/AniyomiExtensions.dart';
-import 'ExtensionManager.dart';
-import 'Mangayomi/Eval/dart/model/source_preference.dart';
-import 'Mangayomi/MangayomiExtensions.dart';
-import 'Mangayomi/Models/Source.dart';
-
-late Isar isar;
-WebViewEnvironment? webViewEnvironment;
-
-class DartotsuExtensionBridge {
-  /// 🛠️ Isar Setup Guide:
-  ///
-  /// 📦 Make sure to include the following models in your Isar schema:
-  ///
-  ///
-  /// import 'package:dartotsu_extension_bridge/Mangayomi/Eval/dart/model/source_preference.dart';
-  /// import 'package:dartotsu_extension_bridge/Mangayomi/Models/Source.dart';
-  /// import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
-  ///
-  /// 🧩 Add these models when opening your Isar instance:
-  ///
-  ///
-  /// Isar.open([
-  ///   MSourceSchema,
-  //    SourcePreferenceSchema,
-  //    SourcePreferenceStringValueSchema,
-  //    BridgeSettingsSchema,
-  /// ]);
-  ///
-  ///
-  /// 🚀 Then pass the initialized `isar` instance to init method
-  Future<void> init(Isar? isarInstance) async {
-    var document = await getApplicationDocumentsDirectory();
-    if (isarInstance == null) {
-      isar = Isar.openSync(
-        [
-          MSourceSchema,
-          SourcePreferenceSchema,
-          SourcePreferenceStringValueSchema,
-          BridgeSettingsSchema,
-        ],
-        directory: p.join(document.path, 'isar'),
-      ); //may crash app if directory does not exist, have to test
-    } else {
-      isar = isarInstance;
-    }
-    final settings = await isar.bridgeSettings
-        .filter()
-        .idEqualTo(26)
-        .findFirst();
-    if (settings == null) {
-      isar.writeTxnSync(
-        () => isar.bridgeSettings.putSync(BridgeSettings()..id = 26),
-      );
-    }
-
-    Get.put(AniyomiExtensions(), tag: 'AniyomiExtensions');
-    Get.put(MangayomiExtensions(), tag: 'MangayomiExtensions');
-    Get.put(ExtensionManager());
-    if (Platform.isWindows) {
-      final availableVersion = await WebViewEnvironment.getAvailableVersion();
-      if (availableVersion != null) {
-        webViewEnvironment = await WebViewEnvironment.create(
-          settings: WebViewEnvironmentSettings(
-            userDataFolder: p.join(document.path, 'flutter_inappwebview'),
-          ),
-        );
-      }
-    }
-  }
-
-  /*  Future<void> fetchAnimeTitles() async {
-    var extensions = await AniyomiExtensions().init();
-    var ext = extensions.installedAnimeExtensions.value[0];
-    var media = await AniyomiSourceMethods(ext).getLatestUpdates(1);
-    print(media.list.first.title);
-    var data = await AniyomiSourceMethods(ext).getDetail(media.list.first);
-    print(data.url);
-    var quality = await AniyomiSourceMethods(
-      ext,
-    ).getVideoList(data.episodes!.first);
-    print(quality.first.toJson());
-  }*/
-}
+// Models
+export './Models/Source.dart';
+export './Models/DEpisode.dart';
+export './Models/DMedia.dart';
+export './Models/Page.dart';
+export './Models/Pages.dart';
+export './Models/Video.dart';

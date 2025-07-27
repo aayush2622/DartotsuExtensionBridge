@@ -10,7 +10,7 @@ import 'Extensions/SourceMethods.dart';
 import 'Mangayomi/MangayomiExtensions.dart';
 import 'Mangayomi/MangayomiSourceMethods.dart';
 import 'Models/Source.dart';
-import 'dartotsu_extension_bridge.dart';
+import 'extension_bridge.dart';
 
 class ExtensionManager extends GetxController {
   ExtensionManager() {

@@ -6,7 +6,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart'
     as flutter_inappwebview;
 import 'package:http/io_client.dart';
 import 'package:http_interceptor/http_interceptor.dart';
-import '../../dartotsu_extension_bridge.dart';
+import '../../extension_bridge.dart';
 import '../Eval/dart/model/m_source.dart';
 
 class MClient {

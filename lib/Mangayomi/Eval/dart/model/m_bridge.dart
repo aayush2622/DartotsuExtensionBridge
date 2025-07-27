@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import '../../../../dartotsu_extension_bridge.dart';
+import '../../../../extension_bridge.dart';
 import 'video.dart';
 import '../../javascript/http.dart';
 import '../../../string_extensions.dart';
