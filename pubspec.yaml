@@ -6,7 +6,7 @@ publish_to: none
 
 environment:
   sdk: ">=3.4.4 <4.0.0"
-  flutter: '>=3.3.0'
+  flutter: ">=3.0.0"
 
 dependencies:
   flutter:
@@ -14,7 +14,8 @@ dependencies:
   plugin_platform_interface: ^2.0.2
   isar: 3.1.0+1
   isar_flutter_libs: 3.1.0+1
-  d4rt: ^0.0.8
+  d4rt:
+    git: https://github.com/RyanYuuki/d4rt.git
   get: ^4.7.2
   path_provider: ^2.1.5
   path: ^1.9.1
@@ -25,7 +26,7 @@ dependencies:
   pseudom: ^1.0.1
   encrypt: ^5.0.3
   xpath_selector_html_parser: ^3.0.1
-  js_packer: ^0.0.6
+  js_packer: any
   crypto: ^3.0.6
   flutter_qjs:
     git:
@@ -36,11 +37,9 @@ dependencies:
       url: https://github.com/kodjodevf/epubx.dart.git
       ref: dev
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: any
   isar_generator: ^3.1.0+1
-  build_runner: ^2.5.4
+  build_runner: ^2.4.11
 
 dependency_overrides:
   analyzer: ">=5.2.0 <7.0.0"
