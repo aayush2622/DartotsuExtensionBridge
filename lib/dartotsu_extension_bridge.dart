@@ -1,3 +1,4 @@
+library;
 // Main Class
 export './extension_bridge.dart';
 export './ExtensionManager.dart';
