@@ -16,9 +16,20 @@ import 'Mangayomi/Models/Source.dart';
 late Isar isar;
 WebViewEnvironment? webViewEnvironment;
 
+Future<Directory> getDatabaseDirectory() async {
+  final dir = await getApplicationDocumentsDirectory();
+  if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+    return dir;
+  } else {
+    String dbDir = p.join(dir.path, 'AnymeX', 'databases');
+    await Directory(dbDir).create(recursive: true);
+    return Directory(dbDir);
+  }
+}
+
 class DartotsuExtensionBridge {
   Future<void> init(Isar? isarInstance) async {
-    var document = await getApplicationDocumentsDirectory();
+    var document = await getDatabaseDirectory();
     if (isarInstance == null) {
       isar = Isar.openSync(
         [
