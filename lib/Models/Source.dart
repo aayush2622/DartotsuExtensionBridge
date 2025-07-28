@@ -50,7 +50,7 @@ class Source {
   Source.fromJson(Map<String, dynamic> json, ExtensionType type) {
     baseUrl = json['baseUrl'];
     iconUrl = json['iconUrl'];
-    apkUrl = json['apkUrl'] ?? '';
+    apkUrl = getAnimeApkUrl(json['repo'], json['apkName']);
     id = json['id'].toString();
     itemType = ItemType.values[json['itemType'] ?? 0];
     isNsfw = json['isNsfw'];
@@ -79,6 +79,13 @@ class Source {
     'repo': repo,
     'hasUpdate': hasUpdate,
   };
+}
+
+String getAnimeApkUrl(String repo, String apkName) {
+  if (repo.isEmpty || apkName.isEmpty) return "";
+
+  final cleanedRepo = repo.replaceFirst(RegExp(r'index\.min\.json$'), '');
+  return '$cleanedRepo/apk/$apkName';
 }
 
 enum ItemType {

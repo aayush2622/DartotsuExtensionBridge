@@ -170,7 +170,6 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "libVersion" to ext.libVersion,
                         "supportedLanguages" to ext.sources.map { it.lang },
                         "itemType" to 0,
-                        "apkUrl" to getAnimeApkUrl(ext),
                         "hasUpdate" to ext.hasUpdate,
                         "isObsolete" to ext.isObsolete,
                         "isUnofficial" to ext.isUnofficial,
@@ -185,16 +184,6 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             e.printStackTrace()
             result.error("ERROR", "Failed to get installed extensions: ${e.message}", null)
         }
-    }
-
-    fun getAnimeApkUrl(extension: Any): String {
-        val repo = extension::class.members.find { it.name == "repository" }
-            ?.call(extension) as? String ?: return ""
-    
-        val apk = extension::class.members.find { it.name == "apkName" }
-            ?.call(extension) as? String ?: return ""
-    
-        return "${repo.removeSuffix("index.min.json")}/apk/$apk"
     }
     
 
@@ -215,6 +204,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "supportedLanguages" to ext.sources.map { it.lang },
                         "lang" to ext.lang,
                         "isNsfw" to ext.isNsfw,
+                        "apkName" to ext.apkName,
                         "iconUrl" to ext.iconUrl,
                         "itemType" to 1,
                     )
@@ -252,6 +242,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "libVersion" to ext.libVersion,
                         "supportedLanguages" to ext.sources.map { it.lang },
                         "lang" to ext.lang,
+                        "apkName" to ext.apkName,
                         "isNsfw" to ext.isNsfw,
                         "iconUrl" to ext.iconUrl,
                         "itemType" to 0,
