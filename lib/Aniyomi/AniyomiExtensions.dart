@@ -1,12 +1,13 @@
-import 'package:dartotsu_extension_bridge/Extensions/Extensions.dart';
-import 'package:dartotsu_extension_bridge/Models/Source.dart';
+import 'dart:io';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 import '../Settings/Settings.dart';
-import '../extension_bridge.dart';
 
 class AniyomiExtensions extends Extension {
   AniyomiExtensions() {
@@ -104,20 +105,73 @@ class AniyomiExtensions extends Extension {
   }
 
   @override
-  Future<void> installSource(Source source) {
-    // TODO: implement installSource
-    throw UnimplementedError();
+  Future<void> installSource(Source source) async {
+    if (source.id == null) {
+      return Future.error('Source ID is required for installation.');
+    }
+
+    try {
+      final packageName = source.id!.split('/').last;
+
+      final response = await http.get(Uri.parse(source.id!));
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to download APK: HTTP ${response.statusCode}');
+      }
+
+      final tempDir = await getTemporaryDirectory();
+      final apkFileName = '$packageName.apk';
+      final apkFile = File(path.join(tempDir.path, apkFileName));
+
+      await apkFile.writeAsBytes(response.bodyBytes);
+
+      final result = await platform.invokeMethod('installExtension', {
+        'apkPath': apkFile.path,
+      });
+
+      if (await apkFile.exists()) {
+        await apkFile.delete();
+      }
+
+      if (!result) {
+        throw Exception('Installation failed');
+      }
+      debugPrint('Installed package: $packageName');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error installing source: $e');
+      }
+      rethrow;
+    }
   }
 
   @override
-  Future<void> uninstallSource(Source source) {
-    // TODO: implement uninstallSource
-    throw UnimplementedError();
+  Future<void> uninstallSource(Source source) async {
+    if (source.id == null) {
+      return Future.error('Source ID is required for uninstallation.');
+    }
+    try {
+      final packageName = source.id!.split('/').last;
+
+      final result = await platform.invokeMethod('uninstallExtension', {
+        'packageName': packageName,
+      });
+
+      if (!result) {
+        throw Exception('Uninstallation failed or package not found');
+      }
+
+      debugPrint('Uninstalled package: $packageName');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error uninstalling source: $e');
+      }
+      rethrow;
+    }
   }
 
   @override
   Future<void> updateSource(Source source) {
-    // TODO: implement updateSource
     throw UnimplementedError();
   }
 }

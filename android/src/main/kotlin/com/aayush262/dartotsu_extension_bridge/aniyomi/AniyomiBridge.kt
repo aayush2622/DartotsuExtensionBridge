@@ -1,5 +1,9 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
-
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import androidx.core.content.FileProvider
+import java.io.File
 import android.content.Context
 import android.util.Log
 import eu.kanade.tachiyomi.animesource.model.SAnime
@@ -34,7 +38,83 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             "getVideoList" -> getVideoList(call, result)
             "getPageList" -> getPageList(call, result)
             "search" -> search(call, result)
+            "installExtension" -> installExtension(call, result)
+            "uninstallExtension" -> uninstallExtension(call, result)
             else -> result.notImplemented()
+        }
+    }
+    
+    private fun installExtension(call: MethodCall, result: MethodChannel.Result) {
+        val args = call.arguments as? Map<*, *> ?: return result.error(
+            "INVALID_ARGS",
+            "Arguments were null or invalid",
+            null
+        )
+        
+        val apkPath = args["apkPath"] as? String
+        
+        if (apkPath == null) {
+            return result.error("INVALID_ARGS", "Missing apkPath", null)
+        }
+        
+        try {
+            val apkFile = File(apkPath)
+            if (!apkFile.exists()) {
+                return result.error("FILE_NOT_FOUND", "APK file not found at path: $apkPath", null)
+            }
+            
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(
+                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile),
+                    "application/vnd.android.package-archive"
+                )
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(intent)
+            result.success(true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            result.success(false)
+        }
+    }
+
+    private fun uninstallExtension(call: MethodCall, result: MethodChannel.Result) {
+        val args = call.arguments as? Map<*, *> ?: return result.error(
+            "INVALID_ARGS",
+            "Arguments were null or invalid", 
+            null
+        )
+        
+        val packageName = args["packageName"] as? String
+        
+        if (packageName == null) {
+            return result.error("INVALID_ARGS", "Missing packageName", null)
+        }
+        
+        try {
+            val packageManager = context.packageManager
+            val isInstalled = try {
+                packageManager.getPackageInfo(packageName, 0)
+                true
+            } catch (e: PackageManager.NameNotFoundException) {
+                false
+            }
+            
+            if (!isInstalled) {
+                result.success(false)
+                return
+            }
+            
+            val intent = Intent(Intent.ACTION_DELETE).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            result.success(true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            result.success(false)
         }
     }
 
@@ -84,6 +164,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "libVersion" to ext.libVersion,
                         "supportedLanguages" to ext.sources.map { it.lang },
                         "itemType" to 0,
+                        "apkUrl" to getAnimeApkUrl(ext),
                         "hasUpdate" to ext.hasUpdate,
                         "isObsolete" to ext.isObsolete,
                         "isUnofficial" to ext.isUnofficial,
@@ -98,6 +179,10 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             e.printStackTrace()
             result.error("ERROR", "Failed to get installed extensions: ${e.message}", null)
         }
+    }
+
+    fun getAnimeApkUrl(extension: AnimeExtension.Available): String {
+        return "${extension.repository.removeSuffix("index.min.json")}/apk/${extension.apkName}"
     }
 
     private fun fetchAnimeExtensions(call: MethodCall, result: MethodChannel.Result) {
