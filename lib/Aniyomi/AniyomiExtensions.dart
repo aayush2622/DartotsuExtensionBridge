@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:android_intent/android_intent.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
@@ -8,7 +9,6 @@ import 'package:http/http.dart' as http;
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../Settings/Settings.dart';
 
@@ -147,22 +147,12 @@ class AniyomiExtensions extends Extension {
           availableAnimeExtensions.value = availableAnimeExtensions.value
               .where((e) => e.name != source.name)
               .toList();
+          installedAnimeExtensions.value.add(source);
           break;
         case ItemType.manga:
           availableMangaExtensions.value = availableMangaExtensions.value
               .where((e) => e.name != source.name)
               .toList();
-          break;
-        case null:
-          throw Exception("Item type is null");
-        case ItemType.novel:
-          break;
-      }
-      switch (source.itemType) {
-        case ItemType.anime:
-          installedAnimeExtensions.value.add(source);
-          break;
-        case ItemType.manga:
           installedMangaExtensions.value.add(source);
           break;
         case null:
@@ -194,16 +184,14 @@ class AniyomiExtensions extends Extension {
         return;
       }
 
-      final uninstallUri = Uri.parse('package:$packageName');
-      final canLaunch = await canLaunchUrl(uninstallUri);
+      final intent = AndroidIntent(
+        action: 'android.intent.action.DELETE',
+        data: 'package:$packageName',
+      );
 
-      if (canLaunch) {
-        await launchUrl(uninstallUri, mode: LaunchMode.externalApplication);
+      await intent.launch();
 
-        _removeFromInstalledList(source);
-      } else {
-        throw Exception('Cannot launch uninstall for $packageName');
-      }
+      _removeFromInstalledList(source);
     } catch (e) {
       if (kDebugMode) {
         print('Error uninstalling $packageName: $e');
