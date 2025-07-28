@@ -141,7 +141,34 @@ class AniyomiExtensions extends Extension {
           'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
         );
       }
-
+      switch (source.itemType) {
+        case ItemType.anime:
+          availableAnimeExtensions.value = availableAnimeExtensions.value
+              .where((e) => e.name != source.name)
+              .toList();
+          break;
+        case ItemType.manga:
+          availableMangaExtensions.value = availableMangaExtensions.value
+              .where((e) => e.name != source.name)
+              .toList();
+          break;
+        case null:
+          throw Exception("Item type is null");
+        case ItemType.novel:
+          break;
+      }
+      switch (source.itemType) {
+        case ItemType.anime:
+          installedAnimeExtensions.value.add(source);
+          break;
+        case ItemType.manga:
+          installedMangaExtensions.value.add(source);
+          break;
+        case null:
+          throw Exception("Item type is null");
+        case ItemType.novel:
+          break;
+      }
       debugPrint('Successfully installed package: $packageName');
     } catch (e) {
       if (kDebugMode) {
