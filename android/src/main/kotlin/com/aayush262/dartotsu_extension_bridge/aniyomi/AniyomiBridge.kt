@@ -59,7 +59,10 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                     )
                 }
             result.success(installedExtensions)
-            Log.d("AniyomiBridge", "Method called: ${call.method} returned ${installedExtensions?.size ?: 0} extensions")
+            Log.d(
+                "AniyomiBridge",
+                "Method called: ${call.method} returned ${installedExtensions?.size ?: 0} extensions"
+            )
         } catch (e: Exception) {
             e.printStackTrace()
             result.error("ERROR", "Failed to get installed extensions: ${e.message}", null)
@@ -87,7 +90,10 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                     )
                 }
             result.success(installedExtensions)
-            Log.d("AniyomiBridge", "Method called: ${call.method} returned ${installedExtensions?.size ?: 0} extensions")
+            Log.d(
+                "AniyomiBridge",
+                "Method called: ${call.method} returned ${installedExtensions?.size ?: 0} extensions"
+            )
         } catch (e: Exception) {
             e.printStackTrace()
             result.error("ERROR", "Failed to get installed extensions: ${e.message}", null)
@@ -359,9 +365,9 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             scanlator = mediaUrl["scanlator"] as? String
         }
         val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
-        fun Headers.toMap(): Map<String, String> {
-            return this.names().associateWith { name -> this[name] ?: "" }
-        }
+        fun Headers.toMap(): Map<String, String> =
+            names().associateWith { name -> this[name] ?: "" }
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val res = media.getVideoList(episode)
@@ -371,16 +377,16 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "url" to video.videoUrl,
                         "quality" to video.resolution,
                         "headers" to video.headers?.toMap(),
-                        "subtitle" to video.subtitleTracks.map { track ->
+                        "subtitles" to video.subtitleTracks.map { track ->
                             mapOf(
                                 "file" to track.url,
-                                "title" to track.lang
+                                "label" to track.lang
                             )
                         },
                         "audios" to video.audioTracks.map { track ->
                             mapOf(
                                 "file" to track.url,
-                                "title" to track.lang
+                                "label" to track.lang
                             )
                         },
                     )
@@ -398,7 +404,8 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             }
         }
     }
-    private fun search(call: MethodCall, result: MethodChannel.Result){
+
+    private fun search(call: MethodCall, result: MethodChannel.Result) {
         val args = call.arguments as? Map<*, *> ?: return result.error(
             "INVALID_ARGS",
             "Arguments were null or invalid",
@@ -408,14 +415,14 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
         val isAnime = args["isAnime"] as? Boolean
         val query = args["query"] as? String
         val page = args["page"] as? Int
-        if (sourceId == null || isAnime == null || query == null || page== null )  {
+        if (sourceId == null || isAnime == null || query == null || page == null) {
             return result.error("INVALID_ARGS", "Missing required parameters", null)
         }
         val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val res = media.getSearchResults(query,page)
+                val res = media.getSearchResults(query, page)
                 val resultMap = mapOf(
                     "list" to res.animes.map {
                         mapOf(
@@ -494,6 +501,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             }
         }
     }
+
     fun pageToUrlAndHeaders(page: Page): Pair<String, Map<String, String>> {
         var headersMap = emptyMap<String, String>()
         var url = ""
