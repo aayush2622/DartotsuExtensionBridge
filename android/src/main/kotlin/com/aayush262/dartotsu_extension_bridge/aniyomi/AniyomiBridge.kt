@@ -63,11 +63,13 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 return result.error("FILE_NOT_FOUND", "APK file not found at path: $apkPath", null)
             }
             
+            val mainAppPackageName = context.packageName
+            
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(
                     FileProvider.getUriForFile(
                         context, 
-                        "com.aayush262.dartotsu_extension_bridge.fileprovider", 
+                        "$mainAppPackageName.fileprovider", 
                         apkFile
                     ),
                     "application/vnd.android.package-archive"
