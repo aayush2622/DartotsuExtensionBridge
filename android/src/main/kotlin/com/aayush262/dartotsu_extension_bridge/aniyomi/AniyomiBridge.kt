@@ -65,7 +65,11 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(
-                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile),
+                    FileProvider.getUriForFile(
+                        context, 
+                        "com.aayush262.dartotsu_extension_bridge.fileprovider", 
+                        apkFile
+                    ),
                     "application/vnd.android.package-archive"
                 )
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
