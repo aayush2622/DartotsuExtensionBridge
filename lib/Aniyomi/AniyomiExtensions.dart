@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
+import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:http/http.dart' as http;
+import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
@@ -106,14 +108,14 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<void> installSource(Source source) async {
-    if (source.id == null) {
-      return Future.error('Source ID is required for installation.');
+    if (source.apkUrl == null) {
+      return Future.error('Source APK URL is required for installation.');
     }
 
     try {
-      final packageName = source.id!.split('/').last;
+      final packageName = source.apkUrl!.split('/').last.replaceAll('.apk', '');
 
-      final response = await http.get(Uri.parse(source.id!));
+      final response = await http.get(Uri.parse(source.apkUrl!));
 
       if (response.statusCode != 200) {
         throw Exception('Failed to download APK: HTTP ${response.statusCode}');
@@ -125,18 +127,22 @@ class AniyomiExtensions extends Extension {
 
       await apkFile.writeAsBytes(response.bodyBytes);
 
-      final result = await platform.invokeMethod('installExtension', {
-        'apkPath': apkFile.path,
-      });
+      final result = await InstallPlugin.installApk(
+        apkFile.path,
+        appId: packageName,
+      );
 
       if (await apkFile.exists()) {
         await apkFile.delete();
       }
 
-      if (!result) {
-        throw Exception('Installation failed');
+      if (result['isSuccess'] != true) {
+        throw Exception(
+          'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
+        );
       }
-      debugPrint('Installed package: $packageName');
+
+      debugPrint('Successfully installed package: $packageName');
     } catch (e) {
       if (kDebugMode) {
         print('Error installing source: $e');
@@ -147,21 +153,28 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<void> uninstallSource(Source source) async {
-    if (source.id == null) {
-      return Future.error('Source ID is required for uninstallation.');
+    if (source.apkUrl == null) {
+      return Future.error('Source APK URL is required for uninstallation.');
     }
+
     try {
-      final packageName = source.id!.split('/').last;
+      final packageName = source.apkUrl!.split('/').last.replaceAll('.apk', '');
 
-      final result = await platform.invokeMethod('uninstallExtension', {
-        'packageName': packageName,
-      });
+      final isInstalled = await DeviceApps.isAppInstalled(packageName);
 
-      if (!result) {
-        throw Exception('Uninstallation failed or package not found');
+      if (!isInstalled) {
+        throw Exception('Package not found or not installed: $packageName');
       }
 
-      debugPrint('Uninstalled package: $packageName');
+      final result = await InstallPlugin.gotoAppStore(packageName);
+
+      if (result['isSuccess'] != true) {
+        throw Exception(
+          'Uninstallation failed: ${result['errorMessage'] ?? 'Unknown error'}',
+        );
+      }
+
+      debugPrint('Successfully uninstalled package: $packageName');
     } catch (e) {
       if (kDebugMode) {
         print('Error uninstalling source: $e');
@@ -169,6 +182,36 @@ class AniyomiExtensions extends Extension {
       rethrow;
     }
   }
+
+  // @override
+  // Future<void> uninstallSourceAlternative(Source source) async {
+  //   if (source.apkUrl == null) {
+  //     return Future.error('Source APK URL is required for uninstallation.');
+  //   }
+
+  //   try {
+  //     final packageName = source.apkUrl!.split('/').last.replaceAll('.apk', '');
+
+  //     final app = await DeviceApps.getApp(packageName);
+
+  //     if (app == null) {
+  //       throw Exception('Package not found: $packageName');
+  //     }
+
+  //     final opened = await DeviceApps.openAppSettings(packageName);
+
+  //     if (!opened) {
+  //       throw Exception('Failed to open app settings for uninstallation');
+  //     }
+
+  //     debugPrint('Opened app settings for uninstallation: $packageName');
+  //   } catch (e) {
+  //     if (kDebugMode) {
+  //       print('Error opening uninstall settings: $e');
+  //     }
+  //     rethrow;
+  //   }
+  // }
 
   @override
   Future<void> updateSource(Source source) {
