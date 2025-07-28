@@ -1,9 +1,7 @@
-import 'package:dartotsu_extension_bridge/Extensions/Extensions.dart';
-import 'package:dartotsu_extension_bridge/Models/Source.dart';
 import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:get/get.dart';
 
-import '../extension_bridge.dart';
 import 'MangayomiExtensionManager.dart';
 import 'Models/Source.dart';
 
@@ -60,14 +58,14 @@ class MangayomiExtensions extends Extension {
           settings.mangayomiNovelExtensions = repos ?? [];
           break;
       }
-      isar.bridgeSettings.putSync(settings);
+      isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
     });
 
     final sources = await _manager.fetchAvailableExtensionsStream(type, repos);
     final installedIds = _getInstalledRx(type).value.map((e) => e.id).toSet();
 
     final list = sources
-        .map((e) => Source.fromJson(e.toJson()))
+        .map((e) => Source.fromJson(e.toJson(), ExtensionType.mangayomi))
         .where((s) => !installedIds.contains(s.id))
         .toList();
 
@@ -92,7 +90,9 @@ class MangayomiExtensions extends Extension {
     final stream = _manager
         .getExtensionsStream(type)
         .map(
-          (sources) => sources.map((s) => Source.fromJson(s.toJson())).toList(),
+          (sources) => sources
+              .map((s) => Source.fromJson(s.toJson(), ExtensionType.mangayomi))
+              .toList(),
         )
         .asBroadcastStream();
 

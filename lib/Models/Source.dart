@@ -1,3 +1,6 @@
+import 'package:dartotsu_extension_bridge/ExtensionManager.dart'
+    show ExtensionType;
+
 class Source {
   String? id;
 
@@ -23,6 +26,8 @@ class Source {
 
   bool? hasUpdate;
 
+  ExtensionType? extensionType;
+
   Source({
     this.id = '',
     this.name = '',
@@ -36,9 +41,10 @@ class Source {
     this.isObsolete = false,
     this.repo,
     this.hasUpdate = false,
+    this.extensionType = ExtensionType.aniyomi,
   });
 
-  Source.fromJson(Map<String, dynamic> json) {
+  Source.fromJson(Map<String, dynamic> json, ExtensionType type) {
     baseUrl = json['baseUrl'];
     iconUrl = json['iconUrl'];
     id = json['id'].toString();
@@ -51,6 +57,7 @@ class Source {
     isObsolete = json['isObsolete'];
     repo = json['repo'];
     hasUpdate = json['hasUpdate'] ?? false;
+    extensionType = type;
   }
 
   Map<String, dynamic> toJson() => {

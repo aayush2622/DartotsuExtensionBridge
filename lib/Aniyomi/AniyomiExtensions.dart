@@ -1,5 +1,6 @@
 import 'package:dartotsu_extension_bridge/Extensions/Extensions.dart';
 import 'package:dartotsu_extension_bridge/Models/Source.dart';
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
@@ -81,7 +82,12 @@ class AniyomiExtensions extends Extension {
 
   static List<Source> _parseSources(List<dynamic> data) {
     return data
-        .map((e) => Source.fromJson(Map<String, dynamic>.from(e)))
+        .map(
+          (e) => Source.fromJson(
+            Map<String, dynamic>.from(e),
+            ExtensionType.aniyomi,
+          ),
+        )
         .toList();
   }
 
