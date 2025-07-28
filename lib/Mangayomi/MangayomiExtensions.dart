@@ -65,7 +65,11 @@ class MangayomiExtensions extends Extension {
     final installedIds = _getInstalledRx(type).value.map((e) => e.id).toSet();
 
     final list = sources
-        .map((e) => Source.fromJson(e.toJson(), ExtensionType.mangayomi))
+        .map((e) {
+          var map = e.toJson();
+          map['extensionType'] = 0;
+          return Source.fromJson(map);
+        })
         .where((s) => !installedIds.contains(s.id))
         .toList();
 
@@ -90,9 +94,11 @@ class MangayomiExtensions extends Extension {
     final stream = _manager
         .getExtensionsStream(type)
         .map(
-          (sources) => sources
-              .map((s) => Source.fromJson(s.toJson(), ExtensionType.mangayomi))
-              .toList(),
+          (sources) => sources.map((s) {
+            var map = s.toJson();
+            map['extensionType'] = 0;
+            return Source.fromJson(map);
+          }).toList(),
         )
         .asBroadcastStream();
 

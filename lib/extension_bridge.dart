@@ -16,35 +16,23 @@ import 'Mangayomi/Models/Source.dart';
 late Isar isar;
 WebViewEnvironment? webViewEnvironment;
 
-Future<Directory> getDatabaseDirectory() async {
-  final dir = await getApplicationDocumentsDirectory();
-  if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
-    return dir;
-  } else {
-    String dbDir = p.join(dir.path, 'AnymeX', 'databases');
-    await Directory(dbDir).create(recursive: true);
-    return Directory(dbDir);
-  }
-}
-
 class DartotsuExtensionBridge {
-  Future<void> init(Isar? isarInstance) async {
-    var document = await getDatabaseDirectory();
+  Future<void> init(Isar? isarInstance, String dirName) async {
+    var document = await getDatabaseDirectory(dirName);
     if (isarInstance == null) {
-      isar = Isar.openSync(
-        [
-          MSourceSchema,
-          SourcePreferenceSchema,
-          SourcePreferenceStringValueSchema,
-          BridgeSettingsSchema,
-        ],
-        directory: p.join(document.path, 'isar'),
-      );
+      isar = Isar.openSync([
+        MSourceSchema,
+        SourcePreferenceSchema,
+        SourcePreferenceStringValueSchema,
+        BridgeSettingsSchema,
+      ], directory: p.join(document.path, 'isar'));
     } else {
       isar = isarInstance;
     }
-    final settings =
-        await isar.bridgeSettings.filter().idEqualTo(26).findFirst();
+    final settings = await isar.bridgeSettings
+        .filter()
+        .idEqualTo(26)
+        .findFirst();
     if (settings == null) {
       isar.writeTxnSync(
         () => isar.bridgeSettings.putSync(BridgeSettings()..id = 26),
@@ -64,5 +52,16 @@ class DartotsuExtensionBridge {
         );
       }
     }
+  }
+}
+
+Future<Directory> getDatabaseDirectory(String dirName) async {
+  final dir = await getApplicationDocumentsDirectory();
+  if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+    return dir;
+  } else {
+    String dbDir = p.join(dir.path, dirName, 'databases');
+    await Directory(dbDir).create(recursive: true);
+    return Directory(dbDir);
   }
 }

@@ -1,6 +1,5 @@
-import 'package:dartotsu_extension_bridge/Aniyomi/AniyomiExtensions.dart';
 import 'package:dartotsu_extension_bridge/ExtensionManager.dart'
-    show ExtensionType, aniyomi;
+    show ExtensionType;
 
 class Source {
   String? id;
@@ -44,17 +43,14 @@ class Source {
     this.isObsolete = false,
     this.repo,
     this.hasUpdate = false,
-    this.extensionType = ExtensionType.aniyomi,
+    this.extensionType = ExtensionType.mangayomi,
     this.apkUrl = '',
   });
 
-  Source.fromJson(Map<String, dynamic> json, ExtensionType type) {
-    final String appUrl = type == ExtensionType.aniyomi
-        ? getAnimeApkUrl(json['iconUrl'] ?? '', json['apkName'] ?? '')
-        : '';
+  Source.fromJson(Map<String, dynamic> json) {
     baseUrl = json['baseUrl'];
     iconUrl = json['iconUrl'];
-    apkUrl = appUrl;
+    apkUrl = json['apkUrl'];
     id = json['id'].toString();
     itemType = ItemType.values[json['itemType'] ?? 0];
     isNsfw = json['isNsfw'];
@@ -65,7 +61,7 @@ class Source {
     isObsolete = json['isObsolete'];
     repo = json['repo'];
     hasUpdate = json['hasUpdate'] ?? false;
-    extensionType = type;
+    extensionType = ExtensionType.values[json['extensionType'] ?? 0];
   }
 
   Map<String, dynamic> toJson() => {
@@ -82,18 +78,8 @@ class Source {
     'isObsolete': isObsolete,
     'repo': repo,
     'hasUpdate': hasUpdate,
+    'extensionType': extensionType?.index ?? 0,
   };
-}
-
-String getAnimeApkUrl(String iconUrl, String apkName) {
-  if (iconUrl.isEmpty || apkName.isEmpty) return "";
-
-  final baseUrl = iconUrl.replaceFirst('icon/', 'apk/');
-  final lastSlash = baseUrl.lastIndexOf('/');
-  if (lastSlash == -1) return "";
-
-  final cleanedUrl = baseUrl.substring(0, lastSlash);
-  return '$cleanedUrl/$apkName';
 }
 
 enum ItemType {

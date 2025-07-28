@@ -85,14 +85,15 @@ class AniyomiExtensions extends Extension {
   }
 
   static List<Source> _parseSources(List<dynamic> data) {
-    return data
-        .map(
-          (e) => Source.fromJson(
-            Map<String, dynamic>.from(e),
-            ExtensionType.aniyomi,
-          ),
-        )
-        .toList();
+    return data.map((e) {
+      final map = Map<String, dynamic>.from(e);
+      map['apkurl'] = getAnimeApkUrl(
+        map['iconUrl'] ?? '',
+        map['apkName'] ?? '',
+      );
+      map['extensionType'] = 1;
+      return Source.fromJson(map);
+    }).toList();
   }
 
   @override
@@ -147,13 +148,13 @@ class AniyomiExtensions extends Extension {
           availableAnimeExtensions.value = availableAnimeExtensions.value
               .where((e) => e.name != source.name)
               .toList();
-          installedAnimeExtensions.value.add(source);
+          getInstalledAnimeExtensions();
           break;
         case ItemType.manga:
           availableMangaExtensions.value = availableMangaExtensions.value
               .where((e) => e.name != source.name)
               .toList();
-          installedMangaExtensions.value.add(source);
+          getInstalledMangaExtensions();
           break;
         case null:
           throw Exception("Item type is null");
@@ -191,7 +192,7 @@ class AniyomiExtensions extends Extension {
 
       await intent.launch();
 
-      await Future.delayed(Duration(seconds: 2), () async {
+      await Future.delayed(const Duration(seconds: 2), () async {
         final isInstalled = await DeviceApps.isAppInstalled(packageName);
         if (isInstalled) {
           throw Exception('Failed to uninstall package: $packageName');
@@ -201,9 +202,7 @@ class AniyomiExtensions extends Extension {
         }
       });
     } catch (e) {
-      if (kDebugMode) {
-        print('Error uninstalling $packageName: $e');
-      }
+      debugPrint('Error uninstalling $packageName: $e');
       rethrow;
     }
   }
@@ -228,6 +227,17 @@ class AniyomiExtensions extends Extension {
       case null:
         break;
     }
+  }
+
+  static String getAnimeApkUrl(String iconUrl, String apkName) {
+    if (iconUrl.isEmpty || apkName.isEmpty) return "";
+
+    final baseUrl = iconUrl.replaceFirst('icon/', 'apk/');
+    final lastSlash = baseUrl.lastIndexOf('/');
+    if (lastSlash == -1) return "";
+
+    final cleanedUrl = baseUrl.substring(0, lastSlash);
+    return '$cleanedUrl/$apkName';
   }
 
   @override
