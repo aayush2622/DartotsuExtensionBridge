@@ -1,3 +1,4 @@
+import 'package:dartotsu_extension_bridge/Aniyomi/AniyomiExtensions.dart';
 import 'package:dartotsu_extension_bridge/ExtensionManager.dart'
     show ExtensionType;
 
@@ -48,9 +49,12 @@ class Source {
   });
 
   Source.fromJson(Map<String, dynamic> json, ExtensionType type) {
+    final appUrl = type is AniyomiExtensions
+        ? getAnimeApkUrl(json['iconUrl'], json['apkName'])
+        : '';
     baseUrl = json['baseUrl'];
     iconUrl = json['iconUrl'];
-    apkUrl = getAnimeApkUrl(json['repo'], json['apkName']);
+    apkUrl = appUrl;
     id = json['id'].toString();
     itemType = ItemType.values[json['itemType'] ?? 0];
     isNsfw = json['isNsfw'];
@@ -81,11 +85,15 @@ class Source {
   };
 }
 
-String getAnimeApkUrl(String repo, String apkName) {
-  if (repo.isEmpty || apkName.isEmpty) return "";
+String getAnimeApkUrl(String iconUrl, String apkName) {
+  if (iconUrl.isEmpty || apkName.isEmpty) return "";
 
-  final cleanedRepo = repo.replaceFirst(RegExp(r'index\.min\.json$'), '');
-  return '$cleanedRepo/apk/$apkName';
+  final baseUrl = iconUrl.replaceFirst('icon/', 'apk/');
+  final lastSlash = baseUrl.lastIndexOf('/');
+  if (lastSlash == -1) return "";
+
+  final cleanedUrl = baseUrl.substring(0, lastSlash);
+  return '$cleanedUrl/$apkName';
 }
 
 enum ItemType {
