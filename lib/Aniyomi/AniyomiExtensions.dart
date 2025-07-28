@@ -191,7 +191,15 @@ class AniyomiExtensions extends Extension {
 
       await intent.launch();
 
-      _removeFromInstalledList(source);
+      await Future.delayed(Duration(seconds: 2), () async {
+        final isInstalled = await DeviceApps.isAppInstalled(packageName);
+        if (isInstalled) {
+          throw Exception('Failed to uninstall package: $packageName');
+        } else {
+          _removeFromInstalledList(source);
+          debugPrint('Successfully uninstalled package: $packageName');
+        }
+      });
     } catch (e) {
       if (kDebugMode) {
         print('Error uninstalling $packageName: $e');
