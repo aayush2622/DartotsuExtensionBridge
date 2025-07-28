@@ -36,9 +36,13 @@ class ExtensionManager extends GetxController {
   }
 }
 
+extension SourceMethodsExtension on Source {
+  SourceMethods get methods => currentSourceMethods(this);
+}
+
 SourceMethods currentSourceMethods(Source source) {
-  final manager = Get.find<ExtensionManager>().currentManager;
-  return manager is MangayomiExtensions
+  final type = source.extensionType;
+  return type == ExtensionType.mangayomi
       ? MangayomiSourceMethods(source)
       : AniyomiSourceMethods(source);
 }

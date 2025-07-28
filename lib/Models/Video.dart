@@ -22,10 +22,14 @@ class Video {
       json['quality'].toString().trim(),
       headers: (json['headers'] as Map?)?.cast<String, String>(),
       subtitles: json['subtitles'] != null
-          ? (json['subtitles'] as List).map((e) => Track.fromJson(e)).toList()
+          ? (json['subtitles'] as List)
+                .map((e) => Track.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : [],
       audios: json['audios'] != null
-          ? (json['audios'] as List).map((e) => Track.fromJson(e)).toList()
+          ? (json['audios'] as List)
+                .map((e) => Track.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : [],
     );
   }

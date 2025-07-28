@@ -1,5 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
+import android.util.Log
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
@@ -101,18 +102,33 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
     }
 
     fun SManga.toSAnime(): SAnime {
+        val manga = this
+
         return object : SAnime {
-            override var url: String = this@toSAnime.url
-            override var title: String = this@toSAnime.title
-            override var artist: String? = this@toSAnime.artist
-            override var author: String? = this@toSAnime.author
-            override var description: String? = this@toSAnime.description
-            override var genre: String? = this@toSAnime.genre
-            override var status: Int = this@toSAnime.status
-            override var thumbnail_url: String? = this@toSAnime.thumbnail_url
-            override var update_strategy: UpdateStrategy = this@toSAnime.update_strategy
-            override var initialized: Boolean = this@toSAnime.initialized
+            override var url: String = try {
+                manga.url
+            } catch (e: UninitializedPropertyAccessException) {
+                Log.d("AniyomiExtensionBridge", "Uninitialized URL for SManga: ${manga.title}")
+                "[UNINITIALIZED_URL]"
+            }
+
+            override var title: String = try {
+                manga.title
+            } catch (e: UninitializedPropertyAccessException) {
+                Log.d("AniyomiExtensionBridge", "Uninitialized title for SManga: ${manga.url}")
+                "[UNINITIALIZED_TITLE]"
+            }
+
+            override var artist: String? = manga.artist
+            override var author: String? = manga.author
+            override var description: String? = manga.description
+            override var genre: String? = manga.genre
+            override var status: Int = manga.status
+            override var thumbnail_url: String? = manga.thumbnail_url
+            override var update_strategy: UpdateStrategy = manga.update_strategy
+            override var initialized: Boolean = manga.initialized
         }
     }
+
 
 }
