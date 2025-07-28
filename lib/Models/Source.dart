@@ -26,6 +26,8 @@ class Source {
 
   bool? hasUpdate;
 
+  String? apkUrl;
+
   ExtensionType? extensionType;
 
   Source({
@@ -42,11 +44,13 @@ class Source {
     this.repo,
     this.hasUpdate = false,
     this.extensionType = ExtensionType.aniyomi,
+    this.apkUrl = '',
   });
 
   Source.fromJson(Map<String, dynamic> json, ExtensionType type) {
     baseUrl = json['baseUrl'];
     iconUrl = json['iconUrl'];
+    apkUrl = json['apkUrl'] ?? '';
     id = json['id'].toString();
     itemType = ItemType.values[json['itemType'] ?? 0];
     isNsfw = json['isNsfw'];
@@ -64,6 +68,7 @@ class Source {
     'id': id,
     'name': name,
     'baseUrl': baseUrl,
+    'apkUrl': apkUrl,
     'lang': lang,
     'iconUrl': iconUrl,
     'isNsfw': isNsfw,
