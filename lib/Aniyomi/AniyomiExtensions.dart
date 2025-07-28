@@ -87,7 +87,7 @@ class AniyomiExtensions extends Extension {
   static List<Source> _parseSources(List<dynamic> data) {
     return data.map((e) {
       final map = Map<String, dynamic>.from(e);
-      map['apkurl'] = getAnimeApkUrl(
+      map['apkUrl'] = getAnimeApkUrl(
         map['iconUrl'] ?? '',
         map['apkName'] ?? '',
       );
