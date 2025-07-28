@@ -181,9 +181,16 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
         }
     }
 
-    fun getAnimeApkUrl(extension: AnimeExtension.Available): String {
-        return "${extension.repository.removeSuffix("index.min.json")}/apk/${extension.apkName}"
+    fun getAnimeApkUrl(extension: Any): String {
+        val repo = extension::class.members.find { it.name == "repository" }
+            ?.call(extension) as? String ?: return ""
+    
+        val apk = extension::class.members.find { it.name == "apkName" }
+            ?.call(extension) as? String ?: return ""
+    
+        return "${repo.removeSuffix("index.min.json")}/apk/$apk"
     }
+    
 
     private fun fetchAnimeExtensions(call: MethodCall, result: MethodChannel.Result) {
         val extensionManager = Injekt.get<AniyomiExtensionManager>()
