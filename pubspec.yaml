@@ -37,6 +37,7 @@ dependencies:
       url: https://github.com/kodjodevf/epubx.dart.git
       ref: dev
   install_plugin: ^2.1.0
+  url_launcher: ^6.3.2
   device_apps: ^2.2.0
 dev_dependencies:
   flutter_test:

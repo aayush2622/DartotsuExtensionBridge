@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../Settings/Settings.dart';
 
@@ -180,46 +181,56 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<void> uninstallSource(Source source) async {
-    if (source.id == null) {
-      return Future.error('Source ID is required for uninstallation.');
+    if (source.id == null || source.id!.isEmpty) {
+      throw Exception('Source ID is required for uninstallation.');
     }
 
     final packageName = source.id!;
 
     try {
-      final app = await DeviceApps.getApp(packageName);
-
-      if (app == null) {
-        throw Exception('Package not found: $packageName');
+      final isInstalled = await DeviceApps.isAppInstalled(packageName);
+      if (!isInstalled) {
+        _removeFromInstalledList(source);
+        return;
       }
 
-      final uninstalled = await DeviceApps.uninstallApp(packageName);
+      final uninstallUri = Uri.parse('package:$packageName');
+      final canLaunch = await canLaunchUrl(uninstallUri);
 
-      if (!uninstalled) {
-        throw Exception('Failed to uninstall');
+      if (canLaunch) {
+        await launchUrl(uninstallUri, mode: LaunchMode.externalApplication);
+
+        _removeFromInstalledList(source);
       } else {
-        switch (source.itemType) {
-          case ItemType.anime:
-            installedAnimeExtensions.value = installedAnimeExtensions.value
-                .where((e) => e.name != source.name)
-                .toList();
-            break;
-          case ItemType.manga:
-            installedMangaExtensions.value = installedMangaExtensions.value
-                .where((e) => e.name != source.name)
-                .toList();
-            break;
-          case null:
-            throw Exception("Item type is null");
-          case ItemType.novel:
-            break;
-        }
+        throw Exception('Cannot launch uninstall for $packageName');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error opening uninstall settings: $e');
+        print('Error uninstalling $packageName: $e');
       }
       rethrow;
+    }
+  }
+
+  void _removeFromInstalledList(Source source) {
+    switch (source.itemType) {
+      case ItemType.anime:
+        installedAnimeExtensions.value = installedAnimeExtensions.value
+            .where((e) => e.name != source.name)
+            .toList();
+        break;
+      case ItemType.manga:
+        installedMangaExtensions.value = installedMangaExtensions.value
+            .where((e) => e.name != source.name)
+            .toList();
+        break;
+      case ItemType.novel:
+        installedNovelExtensions.value = installedNovelExtensions.value
+            .where((e) => e.name != source.name)
+            .toList();
+        break;
+      case null:
+        break;
     }
   }
 
