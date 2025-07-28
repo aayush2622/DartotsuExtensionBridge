@@ -193,13 +193,28 @@ class AniyomiExtensions extends Extension {
         throw Exception('Package not found: $packageName');
       }
 
-      final opened = await DeviceApps.openAppSettings(packageName);
+      final uninstalled = await DeviceApps.uninstallApp(packageName);
 
-      if (!opened) {
-        throw Exception('Failed to open app settings for uninstallation');
+      if (!uninstalled) {
+        throw Exception('Failed to uninstall');
+      } else {
+        switch (source.itemType) {
+          case ItemType.anime:
+            installedAnimeExtensions.value = installedAnimeExtensions.value
+                .where((e) => e.name != source.name)
+                .toList();
+            break;
+          case ItemType.manga:
+            installedMangaExtensions.value = installedMangaExtensions.value
+                .where((e) => e.name != source.name)
+                .toList();
+            break;
+          case null:
+            throw Exception("Item type is null");
+          case ItemType.novel:
+            break;
+        }
       }
-
-      debugPrint('Opened app settings for uninstallation: $packageName');
     } catch (e) {
       if (kDebugMode) {
         print('Error opening uninstall settings: $e');
