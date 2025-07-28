@@ -1,6 +1,6 @@
 import 'package:dartotsu_extension_bridge/Aniyomi/AniyomiExtensions.dart';
 import 'package:dartotsu_extension_bridge/ExtensionManager.dart'
-    show ExtensionType;
+    show ExtensionType, aniyomi;
 
 class Source {
   String? id;
@@ -49,7 +49,7 @@ class Source {
   });
 
   Source.fromJson(Map<String, dynamic> json, ExtensionType type) {
-    final appUrl = type is AniyomiExtensions
+    final appUrl = type == ExtensionType.aniyomi
         ? getAnimeApkUrl(json['iconUrl'], json['apkName'])
         : '';
     baseUrl = json['baseUrl'];

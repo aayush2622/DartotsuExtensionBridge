@@ -153,65 +153,33 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<void> uninstallSource(Source source) async {
-    if (source.apkUrl == null) {
-      return Future.error('Source APK URL is required for uninstallation.');
+    if (source.id == null) {
+      return Future.error('Source ID is required for uninstallation.');
     }
 
+    final packageName = source.id!;
+
     try {
-      final packageName = source.apkUrl!.split('/').last.replaceAll('.apk', '');
+      final app = await DeviceApps.getApp(packageName);
 
-      final isInstalled = await DeviceApps.isAppInstalled(packageName);
-
-      if (!isInstalled) {
-        throw Exception('Package not found or not installed: $packageName');
+      if (app == null) {
+        throw Exception('Package not found: $packageName');
       }
 
-      final result = await InstallPlugin.gotoAppStore(packageName);
+      final opened = await DeviceApps.openAppSettings(packageName);
 
-      if (result['isSuccess'] != true) {
-        throw Exception(
-          'Uninstallation failed: ${result['errorMessage'] ?? 'Unknown error'}',
-        );
+      if (!opened) {
+        throw Exception('Failed to open app settings for uninstallation');
       }
 
-      debugPrint('Successfully uninstalled package: $packageName');
+      debugPrint('Opened app settings for uninstallation: $packageName');
     } catch (e) {
       if (kDebugMode) {
-        print('Error uninstalling source: $e');
+        print('Error opening uninstall settings: $e');
       }
       rethrow;
     }
   }
-
-  // @override
-  // Future<void> uninstallSourceAlternative(Source source) async {
-  //   if (source.apkUrl == null) {
-  //     return Future.error('Source APK URL is required for uninstallation.');
-  //   }
-
-  //   try {
-  //     final packageName = source.apkUrl!.split('/').last.replaceAll('.apk', '');
-
-  //     final app = await DeviceApps.getApp(packageName);
-
-  //     if (app == null) {
-  //       throw Exception('Package not found: $packageName');
-  //     }
-
-  //     final opened = await DeviceApps.openAppSettings(packageName);
-
-  //     if (!opened) {
-  //       throw Exception('Failed to open app settings for uninstallation');
-  //     }
-
-  //     debugPrint('Opened app settings for uninstallation: $packageName');
-  //   } catch (e) {
-  //     if (kDebugMode) {
-  //       print('Error opening uninstall settings: $e');
-  //     }
-  //     rethrow;
-  //   }
-  // }
 
   @override
   Future<void> updateSource(Source source) {
