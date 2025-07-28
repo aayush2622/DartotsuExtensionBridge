@@ -49,8 +49,8 @@ class Source {
   });
 
   Source.fromJson(Map<String, dynamic> json, ExtensionType type) {
-    final appUrl = type == ExtensionType.aniyomi
-        ? getAnimeApkUrl(json['iconUrl'], json['apkName'])
+    final String appUrl = type == ExtensionType.aniyomi
+        ? getAnimeApkUrl(json['iconUrl'] ?? '', json['apkName'] ?? '')
         : '';
     baseUrl = json['baseUrl'];
     iconUrl = json['iconUrl'];
