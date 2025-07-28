@@ -10,8 +10,6 @@ import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
-import '../Settings/Settings.dart';
-
 class AniyomiExtensions extends Extension {
   AniyomiExtensions() {
     initialize();

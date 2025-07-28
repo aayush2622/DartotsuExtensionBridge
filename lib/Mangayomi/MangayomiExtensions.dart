@@ -1,9 +1,7 @@
-import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:get/get.dart';
 
 import 'MangayomiExtensionManager.dart';
-import 'Models/Source.dart';
 
 class MangayomiExtensions extends Extension {
   MangayomiExtensions() {
@@ -46,20 +44,19 @@ class MangayomiExtensions extends Extension {
     List<String>? repos,
   ) async {
     final settings = isar.bridgeSettings.getSync(26)!;
-    isar.writeTxnSync(() {
-      switch (type) {
-        case ItemType.anime:
-          settings.mangayomiAnimeExtensions = repos ?? [];
-          break;
-        case ItemType.manga:
-          settings.mangayomiMangaExtensions = repos ?? [];
-          break;
-        case ItemType.novel:
-          settings.mangayomiNovelExtensions = repos ?? [];
-          break;
-      }
-      isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
-    });
+
+    switch (type) {
+      case ItemType.anime:
+        settings.mangayomiAnimeExtensions = repos ?? [];
+        break;
+      case ItemType.manga:
+        settings.mangayomiMangaExtensions = repos ?? [];
+        break;
+      case ItemType.novel:
+        settings.mangayomiNovelExtensions = repos ?? [];
+        break;
+    }
+    isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
 
     final sources = await _manager.fetchAvailableExtensionsStream(type, repos);
     final installedIds = _getInstalledRx(type).value.map((e) => e.id).toSet();
