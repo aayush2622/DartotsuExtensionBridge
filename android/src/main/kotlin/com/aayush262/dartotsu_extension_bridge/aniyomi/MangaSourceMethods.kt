@@ -14,6 +14,8 @@ import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.online.HttpSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMethods {
 
@@ -80,7 +82,7 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
             override var url: String = chapter.url
             override var name: String = chapter.name
             override var date_upload: Long = chapter.date_upload
-            override var episode_number: Float = chapter.chapter_number
+            override var episode_number: Float = findChapterNumber(chapter.name) ?: chapter.chapter_number
             override var scanlator: String? = chapter.scanlator
         }
     }
@@ -107,14 +109,14 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
         return object : SAnime {
             override var url: String = try {
                 manga.url
-            } catch (e: UninitializedPropertyAccessException) {
+            } catch (_: UninitializedPropertyAccessException) {
                 Log.d("AniyomiExtensionBridge", "Uninitialized URL for SManga: ${manga.title}")
                 "[UNINITIALIZED_URL]"
             }
 
             override var title: String = try {
                 manga.title
-            } catch (e: UninitializedPropertyAccessException) {
+            } catch (_: UninitializedPropertyAccessException) {
                 Log.d("AniyomiExtensionBridge", "Uninitialized title for SManga: ${manga.url}")
                 "[UNINITIALIZED_TITLE]"
             }
@@ -129,6 +131,26 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
             override var initialized: Boolean = manga.initialized
         }
     }
+    private val REGEX_ITEM = "[\\s:.\\-]*(\\d+\\.?\\d*)[\\s:.\\-]*"
+    private val REGEX_PART_NUMBER = "(?<!part\\s)\\b(\\d+)\\b"
+    private val REGEX_CHAPTER = "(chapter|chap|ch|c)${REGEX_ITEM}"
+    fun findChapterNumber(text: String): Float? {
+        val pattern: Pattern = Pattern.compile(REGEX_CHAPTER, Pattern.CASE_INSENSITIVE)
+        val matcher: Matcher = pattern.matcher(text)
 
+        return if (matcher.find()) {
+            matcher.group(2)?.toFloat()
+        } else {
+            val failedChapterNumberPattern: Pattern =
+                Pattern.compile(REGEX_PART_NUMBER, Pattern.CASE_INSENSITIVE)
+            val failedChapterNumberMatcher: Matcher =
+                failedChapterNumberPattern.matcher(text)
+            if (failedChapterNumberMatcher.find()) {
+                failedChapterNumberMatcher.group(1)?.toFloat()
+            } else {
+                text.toFloatOrNull()
+            }
+        }
+    }
 
 }
