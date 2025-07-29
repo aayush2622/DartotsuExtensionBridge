@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:android_intent_plus/android_intent.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
@@ -16,83 +15,12 @@ class AniyomiExtensions extends Extension {
   }
 
   static const platform = MethodChannel('aniyomiExtensionBridge');
+  final Rx<List<Source>> availableAnimeExtensionsUnmodified = Rx([]);
+  final Rx<List<Source>> availableMangaExtensionsUnmodified = Rx([]);
+  final Rx<List<Source>> availableNovelExtensionsUnmodified = Rx([]);
 
   @override
   bool get supportsNovel => false;
-
-  @override
-  Future<List<Source>> getInstalledAnimeExtensions() {
-    return _loadExtensions(
-      'getInstalledAnimeExtensions',
-      installedAnimeExtensions,
-    );
-  }
-
-  @override
-  Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) {
-    var settings = isar.bridgeSettings.getSync(26)!;
-    isar.writeTxnSync(
-      () => isar.bridgeSettings.putSync(
-        settings..aniyomiAnimeExtensions = repos ?? [],
-      ),
-    );
-    return _loadExtensions(
-      'fetchAnimeExtensions',
-      availableAnimeExtensions,
-      repos: repos,
-    );
-  }
-
-  @override
-  Future<List<Source>> getInstalledMangaExtensions() {
-    return _loadExtensions(
-      'getInstalledMangaExtensions',
-      installedMangaExtensions,
-    );
-  }
-
-  @override
-  Future<List<Source>> fetchAvailableMangaExtensions(List<String>? repos) {
-    var settings = isar.bridgeSettings.getSync(26)!;
-    isar.writeTxnSync(
-      () => isar.bridgeSettings.putSync(
-        settings..aniyomiMangaExtensions = repos ?? [],
-      ),
-    );
-    return _loadExtensions(
-      'fetchMangaExtensions',
-      availableMangaExtensions,
-      repos: repos,
-    );
-  }
-
-  Future<List<Source>> _loadExtensions(
-    String method,
-    Rx<List<Source>> target, {
-    List<String>? repos,
-  }) async {
-    try {
-      final List<dynamic> result = await platform.invokeMethod(method, repos);
-      final parsed = await compute(_parseSources, result);
-      target.value = parsed;
-      return parsed;
-    } catch (e) {
-      target.value = [];
-      return [];
-    }
-  }
-
-  static List<Source> _parseSources(List<dynamic> data) {
-    return data.map((e) {
-      final map = Map<String, dynamic>.from(e);
-      map['apkurl'] = getAnimeApkUrl(
-        map['iconUrl'] ?? '',
-        map['apkName'] ?? '',
-      );
-      map['extensionType'] = 1;
-      return Source.fromJson(map);
-    }).toList();
-  }
 
   @override
   Future<void> initialize() async {
@@ -104,6 +32,93 @@ class AniyomiExtensions extends Extension {
     getInstalledNovelExtensions();
     fetchAvailableAnimeExtensions(settings.aniyomiAnimeExtensions);
     fetchAvailableMangaExtensions(settings.aniyomiMangaExtensions);
+  }
+
+  @override
+  Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) =>
+      _fetchAvailable('fetchAnimeExtensions', ItemType.anime, repos);
+
+  @override
+  Future<List<Source>> fetchAvailableMangaExtensions(List<String>? repos) =>
+      _fetchAvailable('fetchMangaExtensions', ItemType.manga, repos);
+
+  Future<List<Source>> _fetchAvailable(
+    String method,
+    ItemType type,
+    List<String>? repos,
+  ) async {
+    final settings = isar.bridgeSettings.getSync(26)!;
+
+    switch (type) {
+      case ItemType.anime:
+        settings.mangayomiAnimeExtensions = repos ?? [];
+        break;
+      case ItemType.manga:
+        settings.mangayomiMangaExtensions = repos ?? [];
+        break;
+      case ItemType.novel:
+        settings.mangayomiNovelExtensions = repos ?? [];
+        break;
+    }
+    isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
+
+    final sources = await _loadExtensions(method, repos: repos);
+    final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();
+
+    final unmodifiedList = sources.map((e) {
+      var map = e.toJson();
+      map['extensionType'] = 1;
+      return Source.fromJson(map);
+    }).toList();
+    final list = unmodifiedList
+        .where((s) => !installedIds.contains(s.id))
+        .toList();
+    getAvailableRx(type).value = list;
+    getAvailableUnmodified(type).value = unmodifiedList;
+    checkForUpdates(type);
+    return list;
+  }
+
+  @override
+  Future<List<Source>> getInstalledAnimeExtensions() {
+    return _getInstalled('getInstalledAnimeExtensions', ItemType.anime);
+  }
+
+  @override
+  Future<List<Source>> getInstalledMangaExtensions() {
+    return _getInstalled('getInstalledMangaExtensions', ItemType.manga);
+  }
+
+  Future<List<Source>> _getInstalled(String method, ItemType type) async {
+    final sources = await _loadExtensions(method);
+    getInstalledRx(type).value = sources;
+    checkForUpdates(type);
+    return sources;
+  }
+
+  Future<List<Source>> _loadExtensions(
+    String method, {
+    List<String>? repos,
+  }) async {
+    try {
+      final List<dynamic> result = await platform.invokeMethod(method, repos);
+      final parsed = await compute(_parseSources, result);
+      return parsed;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static List<Source> _parseSources(List<dynamic> data) {
+    return data.map((e) {
+      final map = Map<String, dynamic>.from(e);
+      map['apkUrl'] = getAnimeApkUrl(
+        map['iconUrl'] ?? '',
+        map['apkName'] ?? '',
+      );
+      map['extensionType'] = 1;
+      return Source.fromJson(map);
+    }).toList();
   }
 
   @override
@@ -141,23 +156,19 @@ class AniyomiExtensions extends Extension {
           'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
         );
       }
+      final rx = getAvailableRx(source.itemType!);
+      rx.value = rx.value.where((s) => s.id != source.id).toList();
       switch (source.itemType) {
         case ItemType.anime:
-          availableAnimeExtensions.value = availableAnimeExtensions.value
-              .where((e) => e.name != source.name)
-              .toList();
-          getInstalledAnimeExtensions();
+          getInstalledAnimeExtensions(); // because it also update extension on kotlin side
           break;
         case ItemType.manga:
-          availableMangaExtensions.value = availableMangaExtensions.value
-              .where((e) => e.name != source.name)
-              .toList();
           getInstalledMangaExtensions();
           break;
-        case null:
-          throw Exception("Item type is null");
         case ItemType.novel:
           break;
+        default:
+          throw Exception('Unsupported item type: ${source.itemType}');
       }
       debugPrint('Successfully installed package: $packageName');
     } catch (e) {
@@ -170,11 +181,10 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<void> uninstallSource(Source source) async {
-    if (source.id == null || source.id!.isEmpty) {
+    final packageName = source.id;
+    if (packageName == null || packageName.isEmpty) {
       throw Exception('Source ID is required for uninstallation.');
     }
-
-    final packageName = source.id!;
 
     try {
       final isInstalled = await DeviceApps.isAppInstalled(packageName);
@@ -183,24 +193,93 @@ class AniyomiExtensions extends Extension {
         return;
       }
 
-      final intent = AndroidIntent(
-        action: 'android.intent.action.DELETE',
-        data: 'package:$packageName',
-      );
+      final success = await DeviceApps.uninstallApp(packageName);
+      if (!success) {
+        throw Exception('Failed to initiate uninstallation for: $packageName');
+      }
 
-      await intent.launch();
+      final timeout = const Duration(seconds: 10);
+      final start = DateTime.now();
 
-      await Future.delayed(const Duration(seconds: 2), () async {
-        final isInstalled = await DeviceApps.isAppInstalled(packageName);
-        if (isInstalled) {
-          throw Exception('Failed to uninstall package: $packageName');
-        } else {
-          _removeFromInstalledList(source);
-          debugPrint('Successfully uninstalled package: $packageName');
+      while (DateTime.now().difference(start) < timeout) {
+        final stillInstalled = await DeviceApps.isAppInstalled(packageName);
+        if (!stillInstalled) break;
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      final finalCheck = await DeviceApps.isAppInstalled(packageName);
+      if (finalCheck) {
+        throw Exception('Uninstallation timed out or was cancelled by user.');
+      }
+
+      _removeFromInstalledList(source);
+
+      final itemType = source.itemType;
+      if (itemType != null) {
+        final availableList = getAvailableUnmodified(itemType).value;
+        if (availableList.any((s) => s.id == packageName)) {
+          getAvailableRx(itemType).update((list) => list?..add(source));
         }
-      });
+      }
+
+      debugPrint('Successfully uninstalled package: $packageName');
     } catch (e) {
       debugPrint('Error uninstalling $packageName: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> updateSource(Source source) async {
+    if (source.apkUrl == null) {
+      return Future.error('Source APK URL is required for installation.');
+    }
+
+    try {
+      final packageName = source.apkUrl!.split('/').last.replaceAll('.apk', '');
+
+      final response = await http.get(Uri.parse(source.apkUrl!));
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to download APK: HTTP ${response.statusCode}');
+      }
+
+      final tempDir = await getTemporaryDirectory();
+      final apkFileName = '$packageName.apk';
+      final apkFile = File(path.join(tempDir.path, apkFileName));
+
+      await apkFile.writeAsBytes(response.bodyBytes);
+
+      final result = await InstallPlugin.installApk(
+        apkFile.path,
+        appId: packageName,
+      );
+      if (result['isSuccess'] != true) {
+        debugPrint(
+          'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
+        );
+      }
+      if (await apkFile.exists()) {
+        await apkFile.delete();
+      }
+
+      switch (source.itemType) {
+        case ItemType.anime:
+          getInstalledAnimeExtensions(); // because it also update extension on kotlin side
+          break;
+        case ItemType.manga:
+          getInstalledMangaExtensions();
+          break;
+        case ItemType.novel:
+          break;
+        default:
+          throw Exception('Unsupported item type: ${source.itemType}');
+      }
+      debugPrint('Successfully installed package: $packageName');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error installing source: $e');
+      }
       rethrow;
     }
   }
@@ -227,6 +306,39 @@ class AniyomiExtensions extends Extension {
     }
   }
 
+  Rx<List<Source>> getAvailableUnmodified(ItemType type) {
+    switch (type) {
+      case ItemType.anime:
+        return availableAnimeExtensionsUnmodified;
+      case ItemType.manga:
+        return availableMangaExtensionsUnmodified;
+      case ItemType.novel:
+        return availableNovelExtensionsUnmodified;
+    }
+  }
+
+  Future<void> checkForUpdates(ItemType type) async {
+    final availableMap = {
+      for (var s in getAvailableUnmodified(type).value) s.id: s,
+    };
+
+    final updated = getInstalledRx(type).value.map((installed) {
+      final avail = availableMap[installed.id ?? ''];
+      if (avail != null &&
+          installed.version != null &&
+          avail.version != null &&
+          compareVersions(installed.version!, avail.version!) < 0) {
+        return installed
+          ..hasUpdate = true
+          ..apkUrl = avail.apkUrl
+          ..versionLast = avail.version;
+      }
+      return installed;
+    }).toList();
+
+    getInstalledRx(type).value = updated;
+  }
+
   static String getAnimeApkUrl(String iconUrl, String apkName) {
     if (iconUrl.isEmpty || apkName.isEmpty) return "";
 
@@ -236,10 +348,5 @@ class AniyomiExtensions extends Extension {
 
     final cleanedUrl = baseUrl.substring(0, lastSlash);
     return '$cleanedUrl/$apkName';
-  }
-
-  @override
-  Future<void> updateSource(Source source) {
-    throw UnimplementedError();
   }
 }

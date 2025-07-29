@@ -57,7 +57,7 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
     }
 
     override suspend fun getPageList( chapter: SChapter): List<Page> {
-       return source.getPageList(chapter)
+       return (source).getPageList(chapter)
     }
 
     override suspend fun getEpisodeList(media: SAnime): List<SEpisode> {

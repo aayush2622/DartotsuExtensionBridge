@@ -36,7 +36,6 @@ android {
     namespace = "com.aayush262.dartotsu_extension_bridge"
 
     compileSdk = 36
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
