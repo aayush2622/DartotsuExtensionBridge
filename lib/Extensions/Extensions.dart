@@ -39,6 +39,21 @@ abstract class Extension extends GetxController {
 
   Future<void> updateSource(Source source);
 
+  Future<void> onRepoSaved(List<String> repoUrl, ItemType type) async {
+    if (repoUrl.isEmpty) return;
+    switch (type) {
+      case ItemType.anime:
+        await fetchAvailableAnimeExtensions(repoUrl);
+        break;
+      case ItemType.manga:
+        await fetchAvailableMangaExtensions(repoUrl);
+        break;
+      case ItemType.novel:
+        await fetchAvailableNovelExtensions(repoUrl);
+        break;
+    }
+  }
+
   Rx<List<Source>> getSortedInstalledExtension(ItemType itemType) {
     switch (itemType) {
       case ItemType.anime:
