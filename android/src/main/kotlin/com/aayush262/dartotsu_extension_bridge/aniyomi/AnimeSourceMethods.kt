@@ -15,7 +15,6 @@ import uy.kohesive.injekt.api.get
 class AnimeSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMethods {
 
     private val source: AnimeCatalogueSource
-
     init {
         val manager = Injekt.get<AniyomiExtensionManager>()
         val extension = manager.installedAnimeExtensions
@@ -23,12 +22,14 @@ class AnimeSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
             ?: throw IllegalArgumentException("Anime source with ID '$sourceID' not found.")
 
         val src = extension.sources.getOrNull(langIndex) ?: extension.sources.firstOrNull()
+
         source = src as? AnimeHttpSource ?: src as? AnimeCatalogueSource
                 ?: throw IllegalArgumentException("Source with ID '$sourceID' is not an AnimeHttpSource or AnimeCatalogueSource")
     }
 
-    override suspend fun getPopular(page: Int): AnimesPage = source.getPopularAnime(page)
+    override var baseUrl = (source as? AnimeHttpSource)?.baseUrl
 
+    override suspend fun getPopular(page: Int): AnimesPage = source.getPopularAnime(page)
 
     override suspend fun getLatestUpdates(page: Int): AnimesPage = source.getLatestUpdates(page)
 

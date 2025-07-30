@@ -1,4 +1,5 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
+
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -103,7 +104,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             result.error("ERROR", "Failed to get installed extensions: ${e.message}", null)
         }
     }
-    
+
 
     private fun fetchAnimeExtensions(call: MethodCall, result: MethodChannel.Result) {
         val extensionManager = Injekt.get<AniyomiExtensionManager>()
@@ -493,7 +494,13 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                     val (url, headers) = pageToUrlAndHeaders(chapter)
                     mapOf(
                         "url" to url,
-                        "headers" to headers,
+                        "headers" to headers.plus(
+                            mapOf(
+                                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+                                "Referer" to media.baseUrl,
+                                "Origin" to media.baseUrl,
+                            )
+                        ),
                     )
                 }
                 withContext(Dispatchers.Main) {

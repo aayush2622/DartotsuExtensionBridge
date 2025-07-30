@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 
 interface AniyomiSourceMethods {
-
+    var baseUrl: String?
     /**
      * Fetches a page of popular anime.
      *

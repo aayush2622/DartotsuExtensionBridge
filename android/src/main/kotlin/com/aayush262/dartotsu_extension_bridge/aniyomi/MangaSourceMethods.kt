@@ -32,6 +32,8 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
                 ?: throw IllegalArgumentException("Source with ID '$sourceID' is not an HttpSource or CatalogueSource")
     }
 
+    override var baseUrl = (source as? HttpSource)?.baseUrl
+
     override suspend fun getPopular(page: Int): AnimesPage {
         return mangaPageToAnimePage(source.getPopularManga(page))
     }

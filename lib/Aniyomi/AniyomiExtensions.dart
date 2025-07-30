@@ -275,7 +275,7 @@ class AniyomiExtensions extends Extension {
         default:
           throw Exception('Unsupported item type: ${source.itemType}');
       }
-      debugPrint('Successfully installed package: $packageName');
+      debugPrint('Successfully update package: $packageName');
     } catch (e) {
       if (kDebugMode) {
         print('Error installing source: $e');
