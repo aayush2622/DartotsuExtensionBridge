@@ -496,8 +496,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "url" to url,
                         "headers" to headers.plus(
                             mapOf(
-                                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
-                                "Referer" to media.baseUrl,
+                                "Referer" to "${media.baseUrl}/",
                                 "Origin" to media.baseUrl,
                             )
                         ),

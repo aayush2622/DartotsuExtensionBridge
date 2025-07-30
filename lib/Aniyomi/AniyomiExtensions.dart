@@ -26,7 +26,7 @@ class AniyomiExtensions extends Extension {
   Future<void> initialize() async {
     if (isInitialized.value) return;
     isInitialized.value = true;
-    var settings = isar.bridgeSettings.getSync(26) ?? BridgeSettings();
+    var settings = isar.bridgeSettings.getSync(26)!;
     getInstalledAnimeExtensions();
     getInstalledMangaExtensions();
     getInstalledNovelExtensions();
