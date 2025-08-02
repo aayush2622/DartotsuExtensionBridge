@@ -53,21 +53,6 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     void Function() onChanged,
   );
 
-  Future<void> onRepoSaved(List<String> repoUrl, ItemType type) async {
-    if (repoUrl.isEmpty) return;
-    switch (type) {
-      case ItemType.anime:
-        await manager.fetchAvailableAnimeExtensions(repoUrl);
-        break;
-      case ItemType.manga:
-        await manager.fetchAvailableMangaExtensions(repoUrl);
-        break;
-      case ItemType.novel:
-        await manager.fetchAvailableNovelExtensions(repoUrl);
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).colorScheme;
@@ -95,7 +80,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
                 context,
                 _tabBarController,
                 _selectedLanguage.value,
-                onRepoSaved,
+                manager.onRepoSaved,
                 (lang) => setState(() => _selectedLanguage.value = lang),
               ),
               const SizedBox(width: 8),

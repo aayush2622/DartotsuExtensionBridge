@@ -28,6 +28,8 @@ class Source {
 
   String? apkUrl;
 
+  String? apkName;
+
   ExtensionType? extensionType;
 
   Source({
@@ -45,12 +47,14 @@ class Source {
     this.hasUpdate = false,
     this.extensionType = ExtensionType.mangayomi,
     this.apkUrl = '',
+    this.apkName = '',
   });
 
   Source.fromJson(Map<String, dynamic> json) {
     baseUrl = json['baseUrl'];
     iconUrl = json['iconUrl'];
     apkUrl = json['apkUrl'];
+    apkName = json['apkName'];
     id = json['id'].toString();
     itemType = ItemType.values[json['itemType'] ?? 0];
     isNsfw = json['isNsfw'];
@@ -69,6 +73,7 @@ class Source {
     'name': name,
     'baseUrl': baseUrl,
     'apkUrl': apkUrl,
+    'apkName': apkName,
     'lang': lang,
     'iconUrl': iconUrl,
     'isNsfw': isNsfw,

@@ -59,7 +59,7 @@ class MangayomiExtensions extends Extension {
     isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
 
     final sources = await _manager.fetchAvailableExtensionsStream(type, repos);
-    final installedIds = _getInstalledRx(type).value.map((e) => e.id).toSet();
+    final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();
 
     final list = sources
         .map((e) {
@@ -70,7 +70,7 @@ class MangayomiExtensions extends Extension {
         .where((s) => !installedIds.contains(s.id))
         .toList();
 
-    _getAvailableRx(type).value = list;
+    getAvailableRx(type).value = list;
     checkForUpdates(type);
     return list;
   }
@@ -99,7 +99,7 @@ class MangayomiExtensions extends Extension {
         )
         .asBroadcastStream();
 
-    _getInstalledRx(type).bindStream(stream);
+    getInstalledRx(type).bindStream(stream);
     return stream.first;
   }
 
@@ -111,7 +111,7 @@ class MangayomiExtensions extends Extension {
 
     await _manager.installSource(source);
 
-    final rx = _getAvailableRx(source.itemType!);
+    final rx = getAvailableRx(source.itemType!);
     rx.value = rx.value.where((s) => s.id != source.id).toList();
   }
 
@@ -126,7 +126,7 @@ class MangayomiExtensions extends Extension {
     final availableList = _getAvailableList(source.itemType!);
     final idInt = int.tryParse(source.id ?? '');
     if (idInt != null && availableList.any((s) => s.id == idInt)) {
-      _getAvailableRx(source.itemType!).update((list) => list?.add(source));
+      getAvailableRx(source.itemType!).update((list) => list?.add(source));
     }
   }
 
@@ -141,12 +141,12 @@ class MangayomiExtensions extends Extension {
   Future<void> checkForUpdates(ItemType type) async {
     final availableMap = {for (var s in _getAvailableList(type)) s.id: s};
 
-    final updated = _getInstalledRx(type).value.map((installed) {
+    final updated = getInstalledRx(type).value.map((installed) {
       final avail = availableMap[int.tryParse(installed.id ?? '')];
       if (avail != null &&
           installed.version != null &&
           avail.version != null &&
-          _compareVersions(installed.version!, avail.version!) < 0) {
+          compareVersions(installed.version!, avail.version!) < 0) {
         return installed
           ..hasUpdate = true
           ..versionLast = avail.version;
@@ -154,29 +154,7 @@ class MangayomiExtensions extends Extension {
       return installed;
     }).toList();
 
-    _getInstalledRx(type).value = updated;
-  }
-
-  Rx<List<Source>> _getAvailableRx(ItemType type) {
-    switch (type) {
-      case ItemType.anime:
-        return availableAnimeExtensions;
-      case ItemType.manga:
-        return availableMangaExtensions;
-      case ItemType.novel:
-        return availableNovelExtensions;
-    }
-  }
-
-  Rx<List<Source>> _getInstalledRx(ItemType type) {
-    switch (type) {
-      case ItemType.anime:
-        return installedAnimeExtensions;
-      case ItemType.manga:
-        return installedMangaExtensions;
-      case ItemType.novel:
-        return installedNovelExtensions;
-    }
+    getInstalledRx(type).value = updated;
   }
 
   List<MSource> _getAvailableList(ItemType type) {
@@ -188,17 +166,5 @@ class MangayomiExtensions extends Extension {
       case ItemType.novel:
         return _manager.availableNovelExtensions.value;
     }
-  }
-
-  int _compareVersions(String v1, String v2) {
-    final a = v1.split('.').map(int.tryParse).toList();
-    final b = v2.split('.').map(int.tryParse).toList();
-
-    for (int i = 0; i < a.length || i < b.length; i++) {
-      final n1 = i < a.length ? a[i] ?? 0 : 0;
-      final n2 = i < b.length ? b[i] ?? 0 : 0;
-      if (n1 != n2) return n1.compareTo(n2);
-    }
-    return 0;
   }
 }
