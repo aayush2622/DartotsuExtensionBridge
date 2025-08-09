@@ -133,4 +133,9 @@ class AniyomiSourceMethods implements SourceMethods {
         .map((e) => PageUrl.fromJson(Map<String, dynamic>.from(e)))
         .toList();
   }
+
+  @override
+  Future<String?> getNovelContent(String chapterTitle, String chapterId) {
+    throw UnimplementedError();
+  }
 }

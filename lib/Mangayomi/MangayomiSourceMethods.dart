@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dartotsu_extension_bridge/Models/DEpisode.dart';
 
 import 'package:dartotsu_extension_bridge/Models/DMedia.dart';
@@ -155,5 +157,21 @@ class MangayomiSourceMethods implements SourceMethods {
             .toList(),
       );
     }).toList();
+  }
+
+  @override
+  Future<String?> getNovelContent(String chapterTitle, String chapterId) async {
+    try {
+      final data = await _ensureSource(
+        (mSource) => getExtensionService(
+          mSource,
+        ).getHtmlContent(chapterTitle, chapterId),
+      );
+
+      return data;
+    } catch (e) {
+      log('[BRIDGE]: getNovelContent error: $e');
+      return null;
+    }
   }
 }
