@@ -20,4 +20,6 @@ abstract class SourceMethods {
   Future<List<PageUrl>> getPageList(DEpisode episode);
 
   Future<List<Video>> getVideoList(DEpisode episode);
+
+  Future<String?> getNovelContent(String chapterTitle, String chapterId);
 }
