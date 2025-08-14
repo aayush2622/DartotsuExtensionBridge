@@ -245,7 +245,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    result.error("ERROR", "Failed to get details: ${e.message}", null)
+                    result.error("ERROR", "Failed to get details: ${e.message} ${e.stackTrace}", null)
                 }
             }
         }
