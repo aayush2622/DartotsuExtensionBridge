@@ -109,30 +109,32 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
         val manga = this
 
         return object : SAnime {
-            override var url: String = try {
-                manga.url
-            } catch (_: UninitializedPropertyAccessException) {
-                Log.d("AniyomiExtensionBridge", "Uninitialized URL for SManga: ${manga.title}")
+            override var url: String = runCatching { manga.url }.getOrElse {
+                Log.d("AniyomiExtensionBridge", "Uninitialized URL for SManga: ${safeUrl(manga)}")
                 "[UNINITIALIZED_URL]"
             }
 
-            override var title: String = try {
-                manga.title
-            } catch (_: UninitializedPropertyAccessException) {
-                Log.d("AniyomiExtensionBridge", "Uninitialized title for SManga: ${manga.url}")
+            override var title: String = runCatching { manga.title }.getOrElse {
+                Log.d("AniyomiExtensionBridge", "Uninitialized title for SManga: ${safeTitle(manga)}")
                 "[UNINITIALIZED_TITLE]"
             }
 
-            override var artist: String? = manga.artist
-            override var author: String? = manga.author
-            override var description: String? = manga.description
-            override var genre: String? = manga.genre
-            override var status: Int = manga.status
-            override var thumbnail_url: String? = manga.thumbnail_url
-            override var update_strategy: UpdateStrategy = manga.update_strategy
-            override var initialized: Boolean = manga.initialized
+            override var artist: String? = runCatching { manga.artist }.getOrNull()
+            override var author: String? = runCatching { manga.author }.getOrNull()
+            override var description: String? = runCatching { manga.description }.getOrNull()
+            override var genre: String? = runCatching { manga.genre }.getOrNull()
+            override var status: Int = runCatching { manga.status }.getOrDefault(SAnime.UNKNOWN)
+            override var thumbnail_url: String? = runCatching { manga.thumbnail_url }.getOrNull()
+            override var update_strategy: UpdateStrategy =
+                runCatching { manga.update_strategy }.getOrDefault(UpdateStrategy.ALWAYS_UPDATE)
+            override var initialized: Boolean = runCatching { manga.initialized }.getOrDefault(false)
         }
     }
+    private fun safeTitle(manga: SManga): String =
+        runCatching { manga.title }.getOrElse { "[UNINITIALIZED_TITLE]" }
+
+    private fun safeUrl(manga: SManga): String =
+        runCatching { manga.url }.getOrElse { "[UNINITIALIZED_URL]" }
     private val REGEX_ITEM = "[\\s:.\\-]*(\\d+\\.?\\d*)[\\s:.\\-]*"
     private val REGEX_PART_NUMBER = "(?<!part\\s)\\b(\\d+)\\b"
     private val REGEX_CHAPTER = "(chapter|chap|ch|c)${REGEX_ITEM}"
