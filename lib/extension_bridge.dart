@@ -39,7 +39,9 @@ class DartotsuExtensionBridge {
       );
     }
 
-    Get.put(AniyomiExtensions(), tag: 'AniyomiExtensions');
+    if (Platform.isAndroid) {
+      Get.put(AniyomiExtensions(), tag: 'AniyomiExtensions');
+    }
     Get.put(MangayomiExtensions(), tag: 'MangayomiExtensions');
     Get.put(ExtensionManager());
     if (Platform.isWindows) {
