@@ -51,13 +51,12 @@ class AniyomiExtensions extends Extension {
 
     switch (type) {
       case ItemType.anime:
-        settings.mangayomiAnimeExtensions = repos ?? [];
+        settings.aniyomiAnimeExtensions = repos ?? [];
         break;
       case ItemType.manga:
-        settings.mangayomiMangaExtensions = repos ?? [];
+        settings.aniyomiMangaExtensions = repos ?? [];
         break;
       case ItemType.novel:
-        settings.mangayomiNovelExtensions = repos ?? [];
         break;
     }
     isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
