@@ -31,7 +31,7 @@
 }
 -keep class okhttp3.** { *; }
 -dontwarn okhttp3.**
-
+-keep class androidx.preference.** { *; }
 # --- Okio (BufferedSource etc.) ---
 -keep class okio.** { *; }
 -dontwarn okio.**

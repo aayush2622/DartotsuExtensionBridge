@@ -1,6 +1,8 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
+import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
+import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
@@ -57,4 +59,13 @@ class AnimeSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
     override suspend fun getPageList(chapter: SChapter): List<Page> =
         throw UnsupportedOperationException("Pages are not supported in anime sources.")
 
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        if (source is ConfigurableAnimeSource) {
+            source.setupPreferenceScreen(screen)
+        } else {
+            throw NoPreferenceScreenException("This source does not support preferences.")
+        }
+    }
 }
+class NoPreferenceScreenException(message: String) : Exception(message)
+

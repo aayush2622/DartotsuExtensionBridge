@@ -4,6 +4,7 @@ import 'package:dartotsu_extension_bridge/Models/Page.dart';
 import '../Models/DEpisode.dart';
 import '../Models/Pages.dart';
 import '../Models/Source.dart';
+import '../Models/SourcePreference.dart';
 import '../Models/Video.dart';
 
 abstract class SourceMethods {
@@ -20,4 +21,8 @@ abstract class SourceMethods {
   Future<List<PageUrl>> getPageList(DEpisode episode);
 
   Future<List<Video>> getVideoList(DEpisode episode);
+
+  Future<String?> getNovelContent(String chapterTitle, String chapterId);
+
+  Future<List<SourcePreference>> getPreference();
 }

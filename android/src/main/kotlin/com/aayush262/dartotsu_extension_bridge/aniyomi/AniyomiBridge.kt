@@ -1,12 +1,17 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import androidx.core.content.FileProvider
-import java.io.File
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
+import androidx.preference.CheckBoxPreference
+import androidx.preference.EditTextPreference
+import androidx.preference.ListPreference
+import androidx.preference.MultiSelectListPreference
+import androidx.preference.PreferenceCategory
+import androidx.preference.PreferenceGroup
+import androidx.preference.PreferenceManager
+import androidx.preference.SwitchPreferenceCompat
+import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.source.model.Page
@@ -25,8 +30,10 @@ import java.net.URLDecoder
 
 class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHandler {
 
-    override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
-        context // just to keep the context reference alive
+    override fun onMethodCall(
+        call: MethodCall,
+        result: MethodChannel.Result
+    ) { // just to keep the context reference alive
         Log.d("AniyomiBridge", "Method called: ${call.method} with args: ${call.arguments}")
         when (call.method) {
             "getInstalledAnimeExtensions" -> getInstalledAnimeExtensions(call, result)
@@ -39,6 +46,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             "getVideoList" -> getVideoList(call, result)
             "getPageList" -> getPageList(call, result)
             "search" -> search(call, result)
+            "getPreference" -> getPreference(call, result)
             else -> result.notImplemented()
         }
     }
@@ -245,7 +253,11 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    result.error("ERROR", "Failed to get details: ${e.message} ${e.stackTrace}", null)
+                    result.error(
+                        "ERROR",
+                        "Failed to get details: ${e.message} ${e.stackTrace}",
+                        null
+                    )
                 }
             }
         }
@@ -515,7 +527,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
         }
     }
 
-    fun pageToUrlAndHeaders(page: Page): Pair<String, Map<String, String>> {
+    private fun pageToUrlAndHeaders(page: Page): Pair<String, Map<String, String>> {
         var headersMap = emptyMap<String, String>()
         var url = ""
 
@@ -540,4 +552,102 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
         }
         return Pair(url, headersMap)
     }
+
+
+    @SuppressLint("RestrictedApi")
+    private fun getPreference(call: MethodCall, result: MethodChannel.Result) {
+        val args = call.arguments as? Map<*, *> ?: return result.error(
+            "INVALID_ARGS",
+            "Arguments were null or invalid",
+            null
+        )
+
+        val sourceId = args["sourceId"] as? String
+        val isAnime = args["isAnime"] as? Boolean
+
+        if (sourceId == null || isAnime == null) {
+            return result.error("INVALID_ARGS", "Missing required parameters", null)
+        }
+
+        val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
+
+        try {
+            val pm = PreferenceManager(context)
+            val screen = pm.createPreferenceScreen(context)
+
+            media.setupPreferenceScreen(screen)
+
+            val map = screen.toDynamicMap()
+
+            result.success(map)
+        } catch (e: NoPreferenceScreenException) {
+            result.success(e.message)
+        }
+
+    }
+
+
+    fun PreferenceScreen.toDynamicMap(): List<Map<String, Any?>> {
+        val list = mutableListOf<Map<String, Any?>>()
+
+        fun traverse(prefGroup: PreferenceGroup) {
+            for (i in 0 until prefGroup.preferenceCount) {
+                val pref = prefGroup.getPreference(i)
+                val prefMap = mutableMapOf<String, Any?>(
+                    "key" to pref.key,
+                    "title" to pref.title.toString(),
+                    "summary" to pref.summary?.toString(),
+                    "enabled" to pref.isEnabled,
+                    "type" to when (pref) {
+                        is ListPreference -> "list"
+                        is MultiSelectListPreference -> "multi_select"
+                        is SwitchPreferenceCompat -> "switch"
+                        is EditTextPreference -> "text"
+                        is CheckBoxPreference -> "checkbox"
+                        else -> "other"
+                    }
+                )
+
+                when (pref) {
+                    is ListPreference -> {
+                        prefMap["entries"] = pref.entries.map { it.toString() }
+                        prefMap["entryValues"] = pref.entryValues.map { it.toString() }
+                        prefMap["value"] = pref.value
+                    }
+
+                    is MultiSelectListPreference -> {
+                        prefMap["entries"] = pref.entries.map { it.toString() }
+                        prefMap["entryValues"] = pref.entryValues.map { it.toString() }
+                        prefMap["value"] = pref.values.toList()
+                    }
+
+                    is SwitchPreferenceCompat -> {
+                        prefMap["value"] = pref.isChecked
+                    }
+
+                    is EditTextPreference -> {
+                        prefMap["value"] = pref.text
+                    }
+
+                    is CheckBoxPreference -> {
+                        prefMap["value"] = pref.isChecked
+                    }
+
+                    else -> {
+                        prefMap["value"] = pref.sharedPreferences?.all?.get(pref.key)
+                    }
+                }
+
+                list.add(prefMap)
+
+                if (pref is PreferenceCategory) {
+                    traverse(pref)
+                }
+            }
+        }
+
+        traverse(this)
+        return list
+    }
 }
+
