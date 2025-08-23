@@ -1,5 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
+import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
@@ -74,4 +75,7 @@ interface AniyomiSourceMethods {
      * @return A list of [Page] objects representing the pages of the chapter.
      */
     suspend fun getPageList(chapter: SChapter): List<Page>
+
+
+    fun setupPreferenceScreen(screen: PreferenceScreen)
 }

@@ -10,10 +10,10 @@ export './Models/DMedia.dart';
 export './Models/Page.dart';
 export './Models/Pages.dart';
 export './Models/Video.dart';
+export './Models/SourcePreference.dart';
 export './Screen/ExtensionList.dart';
 export './Screen/ExtensionManagerScreen.dart';
 export './Settings/Settings.dart';
 
 // maybe needed sometimes
 export './Mangayomi/Models/Source.dart';
-export './Mangayomi/Eval/dart/model/source_preference.dart';

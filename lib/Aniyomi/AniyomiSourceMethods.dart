@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import '../Extensions/SourceMethods.dart';
 import '../Models/Page.dart';
+import '../Models/SourcePreference.dart';
 
 class AniyomiSourceMethods implements SourceMethods {
   static const platform = MethodChannel('aniyomiExtensionBridge');
@@ -132,5 +133,108 @@ class AniyomiSourceMethods implements SourceMethods {
     return list
         .map((e) => PageUrl.fromJson(Map<String, dynamic>.from(e)))
         .toList();
+  }
+
+  @override
+  Future<String?> getNovelContent(String chapterTitle, String chapterId) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<SourcePreference>> getPreference() async {
+    final result = await platform.invokeMethod("getPreference", {
+      'sourceId': source.id,
+      'isAnime': isAnime,
+    });
+
+    if (result == null) return const [];
+
+    if (result is String) return const [];
+
+    return List<dynamic>.from(
+      result,
+    ).map((e) => mapToSourcePreference(Map<String, dynamic>.from(e))).toList();
+  }
+}
+
+SourcePreference mapToSourcePreference(Map<String, dynamic> json) {
+  final type = json['type'] as String?;
+  switch (type) {
+    case 'checkbox':
+      return SourcePreference(
+        key: json['key'],
+        type: type,
+        checkBoxPreference: CheckBoxPreference(
+          title: json['title'],
+          summary: json['summary'],
+          value: json['value'],
+        ),
+      );
+
+    case 'switch':
+      return SourcePreference(
+        key: json['key'],
+        type: type,
+        switchPreferenceCompat: SwitchPreferenceCompat(
+          title: json['title'],
+          summary: json['summary'],
+          value: json['value'],
+        ),
+      );
+
+    case 'list':
+      final entries = (json['entries'] as List?)
+          ?.map((e) => e.toString())
+          .toList();
+      final entryValues = (json['entryValues'] as List?)
+          ?.map((e) => e.toString())
+          .toList();
+      final valueIndex = entryValues?.indexOf(json['value']?.toString() ?? '');
+      return SourcePreference(
+        key: json['key'],
+        type: type,
+        listPreference: ListPreference(
+          title: json['title'],
+          summary: json['summary'],
+          entries: entries,
+          entryValues: entryValues,
+          valueIndex: valueIndex != -1 ? valueIndex : 0,
+        ),
+      );
+
+    case 'multi_select':
+      final entries = (json['entries'] as List?)
+          ?.map((e) => e.toString())
+          .toList();
+      final entryValues = (json['entryValues'] as List?)
+          ?.map((e) => e.toString())
+          .toList();
+      final values =
+          (json['value'] as List?)?.map((e) => e.toString()).toList() ?? [];
+      return SourcePreference(
+        key: json['key'],
+        type: type,
+        multiSelectListPreference: MultiSelectListPreference(
+          title: json['title'],
+          summary: json['summary'],
+          entries: entries,
+          entryValues: entryValues,
+          values: values,
+        ),
+      );
+
+    case 'text':
+      return SourcePreference(
+        key: json['key'],
+        type: type,
+        editTextPreference: EditTextPreference(
+          title: json['title'],
+          summary: json['summary'],
+          value: json['value']?.toString(),
+        ),
+      );
+
+    default:
+      return SourcePreference(key: json['key']);
   }
 }

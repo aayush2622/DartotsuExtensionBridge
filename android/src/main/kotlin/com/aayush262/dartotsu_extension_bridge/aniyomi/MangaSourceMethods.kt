@@ -1,11 +1,13 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import android.util.Log
+import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -62,6 +64,14 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
 
     override suspend fun getPageList( chapter: SChapter): List<Page> {
        return (source).getPageList(chapter)
+    }
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        if (source is ConfigurableSource) {
+            source.setupPreferenceScreen(screen)
+        } else {
+            throw NoPreferenceScreenException("This source does not support preferences.")
+        }
     }
 
     override suspend fun getEpisodeList(media: SAnime): List<SEpisode> {

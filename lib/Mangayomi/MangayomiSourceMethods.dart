@@ -1,3 +1,4 @@
+import 'package:dartotsu_extension_bridge/Mangayomi/Eval/dart/model/source_preference.dart';
 import 'package:dartotsu_extension_bridge/Models/DEpisode.dart';
 
 import 'package:dartotsu_extension_bridge/Models/DMedia.dart';
@@ -7,6 +8,7 @@ import 'package:dartotsu_extension_bridge/Models/Page.dart';
 import 'package:dartotsu_extension_bridge/Models/Pages.dart';
 
 import 'package:dartotsu_extension_bridge/Models/Source.dart';
+import 'package:dartotsu_extension_bridge/Models/SourcePreference.dart' as s;
 
 import 'package:dartotsu_extension_bridge/Models/Video.dart';
 import 'package:flutter/foundation.dart';
@@ -155,5 +157,51 @@ class MangayomiSourceMethods implements SourceMethods {
             .toList(),
       );
     }).toList();
+  }
+
+  @override
+  Future<String?> getNovelContent(String chapterTitle, String chapterId) async {
+    try {
+      final data = await _ensureSource(
+        (mSource) => getExtensionService(
+          mSource,
+        ).getHtmlContent(chapterTitle, chapterId),
+      );
+
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<s.SourcePreference>> getPreference() async {
+    String getType(SourcePreference pref) {
+      if (pref.checkBoxPreference != null) {
+        return "checkbox";
+      } else if (pref.listPreference != null) {
+        return "list";
+      } else if (pref.multiSelectListPreference != null) {
+        return "multi_select";
+      } else if (pref.switchPreferenceCompat != null) {
+        return "switch";
+      } else if (pref.editTextPreference != null) {
+        return "text";
+      } else {
+        return "other";
+      }
+    }
+    try {
+      final data = _ensureSource(
+        (mSource) => getExtensionService(mSource).getSourcePreferences(),
+      );
+      return data
+          .map(
+            (p) => s.SourcePreference.fromJson(p.toJson())..type = getType(p),
+          )
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
 }
