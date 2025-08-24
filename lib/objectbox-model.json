@@ -1,0 +1,292 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:3017083632140752865",
+      "lastPropertyId": "10:3875180661503052837",
+      "name": "BridgeSettings",
+      "properties": [
+        {
+          "id": "1:7385416695098923515",
+          "name": "id",
+          "type": 6,
+          "flags": 129
+        },
+        {
+          "id": "2:5461218897682377574",
+          "name": "currentManager",
+          "type": 9
+        },
+        {
+          "id": "3:6980582292414189719",
+          "name": "sortedAnimeExtensions",
+          "type": 30
+        },
+        {
+          "id": "4:5494606006206670012",
+          "name": "sortedMangaExtensions",
+          "type": 30
+        },
+        {
+          "id": "5:2160888588355212473",
+          "name": "sortedNovelExtensions",
+          "type": 30
+        },
+        {
+          "id": "6:625425145860600723",
+          "name": "aniyomiAnimeExtensions",
+          "type": 30
+        },
+        {
+          "id": "7:8413454826115746665",
+          "name": "aniyomiMangaExtensions",
+          "type": 30
+        },
+        {
+          "id": "8:5123602363349707106",
+          "name": "mangayomiAnimeExtensions",
+          "type": 30
+        },
+        {
+          "id": "9:1668157684537078137",
+          "name": "mangayomiMangaExtensions",
+          "type": 30
+        },
+        {
+          "id": "10:3875180661503052837",
+          "name": "mangayomiNovelExtensions",
+          "type": 30
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:1037367280118210497",
+      "lastPropertyId": "32:8380072201576843240",
+      "name": "MSource",
+      "properties": [
+        {
+          "id": "1:4517173364103937122",
+          "name": "id",
+          "type": 6
+        },
+        {
+          "id": "2:4864129207014969653",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "3:5496403385401579182",
+          "name": "baseUrl",
+          "type": 9
+        },
+        {
+          "id": "4:465942119624508515",
+          "name": "lang",
+          "type": 9
+        },
+        {
+          "id": "5:2491974056729134955",
+          "name": "isActive",
+          "type": 1
+        },
+        {
+          "id": "6:4127123531630103491",
+          "name": "isAdded",
+          "type": 1
+        },
+        {
+          "id": "7:2608478752515723874",
+          "name": "isPinned",
+          "type": 1
+        },
+        {
+          "id": "8:7195486618826505898",
+          "name": "isNsfw",
+          "type": 1
+        },
+        {
+          "id": "9:8854715886408609136",
+          "name": "sourceCode",
+          "type": 9
+        },
+        {
+          "id": "10:6525923374135803509",
+          "name": "sourceCodeUrl",
+          "type": 9
+        },
+        {
+          "id": "11:144817716989114854",
+          "name": "typeSource",
+          "type": 9
+        },
+        {
+          "id": "12:6885407468883258140",
+          "name": "iconUrl",
+          "type": 9
+        },
+        {
+          "id": "13:4069721778451744564",
+          "name": "isFullData",
+          "type": 1
+        },
+        {
+          "id": "14:2768793411449391285",
+          "name": "hasCloudflare",
+          "type": 1
+        },
+        {
+          "id": "15:5034027805215073129",
+          "name": "lastUsed",
+          "type": 1
+        },
+        {
+          "id": "16:8481874123581026313",
+          "name": "dateFormat",
+          "type": 9
+        },
+        {
+          "id": "17:7921323983743914316",
+          "name": "dateFormatLocale",
+          "type": 9
+        },
+        {
+          "id": "18:2102750521923181473",
+          "name": "apiUrl",
+          "type": 9
+        },
+        {
+          "id": "19:6548404280092392234",
+          "name": "version",
+          "type": 9
+        },
+        {
+          "id": "20:3940550129983865252",
+          "name": "versionLast",
+          "type": 9
+        },
+        {
+          "id": "21:4724082327497106294",
+          "name": "headers",
+          "type": 9
+        },
+        {
+          "id": "22:7106689989090702219",
+          "name": "isManga",
+          "type": 1
+        },
+        {
+          "id": "23:3574613180096596136",
+          "name": "appMinVerReq",
+          "type": 9
+        },
+        {
+          "id": "24:5074971825438943388",
+          "name": "additionalParams",
+          "type": 9
+        },
+        {
+          "id": "25:3364473604122449172",
+          "name": "isLocal",
+          "type": 1
+        },
+        {
+          "id": "26:7054086330193940801",
+          "name": "isObsolete",
+          "type": 1
+        },
+        {
+          "id": "27:2297068311884952510",
+          "name": "repo",
+          "type": 9
+        },
+        {
+          "id": "30:2424857194541808558",
+          "name": "obxId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "31:1258971489016184429",
+          "name": "dbItemType",
+          "type": 6
+        },
+        {
+          "id": "32:8380072201576843240",
+          "name": "dbSourceCodeLanguage",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:4196949597625950906",
+      "lastPropertyId": "3:5171382770766947527",
+      "name": "SourcePreference",
+      "properties": [
+        {
+          "id": "1:4259391895135661600",
+          "name": "id",
+          "type": 6,
+          "flags": 129
+        },
+        {
+          "id": "2:7789443999229216687",
+          "name": "sourceId",
+          "type": 6
+        },
+        {
+          "id": "3:5171382770766947527",
+          "name": "key",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:3099139859148263273",
+      "lastPropertyId": "4:2233054663462614359",
+      "name": "SourcePreferenceStringValue",
+      "properties": [
+        {
+          "id": "1:3972796288486480918",
+          "name": "id",
+          "type": 6,
+          "flags": 129
+        },
+        {
+          "id": "2:4084354197495346396",
+          "name": "sourceId",
+          "type": 6
+        },
+        {
+          "id": "3:8560305752570954748",
+          "name": "key",
+          "type": 9
+        },
+        {
+          "id": "4:2233054663462614359",
+          "name": "value",
+          "type": 9
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "4:3099139859148263273",
+  "lastIndexId": "0:0",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [
+    5273530442678863311,
+    3949267022797947081
+  ],
+  "retiredRelationUids": [],
+  "version": 1
+}

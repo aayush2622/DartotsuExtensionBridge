@@ -1,12 +1,13 @@
 import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:isar/isar.dart';
-
+import '../objectbox.g.dart';
 import '../dartotsu_extension_bridge.dart';
 import 'http/m_client.dart';
 import 'lib.dart';
+
+// Make sure this is initialized somewhere before using the manager
+late final Box<MSource> objectboxMSourceBox;
 
 class MangayomiExtensionManager extends GetxController {
   final installedAnimeExtensions = Rx<List<MSource>>([]);
@@ -25,13 +26,12 @@ class MangayomiExtensionManager extends GetxController {
     installedNovelExtensions.bindStream(getExtensionsStream(ItemType.novel));
   }
 
-  Stream<List<MSource>> getExtensionsStream(ItemType itemType) async* {
-    yield* isar.mSources
-        .filter()
-        .idIsNotNull()
-        .and()
-        .itemTypeEqualTo(itemType)
-        .watch(fireImmediately: true);
+  Stream<List<MSource>> getExtensionsStream(ItemType itemType) {
+    final query = objectboxMSourceBox
+        .query(MSource_.dbItemType.equals(itemType.index))
+        .build();
+
+    return query.stream().map((_) => query.find());
   }
 
   Future<List<MSource>> fetchAvailableExtensionsStream(
@@ -51,11 +51,12 @@ class MangayomiExtensionManager extends GetxController {
       }
       final sourceList = (jsonDecode(req.body) as List)
           .map((e) => MSource.fromJson(e)..repo = repo)
-          .where((source) => source.itemType == itemType)
+          .where((source) => source.itemType.index == itemType.index)
           .toList();
 
       sources.addAll(sourceList);
     }
+
     switch (itemType) {
       case ItemType.anime:
         availableAnimeExtensions.value = sources;
@@ -83,7 +84,7 @@ class MangayomiExtensionManager extends GetxController {
         ..sourceCode = req.body
         ..headers = jsonEncode(headers);
 
-      await isar.writeTxnSync(() async => isar.mSources.putSync(s));
+      objectboxMSourceBox.put(s);
     } catch (e) {
       debugPrint("Error installing source: $e");
       return Future.error(e);
@@ -93,9 +94,7 @@ class MangayomiExtensionManager extends GetxController {
   Future<void> uninstallSource(Source source) async {
     try {
       var mSource = await getInstalled(source.itemType!, int.parse(source.id!));
-      await isar.writeTxnSync(
-        () async => isar.mSources.deleteSync(mSource.id!),
-      );
+      objectboxMSourceBox.remove(mSource.id);
     } catch (e) {
       debugPrint("Error uninstalling source: $e");
       return Future.error(e);
@@ -115,7 +114,7 @@ class MangayomiExtensionManager extends GetxController {
         ..version = source.version
         ..headers = jsonEncode(headers);
 
-      await isar.writeTxnSync(() async => isar.mSources.putSync(s));
+      objectboxMSourceBox.put(s);
     } catch (e) {
       debugPrint("Error updating source: $e");
       return Future.error(e);
@@ -123,42 +122,35 @@ class MangayomiExtensionManager extends GetxController {
   }
 
   Future<MSource> getAvailable(ItemType itemType, int id) async {
+    List<MSource> list;
     switch (itemType) {
       case ItemType.anime:
-        return availableAnimeExtensions.value.firstWhere(
-          (source) => source.id == id,
-          orElse: () => throw Exception('Source not found'),
-        );
+        list = availableAnimeExtensions.value;
+        break;
       case ItemType.manga:
-        return availableMangaExtensions.value.firstWhere(
-          (source) => source.id == id,
-          orElse: () => throw Exception('Source not found'),
-        );
+        list = availableMangaExtensions.value;
+        break;
       case ItemType.novel:
-        return availableNovelExtensions.value.firstWhere(
-          (source) => source.id == id,
-          orElse: () => throw Exception('Source not found'),
-        );
+        list = availableNovelExtensions.value;
+        break;
     }
+    return list.firstWhere(
+      (source) => source.id == id,
+      orElse: () => throw Exception('Source not found'),
+    );
   }
 
   Future<MSource> getInstalled(ItemType itemType, int id) async {
-    switch (itemType) {
-      case ItemType.anime:
-        return installedAnimeExtensions.value.firstWhere(
-          (source) => source.id == id,
-          orElse: () => throw Exception('Source not found'),
-        );
-      case ItemType.manga:
-        return installedMangaExtensions.value.firstWhere(
-          (source) => source.id == id,
-          orElse: () => throw Exception('Source not found'),
-        );
-      case ItemType.novel:
-        return installedNovelExtensions.value.firstWhere(
-          (source) => source.id == id,
-          orElse: () => throw Exception('Source not found'),
-        );
+    final query = objectboxMSourceBox
+        .query(
+          MSource_.dbItemType.equals(itemType.index) & MSource_.id.equals(id),
+        )
+        .build();
+    final result = query.find();
+    if (result.isNotEmpty) {
+      return result.first;
+    } else {
+      throw Exception('Source not found');
     }
   }
 }

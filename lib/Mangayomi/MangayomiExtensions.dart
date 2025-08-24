@@ -1,6 +1,9 @@
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:get/get.dart';
-
+import 'package:objectbox/objectbox.dart';
+import 'package:dartotsu_extension_bridge/Models/Source.dart' as core;
+import 'package:dartotsu_extension_bridge/Mangayomi/Models/Source.dart'
+    as manga;
 import 'MangayomiExtensionManager.dart';
 
 class MangayomiExtensions extends Extension {
@@ -8,14 +11,38 @@ class MangayomiExtensions extends Extension {
     initialize();
   }
 
+  manga.ItemType toMangaItemType(core.ItemType type) {
+    switch (type) {
+      case core.ItemType.anime:
+        return manga.ItemType.anime;
+      case core.ItemType.manga:
+        return manga.ItemType.manga;
+      case core.ItemType.novel:
+        return manga.ItemType.novel;
+    }
+  }
+
   final _manager = Get.put(MangayomiExtensionManager());
+
+  late final Store _store = Get.find<Store>();
+  late final Box<BridgeSettings> _settingsBox = _store.box<BridgeSettings>();
+
+  BridgeSettings _getSettings() {
+    final settings = _settingsBox.get(26);
+    if (settings == null) throw Exception('BridgeSettings not found');
+    return settings;
+  }
+
+  void _putSettings(BridgeSettings settings) {
+    _settingsBox.put(settings);
+  }
 
   @override
   Future<void> initialize() async {
     if (isInitialized.value) return;
     isInitialized.value = true;
 
-    final settings = isar.bridgeSettings.getSync(26)!;
+    final settings = _getSettings();
 
     await Future.wait([
       getInstalledAnimeExtensions(),
@@ -28,35 +55,38 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) =>
-      _fetchAvailable(ItemType.anime, repos);
+  Future<List<core.Source>> fetchAvailableAnimeExtensions(
+    List<String>? repos,
+  ) => _fetchAvailable(core.ItemType.anime, repos);
 
   @override
-  Future<List<Source>> fetchAvailableMangaExtensions(List<String>? repos) =>
-      _fetchAvailable(ItemType.manga, repos);
+  Future<List<core.Source>> fetchAvailableMangaExtensions(
+    List<String>? repos,
+  ) => _fetchAvailable(core.ItemType.manga, repos);
 
   @override
-  Future<List<Source>> fetchAvailableNovelExtensions(List<String>? repos) =>
-      _fetchAvailable(ItemType.novel, repos);
+  Future<List<core.Source>> fetchAvailableNovelExtensions(
+    List<String>? repos,
+  ) => _fetchAvailable(core.ItemType.novel, repos);
 
-  Future<List<Source>> _fetchAvailable(
-    ItemType type,
+  Future<List<core.Source>> _fetchAvailable(
+    core.ItemType type,
     List<String>? repos,
   ) async {
-    final settings = isar.bridgeSettings.getSync(26)!;
+    final settings = _getSettings();
 
     switch (type) {
-      case ItemType.anime:
+      case core.ItemType.anime:
         settings.mangayomiAnimeExtensions = repos ?? [];
         break;
-      case ItemType.manga:
+      case core.ItemType.manga:
         settings.mangayomiMangaExtensions = repos ?? [];
         break;
-      case ItemType.novel:
+      case core.ItemType.novel:
         settings.mangayomiNovelExtensions = repos ?? [];
         break;
     }
-    isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
+    _putSettings(settings);
 
     final sources = await _manager.fetchAvailableExtensionsStream(type, repos);
     final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();
@@ -65,7 +95,7 @@ class MangayomiExtensions extends Extension {
         .map((e) {
           var map = e.toJson();
           map['extensionType'] = 0;
-          return Source.fromJson(map);
+          return core.Source.fromJson(map);
         })
         .where((s) => !installedIds.contains(s.id))
         .toList();
@@ -76,25 +106,25 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<List<Source>> getInstalledAnimeExtensions() =>
-      _getInstalled(ItemType.anime);
+  Future<List<core.Source>> getInstalledAnimeExtensions() =>
+      _getInstalled(core.ItemType.anime);
 
   @override
-  Future<List<Source>> getInstalledMangaExtensions() =>
-      _getInstalled(ItemType.manga);
+  Future<List<core.Source>> getInstalledMangaExtensions() =>
+      _getInstalled(core.ItemType.manga);
 
   @override
-  Future<List<Source>> getInstalledNovelExtensions() =>
-      _getInstalled(ItemType.novel);
+  Future<List<core.Source>> getInstalledNovelExtensions() =>
+      _getInstalled(core.ItemType.novel);
 
-  Future<List<Source>> _getInstalled(ItemType type) async {
+  Future<List<core.Source>> _getInstalled(core.ItemType type) async {
     final stream = _manager
         .getExtensionsStream(type)
         .map(
           (sources) => sources.map((s) {
             var map = s.toJson();
             map['extensionType'] = 0;
-            return Source.fromJson(map);
+            return core.Source.fromJson(map);
           }).toList(),
         )
         .asBroadcastStream();
@@ -104,7 +134,7 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<void> installSource(Source source) async {
+  Future<void> installSource(core.Source source) async {
     if (source.id?.isEmpty ?? true) {
       return Future.error('Source ID is required for installation.');
     }
@@ -116,7 +146,7 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<void> uninstallSource(Source source) async {
+  Future<void> uninstallSource(core.Source source) async {
     if (source.id?.isEmpty ?? true) {
       return Future.error('Source ID is required for uninstallation.');
     }
@@ -131,14 +161,14 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<void> updateSource(Source source) async {
+  Future<void> updateSource(core.Source source) async {
     if (source.id?.isEmpty ?? true) {
       return Future.error('Source ID is required for update.');
     }
     await _manager.updateSource(source);
   }
 
-  Future<void> checkForUpdates(ItemType type) async {
+  Future<void> checkForUpdates(core.ItemType type) async {
     final availableMap = {for (var s in _getAvailableList(type)) s.id: s};
 
     final updated = getInstalledRx(type).value.map((installed) {
@@ -157,13 +187,13 @@ class MangayomiExtensions extends Extension {
     getInstalledRx(type).value = updated;
   }
 
-  List<MSource> _getAvailableList(ItemType type) {
+  List<manga.MSource> _getAvailableList(core.ItemType type) {
     switch (type) {
-      case ItemType.anime:
+      case core.ItemType.anime:
         return _manager.availableAnimeExtensions.value;
-      case ItemType.manga:
+      case core.ItemType.manga:
         return _manager.availableMangaExtensions.value;
-      case ItemType.novel:
+      case core.ItemType.novel:
         return _manager.availableNovelExtensions.value;
     }
   }

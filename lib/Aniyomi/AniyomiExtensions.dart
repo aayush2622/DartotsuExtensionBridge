@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:objectbox/objectbox.dart';
+import 'package:dartotsu_extension_bridge/Models/Source.dart' as aniyomi;
 
 class AniyomiExtensions extends Extension {
   AniyomiExtensions() {
@@ -19,6 +21,23 @@ class AniyomiExtensions extends Extension {
   final Rx<List<Source>> availableMangaExtensionsUnmodified = Rx([]);
   final Rx<List<Source>> availableNovelExtensionsUnmodified = Rx([]);
 
+  // ObjectBox store and boxes
+  static late final Store objectboxStore;
+  static late final Box<BridgeSettings> bridgeSettingsBox;
+
+  static Future<void> setupObjectBox(Store store) async {
+    objectboxStore = store;
+    bridgeSettingsBox = store.box<BridgeSettings>();
+  }
+
+  BridgeSettings getBridgeSettings(int id) {
+    return bridgeSettingsBox.get(id)!;
+  }
+
+  void putBridgeSettings(BridgeSettings settings) {
+    bridgeSettingsBox.put(settings);
+  }
+
   @override
   bool get supportsNovel => false;
 
@@ -26,7 +45,7 @@ class AniyomiExtensions extends Extension {
   Future<void> initialize() async {
     if (isInitialized.value) return;
     isInitialized.value = true;
-    var settings = isar.bridgeSettings.getSync(26)!;
+    var settings = getBridgeSettings(26);
     getInstalledAnimeExtensions();
     getInstalledMangaExtensions();
     getInstalledNovelExtensions();
@@ -36,30 +55,30 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) =>
-      _fetchAvailable('fetchAnimeExtensions', ItemType.anime, repos);
+      _fetchAvailable('fetchAnimeExtensions', aniyomi.ItemType.anime, repos);
 
   @override
   Future<List<Source>> fetchAvailableMangaExtensions(List<String>? repos) =>
-      _fetchAvailable('fetchMangaExtensions', ItemType.manga, repos);
+      _fetchAvailable('fetchMangaExtensions', aniyomi.ItemType.manga, repos);
 
   Future<List<Source>> _fetchAvailable(
     String method,
-    ItemType type,
+    aniyomi.ItemType type,
     List<String>? repos,
   ) async {
-    final settings = isar.bridgeSettings.getSync(26)!;
+    final settings = getBridgeSettings(26);
 
     switch (type) {
-      case ItemType.anime:
+      case aniyomi.ItemType.anime:
         settings.aniyomiAnimeExtensions = repos ?? [];
         break;
-      case ItemType.manga:
+      case aniyomi.ItemType.manga:
         settings.aniyomiMangaExtensions = repos ?? [];
         break;
-      case ItemType.novel:
+      case aniyomi.ItemType.novel:
         break;
     }
-    isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
+    putBridgeSettings(settings);
 
     final sources = await _loadExtensions(method, repos: repos);
     final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();
@@ -80,15 +99,18 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<List<Source>> getInstalledAnimeExtensions() {
-    return _getInstalled('getInstalledAnimeExtensions', ItemType.anime);
+    return _getInstalled('getInstalledAnimeExtensions', aniyomi.ItemType.anime);
   }
 
   @override
   Future<List<Source>> getInstalledMangaExtensions() {
-    return _getInstalled('getInstalledMangaExtensions', ItemType.manga);
+    return _getInstalled('getInstalledMangaExtensions', aniyomi.ItemType.manga);
   }
 
-  Future<List<Source>> _getInstalled(String method, ItemType type) async {
+  Future<List<Source>> _getInstalled(
+    String method,
+    aniyomi.ItemType type,
+  ) async {
     final sources = await _loadExtensions(method);
     getInstalledRx(type).value = sources;
     checkForUpdates(type);
@@ -155,16 +177,17 @@ class AniyomiExtensions extends Extension {
           'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
         );
       }
+
       final rx = getAvailableRx(source.itemType!);
       rx.value = rx.value.where((s) => s.id != source.id).toList();
       switch (source.itemType) {
-        case ItemType.anime:
-          getInstalledAnimeExtensions(); // because it also update extension on kotlin side
+        case aniyomi.ItemType.anime:
+          getInstalledAnimeExtensions();
           break;
-        case ItemType.manga:
+        case aniyomi.ItemType.manga:
           getInstalledMangaExtensions();
           break;
-        case ItemType.novel:
+        case aniyomi.ItemType.novel:
           break;
         default:
           throw Exception('Unsupported item type: ${source.itemType}');
@@ -253,6 +276,7 @@ class AniyomiExtensions extends Extension {
         apkFile.path,
         appId: packageName,
       );
+
       if (result['isSuccess'] != true) {
         debugPrint(
           'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
@@ -263,18 +287,18 @@ class AniyomiExtensions extends Extension {
       }
 
       switch (source.itemType) {
-        case ItemType.anime:
-          getInstalledAnimeExtensions(); // because it also update extension on kotlin side
+        case aniyomi.ItemType.anime:
+          getInstalledAnimeExtensions();
           break;
-        case ItemType.manga:
+        case aniyomi.ItemType.manga:
           getInstalledMangaExtensions();
           break;
-        case ItemType.novel:
+        case aniyomi.ItemType.novel:
           break;
         default:
           throw Exception('Unsupported item type: ${source.itemType}');
       }
-      debugPrint('Successfully update package: $packageName');
+      debugPrint('Successfully updated package: $packageName');
     } catch (e) {
       if (kDebugMode) {
         print('Error installing source: $e');
@@ -285,17 +309,17 @@ class AniyomiExtensions extends Extension {
 
   void _removeFromInstalledList(Source source) {
     switch (source.itemType) {
-      case ItemType.anime:
+      case aniyomi.ItemType.anime:
         installedAnimeExtensions.value = installedAnimeExtensions.value
             .where((e) => e.name != source.name)
             .toList();
         break;
-      case ItemType.manga:
+      case aniyomi.ItemType.manga:
         installedMangaExtensions.value = installedMangaExtensions.value
             .where((e) => e.name != source.name)
             .toList();
         break;
-      case ItemType.novel:
+      case aniyomi.ItemType.novel:
         installedNovelExtensions.value = installedNovelExtensions.value
             .where((e) => e.name != source.name)
             .toList();
@@ -305,18 +329,18 @@ class AniyomiExtensions extends Extension {
     }
   }
 
-  Rx<List<Source>> getAvailableUnmodified(ItemType type) {
+  Rx<List<Source>> getAvailableUnmodified(aniyomi.ItemType type) {
     switch (type) {
-      case ItemType.anime:
+      case aniyomi.ItemType.anime:
         return availableAnimeExtensionsUnmodified;
-      case ItemType.manga:
+      case aniyomi.ItemType.manga:
         return availableMangaExtensionsUnmodified;
-      case ItemType.novel:
+      case aniyomi.ItemType.novel:
         return availableNovelExtensionsUnmodified;
     }
   }
 
-  Future<void> checkForUpdates(ItemType type) async {
+  Future<void> checkForUpdates(aniyomi.ItemType type) async {
     final availableMap = {
       for (var s in getAvailableUnmodified(type).value) s.id: s,
     };

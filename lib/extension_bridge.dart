@@ -5,38 +5,31 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:isar/isar.dart';
 
 import 'Aniyomi/AniyomiExtensions.dart';
 import 'ExtensionManager.dart';
-import 'Mangayomi/Eval/dart/model/source_preference.dart';
+import 'package:objectbox/objectbox.dart';
+import 'objectbox.g.dart';
 import 'Mangayomi/MangayomiExtensions.dart';
-import 'Mangayomi/Models/Source.dart';
 
-late Isar isar;
+late Store objectboxStore;
 WebViewEnvironment? webViewEnvironment;
 
 class DartotsuExtensionBridge {
-  Future<void> init(Isar? isarInstance, String dirName) async {
+  Future<void> init(Store? storeInstance, String dirName) async {
     var document = await getDatabaseDirectory(dirName);
-    if (isarInstance == null) {
-      isar = Isar.openSync([
-        MSourceSchema,
-        SourcePreferenceSchema,
-        SourcePreferenceStringValueSchema,
-        BridgeSettingsSchema,
-      ], directory: p.join(document.path, 'isar'));
-    } else {
-      isar = isarInstance;
-    }
-    final settings = await isar.bridgeSettings
-        .filter()
-        .idEqualTo(26)
-        .findFirst();
-    if (settings == null) {
-      isar.writeTxnSync(
-        () => isar.bridgeSettings.putSync(BridgeSettings()..id = 26),
+    if (storeInstance == null) {
+      objectboxStore = await openStore(
+        directory: p.join(document.path, 'objectbox'),
       );
+    } else {
+      objectboxStore = storeInstance;
+    }
+
+    final bridgeSettingsBox = objectboxStore.box<BridgeSettings>();
+    BridgeSettings? settings = bridgeSettingsBox.get(26);
+    if (settings == null) {
+      bridgeSettingsBox.put(BridgeSettings()..id = 26);
     }
 
     if (Platform.isAndroid) {

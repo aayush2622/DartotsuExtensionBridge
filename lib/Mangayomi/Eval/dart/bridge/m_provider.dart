@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:d4rt/d4rt.dart';
 import '../../../string_extensions.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../../../extension_preferences_providers.dart';
 import '../model/filter.dart';
@@ -8,7 +11,7 @@ import '../model/m_bridge.dart';
 import '../model/m_provider.dart';
 
 class MProviderBridged {
-  final mProviderBridged = BridgedClassDefinition(
+  final mProviderBridged = BridgedClass(
     nativeType: MProvider,
     name: 'MProvider',
     constructors: {
@@ -58,6 +61,7 @@ class MProviderBridged {
       mProviderBridged,
       'package:mangayomi/bridge_lib.dart',
     );
+
     interpreter.registertopLevelFunction(
       'getPreferenceValue',
       (visitor, positionalArgs, namedArgs, _) => getPreferenceValue(
@@ -65,6 +69,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'getPrefStringValue',
       (visitor, positionalArgs, namedArgs, _) => getSourcePreferenceStringValue(
@@ -73,6 +78,7 @@ class MProviderBridged {
         positionalArgs[2] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'cryptoHandler',
       (visitor, positionalArgs, namedArgs, _) => MBridge.cryptoHandler(
@@ -82,6 +88,7 @@ class MProviderBridged {
         positionalArgs[3] as bool,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'encryptAESCryptoJS',
       (visitor, positionalArgs, namedArgs, _) => MBridge.encryptAESCryptoJS(
@@ -89,6 +96,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'decryptAESCryptoJS',
       (visitor, positionalArgs, namedArgs, _) => MBridge.decryptAESCryptoJS(
@@ -96,11 +104,13 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'deobfuscateJsPassword',
       (visitor, positionalArgs, namedArgs, _) =>
           MBridge.deobfuscateJsPassword(positionalArgs[0] as String),
     );
+
     interpreter.registertopLevelFunction(
       'sibnetExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.sibnetExtractor(
@@ -108,16 +118,19 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'myTvExtractor',
       (visitor, positionalArgs, namedArgs, _) =>
           MBridge.myTvExtractor(positionalArgs[0] as String),
     );
+
     interpreter.registertopLevelFunction(
       'okruExtractor',
       (visitor, positionalArgs, namedArgs, _) =>
           MBridge.okruExtractor(positionalArgs[0] as String),
     );
+
     interpreter.registertopLevelFunction(
       'voeExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.voeExtractor(
@@ -125,11 +138,13 @@ class MProviderBridged {
         positionalArgs[1] as String?,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'vidBomExtractor',
       (visitor, positionalArgs, namedArgs, _) =>
           MBridge.vidBomExtractor(positionalArgs[0] as String),
     );
+
     interpreter.registertopLevelFunction(
       'streamlareExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.streamlareExtractor(
@@ -138,6 +153,7 @@ class MProviderBridged {
         positionalArgs[2] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'sendVidExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.sendVidExtractor(
@@ -146,6 +162,7 @@ class MProviderBridged {
         positionalArgs[2] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'yourUploadExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.yourUploadExtractor(
@@ -155,6 +172,7 @@ class MProviderBridged {
         positionalArgs[3] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'quarkVideosExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.quarkVideosExtractor(
@@ -162,6 +180,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'ucVideosExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.ucVideosExtractor(
@@ -169,6 +188,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'quarkFilesExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.quarkFilesExtractor(
@@ -176,6 +196,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'ucFilesExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.ucFilesExtractor(
@@ -183,6 +204,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'substringAfter',
       (visitor, positionalArgs, namedArgs, _) => MBridge.substringAfter(
@@ -190,6 +212,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'substringBefore',
       (visitor, positionalArgs, namedArgs, _) => MBridge.substringBefore(
@@ -197,6 +220,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'substringBeforeLast',
       (visitor, positionalArgs, namedArgs, _) => MBridge.substringBeforeLast(
@@ -204,6 +228,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'substringAfterLast',
       (visitor, positionalArgs, namedArgs, _) => MBridge.substringAfterLast(
@@ -211,6 +236,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'getMapValue',
       (visitor, positionalArgs, namedArgs, _) => MBridge.getMapValue(
@@ -219,6 +245,7 @@ class MProviderBridged {
         namedArgs.get<bool?>('encode') ?? false,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'parseStatus',
       (visitor, positionalArgs, namedArgs, _) => MBridge.parseStatus(
@@ -226,6 +253,7 @@ class MProviderBridged {
         positionalArgs[1] as List,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'parseDates',
       (visitor, positionalArgs, namedArgs, _) => MBridge.parseDates(
@@ -234,6 +262,7 @@ class MProviderBridged {
         positionalArgs[2] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'xpath',
       (visitor, positionalArgs, namedArgs, _) => MBridge.xpath(
@@ -241,11 +270,13 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'gogoCdnExtractor',
       (visitor, positionalArgs, namedArgs, _) =>
           MBridge.gogoCdnExtractor(positionalArgs[0] as String),
     );
+
     interpreter.registertopLevelFunction(
       'doodExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.doodExtractor(
@@ -253,6 +284,7 @@ class MProviderBridged {
         positionalArgs[1] as String?,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'streamTapeExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.streamTapeExtractor(
@@ -260,6 +292,7 @@ class MProviderBridged {
         positionalArgs[1] as String?,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'mp4UploadExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.mp4UploadExtractor(
@@ -269,6 +302,7 @@ class MProviderBridged {
         positionalArgs[3] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'streamWishExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.streamWishExtractor(
@@ -276,6 +310,7 @@ class MProviderBridged {
         positionalArgs[1] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'filemoonExtractor',
       (visitor, positionalArgs, namedArgs, _) => MBridge.filemoonExtractor(
@@ -284,26 +319,31 @@ class MProviderBridged {
         positionalArgs[2] as String,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'unpackJs',
       (visitor, positionalArgs, namedArgs, _) =>
           MBridge.unpackJs(positionalArgs[0] as String),
     );
+
     interpreter.registertopLevelFunction(
       'unpackJsAndCombine',
       (visitor, positionalArgs, namedArgs, _) =>
           MBridge.unpackJsAndCombine(positionalArgs[0] as String),
     );
+
     interpreter.registertopLevelFunction(
       'evalJs',
       (visitor, positionalArgs, namedArgs, _) =>
           getJavascriptRuntime().evaluateAsync(positionalArgs[0] as String),
     );
+
     interpreter.registertopLevelFunction(
       'evalJsSync',
       (visitor, positionalArgs, namedArgs, _) =>
           getJavascriptRuntime().evaluate(positionalArgs[0] as String),
     );
+
     interpreter.registertopLevelFunction(
       'regExp',
       (visitor, positionalArgs, namedArgs, _) => MBridge.regExp(
@@ -314,6 +354,7 @@ class MProviderBridged {
         positionalArgs[4] as int,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'sortMapList',
       (visitor, positionalArgs, namedArgs, _) => MBridge.sortMapList(
@@ -322,25 +363,65 @@ class MProviderBridged {
         positionalArgs[2] as int,
       ),
     );
+
     interpreter.registertopLevelFunction(
       'parseHtml',
       (visitor, positionalArgs, namedArgs, _) =>
-          MBridge.parsHtml(positionalArgs[0] as String),
+          MBridge.parseHtml(positionalArgs[0] as String),
     );
+
     interpreter.registertopLevelFunction(
       'getUrlWithoutDomain',
       (visitor, positionalArgs, namedArgs, _) =>
           (positionalArgs[0] as String).getUrlWithoutDomain,
     );
+
+    // ✅ Local implementation instead of missing MBridge.evaluateJavascriptViaWebview
     interpreter.registertopLevelFunction(
       'evaluateJavascriptViaWebview',
-      (visitor, positionalArgs, namedArgs, _) =>
-          MBridge.evaluateJavascriptViaWebview(
-            positionalArgs[0] as String,
-            (positionalArgs[1] as Map).cast(),
-            (positionalArgs[2] as List).cast(),
-            time: namedArgs.get<int?>('time') ?? 30,
-          ),
+      (visitor, positionalArgs, namedArgs, _) => evaluateJavascriptViaWebview(
+        positionalArgs[0] as String,
+        (positionalArgs[1] as Map).cast<String, String>(),
+        (positionalArgs[2] as List).cast<String>(),
+        time: namedArgs.get<int?>('time') ?? 30,
+      ),
     );
   }
+}
+
+Future<String> evaluateJavascriptViaWebview(
+  String script,
+  Map<String, String> headers,
+  List<String> cookies, {
+  int time = 30,
+}) async {
+  final completer = Completer<String>();
+  late HeadlessInAppWebView headless;
+
+  headless = HeadlessInAppWebView(
+    initialData: InAppWebViewInitialData(data: '<html><body></body></html>'),
+    onWebViewCreated: (controller) async {},
+    onLoadStop: (controller, url) async {
+      try {
+        final result = await controller.evaluateJavascript(source: script);
+        completer.complete(result?.toString() ?? '');
+      } catch (e) {
+        completer.complete('');
+      } finally {
+        await headless.dispose();
+      }
+    },
+  );
+
+  await headless.run();
+
+  return completer.future.timeout(
+    Duration(seconds: time),
+    onTimeout: () async {
+      try {
+        await headless.dispose();
+      } catch (_) {}
+      return '';
+    },
+  );
 }

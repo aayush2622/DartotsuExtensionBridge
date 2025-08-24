@@ -3,7 +3,7 @@ import 'package:d4rt/d4rt.dart';
 import '../model/m_manga.dart';
 
 class MMangaBridge {
-  final mMangaBridgedClass = BridgedClassDefinition(
+  final mMangaBridgedClass = BridgedClass(
     nativeType: MManga,
     name: 'MManga',
     constructors: {

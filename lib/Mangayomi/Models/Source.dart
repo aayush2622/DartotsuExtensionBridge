@@ -1,81 +1,71 @@
-import 'package:isar/isar.dart';
-
-import '../../Models/Source.dart';
+import 'package:objectbox/objectbox.dart';
 import '../Eval/dart/model/m_source.dart' as m;
 
-part 'Source.g.dart';
+enum ItemType { unknown, manga, anime, novel }
 
-@collection
-@Name("Sources")
+enum SourceCodeLanguage { unknown, dart, javascript }
+
+@Entity()
 class MSource {
-  Id? id;
+  @Id()
+  int obxId = 0;
+
+  int id;
 
   String? name;
-
   String? baseUrl;
-
   String? lang;
-
-  bool? isActive;
-
-  bool? isAdded;
-
-  bool? isPinned;
-
-  bool? isNsfw;
-
+  bool isActive;
+  bool isAdded;
+  bool isPinned;
+  bool isNsfw;
   String? sourceCode;
-
   String? sourceCodeUrl;
-
   String? typeSource;
-
   String? iconUrl;
-
-  bool? isFullData;
-
-  bool? hasCloudflare;
-
-  bool? lastUsed;
-
+  bool isFullData;
+  bool hasCloudflare;
+  bool lastUsed;
   String? dateFormat;
-
   String? dateFormatLocale;
-
   String? apiUrl;
-
   String? version;
-
   String? versionLast;
-
   String? headers;
-
-  bool? isManga;
-
-  @enumerated
-  late ItemType itemType;
-
+  bool isManga;
   String? appMinVerReq;
-
   String? additionalParams;
-
-  bool? isLocal;
-
-  bool? isObsolete;
-
+  bool isLocal;
+  bool isObsolete;
   String? repo;
-  @enumerated
-  SourceCodeLanguage sourceCodeLanguage = SourceCodeLanguage.dart;
+
+  int dbItemType;
+  int dbSourceCodeLanguage;
+
+  @Transient()
+  ItemType itemType;
+
+  @Transient()
+  SourceCodeLanguage sourceCodeLanguage;
 
   MSource({
     this.id = 0,
-    this.name = '',
-    this.baseUrl = '',
-    this.lang = '',
-    this.typeSource = '',
-    this.iconUrl = '',
-    this.dateFormat = '',
-    this.dateFormatLocale = '',
+    this.name,
+    this.baseUrl,
+    this.lang,
+    this.typeSource,
+    this.iconUrl,
+    this.dateFormat,
+    this.dateFormatLocale,
+    this.apiUrl,
+    this.sourceCodeUrl,
+    this.version = "0.0.1",
+    this.versionLast = "0.0.1",
+    this.sourceCode,
+    this.headers,
+    this.repo,
+    this.appMinVerReq,
+    this.additionalParams,
     this.isActive = true,
     this.isAdded = false,
     this.isNsfw = false,
@@ -83,84 +73,96 @@ class MSource {
     this.hasCloudflare = false,
     this.isPinned = false,
     this.lastUsed = false,
-    this.apiUrl = "",
-    this.sourceCodeUrl = "",
-    this.version = "0.0.1",
-    this.versionLast = "0.0.1",
-    this.sourceCode = '',
-    this.headers = '',
     this.isManga = true,
-    this.itemType = ItemType.manga,
-    this.appMinVerReq = "",
-    this.additionalParams = "",
     this.isLocal = false,
     this.isObsolete = false,
-    this.sourceCodeLanguage = SourceCodeLanguage.dart,
-    this.repo,
-  });
+    ItemType? itemType,
+    SourceCodeLanguage? sourceCodeLanguage,
+  }) : itemType = itemType ?? ItemType.manga,
+       sourceCodeLanguage = sourceCodeLanguage ?? SourceCodeLanguage.dart,
+       dbItemType = (itemType ?? ItemType.manga).index,
+       dbSourceCodeLanguage =
+           (sourceCodeLanguage ?? SourceCodeLanguage.dart).index;
 
-  MSource.fromJson(Map<String, dynamic> json) {
-    apiUrl = json['apiUrl'];
-    appMinVerReq = json['appMinVerReq'];
-    baseUrl = json['baseUrl'];
-    dateFormat = json['dateFormat'];
-    dateFormatLocale = json['dateFormatLocale'];
-    hasCloudflare = json['hasCloudflare'];
-    headers = json['headers'];
-    iconUrl = json['iconUrl'];
-    id = json['id'];
-    isActive = json['isActive'];
-    isAdded = json['isAdded'];
-    isFullData = json['isFullData'];
-    isManga = json['isManga'];
-    itemType = ItemType.values[json['itemType'] ?? 0];
-    isNsfw = json['isNsfw'];
-    isPinned = json['isPinned'];
-    lang = json['lang'];
-    lastUsed = json['lastUsed'];
-    name = json['name'];
-    sourceCode = json['sourceCode'];
-    sourceCodeUrl = json['sourceCodeUrl'];
-    typeSource = json['typeSource'];
-    version = json['version'];
-    versionLast = json['versionLast'];
-    additionalParams = json['additionalParams'] ?? "";
-    isObsolete = json['isObsolete'];
-    isLocal = json['isLocal'];
+  void syncEnums() {
+    itemType = dbItemType >= 0 && dbItemType < ItemType.values.length
+        ? ItemType.values[dbItemType]
+        : ItemType.unknown;
+
     sourceCodeLanguage =
-        SourceCodeLanguage.values[json['sourceCodeLanguage'] ?? 0];
-    repo = json['repo'];
+        dbSourceCodeLanguage >= 0 &&
+            dbSourceCodeLanguage < SourceCodeLanguage.values.length
+        ? SourceCodeLanguage.values[dbSourceCodeLanguage]
+        : SourceCodeLanguage.unknown;
+  }
+
+  factory MSource.fromJson(Map<String, dynamic> json) {
+    final obj = MSource(
+      id: json['id'] ?? 0,
+      name: json['name'],
+      baseUrl: json['baseUrl'],
+      lang: json['lang'],
+      typeSource: json['typeSource'],
+      iconUrl: json['iconUrl'],
+      dateFormat: json['dateFormat'],
+      dateFormatLocale: json['dateFormatLocale'],
+      isActive: json['isActive'] ?? true,
+      isAdded: json['isAdded'] ?? false,
+      isNsfw: json['isNsfw'] ?? false,
+      isFullData: json['isFullData'] ?? false,
+      hasCloudflare: json['hasCloudflare'] ?? false,
+      isPinned: json['isPinned'] ?? false,
+      lastUsed: json['lastUsed'] ?? false,
+      apiUrl: json['apiUrl'],
+      sourceCodeUrl: json['sourceCodeUrl'],
+      version: json['version'] ?? "0.0.1",
+      versionLast: json['versionLast'] ?? "0.0.1",
+      sourceCode: json['sourceCode'],
+      headers: json['headers'],
+      isManga: json['isManga'] ?? true,
+      additionalParams: json['additionalParams'] ?? "",
+      isLocal: json['isLocal'] ?? false,
+      isObsolete: json['isObsolete'] ?? false,
+      repo: json['repo'],
+      appMinVerReq: json['appMinVerReq'],
+      itemType: ItemType.values[json['itemType'] ?? 0],
+      sourceCodeLanguage:
+          SourceCodeLanguage.values[json['sourceCodeLanguage'] ?? 0],
+    );
+    obj.dbItemType = obj.itemType.index;
+    obj.dbSourceCodeLanguage = obj.sourceCodeLanguage.index;
+    return obj;
   }
 
   Map<String, dynamic> toJson() => {
-    'apiUrl': apiUrl,
-    'appMinVerReq': appMinVerReq,
+    'id': id,
+    'name': name,
     'baseUrl': baseUrl,
+    'lang': lang,
+    'typeSource': typeSource,
+    'iconUrl': iconUrl,
     'dateFormat': dateFormat,
     'dateFormatLocale': dateFormatLocale,
-    'hasCloudflare': hasCloudflare,
-    'headers': headers,
-    'iconUrl': iconUrl,
-    'id': id,
     'isActive': isActive,
     'isAdded': isAdded,
-    'isFullData': isFullData,
-    'isManga': isManga,
-    'itemType': itemType.index,
     'isNsfw': isNsfw,
+    'isFullData': isFullData,
+    'hasCloudflare': hasCloudflare,
     'isPinned': isPinned,
-    'lang': lang,
     'lastUsed': lastUsed,
-    'name': name,
-    'sourceCode': sourceCode,
+    'apiUrl': apiUrl,
     'sourceCodeUrl': sourceCodeUrl,
-    'typeSource': typeSource,
     'version': version,
     'versionLast': versionLast,
+    'sourceCode': sourceCode,
+    'headers': headers,
+    'isManga': isManga,
+    'itemType': dbItemType,
+    'sourceCodeLanguage': dbSourceCodeLanguage,
+    'appMinVerReq': appMinVerReq,
     'additionalParams': additionalParams,
-    'sourceCodeLanguage': sourceCodeLanguage.index,
-    'isObsolete': isObsolete,
     'isLocal': isLocal,
+    'isObsolete': isObsolete,
     'repo': repo,
   };
 
@@ -170,16 +172,14 @@ class MSource {
     return m.MSource(
       id: id,
       name: name,
-      hasCloudflare: hasCloudflare,
-      isFullData: isFullData,
       lang: lang,
       baseUrl: baseUrl,
       apiUrl: apiUrl,
       dateFormat: dateFormat,
       dateFormatLocale: dateFormatLocale,
+      hasCloudflare: hasCloudflare,
+      isFullData: isFullData,
       additionalParams: additionalParams,
     );
   }
 }
-
-enum SourceCodeLanguage { dart, javascript }

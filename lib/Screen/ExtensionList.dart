@@ -35,7 +35,11 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
   @override
   void initState() {
     super.initState();
-    var settings = isar.bridgeSettings.getSync(26) ?? BridgeSettings();
+
+    final box = objectboxStore.box<BridgeSettings>();
+
+    var settings = box.get(26) ?? BridgeSettings();
+
     switch (itemType) {
       case ItemType.anime:
         sortedList = settings.sortedAnimeExtensions;

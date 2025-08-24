@@ -1,12 +1,12 @@
 import 'dart:convert';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 
-import '../../../../extension_bridge.dart';
 import 'video.dart';
 import '../../javascript/http.dart';
 import '../../../string_extensions.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:html/dom.dart' hide Text;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:js_packer/js_packer.dart';
@@ -31,7 +31,6 @@ import '../../../cryptoaes/crypto_aes.dart';
 import '../../../cryptoaes/deobfuscator.dart';
 import '../../../cryptoaes/js_unpacker.dart';
 import '../../../reg_exp_matcher.dart';
-import 'document.dart';
 import 'm_manga.dart';
 
 class WordSet {
@@ -59,11 +58,65 @@ class WordSet {
 }
 
 class MBridge {
-  static MDocument parsHtml(String html) {
-    return MDocument(Document.html(html));
+  static const List<String> _dateFormats = [
+    "yyyy-MM-dd",
+    "dd-MM-yyyy",
+    "MM/dd/yyyy",
+    "dd/MM/yyyy",
+    "MMM dd, yyyy",
+    "MMMM dd, yyyy",
+    "dd MMM yyyy",
+    "dd MMMM yyyy",
+    "yyyy/MM/dd",
+    "EEE, dd MMM yyyy",
+    "EEE, dd MMM yyyy HH:mm:ss",
+  ];
+
+  static List<String> parseHtml(String html) {
+    try {
+      final doc = HtmlXPath.html(html);
+      final nodes = doc.query('//*');
+
+      List<String> result = [];
+      for (var node in nodes.attrs) {
+        if (node != null && node.trim().isNotEmpty) {
+          result.add(node.trim());
+        }
+      }
+
+      return result;
+    } catch (e) {
+      debugPrint('parseHtml error: $e');
+      return [];
+    }
   }
 
-  ///Create query by html string
+  static Future<String> evaluateJavascriptViaWebview(
+    String url,
+    Map<String, String> headers,
+    List<String> scripts,
+  ) async {
+    debugPrint("evaluateJavascriptViaWebview called: $url");
+
+    final Completer<String> resultCompleter = Completer<String>();
+
+    final headlessWebView = HeadlessInAppWebView(
+      initialUrlRequest: URLRequest(url: WebUri(url), headers: headers),
+
+      onWebViewCreated: (ctrl) async {
+        for (String script in scripts) {
+          final jsResult = await ctrl.evaluateJavascript(source: script);
+          if (!resultCompleter.isCompleted) {
+            resultCompleter.complete(jsResult?.toString() ?? "");
+          }
+        }
+      },
+    );
+
+    await headlessWebView.run();
+
+    return resultCompleter.future;
+  }
 
   static List<String>? xpath(String html, String xpath) {
     List<String> attrs = [];
@@ -74,9 +127,7 @@ class MBridge {
         for (var element in query.attrs) {
           attrs.add(element!.trim().trimLeft().trimRight());
         }
-      }
-      //Return one attr
-      else if (query.nodes.length == 1) {
+      } else if (query.nodes.length == 1) {
         String attr = query.attr != null
             ? query.attr!.trim().trimLeft().trimRight()
             : "";
@@ -90,9 +141,6 @@ class MBridge {
     }
   }
 
-  ///Convert serie status to int
-  ///[status] contains the current status of the serie
-  ///[statusList] contains a list of map of many static status
   static Status parseStatus(String status, List statusList) {
     for (var element in statusList) {
       Map statusMap = {};
@@ -115,8 +163,6 @@ class MBridge {
     return Status.unknown;
   }
 
-  ///Unpack a JS code
-
   static String? unpackJs(String code) {
     try {
       final jsPacker = JSPacker(code);
@@ -126,7 +172,6 @@ class MBridge {
     }
   }
 
-  ///Unpack a JS code
   static String? unpackJsAndCombine(String code) {
     try {
       return JsUnpacker.unpackAndCombine(code) ?? "";
@@ -135,7 +180,6 @@ class MBridge {
     }
   }
 
-  ///GetMapValue
   static String getMapValue(String source, String attr, bool encode) {
     try {
       var map = json.decode(source) as Map<String, dynamic>;
@@ -148,7 +192,6 @@ class MBridge {
     }
   }
 
-  //Parse a list of dates to millisecondsSinceEpoch
   static List parseDates(
     List value,
     String dateFormat,
@@ -189,7 +232,6 @@ class MBridge {
     return list;
   }
 
-  //Utility to use RegExp
   static String regExp(
     String expression,
     String source,
@@ -296,17 +338,14 @@ class MBridge {
     );
   }
 
-  //Utility to use substring
   static String substringAfter(String text, String pattern) {
     return text.substringAfter(pattern);
   }
 
-  //Utility to use substring
   static String substringBefore(String text, String pattern) {
     return text.substringBefore(pattern);
   }
 
-  //Utility to use substring
   static String substringBeforeLast(String text, String pattern) {
     return text.substringBeforeLast(pattern);
   }
@@ -315,7 +354,6 @@ class MBridge {
     return text.split(pattern).last;
   }
 
-  //Parse a chapter date to millisecondsSinceEpoch
   static String parseChapterDate(
     String date,
     String dateFormat,
@@ -537,12 +575,18 @@ class MBridge {
     );
   }
 
-  static String encryptAESCryptoJS(String plainText, String passphrase) {
-    return CryptoAES.encryptAESCryptoJS(plainText, passphrase);
+  static Future<String> encryptAESCryptoJS(
+    String plainText,
+    String passphrase,
+  ) async {
+    return await CryptoAES.encryptAESCryptoJS(plainText, passphrase);
   }
 
-  static String decryptAESCryptoJS(String encrypted, String passphrase) {
-    return CryptoAES.decryptAESCryptoJS(encrypted, passphrase);
+  static Future<String> decryptAESCryptoJS(
+    String encrypted,
+    String passphrase,
+  ) async {
+    return await CryptoAES.decryptAESCryptoJS(encrypted, passphrase);
   }
 
   static Video toVideo(
@@ -563,120 +607,57 @@ class MBridge {
     );
   }
 
-  static String cryptoHandler(
+  static Future<String> cryptoHandler(
     String text,
     String iv,
     String secretKeyString,
-    bool encrypt,
-  ) {
+    bool doEncrypt,
+  ) async {
     try {
-      if (encrypt) {
-        final encryptt = _encrypt(secretKeyString, iv);
-        final en = encryptt.$1.encrypt(text, iv: encryptt.$2);
-        return en.base64;
+      final (algorithm, secretKey, nonce) = await _crypto(secretKeyString, iv);
+
+      if (doEncrypt) {
+        // Encrypt
+        final secretBox = await algorithm.encrypt(
+          utf8.encode(text),
+          secretKey: secretKey,
+          nonce: nonce,
+        );
+        return base64Encode(secretBox.cipherText);
       } else {
-        final encryptt = _encrypt(secretKeyString, iv);
-        final en = encryptt.$1.decrypt64(text, iv: encryptt.$2);
-        return en;
+        // Decrypt
+        final cipherText = base64Decode(text);
+        final clearText = await algorithm.decrypt(
+          SecretBox(
+            cipherText,
+            nonce: nonce,
+            mac: Mac.empty, // CBC has no MAC
+          ),
+          secretKey: secretKey,
+        );
+        return utf8.decode(clearText);
       }
     } catch (_) {
       return text;
     }
   }
 
-  static Future<String> evaluateJavascriptViaWebview(
-    String url,
-    Map<String, String> headers,
-    List<String> scripts, {
-    int time = 30,
-  }) async {
-    int t = 0;
-    bool timeOut = false;
-    bool isOk = false;
-    String response = "";
-    HeadlessInAppWebView? headlessWebView;
-    headlessWebView = HeadlessInAppWebView(
-      webViewEnvironment: webViewEnvironment,
-      onWebViewCreated: (controller) {
-        controller.addJavaScriptHandler(
-          handlerName: 'setResponse',
-          callback: (args) {
-            response = args[0] as String;
-            isOk = true;
-          },
-        );
-      },
-      initialUrlRequest: URLRequest(url: WebUri(url), headers: headers),
-      onLoadStop: (controller, url) async {
-        for (var script in scripts) {
-          await controller.platform.evaluateJavascript(source: script);
-        }
-      },
-    );
+  static Future<(AesCbc, SecretKey, List<int>)> _crypto(
+    String keyy,
+    String ivv,
+  ) async {
+    // Ensure your key matches AES size (16 = 128 bits, 32 = 256 bits)
+    final keyBytes = utf8.encode(keyy);
+    final secretKey = SecretKey(keyBytes);
 
-    headlessWebView.run();
+    // IV must be 16 bytes for AES-CBC
+    final ivBytes = utf8.encode(ivv);
+    if (ivBytes.length != 16) {
+      throw ArgumentError('IV must be 16 bytes for AES-CBC');
+    }
 
-    await Future.doWhile(() async {
-      timeOut = time == t;
-      if (timeOut || isOk) {
-        return false;
-      }
-      await Future.delayed(const Duration(seconds: 1));
-      t++;
-      return true;
-    });
-    try {
-      headlessWebView.dispose();
-    } catch (_) {}
+    final algorithm = AesCbc.with256bits(macAlgorithm: MacAlgorithm.empty);
 
-    return response;
+    return (algorithm, secretKey, ivBytes);
   }
-}
-
-final List<String> _dateFormats = [
-  'dd/MM/yyyy',
-  'MM/dd/yyyy',
-  'yyyy/MM/dd',
-  'dd-MM-yyyy',
-  'MM-dd-yyyy',
-  'yyyy-MM-dd',
-  'dd.MM.yyyy',
-  'MM.dd.yyyy',
-  'yyyy.MM.dd',
-  'dd MMMM yyyy',
-  'MMMM dd, yyyy',
-  'yyyy MMMM dd',
-  'dd MMM yyyy',
-  'MMM dd yyyy',
-  'yyyy MMM dd',
-  'dd MMMM, yyyy',
-  'yyyy, MMMM dd',
-  'MMMM dd yyyy',
-  'MMM dd, yyyy',
-  'dd LLLL yyyy',
-  'LLLL dd, yyyy',
-  'yyyy LLLL dd',
-  'LLLL dd yyyy',
-  "MMMMM dd, yyyy",
-  "MMM d, yyy",
-  "MMM d, yyyy",
-  "dd/mm/yyyy",
-  "d MMMM yyyy",
-  "dd 'de' MMMM 'de' yyyy",
-  "d MMMM'،' yyyy",
-  "yyyy'年'M'月'd",
-  "d MMMM, yyyy",
-  "dd 'de' MMMMM 'de' yyyy",
-  "dd MMMMM, yyyy",
-  "MMMM d, yyyy",
-  "MMM dd,yyyy",
-];
-
-(encrypt.Encrypter, encrypt.IV) _encrypt(String keyy, String ivv) {
-  final key = encrypt.Key.fromUtf8(keyy);
-  final iv = encrypt.IV.fromUtf8(ivv);
-  final encrypter = encrypt.Encrypter(
-    encrypt.AES(key, mode: encrypt.AESMode.cbc, padding: 'PKCS7'),
-  );
-  return (encrypter, iv);
 }

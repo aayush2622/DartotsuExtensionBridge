@@ -1,7 +1,7 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import '../string_extensions.dart';
-import 'package:html/dom.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http_interceptor/http_interceptor.dart';
 
@@ -20,7 +20,8 @@ class GogoCdnExtractor {
       final response = await client.get(Uri.parse(serverUrl));
       final document = response.body;
 
-      Document parsedResponse = parser.parse(response.body);
+      final parsedResponse = parser.parse(response.body);
+
       final iv = parsedResponse
           .querySelector('div.wrapper')!
           .attributes["class"]!
@@ -32,21 +33,31 @@ class GogoCdnExtractor {
           .attributes["class"]!
           .split('container-')
           .last;
-      RegExp(r'container-(\d+)').firstMatch(document)?.group(1);
+
       final decryptionKey = RegExp(
         r'videocontent-(\d+)',
       ).firstMatch(document)?.group(1);
-      final encryptAjaxParams = MBridge.cryptoHandler(
-        RegExp(r'data-value="([^"]+)').firstMatch(document)?.group(1) ?? "",
+
+      final dataValue =
+          RegExp(r'data-value="([^"]+)').firstMatch(document)?.group(1) ?? "";
+
+      // Await cryptoHandler if it's async
+      final encryptAjaxParams = (await MBridge.cryptoHandler(
+        dataValue,
         iv,
         secretKey,
         false,
-      ).substringAfter("&");
+      )).substringAfter("&"); // now valid, because it's a String
 
       final httpUrl = Uri.parse(serverUrl);
       final host = "https://${httpUrl.host}/";
       final id = httpUrl.queryParameters['id'];
-      final encryptedId = MBridge.cryptoHandler(id ?? "", iv, secretKey, true);
+      final encryptedId = await MBridge.cryptoHandler(
+        id ?? "",
+        iv,
+        secretKey,
+        true,
+      );
 
       final token = httpUrl.queryParameters['token'];
       final qualityPrefix = token != null ? "Gogostream - " : "Vidstreaming - ";
@@ -58,16 +69,22 @@ class GogoCdnExtractor {
         Uri.parse(encryptAjaxUrl),
         headers: {"X-Requested-With": "XMLHttpRequest"},
       );
+
       final jsonResponse = encryptAjaxResponse.body;
       final data = json.decode(jsonResponse)["data"];
-      final decryptedData = MBridge.cryptoHandler(
+
+      if (decryptionKey == null) return [];
+
+      final decryptedData = await MBridge.cryptoHandler(
         data ?? "",
         iv,
-        decryptionKey!,
+        decryptionKey,
         false,
-      );
+      ); // awaited here
+
       final videoList = <Video>[];
       final autoList = <Video>[];
+
       final array = json.decode(decryptedData)["source"];
       if (array != null &&
           array is List &&
@@ -75,8 +92,10 @@ class GogoCdnExtractor {
           array[0]["type"] == "hls") {
         final fileURL = array[0]["file"].toString().trim();
         const separator = "#EXT-X-STREAM-INF:";
+
         final masterPlaylistResponse = await client.get(Uri.parse(fileURL));
         final masterPlaylist = masterPlaylistResponse.body;
+
         if (masterPlaylist.contains(separator)) {
           for (var it
               in masterPlaylist.substringAfter(separator).split(separator)) {
@@ -123,8 +142,10 @@ class GogoCdnExtractor {
           }
         }
       }
+
       return videoList + autoList;
     } catch (e) {
+      log("Error in videosFromUrl: $e");
       return [];
     }
   }

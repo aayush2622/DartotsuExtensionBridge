@@ -1,27 +1,38 @@
-import 'package:isar/isar.dart';
-
-import '../extension_bridge.dart';
 import 'Eval/dart/model/source_preference.dart';
 import 'Models/Source.dart';
-import 'get_source_preference.dart';
+import '../objectbox.g.dart';
+
+late final Store store;
+late final Box<SourcePreference> sourcePreferenceBox;
+late final Box<SourcePreferenceStringValue> sourcePreferenceStringValueBox;
+
+Future<void> initObjectBox() async {
+  store = await openStore();
+  sourcePreferenceBox = store.box<SourcePreference>();
+  sourcePreferenceStringValueBox = store.box<SourcePreferenceStringValue>();
+}
 
 void setPreferenceSetting(SourcePreference sourcePreference, MSource source) {
-  final sourcePref = isar.sourcePreferences
-      .filter()
-      .sourceIdEqualTo(source.id)
-      .keyEqualTo(sourcePreference.key)
-      .findFirstSync();
-  isar.writeTxnSync(() {
+  final sourcePref = sourcePreferenceBox
+      .query(
+        SourcePreference_.sourceId.equals(source.id) &
+            SourcePreference_.key.equals(sourcePreference.key ?? ""),
+      )
+      .build()
+      .findFirst();
+
+  store.runInTransaction(TxMode.write, () {
     if (sourcePref != null) {
-      isar.sourcePreferences.putSync(sourcePreference);
+      sourcePreferenceBox.put(sourcePreference);
     } else {
-      isar.sourcePreferences.putSync(sourcePreference..sourceId = source.id);
+      sourcePreferenceBox.put(sourcePreference..sourceId = source.id);
     }
   });
 }
 
 dynamic getPreferenceValue(int sourceId, String key) {
   final sourcePreference = getSourcePreferenceEntry(key, sourceId);
+  if (sourcePreference == null) return null;
 
   if (sourcePreference.listPreference != null) {
     final pref = sourcePreference.listPreference!;
@@ -33,25 +44,17 @@ dynamic getPreferenceValue(int sourceId, String key) {
   } else if (sourcePreference.editTextPreference != null) {
     return sourcePreference.editTextPreference!.value;
   }
-  return sourcePreference.multiSelectListPreference!.values;
+  return sourcePreference.multiSelectListPreference?.values;
 }
 
-SourcePreference getSourcePreferenceEntry(String key, int sourceId) {
-  SourcePreference? sourcePreference = isar.sourcePreferences
-      .filter()
-      .sourceIdEqualTo(sourceId)
-      .keyEqualTo(key)
-      .findFirstSync();
-  if (sourcePreference == null) {
-    final source = isar.mSources.getSync(sourceId)!;
-    sourcePreference = getSourcePreference(source: source).firstWhere(
-      (element) => element.key == key,
-      orElse: () => throw "Error when getting source preference",
-    );
-    setPreferenceSetting(sourcePreference, source);
-  }
-
-  return sourcePreference;
+SourcePreference? getSourcePreferenceEntry(String key, int sourceId) {
+  return sourcePreferenceBox
+      .query(
+        SourcePreference_.sourceId.equals(sourceId) &
+            SourcePreference_.key.equals(key),
+      )
+      .build()
+      .findFirst();
 }
 
 String getSourcePreferenceStringValue(
@@ -59,31 +62,32 @@ String getSourcePreferenceStringValue(
   String key,
   String defaultValue,
 ) {
-  SourcePreferenceStringValue? sourcePreferenceStringValue = isar
-      .sourcePreferenceStringValues
-      .filter()
-      .sourceIdEqualTo(sourceId)
-      .keyEqualTo(key)
-      .findFirstSync();
-  if (sourcePreferenceStringValue == null) {
-    setSourcePreferenceStringValue(sourceId, key, defaultValue);
-    return defaultValue;
-  }
+  SourcePreferenceStringValue? sourcePreferenceStringValue =
+      sourcePreferenceStringValueBox
+          .query(
+            SourcePreferenceStringValue_.sourceId.equals(sourceId) &
+                SourcePreferenceStringValue_.key.equals(key),
+          )
+          .build()
+          .findFirst();
 
-  return sourcePreferenceStringValue.value ?? "";
+  return sourcePreferenceStringValue?.value ?? defaultValue;
 }
 
 void setSourcePreferenceStringValue(int sourceId, String key, String value) {
-  final sourcePref = isar.sourcePreferenceStringValues
-      .filter()
-      .sourceIdEqualTo(sourceId)
-      .keyEqualTo(key)
-      .findFirstSync();
-  isar.writeTxnSync(() {
+  final sourcePref = sourcePreferenceStringValueBox
+      .query(
+        SourcePreferenceStringValue_.sourceId.equals(sourceId) &
+            SourcePreferenceStringValue_.key.equals(key),
+      )
+      .build()
+      .findFirst();
+
+  store.runInTransaction(TxMode.write, () {
     if (sourcePref != null) {
-      isar.sourcePreferenceStringValues.putSync(sourcePref..value = value);
+      sourcePreferenceStringValueBox.put(sourcePref..value = value);
     } else {
-      isar.sourcePreferenceStringValues.putSync(
+      sourcePreferenceStringValueBox.put(
         SourcePreferenceStringValue()
           ..key = key
           ..sourceId = sourceId

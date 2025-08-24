@@ -4,7 +4,7 @@ import 'package:html/dom.dart';
 import '../model/element.dart';
 
 class MElementBridge {
-  final elementBridgedClass = BridgedClassDefinition(
+  final elementBridgedClass = BridgedClass(
     nativeType: MElement,
     name: 'MElement',
     constructors: {
@@ -40,11 +40,13 @@ class MElementBridge {
       'selectFirst': (visitor, target, positionalArgs, namedArgs) =>
           (target as MElement).selectFirst(positionalArgs[0] as String),
       'getElementsByClassName': (visitor, target, positionalArgs, namedArgs) =>
-          (target as MElement)
-              .getElementsByClassName(positionalArgs[0] as String),
+          (target as MElement).getElementsByClassName(
+            positionalArgs[0] as String,
+          ),
       'getElementsByTagName': (visitor, target, positionalArgs, namedArgs) =>
-          (target as MElement)
-              .getElementsByTagName(positionalArgs[0] as String),
+          (target as MElement).getElementsByTagName(
+            positionalArgs[0] as String,
+          ),
       'xpath': (visitor, target, positionalArgs, namedArgs) =>
           (target as MElement).xpath(positionalArgs[0] as String),
       'xpathFirst': (visitor, target, positionalArgs, namedArgs) =>

@@ -34,6 +34,7 @@ class JsUtils {
     runtime.onMessage('cryptoHandler', (dynamic args) {
       return MBridge.cryptoHandler(args[0], args[1], args[2], args[3]);
     });
+
     runtime.onMessage('encryptAESCryptoJS', (dynamic args) {
       return MBridge.encryptAESCryptoJS(args[0], args[1]);
     });
@@ -49,6 +50,7 @@ class JsUtils {
     runtime.onMessage('unpackJs', (dynamic args) {
       return JSPacker(args[0]).unpack() ?? "";
     });
+
     runtime.onMessage('evaluateJavascriptViaWebview', (dynamic args) async {
       return await MBridge.evaluateJavascriptViaWebview(
         args[0]!,
@@ -56,6 +58,7 @@ class JsUtils {
         (args[2]! as List).map((e) => e.toString()).toList(),
       );
     });
+
     runtime.onMessage('parseEpub', (dynamic args) async {
       final bytes = await _toBytesResponse(client(), "GET", args);
       final book = await EpubReader.readBook(bytes);
@@ -101,7 +104,6 @@ console.error = function (message) {
 String.prototype.substringAfter = function(pattern) {
     const startIndex = this.indexOf(pattern);
     if (startIndex === -1) return this.substring(0);
-
     const start = startIndex + pattern.length;
     return this.substring(start);
 }
@@ -113,7 +115,6 @@ String.prototype.substringAfterLast = function(pattern) {
 String.prototype.substringBefore = function(pattern) {
     const endIndex = this.indexOf(pattern);
     if (endIndex === -1) return this.substring(0);
-
     return this.substring(0, endIndex);
 }
 
