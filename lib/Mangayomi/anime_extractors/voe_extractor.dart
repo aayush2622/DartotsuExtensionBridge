@@ -1,9 +1,8 @@
 import 'dart:convert';
 
-import '../dom_extensions.dart';
 import '../string_extensions.dart';
 import 'package:html/dom.dart';
-import 'package:html/parser.dart';
+import 'package:html/parser.dart' show parse;
 import 'package:http_interceptor/http_interceptor.dart';
 import 'package:path/path.dart' as path;
 
@@ -25,56 +24,47 @@ class VoeExtractor {
 
   Future<List<Video>> videosFromUrl(String url, String? prefix) async {
     try {
-      Document document = parse((await client.get(Uri.parse(url))).body);
-      var scriptElement = document.selectFirst("script");
+      final response = await client.get(Uri.parse(url));
+      final document = parse(response.body);
+      var scriptElement = document.querySelector("script");
       if (scriptElement?.text.contains(
             "if (typeof localStorage !== 'undefined')",
           ) ??
           false) {
-        var originalUrl = scriptElement?.text
+        final originalUrl = scriptElement?.text
             .substringAfter("window.location.href = '")
             .substringBefore("';");
-        if (originalUrl == null) {
-          return [];
-        }
-        document = parse((await client.get(Uri.parse(originalUrl))).body);
+        if (originalUrl == null) return [];
+        final r2 = await client.get(Uri.parse(originalUrl));
+        final document2 = parse(r2.body);
+        scriptElement = document2.querySelector("script");
       }
-      var alternativeScript = document
-          .select('script')
-          ?.where((script) => scriptBase64Regex.hasMatch(script.text))
-          .toList();
 
-      Element? script = document.selectFirst(
+      Element? script = document.querySelector(
         "script:contains(const sources), script:contains(var sources), script:contains(wc0)",
       );
-      if (script == null) {
-        if (alternativeScript?.isNotEmpty ?? false) {
-          script = alternativeScript!.first;
-        } else {
-          return [];
-        }
-      }
-      final scriptContent = script.text;
-      String playlistUrl = "";
+      script ??= document.querySelector("script");
+      final scriptContent = script?.text ?? '';
+      String playlistUrl = '';
+
       if (scriptContent.contains('sources')) {
         final link = scriptContent
             .substringAfter("hls': '")
             .substringBefore("'");
-
-        playlistUrl = linkRegex.hasMatch(link)
-            ? link
-            : utf8.decode(base64.decode(link));
-      } else if (scriptContent.contains('wc0') || alternativeScript != null) {
-        final base64Match = base64Regex.firstMatch(scriptContent)!.group(0)!;
-        final decoded = utf8.decode(base64.decode(base64Match));
-        playlistUrl = json.decode(
-          alternativeScript != null
-              ? String.fromCharCodes(decoded.runes.toList().reversed)
-              : decoded,
-        )['file'];
+        playlistUrl = link;
+      } else if (scriptContent.contains('wc0')) {
+        // fallback parsing
+        final base64Match = scriptContent.contains(scriptBase64Regex.pattern)
+            ? scriptContent.substringAfter("'").substringBefore("'")
+            : null;
+        if (base64Match != null) {
+          final decoded = base64.decode(base64Match);
+          playlistUrl = String.fromCharCodes(decoded);
+        }
       } else {
         return [];
       }
+
       final uri = Uri.parse(playlistUrl);
       final m3u8Host = "${uri.scheme}://${uri.host}${path.dirname(uri.path)}";
       final masterPlaylistResponse = await client.get(uri);
@@ -89,7 +79,7 @@ class VoeExtractor {
         final line = it.substringAfter("\n").substringBefore("\n");
         final videoUrl = line.startsWith("http")
             ? line
-            : "$m3u8Host/${line.replaceFirst("/", "")}";
+            : "$m3u8Host/${line.replaceAll(RegExp(r"^/"), '')}";
         return Video(videoUrl, '${prefix ?? ""}Voe: $resolution', videoUrl);
       }).toList();
     } catch (_) {

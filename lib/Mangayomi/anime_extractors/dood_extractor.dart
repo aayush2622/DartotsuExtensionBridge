@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import '../string_extensions.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../Eval/dart/model/video.dart';
@@ -15,46 +14,74 @@ class DoodExtractor {
     final InterceptedClient client = MClient.init(
       reqcopyWith: {'useDartHttpClient': true},
     );
-    final newQuality = quality ?? ('Doodstream ${redirect ? ' mirror' : ''}');
+
+    final newQuality = (quality ?? "Doodstream${redirect ? ' mirror' : ''}");
 
     try {
       final response = await client.get(Uri.parse(url));
-      final newUrl = redirect ? response.request!.url.toString() : url;
 
-      final doodHost = RegExp('https://(.*?)/').firstMatch(newUrl)!.group(1)!;
-      final content = response.body;
-      if (!content.contains("'/pass_md5/")) return [];
-      final md5 = content.substringAfter("'/pass_md5/").substringBefore("',");
-      final token = md5.substring(md5.lastIndexOf('/') + 1);
-      final randomString = getRandomString();
-      final expiry = DateTime.now().millisecondsSinceEpoch;
+      final String effectiveUrl = redirect
+          ? (response.request?.url.toString() ?? url)
+          : url;
+
+      final RegExp hostRegex = RegExp(r'https://(.*?)/');
+      final String? doodHost = hostRegex.firstMatch(effectiveUrl)?.group(1);
+
+      if (doodHost == null || doodHost.isEmpty) {
+        return [];
+      }
+
+      final String content = response.body;
+
+      const String passMd5Marker = "'/pass_md5/";
+      if (!content.contains(passMd5Marker)) return [];
+
+      final int passIndex = content.indexOf(passMd5Marker);
+      if (passIndex == -1) return [];
+
+      final String afterPassMd5 = content.substring(
+        passIndex + passMd5Marker.length,
+      );
+      final int endQuote = afterPassMd5.indexOf("',");
+      if (endQuote == -1) return [];
+
+      final String md5 = afterPassMd5.substring(0, endQuote);
+      if (md5.isEmpty) return [];
+      final String token = md5.substring(md5.lastIndexOf('/') + 1);
+      final String randomString = _getRandomString(length: 10);
+      final int expiry = DateTime.now().millisecondsSinceEpoch;
+
       final videoUrlStart = await client.get(
         Uri.parse('https://$doodHost/pass_md5/$md5'),
-        headers: {'referer': newUrl},
+        headers: {'referer': effectiveUrl},
       );
 
-      final videoUrl =
-          '${videoUrlStart.body}$randomString?token=$token&expiry=$expiry';
+      final String videoUrlPart = videoUrlStart.body;
+      if (videoUrlPart.isEmpty) return [];
+
+      final String videoUrl =
+          '$videoUrlPart$randomString?token=$token&expiry=$expiry';
+
       return [
         Video(
-          newUrl,
+          effectiveUrl,
           newQuality,
           videoUrl,
           headers: {'User-Agent': 'Mangayomi', 'Referer': 'https://$doodHost/'},
         ),
       ];
-    } catch (_) {
+    } catch (e) {
       return [];
     }
   }
 
-  String getRandomString({int length = 10}) {
+  String _getRandomString({int length = 10}) {
     const allowedChars =
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    return List.generate(
+    final List<int> codes = List.generate(
       length,
-      (index) =>
-          allowedChars.runes.elementAt(Random().nextInt(allowedChars.length)),
-    ).join();
+      (_) => allowedChars.codeUnitAt(Random().nextInt(allowedChars.length)),
+    );
+    return String.fromCharCodes(codes);
   }
 }

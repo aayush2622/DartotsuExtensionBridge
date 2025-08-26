@@ -85,7 +85,7 @@ class MProviderBridged {
         positionalArgs[0] as String,
         positionalArgs[1] as String,
         positionalArgs[2] as String,
-        positionalArgs[3] as bool,
+        (positionalArgs[3] as bool).toString(),
       ),
     );
 
@@ -175,10 +175,11 @@ class MProviderBridged {
 
     interpreter.registertopLevelFunction(
       'quarkVideosExtractor',
-      (visitor, positionalArgs, namedArgs, _) => MBridge.quarkVideosExtractor(
-        positionalArgs[0] as String,
-        positionalArgs[1] as String,
-      ),
+      (visitor, positionalArgs, namedArgs, _) =>
+          MBridge.quarkVideosExtractorStatic(
+            positionalArgs[0] as String,
+            positionalArgs[1] as String,
+          ),
     );
 
     interpreter.registertopLevelFunction(

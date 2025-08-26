@@ -3,7 +3,6 @@ import 'package:http_interceptor/http_interceptor.dart';
 
 import '../Eval/dart/model/video.dart';
 import '../http/m_client.dart';
-import '../xpath_selector.dart';
 
 class VidBomExtractor {
   final InterceptedClient client = MClient.init(
@@ -13,23 +12,39 @@ class VidBomExtractor {
   Future<List<Video>> videosFromUrl(String url) async {
     try {
       final response = await client.get(Uri.parse(url));
-      final script = xpathSelector(
-        response.body,
-      ).queryXPath('//script[contains(text(), "sources")]/text()').attrs;
 
-      final data = script.first!
-          .substringAfter('sources: [')
-          .substringBefore('],');
+      final body = response.body;
 
-      return data.split('file:"').skip(1).map((source) {
-        final src = source.substringBefore('"');
-        var quality =
-            'Vidbom - ${source.substringAfter('label:"').substringBefore('"')}';
-        if (quality.length > 15) {
-          quality = 'Vidshare - 480p';
+      final RegExp scriptRe = RegExp(
+        r'<script[^>]*>([\s\S]*?)</script>',
+        multiLine: true,
+      );
+      String? scriptContent;
+      for (final m in scriptRe.allMatches(body)) {
+        final inner = m.group(1);
+        if (inner != null && inner.contains('sources')) {
+          scriptContent = inner;
+          break;
         }
-        return Video(src, quality, src);
-      }).toList();
+      }
+      if (scriptContent == null) return [];
+
+      final data = scriptContent.substringAfter('sources: [');
+
+      final List<Video> results = [];
+      if (data.isNotEmpty) {
+        final files = data.split('file:"').skip(1);
+        for (var src in files) {
+          final fileUrl = src.substringBefore('"');
+          final label = src.contains('label:"')
+              ? src.substringAfter('label:"').substringBefore('"')
+              : '';
+          var quality = label.isNotEmpty ? label : 'Vidbom';
+          results.add(Video(fileUrl, quality, fileUrl));
+        }
+      }
+
+      return results;
     } catch (_) {
       return [];
     }

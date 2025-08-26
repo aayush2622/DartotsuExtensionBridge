@@ -54,9 +54,9 @@ extension StringExtensions on String {
 
   String replaceForbiddenCharacters(String source) {
     return replaceAll(
-        RegExp(
-            r'[\\/:*?"<>|\0]|(^CON$|^PRN$|^AUX$|^NUL$|^COM[1-9]$|^LPT[1-9]$)'),
-        source);
+      RegExp(r'[\\/:*?"<>|\0]|(^CON$|^PRN$|^AUX$|^NUL$|^COM[1-9]$|^LPT[1-9]$)'),
+      source,
+    );
   }
 
   String get getUrlWithoutDomain {
@@ -85,7 +85,16 @@ extension StringExtensions on String {
       "mp4",
       "wmv",
       "mkv",
-      "mov"
+      "mov",
     ].any((extension) => toLowerCase().endsWith(extension));
   }
+
+  bool containsIgnoreCase(String other) =>
+      toLowerCase().contains(other.toLowerCase());
+
+  bool startsWithIgnoreCase(String other) =>
+      toLowerCase().startsWith(other.toLowerCase());
+
+  bool endsWithIgnoreCase(String other) =>
+      toLowerCase().endsWith(other.toLowerCase());
 }

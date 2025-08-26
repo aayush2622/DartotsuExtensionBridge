@@ -1,17 +1,15 @@
 import 'dart:convert';
 import 'dart:async';
-import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
-
-import 'video.dart';
-import '../../javascript/http.dart';
-import '../../../string_extensions.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_qjs/flutter_qjs.dart';
+import 'package:html/parser.dart' as html_parser;
 import 'package:intl/intl.dart';
-import 'package:js_packer/js_packer.dart';
-import 'package:xpath_selector_html_parser/xpath_selector_html_parser.dart';
-
+import 'package:xml/xml.dart';
+import 'video.dart';
+import '../../../string_extensions.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import '../../../anime_extractors/dood_extractor.dart';
 import '../../../anime_extractors/filemoon.dart';
 import '../../../anime_extractors/gogocdn_extractor.dart';
@@ -28,33 +26,17 @@ import '../../../anime_extractors/vidbom_extractor.dart';
 import '../../../anime_extractors/voe_extractor.dart';
 import '../../../anime_extractors/your_upload_extractor.dart';
 import '../../../cryptoaes/crypto_aes.dart';
-import '../../../cryptoaes/deobfuscator.dart';
-import '../../../cryptoaes/js_unpacker.dart';
 import '../../../reg_exp_matcher.dart';
 import 'm_manga.dart';
 
 class WordSet {
   final List<String> words;
-
   WordSet(this.words);
 
-  bool anyWordIn(String dateString) {
-    return words.any(
-      (word) => dateString.toLowerCase().contains(word.toLowerCase()),
-    );
-  }
-
-  bool startsWith(String dateString) {
-    return words.any(
-      (word) => dateString.toLowerCase().startsWith(word.toLowerCase()),
-    );
-  }
-
-  bool endsWith(String dateString) {
-    return words.any(
-      (word) => dateString.toLowerCase().endsWith(word.toLowerCase()),
-    );
-  }
+  bool anyWordIn(String text) => words.any((w) => text.containsIgnoreCase(w));
+  bool startsWith(String text) =>
+      words.any((w) => text.startsWithIgnoreCase(w));
+  bool endsWith(String text) => words.any((w) => text.endsWithIgnoreCase(w));
 }
 
 class MBridge {
@@ -71,85 +53,88 @@ class MBridge {
     "EEE, dd MMM yyyy",
     "EEE, dd MMM yyyy HH:mm:ss",
   ];
+  // --- String helper functions ---
+  static String regHref(String input) => regHrefMatcher(input);
+  static String regDataSrc(String input) => regDataSrcMatcher(input);
+  static String regSrc(String input) => regSrcMatcher(input);
+  static String regImg(String input) => regImgMatcher(input);
 
+  static String regCustom(String input, String pattern, int group) =>
+      regCustomMatcher(input, pattern, group);
+
+  static String padIndex(int index) => padIndex(index);
+
+  static final Map<CloudDriveType, QuarkUcExtractor> _extractorCache = {};
+
+  static String substringAfter(String text, String pattern) {
+    return text.substringAfter(pattern);
+  }
+
+  static String substringBefore(String text, String pattern) {
+    return text.substringBefore(pattern);
+  }
+
+  static String substringBeforeLast(String text, String pattern) {
+    return text.substringBeforeLast(pattern);
+  }
+
+  static String substringAfterLast(String text, String pattern) {
+    return text.split(pattern).last;
+  }
+
+  // HTML Parsing
   static List<String> parseHtml(String html) {
     try {
-      final doc = HtmlXPath.html(html);
-      final nodes = doc.query('//*');
-
-      List<String> result = [];
-      for (var node in nodes.attrs) {
-        if (node != null && node.trim().isNotEmpty) {
-          result.add(node.trim());
-        }
-      }
-
-      return result;
+      var document = html_parser.parse(html);
+      return document
+          .querySelectorAll('*')
+          .map((node) => node.text.trim())
+          .where((text) => text.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('parseHtml error: $e');
       return [];
     }
   }
 
+  // WebView JS Evaluation
   static Future<String> evaluateJavascriptViaWebview(
     String url,
     Map<String, String> headers,
     List<String> scripts,
   ) async {
-    debugPrint("evaluateJavascriptViaWebview called: $url");
-
-    final Completer<String> resultCompleter = Completer<String>();
-
-    final headlessWebView = HeadlessInAppWebView(
+    final completer = Completer<String>();
+    final webview = HeadlessInAppWebView(
       initialUrlRequest: URLRequest(url: WebUri(url), headers: headers),
-
       onWebViewCreated: (ctrl) async {
-        for (String script in scripts) {
-          final jsResult = await ctrl.evaluateJavascript(source: script);
-          if (!resultCompleter.isCompleted) {
-            resultCompleter.complete(jsResult?.toString() ?? "");
-          }
+        for (var script in scripts) {
+          final res = await ctrl.evaluateJavascript(source: script);
+          if (!completer.isCompleted) completer.complete(res?.toString() ?? "");
         }
       },
     );
-
-    await headlessWebView.run();
-
-    return resultCompleter.future;
+    await webview.run();
+    return completer.future;
   }
 
-  static List<String>? xpath(String html, String xpath) {
-    List<String> attrs = [];
+  // XPath
+  static List<String> xpath(String html, String path) {
     try {
-      var htmlXPath = HtmlXPath.html(html);
-      var query = htmlXPath.query(xpath);
-      if (query.nodes.length > 1) {
-        for (var element in query.attrs) {
-          attrs.add(element!.trim().trimLeft().trimRight());
-        }
-      } else if (query.nodes.length == 1) {
-        String attr = query.attr != null
-            ? query.attr!.trim().trimLeft().trimRight()
-            : "";
-        if (attr.isNotEmpty) {
-          attrs = [attr];
-        }
-      }
-      return attrs;
+      final document = XmlDocument.parse(html);
+      return document.findAllElements(path).map((n) => n.text.trim()).toList();
     } catch (_) {
       return [];
     }
   }
 
+  // Status Parsing
   static Status parseStatus(String status, List statusList) {
-    for (var element in statusList) {
-      Map statusMap = {};
-      statusMap = element;
-      for (var element in statusMap.entries) {
-        if (element.key.toString().toLowerCase().contains(
-          status.toLowerCase().trim().trimLeft().trimRight(),
+    for (var s in statusList) {
+      for (var entry in (s as Map).entries) {
+        if (entry.key.toString().toLowerCase().contains(
+          status.toLowerCase().trim(),
         )) {
-          return switch (element.value as int) {
+          return switch (entry.value as int) {
             0 => Status.ongoing,
             1 => Status.completed,
             2 => Status.onHiatus,
@@ -163,21 +148,41 @@ class MBridge {
     return Status.unknown;
   }
 
-  static String? unpackJs(String code) {
+  // JS Unpacker
+  static Future<String> unpackJs(String code) async {
+    final qjs = QuickJsRuntime2();
     try {
-      final jsPacker = JSPacker(code);
-      return jsPacker.unpack() ?? "";
+      final result = qjs.evaluate(code);
+      return result.toString();
     } catch (_) {
       return "";
+    } finally {
+      qjs.dispose();
     }
   }
 
-  static String? unpackJsAndCombine(String code) {
+  static Future<String> unpackJsAndCombine(String code) async {
+    final qjs = QuickJsRuntime2();
     try {
-      return JsUnpacker.unpackAndCombine(code) ?? "";
+      final result = qjs.evaluate('''
+      (() => {
+        const codeToUnpack = ${jsonEncode(code)};
+        return JsUnpacker.unpackAndCombine(codeToUnpack) ?? "";
+      })()
+    ''');
+      return result.toString();
     } catch (_) {
       return "";
+    } finally {
+      qjs.dispose();
     }
+  }
+
+  // Header Decoder
+  static Map<String, String> decodeHeaders(String? headers) {
+    if (headers == null) return {};
+    final map = jsonDecode(headers) as Map<String, dynamic>;
+    return map.map((k, v) => MapEntry(k.toString(), v.toString()));
   }
 
   static String getMapValue(String source, String attr, bool encode) {
@@ -245,55 +250,60 @@ class MBridge {
     return regCustomMatcher(expression, source, group);
   }
 
-  static Future<List<Video>> gogoCdnExtractor(String url) async {
-    return await GogoCdnExtractor().videosFromUrl(url);
-  }
+  // Extractors
 
-  static Future<List<Video>> doodExtractor(String url, String? quality) async {
-    return await DoodExtractor().videosFromUrl(url, quality: quality);
-  }
-
+  static Future<List<Video>> gogoCdnExtractor(String url) async =>
+      await GogoCdnExtractor().videosFromUrl(url);
+  static Future<List<Video>> doodExtractor(String url, String? q) async =>
+      await DoodExtractor().videosFromUrl(url, quality: q);
   static Future<List<Video>> streamWishExtractor(
     String url,
     String prefix,
-  ) async {
-    return await StreamWishExtractor().videosFromUrl(url, prefix);
-  }
-
+  ) async => await StreamWishExtractor().videosFromUrl(url, prefix);
   static Future<List<Video>> filemoonExtractor(
     String url,
     String prefix,
     String suffix,
-  ) async {
-    return await FilemoonExtractor().videosFromUrl(url, prefix, suffix);
-  }
-
-  static Map<String, String> decodeHeaders(String? headers) =>
-      headers == null ? {} : (jsonDecode(headers) as Map).toMapStringString!;
-
+  ) async => await FilemoonExtractor().videosFromUrl(url, prefix, suffix);
   static Future<List<Video>> mp4UploadExtractor(
     String url,
     String? headers,
     String prefix,
     String suffix,
-  ) async {
-    return await Mp4uploadExtractor().videosFromUrl(
-      url,
-      decodeHeaders(headers),
-      prefix: prefix,
-      suffix: suffix,
-    );
-  }
+  ) async => await Mp4uploadExtractor().videosFromUrl(
+    url,
+    decodeHeaders(headers),
+    prefix: prefix,
+    suffix: suffix,
+  );
 
-  static final Map<CloudDriveType, QuarkUcExtractor> _extractorCache = {};
-
+  // Private helper to get or initialize an extractor
   static QuarkUcExtractor _getExtractor(String cookie, CloudDriveType type) {
     if (!_extractorCache.containsKey(type)) {
-      QuarkUcExtractor extractor = QuarkUcExtractor();
+      final extractor = QuarkUcExtractor();
       extractor.initCloudDrive(cookie, type);
       _extractorCache[type] = extractor;
     }
     return _extractorCache[type]!;
+  }
+
+  // Quark/UC Extractors
+  static Future<List<Video>> quarkVideosExtractorStatic(
+    String url,
+    String cookie,
+  ) async {
+    final extractor = QuarkUcExtractor();
+    await extractor.initCloudDrive(cookie, CloudDriveType.quark);
+    return extractor.videosFromUrl(url);
+  }
+
+  static Future<List<Video>> ucVideosExtractorStatic(
+    String url,
+    String cookie,
+  ) async {
+    final extractor = QuarkUcExtractor();
+    await extractor.initCloudDrive(cookie, CloudDriveType.uc);
+    return extractor.videosFromUrl(url);
   }
 
   static Future<List<Map<String, String>>> quarkFilesExtractor(
@@ -304,12 +314,13 @@ class MBridge {
     return await quark.videoFilesFromUrl(url);
   }
 
-  static Future<List<Video>> quarkVideosExtractor(
+  Future<List<Video>> quarkVideosExtractorInstance(
     String url,
     String cookie,
   ) async {
-    var quark = _getExtractor(cookie, CloudDriveType.quark);
-    return await quark.videosFromUrl(url);
+    final extractor = QuarkUcExtractor();
+    await extractor.initCloudDrive(cookie, CloudDriveType.quark);
+    return extractor.videosFromUrl(url);
   }
 
   static Future<List<Map<String, String>>> ucFilesExtractor(
@@ -331,29 +342,12 @@ class MBridge {
   static Future<List<Video>> streamTapeExtractor(
     String url,
     String? quality,
-  ) async {
-    return await StreamTapeExtractor().videosFromUrl(
-      url,
-      quality: quality ?? "StreamTape",
-    );
-  }
+  ) async => await StreamTapeExtractor().videosFromUrl(
+    url,
+    quality: quality ?? "StreamTape",
+  );
 
-  static String substringAfter(String text, String pattern) {
-    return text.substringAfter(pattern);
-  }
-
-  static String substringBefore(String text, String pattern) {
-    return text.substringBefore(pattern);
-  }
-
-  static String substringBeforeLast(String text, String pattern) {
-    return text.substringBeforeLast(pattern);
-  }
-
-  static String substringAfterLast(String text, String pattern) {
-    return text.split(pattern).last;
-  }
-
+  // --- Chapter date parser ---
   static String parseChapterDate(
     String date,
     String dateFormat,
@@ -436,9 +430,8 @@ class MBridge {
         DateTime cal = DateTime.now().subtract(const Duration(days: 2));
         cal = DateTime(cal.year, cal.month, cal.day);
         return cal.millisecondsSinceEpoch.toString();
-      } else if (WordSet(["ago", "atrás", "önce", "قبل"]).endsWith(date)) {
-        return parseRelativeDate(date).toString();
-      } else if (WordSet(["hace"]).startsWith(date)) {
+      } else if (WordSet(["ago", "atrás", "önce", "قبل"]).endsWith(date) ||
+          WordSet(["hace"]).startsWith(date)) {
         return parseRelativeDate(date).toString();
       } else if (date.contains(RegExp(r"\d(st|nd|rd|th)"))) {
         final cleanedDate = date
@@ -515,174 +508,96 @@ class MBridge {
     }
   }
 
-  static String deobfuscateJsPassword(String inputString) {
-    return Deobfuscator.deobfuscateJsPassword(inputString);
-  }
-
-  static Future<List<Video>> sibnetExtractor(String url, String prefix) async {
-    return await SibnetExtractor().videosFromUrl(url, prefix: prefix);
-  }
-
+  static Future<List<Video>> sibnetExtractor(String url, String prefix) async =>
+      await SibnetExtractor().videosFromUrl(url, prefix: prefix);
   static Future<List<Video>> sendVidExtractor(
     String url,
     String? headers,
     String prefix,
-  ) async {
-    return await SendvidExtractor(
-      decodeHeaders(headers),
-    ).videosFromUrl(url, prefix: prefix);
-  }
-
-  static Future<List<Video>> myTvExtractor(String url) async {
-    return await MytvExtractor().videosFromUrl(url);
-  }
-
-  static Future<List<Video>> okruExtractor(String url) async {
-    return await OkruExtractor().videosFromUrl(url);
-  }
-
+  ) async => await SendvidExtractor(
+    decodeHeaders(headers),
+  ).videosFromUrl(url, prefix: prefix);
+  static Future<List<Video>> myTvExtractor(String url) async =>
+      await MytvExtractor().videosFromUrl(url);
+  static Future<List<Video>> okruExtractor(String url) async =>
+      await OkruExtractor().videosFromUrl(url);
+  static Future<List<Video>> quarkUcExtractor(String url) async =>
+      await QuarkUcExtractor().videosFromUrl(url);
   static Future<List<Video>> yourUploadExtractor(
     String url,
     String? headers,
     String? name,
     String prefix,
-  ) async {
-    return await YourUploadExtractor().videosFromUrl(
-      url,
-      decodeHeaders(headers),
-      prefix: prefix,
-      name: name ?? "YourUpload",
-    );
-  }
-
-  static Future<List<Video>> voeExtractor(String url, String? quality) async {
-    return await VoeExtractor().videosFromUrl(url, quality);
-  }
-
-  static Future<List<Video>> vidBomExtractor(String url) async {
-    return await VidBomExtractor().videosFromUrl(url);
-  }
-
+  ) async => await YourUploadExtractor().videosFromUrl(
+    url,
+    decodeHeaders(headers),
+    prefix: prefix,
+    name: name ?? "YourUpload",
+  );
+  static Future<List<Video>> voeExtractor(String url, String? quality) async =>
+      await VoeExtractor().videosFromUrl(url, quality);
+  static Future<List<Video>> vidBomExtractor(String url) async =>
+      await VidBomExtractor().videosFromUrl(url);
   static Future<List<Video>> streamlareExtractor(
     String url,
     String prefix,
     String suffix,
-  ) async {
-    return await StreamlareExtractor().videosFromUrl(
-      url,
-      prefix: prefix,
-      suffix: suffix,
-    );
+  ) async => await StreamlareExtractor().videosFromUrl(
+    url,
+    prefix: prefix,
+    suffix: suffix,
+  );
+
+  /// Handles generic CryptoJS-like logic
+  static String cryptoHandler(String data, String key, String iv, String algo) {
+    if (algo.toUpperCase() == 'AES') {
+      return CryptoAES.encryptAESCryptoJS(data, key);
+    } else if (algo.toUpperCase() == 'SHA256') {
+      return crypto.sha256.convert(utf8.encode(data)).toString();
+    }
+    return data;
   }
 
-  static Future<String> encryptAESCryptoJS(
-    String plainText,
-    String passphrase,
-  ) async {
-    return CryptoAES.encryptAESCryptoJS(plainText, passphrase);
-  }
-
-  static Future<String> decryptAESCryptoJS(
-    String encrypted,
-    String passphrase,
-  ) async {
-    return CryptoAES.decryptAESCryptoJS(encrypted, passphrase);
-  }
-
+  // Video Constructor
   static Video toVideo(
     String url,
     String quality,
     String originalUrl,
     String? headers,
-    List<Track>? subtitles,
+    List<Track>? subs,
     List<Track>? audios,
-  ) {
-    return Video(
-      url,
-      quality,
-      originalUrl,
-      headers: decodeHeaders(headers),
-      subtitles: subtitles ?? [],
-      audios: audios ?? [],
-    );
+  ) => Video(
+    url,
+    quality,
+    originalUrl,
+    headers: decodeHeaders(headers),
+    subtitles: subs ?? [],
+    audios: audios ?? [],
+  );
+
+  /// AES Encryption (CryptoAES wrapper)
+  static String encryptAESCryptoJS(String data, String key) {
+    return CryptoAES.encryptAESCryptoJS(data, key);
   }
 
-  static String cryptoHandler(
-    String text,
-    String ivStr,
-    String secretKeyStr,
-    bool doEncrypt,
-  ) {
+  /// AES Decryption (CryptoAES wrapper)
+  static String decryptAESCryptoJS(String data, String key) {
+    return CryptoAES.decryptAESCryptoJS(data, key);
+  }
+
+  /// Deobfuscates JS password: reverse + base64 decode
+  static String deobfuscateJsPassword(String obfuscated) {
     try {
-      final key = Uint8List.fromList(utf8.encode(secretKeyStr).sublist(0, 32));
-      final iv = Uint8List.fromList(utf8.encode(ivStr).sublist(0, 16));
-
-      final aes = AES(key);
-
-      if (doEncrypt) {
-        final data = Uint8List.fromList(utf8.encode(text));
-        final padded = _pkcs7Pad(data);
-
-        final encrypted = _aesCbcEncrypt(aes, padded, iv);
-        return base64.encode(encrypted);
-      } else {
-        final cipherText = base64.decode(text);
-        final decrypted = _aesCbcDecrypt(aes, cipherText, iv);
-        final unpadded = _pkcs7Unpad(decrypted);
-        return utf8.decode(unpadded);
-      }
+      final reversed = obfuscated.split('').reversed.join();
+      return utf8.decode(base64Decode(reversed));
     } catch (_) {
-      return text;
+      return obfuscated;
     }
   }
 
-  static Uint8List _aesCbcEncrypt(AES aes, Uint8List data, Uint8List iv) {
-    final out = Uint8List(data.length);
-    var prev = iv;
-
-    for (var i = 0; i < data.length; i += 16) {
-      final block = data.sublist(i, i + 16);
-      final xored = _xor(block, prev);
-
-      final cipherBlock = Uint8List.fromList(aes.encryptBlock(xored));
-      out.setRange(i, i + 16, cipherBlock);
-
-      prev = cipherBlock;
-    }
-    return out;
-  }
-
-  static Uint8List _aesCbcDecrypt(AES aes, Uint8List data, Uint8List iv) {
-    final out = Uint8List(data.length);
-    var prev = iv;
-
-    for (var i = 0; i < data.length; i += 16) {
-      final block = data.sublist(i, i + 16);
-
-      final plainBlock = Uint8List.fromList(aes.decryptBlock(block));
-      final xored = _xor(plainBlock, prev);
-
-      out.setRange(i, i + 16, xored);
-      prev = block;
-    }
-    return out;
-  }
-
-  static Uint8List _xor(Uint8List a, Uint8List b) {
-    final res = Uint8List(a.length);
-    for (var i = 0; i < a.length; i++) {
-      res[i] = a[i] ^ b[i];
-    }
-    return res;
-  }
-
-  static Uint8List _pkcs7Pad(Uint8List data) {
-    final padLen = 16 - (data.length % 16);
-    return Uint8List.fromList([...data, ...List.filled(padLen, padLen)]);
-  }
-
-  static Uint8List _pkcs7Unpad(Uint8List data) {
-    final padLen = data.last;
-    return data.sublist(0, data.length - padLen);
+  Future<List<Video>> quarkVideosExtractor(String url, String cookie) async {
+    final extractor = QuarkUcExtractor();
+    await extractor.initCloudDrive(cookie, CloudDriveType.quark);
+    return extractor.videosFromUrl(url);
   }
 }

@@ -17,7 +17,6 @@ class MDocumentBridge {
       'documentElement': (visitor, target) =>
           (target as MDocument).documentElement,
       'head': (visitor, target) => (target as MDocument).head,
-      'parent': (visitor, target) => (target as MDocument).parent,
       'outerHtml': (visitor, target) => (target as MDocument).outerHtml,
       'text': (visitor, target) => (target as MDocument).text,
       'children': (visitor, target) => (target as MDocument).children,

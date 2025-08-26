@@ -1,15 +1,15 @@
 import 'dart:io';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
-import 'package:installed_apps/installed_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:http/http.dart' as http;
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:dartotsu_extension_bridge/Models/Source.dart' as aniyomi;
 import 'package:objectbox/objectbox.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:dio/dio.dart';
 
 class AniyomiExtensions extends Extension {
   AniyomiExtensions() {
@@ -20,6 +20,16 @@ class AniyomiExtensions extends Extension {
   final Rx<List<Source>> availableAnimeExtensionsUnmodified = Rx([]);
   final Rx<List<Source>> availableMangaExtensionsUnmodified = Rx([]);
   final Rx<List<Source>> availableNovelExtensionsUnmodified = Rx([]);
+
+  // Reusable Dio client
+  static final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 20),
+      receiveTimeout: const Duration(seconds: 60),
+      followRedirects: true,
+      validateStatus: (status) => status != null && status < 500,
+    ),
+  );
 
   // ObjectBox store and boxes
   static late final Store objectboxStore;
@@ -45,6 +55,17 @@ class AniyomiExtensions extends Extension {
   Future<void> initialize() async {
     if (isInitialized.value) return;
     isInitialized.value = true;
+
+    // Optional: log current app info using package_info_plus
+    try {
+      final info = await PackageInfo.fromPlatform();
+      debugPrint(
+        'AniyomiExtensions host: ${info.packageName} v${info.version}+${info.buildNumber}',
+      );
+    } catch (_) {
+      // Ignore failures to obtain package info
+    }
+
     var settings = getBridgeSettings(26);
     getInstalledAnimeExtensions();
     getInstalledMangaExtensions();
@@ -88,9 +109,11 @@ class AniyomiExtensions extends Extension {
       map['extensionType'] = 1;
       return Source.fromJson(map);
     }).toList();
+
     final list = unmodifiedList
         .where((s) => !installedIds.contains(s.id))
         .toList();
+
     getAvailableRx(type).value = list;
     getAvailableUnmodified(type).value = unmodifiedList;
     checkForUpdates(type);
@@ -105,6 +128,12 @@ class AniyomiExtensions extends Extension {
   @override
   Future<List<Source>> getInstalledMangaExtensions() {
     return _getInstalled('getInstalledMangaExtensions', aniyomi.ItemType.manga);
+  }
+
+  // Added for completeness since initialize() calls this.
+  @override
+  Future<List<Source>> getInstalledNovelExtensions() {
+    return _getInstalled('getInstalledNovelExtensions', aniyomi.ItemType.novel);
   }
 
   Future<List<Source>> _getInstalled(
@@ -151,17 +180,26 @@ class AniyomiExtensions extends Extension {
     try {
       final packageName = source.apkUrl!.split('/').last.replaceAll('.apk', '');
 
-      final response = await http.get(Uri.parse(source.apkUrl!));
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to download APK: HTTP ${response.statusCode}');
-      }
-
       final tempDir = await getTemporaryDirectory();
       final apkFileName = '$packageName.apk';
       final apkFile = File(path.join(tempDir.path, apkFileName));
 
-      await apkFile.writeAsBytes(response.bodyBytes);
+      // Download APK via Dio (writes directly to file)
+      await _dio.download(
+        source.apkUrl!,
+        apkFile.path,
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: true,
+          receiveTimeout: const Duration(minutes: 2),
+        ),
+        deleteOnError: true,
+      );
+
+      // Sanity check
+      if (!(await apkFile.exists()) || (await apkFile.length()) == 0) {
+        throw Exception('Failed to download APK: Empty file');
+      }
 
       final result = await InstallPlugin.installApk(
         apkFile.path,
@@ -180,6 +218,7 @@ class AniyomiExtensions extends Extension {
 
       final rx = getAvailableRx(source.itemType!);
       rx.value = rx.value.where((s) => s.id != source.id).toList();
+
       switch (source.itemType) {
         case aniyomi.ItemType.anime:
           getInstalledAnimeExtensions();
@@ -209,34 +248,14 @@ class AniyomiExtensions extends Extension {
     }
 
     try {
-      final isInstalled =
-          await InstalledApps.isAppInstalled(packageName) ?? false;
-      if (!isInstalled) {
-        _removeFromInstalledList(source);
-        return;
-      }
-
-      final success = await InstalledApps.uninstallApp(packageName) ?? false;
-      if (!success) {
+      // Request system uninstall via platform channel (e.g., Android ACTION_DELETE intent).
+      final bool started =
+          (await platform.invokeMethod('uninstallApp', packageName)) == true;
+      if (!started) {
         throw Exception('Failed to initiate uninstallation for: $packageName');
       }
 
-      final timeout = const Duration(seconds: 10);
-      final start = DateTime.now();
-
-      while (DateTime.now().difference(start) < timeout) {
-        final stillInstalled =
-            await InstalledApps.isAppInstalled(packageName) ?? false;
-        if (!stillInstalled) break;
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-
-      final finalCheck =
-          await InstalledApps.isAppInstalled(packageName) ?? false;
-      if (finalCheck) {
-        throw Exception('Uninstallation timed out or was cancelled by user.');
-      }
-
+      // Optimistic local update
       _removeFromInstalledList(source);
 
       final itemType = source.itemType;
@@ -247,7 +266,7 @@ class AniyomiExtensions extends Extension {
         }
       }
 
-      debugPrint('Successfully uninstalled package: $packageName');
+      debugPrint('Uninstall requested for package: $packageName');
     } catch (e) {
       debugPrint('Error uninstalling $packageName: $e');
       rethrow;
@@ -263,17 +282,26 @@ class AniyomiExtensions extends Extension {
     try {
       final packageName = source.apkUrl!.split('/').last.replaceAll('.apk', '');
 
-      final response = await http.get(Uri.parse(source.apkUrl!));
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to download APK: HTTP ${response.statusCode}');
-      }
-
       final tempDir = await getTemporaryDirectory();
       final apkFileName = '$packageName.apk';
       final apkFile = File(path.join(tempDir.path, apkFileName));
 
-      await apkFile.writeAsBytes(response.bodyBytes);
+      // Download APK via Dio (writes directly to file)
+      await _dio.download(
+        source.apkUrl!,
+        apkFile.path,
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: true,
+          receiveTimeout: const Duration(minutes: 2),
+        ),
+        deleteOnError: true,
+      );
+
+      // Sanity check
+      if (!(await apkFile.exists()) || (await apkFile.length()) == 0) {
+        throw Exception('Failed to download APK: Empty file');
+      }
 
       final result = await InstallPlugin.installApk(
         apkFile.path,
