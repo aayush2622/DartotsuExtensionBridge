@@ -44,7 +44,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  build_runner: ^2.7.0
+  build: ^3.0.2
 
 dependency_overrides:
   js: ^0.7.2
