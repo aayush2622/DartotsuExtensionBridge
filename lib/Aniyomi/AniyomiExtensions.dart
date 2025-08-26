@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
-import 'package:device_apps/device_apps.dart';
+import 'package:installed_apps/installed_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
@@ -8,8 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:objectbox/objectbox.dart';
 import 'package:dartotsu_extension_bridge/Models/Source.dart' as aniyomi;
+import 'package:objectbox/objectbox.dart';
 
 class AniyomiExtensions extends Extension {
   AniyomiExtensions() {
@@ -209,13 +209,14 @@ class AniyomiExtensions extends Extension {
     }
 
     try {
-      final isInstalled = await DeviceApps.isAppInstalled(packageName);
+      final isInstalled =
+          await InstalledApps.isAppInstalled(packageName) ?? false;
       if (!isInstalled) {
         _removeFromInstalledList(source);
         return;
       }
 
-      final success = await DeviceApps.uninstallApp(packageName);
+      final success = await InstalledApps.uninstallApp(packageName) ?? false;
       if (!success) {
         throw Exception('Failed to initiate uninstallation for: $packageName');
       }
@@ -224,12 +225,14 @@ class AniyomiExtensions extends Extension {
       final start = DateTime.now();
 
       while (DateTime.now().difference(start) < timeout) {
-        final stillInstalled = await DeviceApps.isAppInstalled(packageName);
+        final stillInstalled =
+            await InstalledApps.isAppInstalled(packageName) ?? false;
         if (!stillInstalled) break;
         await Future.delayed(const Duration(milliseconds: 500));
       }
 
-      final finalCheck = await DeviceApps.isAppInstalled(packageName);
+      final finalCheck =
+          await InstalledApps.isAppInstalled(packageName) ?? false;
       if (finalCheck) {
         throw Exception('Uninstallation timed out or was cancelled by user.');
       }

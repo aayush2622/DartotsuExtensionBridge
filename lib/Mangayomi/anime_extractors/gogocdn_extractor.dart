@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:dartotsu_extension_bridge/Mangayomi/cryptoaes/crypto_aes.dart';
+
 import '../string_extensions.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http_interceptor/http_interceptor.dart';
-
-import '../Eval/dart/model/m_bridge.dart';
 import '../Eval/dart/model/video.dart';
 import '../http/m_client.dart';
 
@@ -19,14 +19,7 @@ class GogoCdnExtractor {
     try {
       final response = await client.get(Uri.parse(serverUrl));
       final document = response.body;
-
       final parsedResponse = parser.parse(response.body);
-
-      final iv = parsedResponse
-          .querySelector('div.wrapper')!
-          .attributes["class"]!
-          .split('container-')
-          .last;
 
       final secretKey = parsedResponse
           .querySelector('body[class]')!
@@ -41,29 +34,21 @@ class GogoCdnExtractor {
       final dataValue =
           RegExp(r'data-value="([^"]+)').firstMatch(document)?.group(1) ?? "";
 
-      // Await cryptoHandler if it's async
-      final encryptAjaxParams = (await MBridge.cryptoHandler(
+      final encryptAjaxParams = CryptoAES.encryptAESCryptoJS(
         dataValue,
-        iv,
         secretKey,
-        false,
-      )).substringAfter("&"); // now valid, because it's a String
+      ).substringAfter("&");
 
       final httpUrl = Uri.parse(serverUrl);
-      final host = "https://${httpUrl.host}/";
       final id = httpUrl.queryParameters['id'];
-      final encryptedId = await MBridge.cryptoHandler(
-        id ?? "",
-        iv,
-        secretKey,
-        true,
-      );
+
+      final encryptedId = CryptoAES.encryptAESCryptoJS(id ?? "", secretKey);
 
       final token = httpUrl.queryParameters['token'];
       final qualityPrefix = token != null ? "Gogostream - " : "Vidstreaming - ";
 
       final encryptAjaxUrl =
-          "${host}encrypt-ajax.php?id=$encryptedId&$encryptAjaxParams&alias=$id";
+          "${httpUrl.scheme}://${httpUrl.host}/encrypt-ajax.php?id=$encryptedId&$encryptAjaxParams&alias=$id";
 
       final encryptAjaxResponse = await client.get(
         Uri.parse(encryptAjaxUrl),
@@ -75,12 +60,10 @@ class GogoCdnExtractor {
 
       if (decryptionKey == null) return [];
 
-      final decryptedData = await MBridge.cryptoHandler(
+      final decryptedData = CryptoAES.decryptAESCryptoJS(
         data ?? "",
-        iv,
         decryptionKey,
-        false,
-      ); // awaited here
+      );
 
       final videoList = <Video>[];
       final autoList = <Video>[];

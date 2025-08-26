@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter/foundation.dart';
 
 import 'video.dart';
 import '../../javascript/http.dart';
 import '../../../string_extensions.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -579,14 +579,14 @@ class MBridge {
     String plainText,
     String passphrase,
   ) async {
-    return await CryptoAES.encryptAESCryptoJS(plainText, passphrase);
+    return CryptoAES.encryptAESCryptoJS(plainText, passphrase);
   }
 
   static Future<String> decryptAESCryptoJS(
     String encrypted,
     String passphrase,
   ) async {
-    return await CryptoAES.decryptAESCryptoJS(encrypted, passphrase);
+    return CryptoAES.decryptAESCryptoJS(encrypted, passphrase);
   }
 
   static Video toVideo(
@@ -607,57 +607,82 @@ class MBridge {
     );
   }
 
-  static Future<String> cryptoHandler(
+  static String cryptoHandler(
     String text,
-    String iv,
-    String secretKeyString,
+    String ivStr,
+    String secretKeyStr,
     bool doEncrypt,
-  ) async {
+  ) {
     try {
-      final (algorithm, secretKey, nonce) = await _crypto(secretKeyString, iv);
+      final key = Uint8List.fromList(utf8.encode(secretKeyStr).sublist(0, 32));
+      final iv = Uint8List.fromList(utf8.encode(ivStr).sublist(0, 16));
+
+      final aes = AES(key);
 
       if (doEncrypt) {
-        // Encrypt
-        final secretBox = await algorithm.encrypt(
-          utf8.encode(text),
-          secretKey: secretKey,
-          nonce: nonce,
-        );
-        return base64Encode(secretBox.cipherText);
+        final data = Uint8List.fromList(utf8.encode(text));
+        final padded = _pkcs7Pad(data);
+
+        final encrypted = _aesCbcEncrypt(aes, padded, iv);
+        return base64.encode(encrypted);
       } else {
-        // Decrypt
-        final cipherText = base64Decode(text);
-        final clearText = await algorithm.decrypt(
-          SecretBox(
-            cipherText,
-            nonce: nonce,
-            mac: Mac.empty, // CBC has no MAC
-          ),
-          secretKey: secretKey,
-        );
-        return utf8.decode(clearText);
+        final cipherText = base64.decode(text);
+        final decrypted = _aesCbcDecrypt(aes, cipherText, iv);
+        final unpadded = _pkcs7Unpad(decrypted);
+        return utf8.decode(unpadded);
       }
     } catch (_) {
       return text;
     }
   }
 
-  static Future<(AesCbc, SecretKey, List<int>)> _crypto(
-    String keyy,
-    String ivv,
-  ) async {
-    // Ensure your key matches AES size (16 = 128 bits, 32 = 256 bits)
-    final keyBytes = utf8.encode(keyy);
-    final secretKey = SecretKey(keyBytes);
+  static Uint8List _aesCbcEncrypt(AES aes, Uint8List data, Uint8List iv) {
+    final out = Uint8List(data.length);
+    var prev = iv;
 
-    // IV must be 16 bytes for AES-CBC
-    final ivBytes = utf8.encode(ivv);
-    if (ivBytes.length != 16) {
-      throw ArgumentError('IV must be 16 bytes for AES-CBC');
+    for (var i = 0; i < data.length; i += 16) {
+      final block = data.sublist(i, i + 16);
+      final xored = _xor(block, prev);
+
+      final cipherBlock = Uint8List.fromList(aes.encryptBlock(xored));
+      out.setRange(i, i + 16, cipherBlock);
+
+      prev = cipherBlock;
     }
+    return out;
+  }
 
-    final algorithm = AesCbc.with256bits(macAlgorithm: MacAlgorithm.empty);
+  static Uint8List _aesCbcDecrypt(AES aes, Uint8List data, Uint8List iv) {
+    final out = Uint8List(data.length);
+    var prev = iv;
 
-    return (algorithm, secretKey, ivBytes);
+    for (var i = 0; i < data.length; i += 16) {
+      final block = data.sublist(i, i + 16);
+
+      final plainBlock = Uint8List.fromList(aes.decryptBlock(block));
+      final xored = _xor(plainBlock, prev);
+
+      out.setRange(i, i + 16, xored);
+      prev = block;
+    }
+    return out;
+  }
+
+  static Uint8List _xor(Uint8List a, Uint8List b) {
+    final res = Uint8List(a.length);
+    for (var i = 0; i < a.length; i++) {
+      res[i] = a[i] ^ b[i];
+    }
+    return res;
+  }
+
+  static Uint8List _pkcs7Pad(Uint8List data) {
+    final padLen = 16 - (data.length % 16);
+    return Uint8List.fromList([...data, ...List.filled(padLen, padLen)]);
+  }
+
+  static Uint8List _pkcs7Unpad(Uint8List data) {
+    final padLen = data.last;
+    return data.sublist(0, data.length - padLen);
   }
 }

@@ -14,6 +14,5 @@ export './Screen/ExtensionList.dart';
 export './Screen/ExtensionManagerScreen.dart';
 export './Settings/Settings.dart';
 
-export './Mangayomi/Eval/dart/model/source_preference.dart';
 export './Models/Source.dart';
 export './Mangayomi/Models/Source.dart' hide ItemType;

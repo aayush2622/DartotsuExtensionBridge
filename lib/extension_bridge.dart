@@ -8,7 +8,6 @@ import 'package:path_provider/path_provider.dart';
 
 import 'Aniyomi/AniyomiExtensions.dart';
 import 'ExtensionManager.dart';
-import 'package:objectbox/objectbox.dart';
 import 'objectbox.g.dart';
 import 'Mangayomi/MangayomiExtensions.dart';
 
