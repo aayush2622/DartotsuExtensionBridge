@@ -145,4 +145,107 @@ String.prototype.substringBetween = function(left, right) {
   return this.substring(leftIndex, rightIndex);
 };
 ''';
+function cryptoHandler(text, iv, secretKeyString, encrypt) {
+    return sendMessage(
+        "cryptoHandler",
+        JSON.stringify([text, iv, secretKeyString, encrypt])
+    );
+}
+function encryptAESCryptoJS(plainText, passphrase) {
+    return sendMessage(
+        "encryptAESCryptoJS",
+        JSON.stringify([plainText, passphrase])
+    );
+}
+function decryptAESCryptoJS(encrypted, passphrase) {
+    return sendMessage(
+        "decryptAESCryptoJS",
+        JSON.stringify([encrypted, passphrase])
+    );
+}
+function deobfuscateJsPassword(inputString) {
+    return sendMessage(
+        "deobfuscateJsPassword",
+        JSON.stringify([inputString])
+    );
+}
+function unpackJsAndCombine(scriptBlock) {
+    return sendMessage(
+        "unpackJsAndCombine",
+        JSON.stringify([scriptBlock])
+    );
+}
+function unpackJs(packedJS) {
+    return sendMessage(
+        "unpackJs",
+        JSON.stringify([packedJS])
+    );
+}
+function parseDates(value, dateFormat, dateFormatLocale) {
+    return sendMessage(
+        "parseDates",
+        JSON.stringify([value, dateFormat, dateFormatLocale])
+    );
+}
+async function evaluateJavascriptViaWebview(url, headers, scripts) {
+    return await sendMessage(
+        "evaluateJavascriptViaWebview",
+        JSON.stringify([url, headers, scripts])
+    );
+}
+async function parseEpub(bookName, url, headers) {
+    return JSON.parse(await sendMessage(
+        "parseEpub",
+        JSON.stringify([bookName, url, headers])
+    ));
+}
+async function parseEpubChapter(bookName, url, headers, chapterTitle) {
+    return await sendMessage(
+        "parseEpubChapter",
+        JSON.stringify([bookName, url, headers, chapterTitle])
+    );
+}
+''');
+  }
+
+  Future<Uint8List> _toBytesResponse(
+    http.Client client,
+    String method,
+    List args,
+  ) async {
+    final bookName = args[0] as String;
+    final url = args[1] as String;
+    final headers = (args[2] as Map?)?.toMapStringString;
+    final body = args.length >= 4
+        ? args[3] is List
+              ? args[3] as List
+              : args[3] is String
+              ? args[3] as String
+              : (args[3] as Map?)?.toMapStringDynamic
+        : null;
+
+    final tmpDirectory = (await getTemporaryDirectory());
+    if (Platform.isAndroid) {
+      if (!(await File(p.join(tmpDirectory.path, ".nomedia")).exists())) {
+        await File(p.join(tmpDirectory.path, ".nomedia")).create();
+      }
+    }
+    final file = File(p.join(tmpDirectory.path, "$bookName.epub"));
+    if (await file.exists()) {
+      return await file.readAsBytes();
+    }
+
+    var request = http.Request(method, Uri.parse(url));
+    request.headers.addAll(headers ?? {});
+    final future = switch (method) {
+      "GET" => client.get(Uri.parse(url), headers: headers),
+      "POST" => client.post(Uri.parse(url), headers: headers, body: body),
+      "PUT" => client.put(Uri.parse(url), headers: headers, body: body),
+      "DELETE" => client.delete(Uri.parse(url), headers: headers, body: body),
+      _ => client.patch(Uri.parse(url), headers: headers, body: body),
+    };
+    final bytes = (await future).bodyBytes;
+    await file.writeAsBytes(bytes);
+    return bytes;
+  }
 }
