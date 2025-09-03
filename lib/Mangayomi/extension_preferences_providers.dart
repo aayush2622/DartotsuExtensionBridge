@@ -2,14 +2,13 @@ import 'Eval/dart/model/source_preference.dart';
 import 'Models/Source.dart';
 import '../objectbox.g.dart';
 
-late final Store store;
 late final Box<SourcePreference> sourcePreferenceBox;
 late final Box<SourcePreferenceStringValue> sourcePreferenceStringValueBox;
 
 Future<void> initObjectBox() async {
-  store = await openStore();
-  sourcePreferenceBox = store.box<SourcePreference>();
-  sourcePreferenceStringValueBox = store.box<SourcePreferenceStringValue>();
+  // Use the globally initialized store from extension_bridge.dart
+  sourcePreferenceBox = objectboxStore.box<SourcePreference>();
+  sourcePreferenceStringValueBox = objectboxStore.box<SourcePreferenceStringValue>();
 }
 
 void setPreferenceSetting(SourcePreference sourcePreference, MSource source) {
@@ -21,9 +20,9 @@ void setPreferenceSetting(SourcePreference sourcePreference, MSource source) {
       .build()
       .findFirst();
 
-  store.runInTransaction(TxMode.write, () {
+  objectboxStore.runInTransaction(TxMode.write, () {
     if (sourcePref != null) {
-      sourcePreferenceBox.put(sourcePreference);
+      sourcePreferenceBox.put(sourcePreference..id = sourcePref.id);
     } else {
       sourcePreferenceBox.put(sourcePreference..sourceId = source.id);
     }
@@ -83,7 +82,7 @@ void setSourcePreferenceStringValue(int sourceId, String key, String value) {
       .build()
       .findFirst();
 
-  store.runInTransaction(TxMode.write, () {
+  objectboxStore.runInTransaction(TxMode.write, () {
     if (sourcePref != null) {
       sourcePreferenceStringValueBox.put(sourcePref..value = value);
     } else {
