@@ -24,8 +24,8 @@ class MangayomiExtensions extends Extension {
 
   final _manager = Get.put(MangayomiExtensionManager());
 
-  late final Store _store = Get.find<Store>();
-  late final Box<BridgeSettings> _settingsBox = _store.box<BridgeSettings>();
+  // Use the global ObjectBox store initialized in extension_bridge.dart
+  late final Box<BridgeSettings> _settingsBox = objectboxStore.box<BridgeSettings>();
 
   BridgeSettings _getSettings() {
     final settings = _settingsBox.get(26);

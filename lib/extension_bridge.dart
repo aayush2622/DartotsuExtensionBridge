@@ -31,7 +31,12 @@ class DartotsuExtensionBridge {
       bridgeSettingsBox.put(BridgeSettings()..id = 26);
     }
 
+    // Make Store available via Get for any consumers that rely on DI
+    Get.put<Store>(objectboxStore);
+
     if (Platform.isAndroid) {
+      // Ensure AniyomiExtensions can access the global store/boxes if needed
+      AniyomiExtensions.setupObjectBox(objectboxStore);
       Get.put(AniyomiExtensions(), tag: 'AniyomiExtensions');
     }
     Get.put(MangayomiExtensions(), tag: 'MangayomiExtensions');

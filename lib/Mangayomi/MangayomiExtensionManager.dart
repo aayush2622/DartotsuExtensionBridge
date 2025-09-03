@@ -21,6 +21,9 @@ class MangayomiExtensionManager extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Initialize the ObjectBox box once using the global store
+    objectboxMSourceBox = objectboxStore.box<MSource>();
+
     installedAnimeExtensions.bindStream(getExtensionsStream(ItemType.anime));
     installedMangaExtensions.bindStream(getExtensionsStream(ItemType.manga));
     installedNovelExtensions.bindStream(getExtensionsStream(ItemType.novel));
@@ -94,7 +97,7 @@ class MangayomiExtensionManager extends GetxController {
   Future<void> uninstallSource(Source source) async {
     try {
       var mSource = await getInstalled(source.itemType!, int.parse(source.id!));
-      objectboxMSourceBox.remove(mSource.id);
+      objectboxMSourceBox.remove(mSource.obxId);
     } catch (e) {
       debugPrint("Error uninstalling source: $e");
       return Future.error(e);

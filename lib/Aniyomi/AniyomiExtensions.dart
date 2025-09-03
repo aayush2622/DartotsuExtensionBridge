@@ -250,7 +250,7 @@ class AniyomiExtensions extends Extension {
     try {
       // Request system uninstall via platform channel (e.g., Android ACTION_DELETE intent).
       final bool started =
-          (await platform.invokeMethod('uninstallApp', packageName)) == true;
+          (await platform.invokeMethod('uninstallApp', { 'package': packageName })) == true;
       if (!started) {
         throw Exception('Failed to initiate uninstallation for: $packageName');
       }

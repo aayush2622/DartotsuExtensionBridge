@@ -51,6 +51,23 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
         }
     }
 
+    private fun uninstallApp(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val pkg = call.argument<String>("package") ?: run {
+                result.error("INVALID_ARGS", "Missing package name", null)
+                return
+            }
+            val uri = android.net.Uri.parse("package:$pkg")
+            val intent = android.content.Intent(android.content.Intent.ACTION_DELETE, uri)
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            result.success(true)
+        } catch (e: Exception) {
+            result.error("ERROR", "Failed to start uninstall intent: ${e.message}", null)
+        }
+    }
+
+
     private fun getInstalledAnimeExtensions(call: MethodCall, result: MethodChannel.Result) {
         val extensionManager = Injekt.get<AniyomiExtensionManager>()
         try {
