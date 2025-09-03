@@ -1,7 +1,15 @@
-import 'package:html/parser.dart';
-import 'package:xpath_selector_html_parser/xpath_selector_html_parser.dart';
+import 'package:html/parser.dart' as html_parser;
+import 'package:html/dom.dart' as dom;
+import 'package:xml/xml.dart' as xml;
 
-HtmlXPath xpathSelector(String html) {
-  final html1 = parse(html).documentElement!;
-  return HtmlXPath.node(html1);
+xml.XmlDocument parseHtmlToXml(String html) {
+  final dom.Document document = html_parser.parse(html);
+
+  final String serialized = document.outerHtml;
+
+  return xml.XmlDocument.parse(serialized);
+}
+
+List<xml.XmlElement> selectNodes(xml.XmlDocument doc, String tag) {
+  return doc.findAllElements(tag).toList();
 }

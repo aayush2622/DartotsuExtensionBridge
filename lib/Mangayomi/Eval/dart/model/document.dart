@@ -1,20 +1,18 @@
-import '../../../dom_extensions.dart';
 import 'package:html/dom.dart';
+import 'package:xml/xml.dart' as xml;
 
 import 'element.dart';
 
 class MDocument {
-  const MDocument(this._document);
-
   final Document? _document;
+
+  const MDocument(this._document);
 
   MElement? get body => MElement(_document?.body);
 
   MElement? get documentElement => MElement(_document?.documentElement);
 
   MElement? get head => MElement(_document?.head);
-
-  MElement? get parent => MElement(_document?.parent);
 
   String? get outerHtml => _document?.outerHtml;
 
@@ -24,15 +22,37 @@ class MDocument {
       _document?.children.map((e) => MElement(e)).toList();
 
   List<MElement>? select(String selector) {
-    return _document?.select(selector)?.map((e) => MElement(e)).toList();
+    return _document
+        ?.querySelectorAll(selector)
+        .map((e) => MElement(e))
+        .toList();
   }
 
-  String? xpathFirst(String xpath) {
-    return _document?.xpathFirst(xpath);
+  MElement? selectFirst(String selector) {
+    final first = _document?.querySelector(selector);
+    return first != null ? MElement(first) : null;
   }
 
-  List<String> xpath(String xpath) {
-    return _document?.xpath(xpath) ?? [];
+  // XPath using xml package
+  String? xpathFirst(String xpathExpr) {
+    if (_document?.outerHtml == null) return null;
+    try {
+      final doc = xml.XmlDocument.parse(_document!.outerHtml);
+      final node = doc.findAllElements(xpathExpr).firstOrNull;
+      return node?.text.trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<String> xpath(String xpathExpr) {
+    if (_document?.outerHtml == null) return [];
+    try {
+      final doc = xml.XmlDocument.parse(_document!.outerHtml);
+      return doc.findAllElements(xpathExpr).map((e) => e.text.trim()).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   List<MElement>? getElementsByClassName(String classNames) {
@@ -53,15 +73,12 @@ class MDocument {
     return MElement(_document?.getElementById(id));
   }
 
-  MElement? selectFirst(String selector) {
-    return MElement(_document?.selectFirst(selector));
-  }
+  String? attr(String attribute) => null; // Document itself has no attributes
 
-  String? attr(String attr) {
-    return _document?.attr(attr)?.trim();
-  }
+  bool hasAttr(String attribute) => false; // Document itself has no attributes
+}
 
-  bool hasAttr(String attr) {
-    return _document?.hasAtr(attr) ?? false;
-  }
+// Extension for safe firstOrNull
+extension FirstOrNull<E> on Iterable<E> {
+  E? get firstOrNull => isEmpty ? null : first;
 }

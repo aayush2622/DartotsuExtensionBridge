@@ -7,5 +7,8 @@ ExtensionService getExtensionService(MSource source) {
   return switch (source.sourceCodeLanguage) {
     SourceCodeLanguage.dart => DartExtensionService(source),
     SourceCodeLanguage.javascript => JsExtensionService(source),
+    _ => throw UnimplementedError(
+        "Unsupported source code language: ${source.sourceCodeLanguage}"),
   };
 }
+

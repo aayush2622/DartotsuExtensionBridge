@@ -1,12 +1,9 @@
 import 'dart:convert';
-
-import '../string_extensions.dart';
 import 'package:http_interceptor/http_interceptor.dart';
-import 'package:js_packer/js_packer.dart';
 
 import '../Eval/dart/model/video.dart';
 import '../http/m_client.dart';
-import '../xpath_selector.dart';
+import '../string_extensions.dart';
 
 class FilemoonExtractor {
   final InterceptedClient client = MClient.init(
@@ -26,11 +23,25 @@ class FilemoonExtractor {
       };
       final response = await client.get(Uri.parse(url));
 
-      final jsEval = xpathSelector(
-        response.body,
-      ).queryXPath('//script[contains(text(), "eval")]/text()').attr;
+      final body = response.body;
 
-      final unpacked = JSPacker(jsEval!).unpack() ?? "";
+      final RegExp scriptTagRe = RegExp(
+        r'<script[^>]*>([\s\S]*?)<\/script>',
+        multiLine: true,
+      );
+      String? jsEval;
+      for (final m in scriptTagRe.allMatches(body)) {
+        final inner = m.group(1);
+        if (inner != null && inner.contains('eval')) {
+          jsEval = inner;
+          break;
+        }
+      }
+
+      if (jsEval == null) return [];
+
+      final String unpacked =
+          jsEval;
 
       final masterUrl = unpacked.isNotEmpty
           ? unpacked.substringAfter('{file:"').substringBefore('"}')
@@ -39,6 +50,7 @@ class FilemoonExtractor {
       if (masterUrl.isEmpty) {
         return [];
       }
+
       List<Track> subtitleTracks = [];
       final subUrl =
           Uri.parse(url).queryParameters["sub.info"] ??

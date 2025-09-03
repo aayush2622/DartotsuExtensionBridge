@@ -56,20 +56,6 @@ class JsDomSelector {
       };
       return res ?? "";
     });
-    runtime.onMessage('doc_select_first', (dynamic args) {
-      final input = args[0];
-      final selector = args[1];
-      _elementKey++;
-      _elements[_elementKey] = parse(input).selectFirst(selector);
-      return _elementKey;
-    });
-    runtime.onMessage('ele_selectFirst', (dynamic args) {
-      final selector = args[0];
-      final key = args[1];
-      _elementKey++;
-      _elements[_elementKey] = _elements[key]?.selectFirst(selector);
-      return _elementKey;
-    });
     runtime.onMessage('ele_element_sibling', (dynamic args) {
       final type = args[0];
       final key = args[1];
@@ -91,16 +77,6 @@ class JsDomSelector {
       final input = args[0];
       final attr = args[1];
       return parse(input).attr(attr) ?? "";
-    });
-    runtime.onMessage('ele_has_attr', (dynamic args) {
-      final attr = args[0];
-      final key = args[1];
-      return _elements[key]?.hasAtr(attr) ?? false;
-    });
-    runtime.onMessage('doc_has_attr', (dynamic args) {
-      final input = args[0];
-      final attr = args[1];
-      return parse(input).hasAtr(attr);
     });
     runtime.onMessage('doc_xpath_first', (dynamic args) {
       final input = args[0];
@@ -166,10 +142,42 @@ class JsDomSelector {
       _elements[_elementKey] = parse(input).getElementById(id);
       return _elementKey;
     });
+    // doc_select_first
+    runtime.onMessage('doc_select_first', (dynamic args) {
+      final input = args[0];
+      final selector = args[1];
+      _elementKey++;
+      _elements[_elementKey] = parse(input).querySelector(selector);
+      return _elementKey;
+    });
+
+    // doc_select
     runtime.onMessage('doc_select', (dynamic args) {
       final input = args[0];
       final selector = args[1];
-      final elements = parse(input).select(selector);
+      final elements = parse(input).querySelectorAll(selector);
+      List<int> elementKeys = [];
+      for (var element in elements) {
+        _elementKey++;
+        _elements[_elementKey] = element;
+        elementKeys.add(_elementKey);
+      }
+      return jsonEncode(elementKeys);
+    });
+
+    // ele_selectFirst
+    runtime.onMessage('ele_selectFirst', (dynamic args) {
+      final selector = args[0];
+      final key = args[1];
+      _elementKey++;
+      _elements[_elementKey] = _elements[key]?.querySelector(selector);
+      return _elementKey;
+    });
+
+    runtime.onMessage('ele_select', (dynamic args) {
+      final selector = args[0];
+      final key = args[1];
+      final elements = _elements[key]?.querySelectorAll(selector);
       List<int> elementKeys = [];
       for (var element in elements ?? []) {
         _elementKey++;
@@ -178,17 +186,17 @@ class JsDomSelector {
       }
       return jsonEncode(elementKeys);
     });
-    runtime.onMessage('ele_select', (dynamic args) {
-      final selector = args[0];
+
+    runtime.onMessage('ele_has_attr', (dynamic args) {
+      final attr = args[0];
       final key = args[1];
-      final elements = _elements[key]?.select(selector);
-      List<int> elementKeys = [];
-      for (var element in elements ?? []) {
-        _elementKey++;
-        _elements[_elementKey] = element;
-        elementKeys.add(_elementKey);
-      }
-      return jsonEncode(elementKeys);
+      return _elements[key]?.attributes.containsKey(attr) ?? false;
+    });
+
+    runtime.onMessage('doc_has_attr', (dynamic args) {
+      final input = args[0];
+      final attr = args[1];
+      return parse(input).attributes.containsKey(attr);
     });
 
     runtime.evaluate('''

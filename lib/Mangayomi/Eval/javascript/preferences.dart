@@ -11,13 +11,13 @@ class JsPreferences {
 
   void init() {
     runtime.onMessage('get', (dynamic args) {
-      return getPreferenceValue(source!.id!, args[0]);
+      return getPreferenceValue(source!.id, args[0]);
     });
     runtime.onMessage('getString', (dynamic args) {
-      return getSourcePreferenceStringValue(source!.id!, args[0], args[1]);
+      return getSourcePreferenceStringValue(source!.id, args[0], args[1]);
     });
     runtime.onMessage('setString', (dynamic args) {
-      return setSourcePreferenceStringValue(source!.id!, args[0], args[1]);
+      return setSourcePreferenceStringValue(source!.id, args[0], args[1]);
     });
 
     runtime.evaluate('''

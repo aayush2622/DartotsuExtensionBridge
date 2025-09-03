@@ -3,7 +3,6 @@ import 'package:http_interceptor/http_interceptor.dart';
 
 import '../Eval/dart/model/video.dart';
 import '../http/m_client.dart';
-import '../xpath_selector.dart';
 
 class YourUploadExtractor {
   final InterceptedClient client = MClient.init(
@@ -21,18 +20,31 @@ class YourUploadExtractor {
 
     try {
       final response = await client.get(Uri.parse(url), headers: newHeaders);
-      final baseData = xpathSelector(response.body)
-          .queryXPath('//script[contains(text(), "jwplayerOptions")]/text()')
-          .attrs;
-      if (baseData.isNotEmpty) {
-        final basicUrl = baseData.first!
+
+      final body = response.body;
+      final RegExp scriptRe = RegExp(
+        r'<script[^>]*>([\s\S]*?)</script>',
+        multiLine: true,
+      );
+      String? scriptContent;
+      for (final m in scriptRe.allMatches(body)) {
+        final inner = m.group(1);
+        if (inner != null && inner.contains("jwplayerOptions")) {
+          scriptContent = inner;
+          break;
+        }
+      }
+
+      if (scriptContent != null) {
+        final basicUrl = scriptContent
             .substringAfter("file: '")
             .substringBefore("',");
-        final quality = prefix + name;
+        final quality = '$prefix$name';
         return [Video(basicUrl, quality, basicUrl, headers: newHeaders)];
-      } else {
-        return [];
       }
+
+      // Fallback: no usable data
+      return [];
     } catch (_) {
       return [];
     }
