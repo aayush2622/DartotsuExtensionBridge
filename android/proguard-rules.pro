@@ -29,6 +29,7 @@
 -keepclassmembers class uy.kohesive.injekt.api.FullTypeReference {
     <init>(...);
 }
+
 -keep class okhttp3.** { *; }
 -dontwarn okhttp3.**
 -keep class androidx.preference.** { *; }
