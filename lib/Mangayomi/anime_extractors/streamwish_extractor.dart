@@ -1,11 +1,8 @@
-import 'streamlare_extractor.dart';
 import '../string_extensions.dart';
 import 'package:http_interceptor/http_interceptor.dart';
-import 'package:js_packer/js_packer.dart';
 
 import '../Eval/dart/model/video.dart';
 import '../http/m_client.dart';
-import '../xpath_selector.dart';
 
 class StreamWishExtractor {
   final InterceptedClient client = MClient.init(
@@ -17,26 +14,30 @@ class StreamWishExtractor {
     final videoList = <Video>[];
     try {
       final response = await client.get(Uri.parse(url), headers: headers);
+      final body = response.body;
 
-      final jsEval = xpathSelector(
-        response.body,
-      ).queryXPath('//script[contains(text(), "m3u8")]/text()').attrs;
-      if (jsEval.isEmpty) {
-        return [];
+      final RegExp scriptTagRe =
+          RegExp(r'<script[^>]*>([\s\S]*?)<\/script>', multiLine: true);
+      String? scriptContent;
+      for (final m in scriptTagRe.allMatches(body)) {
+        final inner = m.group(1);
+        if (inner != null && inner.contains('m3u8')) {
+          scriptContent = inner;
+          break;
+        }
       }
+      if (scriptContent == null) return [];
 
-      String? masterUrl = jsEval.first!
-          .let((script) {
-            if (script.contains("function(p,a,c")) {
-              return JSPacker(script).unpack() ?? "";
-            }
-            return script;
-          })
-          .substringAfter('source')
-          .substringAfter('file:"')
-          .substringBefore('"');
+      final String unpacked = scriptContent;
 
-      if (masterUrl.isEmpty) return [];
+      String? masterUrl;
+      if (unpacked.contains('source') && unpacked.contains('file:"')) {
+        masterUrl = unpacked
+            .substringAfter('source')
+            .substringAfter('file:"')
+            .substringBefore('"');
+      }
+      if (masterUrl == null || masterUrl.isEmpty) return [];
 
       final playlistHeaders = Map<String, String>.from(headers)
         ..addAll({
@@ -49,10 +50,7 @@ class StreamWishExtractor {
       final masterBase =
           '${'https://${Uri.parse(masterUrl).host}${Uri.parse(masterUrl).path}'.substringBeforeLast('/')}/';
 
-      final masterPlaylistResponse = await client.get(
-        Uri.parse(masterUrl),
-        headers: playlistHeaders,
-      );
+      final masterPlaylistResponse = await client.get(Uri.parse(masterUrl), headers: playlistHeaders);
       final masterPlaylist = masterPlaylistResponse.body;
 
       const separator = '#EXT-X-STREAM-INF:';
@@ -61,9 +59,7 @@ class StreamWishExtractor {
             '$prefix - ${it.substringAfter('RESOLUTION=').substringAfter('x').substringBefore(',')}p ';
         final videoUrl =
             masterBase + it.substringAfter('\n').substringBefore('\n');
-        videoList.add(
-          Video(videoUrl, quality, videoUrl, headers: playlistHeaders),
-        );
+        videoList.add(Video(videoUrl, quality, videoUrl, headers: playlistHeaders));
       });
 
       return videoList;

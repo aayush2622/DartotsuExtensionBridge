@@ -1,48 +1,36 @@
-import '../../../dom_extensions.dart';
 import 'package:html/dom.dart';
+import 'package:xml/xml.dart' as xml;
 
 class MElement {
-  MElement(this._element);
-
   final Element? _element;
 
+  MElement(this._element);
+
   String? get outerHtml => _element?.outerHtml;
-
   String? get innerHtml => _element?.innerHtml;
-
   String? get text => _element?.text.trim();
-
   String? get className => _element?.className;
-
   String? get localName => _element?.localName;
-
   String? get namespaceUri => _element?.namespaceUri;
-
-  String? get getSrc => _element?.getSrc;
-
-  String? get getImg => _element?.getImg;
-
-  String? get getHref => _element?.getHref;
-
-  String? get getDataSrc => _element?.getDataSrc;
+  String? get getSrc => _element?.attributes['src'];
+  String? get getImg => _element?.getElementsByTagName('img').isNotEmpty == true
+      ? _element!.getElementsByTagName('img').first.attributes['src']
+      : null;
+  String? get getHref => _element?.attributes['href'];
+  String? get getDataSrc => _element?.attributes['data-src'];
 
   List<MElement>? get children =>
       _element?.children.map((e) => MElement(e)).toList();
 
-  MElement? get parent => MElement(_element?.parent);
-
-  MElement? get nextElementSibling => MElement(_element?.nextElementSibling);
-
+  MElement? get parent =>
+      _element?.parent != null ? MElement(_element!.parent) : null;
+  MElement? get nextElementSibling => _element?.nextElementSibling != null
+      ? MElement(_element!.nextElementSibling)
+      : null;
   MElement? get previousElementSibling =>
-      MElement(_element?.previousElementSibling);
-
-  String? xpathFirst(String xpath) {
-    return _element?.outerHtml == null ? null : _element?.xpathFirst(xpath);
-  }
-
-  List<String>? xpath(String xpath) {
-    return _element?.outerHtml == null ? null : _element?.xpath(xpath);
-  }
+      _element?.previousElementSibling != null
+      ? MElement(_element!.previousElementSibling)
+      : null;
 
   List<MElement>? getElementsByClassName(String classNames) {
     return _element
@@ -59,18 +47,44 @@ class MElement {
   }
 
   List<MElement>? select(String selector) {
-    return _element?.select(selector)?.map((e) => MElement(e)).toList();
+    return _element
+        ?.querySelectorAll(selector)
+        .map((e) => MElement(e))
+        .toList();
   }
 
   MElement? selectFirst(String selector) {
-    return MElement(_element?.selectFirst(selector));
+    final first = _element?.querySelector(selector);
+    return first != null ? MElement(first) : null;
   }
 
-  String? attr(String attribute) {
-    return _element?.attr(attribute);
+  String? attr(String attribute) => _element?.attributes[attribute];
+
+  bool hasAttr(String attribute) =>
+      _element?.attributes.containsKey(attribute) ?? false;
+
+  // --- XPath using xml package ---
+  String? xpathFirst(String xpathExpr) {
+    if (_element == null) return null;
+    try {
+      final document = xml.XmlDocument.parse(_element.outerHtml);
+      final node = document.findAllElements(xpathExpr).firstOrNull;
+      return node?.text.trim();
+    } catch (_) {
+      return null;
+    }
   }
 
-  bool hasAttr(String attr) {
-    return _element?.hasAtr(attr) ?? false;
+  List<String>? xpath(String xpathExpr) {
+    if (_element == null) return null;
+    try {
+      final document = xml.XmlDocument.parse(_element.outerHtml);
+      return document
+          .findAllElements(xpathExpr)
+          .map((e) => e.text.trim())
+          .toList();
+    } catch (_) {
+      return null;
+    }
   }
 }

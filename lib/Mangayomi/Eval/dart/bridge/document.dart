@@ -4,7 +4,7 @@ import 'package:html/dom.dart';
 import '../model/document.dart';
 
 class MDocumentBridge {
-  final documentBridgedClass = BridgedClassDefinition(
+  final documentBridgedClass = BridgedClass(
     nativeType: MDocument,
     name: 'MDocument',
     constructors: {
@@ -17,7 +17,6 @@ class MDocumentBridge {
       'documentElement': (visitor, target) =>
           (target as MDocument).documentElement,
       'head': (visitor, target) => (target as MDocument).head,
-      'parent': (visitor, target) => (target as MDocument).parent,
       'outerHtml': (visitor, target) => (target as MDocument).outerHtml,
       'text': (visitor, target) => (target as MDocument).text,
       'children': (visitor, target) => (target as MDocument).children,
@@ -28,11 +27,13 @@ class MDocumentBridge {
       'selectFirst': (visitor, target, positionalArgs, namedArgs) =>
           (target as MDocument).selectFirst(positionalArgs[0] as String),
       'getElementsByClassName': (visitor, target, positionalArgs, namedArgs) =>
-          (target as MDocument)
-              .getElementsByClassName(positionalArgs[0] as String),
+          (target as MDocument).getElementsByClassName(
+            positionalArgs[0] as String,
+          ),
       'getElementsByTagName': (visitor, target, positionalArgs, namedArgs) =>
-          (target as MDocument)
-              .getElementsByTagName(positionalArgs[0] as String),
+          (target as MDocument).getElementsByTagName(
+            positionalArgs[0] as String,
+          ),
       'getElementById': (visitor, target, positionalArgs, namedArgs) =>
           (target as MDocument).getElementById(positionalArgs[0] as String),
       'attr': (visitor, target, positionalArgs, namedArgs) =>
