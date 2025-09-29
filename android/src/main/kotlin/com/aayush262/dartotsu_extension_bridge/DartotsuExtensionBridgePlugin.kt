@@ -19,7 +19,6 @@ import uy.kohesive.injekt.api.addSingletonFactory
 class DartotsuExtensionBridgePlugin : FlutterPlugin {
     private lateinit var context: Context
     private lateinit var aniyomiChannel: MethodChannel
-    private lateinit var aniyomiBridge: AniyomiBridge
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         Log.d("PluginDebug", "Plugin attached to engine")
@@ -30,9 +29,8 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
         Injekt.addSingletonFactory { NetworkHelper(context).client }
         Injekt.addSingletonFactory { Json { ignoreUnknownKeys = true ;explicitNulls = false }}
         Injekt.addSingletonFactory { AniyomiExtensionManager(context) }
-        aniyomiBridge = AniyomiBridge(context)
         aniyomiChannel = MethodChannel(binding.binaryMessenger, "aniyomiExtensionBridge")
-        aniyomiChannel.setMethodCallHandler(aniyomiBridge)
+        aniyomiChannel.setMethodCallHandler(AniyomiBridge(context))
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {

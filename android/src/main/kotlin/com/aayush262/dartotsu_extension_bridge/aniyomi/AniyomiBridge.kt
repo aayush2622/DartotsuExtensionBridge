@@ -7,6 +7,7 @@ import androidx.preference.CheckBoxPreference
 import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
 import androidx.preference.MultiSelectListPreference
+import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceGroup
 import androidx.preference.PreferenceManager
@@ -47,6 +48,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             "getPageList" -> getPageList(call, result)
             "search" -> search(call, result)
             "getPreference" -> getPreference(call, result)
+            "saveSourcePreference" -> saveSourcePreference(call, result)
             else -> result.notImplemented()
         }
     }
@@ -553,6 +555,96 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
         return Pair(url, headersMap)
     }
 
+    data class PrefHandlers(
+        val pref: Preference,
+        val clickListener: Preference.OnPreferenceClickListener? = null,
+        val changeListener: Preference.OnPreferenceChangeListener? = null
+    )
+
+    var sourcePreferences: MutableMap<String, MutableMap<String, PrefHandlers?>> = mutableMapOf()
+    fun saveSourcePreference(call: MethodCall, result: MethodChannel.Result) {
+        val args = call.arguments as? Map<*, *>
+        if (args == null) {
+            Log.d("PrefsDebug", "saveSourcePreference: args are null")
+            return result.error("INVALID_ARGS", "Args null", null)
+        }
+        Log.d("PrefsDebug", "Arguments received: $args")
+
+        val sourceId = args["sourceId"] as? String
+        if (sourceId == null) {
+            Log.d("PrefsDebug", "sourceId is null")
+            return
+        }
+        Log.d("PrefsDebug", "sourceId: $sourceId")
+
+        val prefKey = args["key"] as? String
+        if (prefKey == null) {
+            Log.d("PrefsDebug", "prefKey is null")
+            return
+        }
+        Log.d("PrefsDebug", "prefKey: $prefKey")
+
+        val action = args["action"] as? String ?: "change"
+        val newValue = args["value"]
+        Log.d("PrefsDebug", "Action: $action, New Value: $newValue")
+
+        val handlers = sourcePreferences[sourceId]?.get(prefKey)
+        if (handlers == null) {
+            Log.d("PrefsDebug", "No handlers found for sourceId=$sourceId, key=$prefKey")
+            return
+        }
+
+        val pref = handlers.pref
+        Log.d("PrefsDebug", "Preference found: $pref")
+
+        when (action) {
+            "click" -> {
+                if (handlers.clickListener == null) {
+                    Log.d("PrefsDebug", "Click listener is null")
+                } else {
+                    Log.d("PrefsDebug", "Invoking click listener")
+                    handlers.clickListener.onPreferenceClick(pref)
+                }
+            }
+
+            "change" -> {
+                Log.d("PrefsDebug", "Invoking change listener with value: $newValue")
+                val valueForListener = when (pref) {
+                    is MultiSelectListPreference -> when (newValue) {
+                        is List<*> -> newValue.filterIsInstance<String>().toSet()
+                        is Set<*> -> newValue.filterIsInstance<String>()
+                        else -> emptySet()
+                    }
+
+                    else -> newValue
+                }
+                handlers.changeListener?.onPreferenceChange(pref,valueForListener)
+                when (pref) {
+                    is SwitchPreferenceCompat -> pref.isChecked = newValue as Boolean
+                    is ListPreference -> pref.value = newValue as String
+                    is EditTextPreference -> pref.text = newValue as String
+                    is MultiSelectListPreference -> {
+                        val newSet = when (newValue) {
+                            is List<*> -> newValue.filterIsInstance<String>().toSet()
+                            is Set<*> -> newValue.filterIsInstance<String>()
+                            else -> emptySet()
+                        }
+                        pref.values = newSet.toMutableSet()
+                    }
+
+                    is CheckBoxPreference -> pref.isChecked = newValue as Boolean
+                }
+
+            }
+
+            else -> {
+                Log.d("PrefsDebug", "Unknown action: $action")
+            }
+        }
+
+        Log.d("PrefsDebug", "Preference action processed successfully")
+        result.success(true)
+    }
 
     @SuppressLint("RestrictedApi")
     private fun getPreference(call: MethodCall, result: MethodChannel.Result) {
@@ -577,7 +669,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
 
             media.setupPreferenceScreen(screen)
 
-            val map = screen.toDynamicMap()
+            val map = screen.toDynamicMap(sourceId)
 
             result.success(map)
         } catch (e: NoPreferenceScreenException) {
@@ -587,12 +679,18 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
     }
 
 
-    fun PreferenceScreen.toDynamicMap(): List<Map<String, Any?>> {
+    fun PreferenceScreen.toDynamicMap(sourceID: String): List<Map<String, Any?>> {
         val list = mutableListOf<Map<String, Any?>>()
-
+        val clickMap = sourcePreferences.getOrPut(sourceID) { mutableMapOf() }
         fun traverse(prefGroup: PreferenceGroup) {
             for (i in 0 until prefGroup.preferenceCount) {
                 val pref = prefGroup.getPreference(i)
+
+                clickMap[pref.key] = PrefHandlers(
+                    pref = pref,
+                    clickListener = pref.onPreferenceClickListener,
+                    changeListener = pref.onPreferenceChangeListener
+                )
                 val prefMap = mutableMapOf<String, Any?>(
                     "key" to pref.key,
                     "title" to pref.title.toString(),
@@ -607,7 +705,6 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         else -> "other"
                     }
                 )
-
                 when (pref) {
                     is ListPreference -> {
                         prefMap["entries"] = pref.entries.map { it.toString() }
@@ -637,7 +734,6 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         prefMap["value"] = pref.sharedPreferences?.all?.get(pref.key)
                     }
                 }
-
                 list.add(prefMap)
 
                 if (pref is PreferenceCategory) {

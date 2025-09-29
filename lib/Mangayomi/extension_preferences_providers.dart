@@ -11,6 +11,11 @@ void setPreferenceSetting(SourcePreference sourcePreference, MSource source) {
       .sourceIdEqualTo(source.id)
       .keyEqualTo(sourcePreference.key)
       .findFirstSync();
+  final sourcePref2 = isar.sourcePreferences
+      .filter()
+      .sourceIdEqualTo(source.id)
+      .keyEqualTo(sourcePreference.key)
+      .findAllSync();
   isar.writeTxnSync(() {
     if (sourcePref != null) {
       isar.sourcePreferences.putSync(sourcePreference);

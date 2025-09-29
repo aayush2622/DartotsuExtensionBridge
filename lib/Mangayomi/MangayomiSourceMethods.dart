@@ -1,4 +1,5 @@
 import 'package:dartotsu_extension_bridge/Mangayomi/Eval/dart/model/source_preference.dart';
+import 'package:dartotsu_extension_bridge/Mangayomi/string_extensions.dart';
 import 'package:dartotsu_extension_bridge/Models/DEpisode.dart';
 
 import 'package:dartotsu_extension_bridge/Models/DMedia.dart';
@@ -19,6 +20,8 @@ import 'ChapterRecognition.dart';
 import 'Eval/dart/model/m_manga.dart';
 import 'MangayomiExtensionManager.dart';
 import 'Models/Source.dart';
+import 'extension_preferences_providers.dart';
+import 'get_source_preference.dart';
 import 'lib.dart';
 
 class MangayomiSourceMethods implements SourceMethods {
@@ -191,9 +194,12 @@ class MangayomiSourceMethods implements SourceMethods {
         return "other";
       }
     }
+
     try {
       final data = _ensureSource(
-        (mSource) => getExtensionService(mSource).getSourcePreferences(),
+        (mSource) => getSourcePreference(
+          source: mSource,
+        ).map((e) => getSourcePreferenceEntry(e.key!, mSource.id!)).toList(),
       );
       return data
           .map(
@@ -203,5 +209,25 @@ class MangayomiSourceMethods implements SourceMethods {
     } catch (e) {
       return [];
     }
+  }
+
+  @override
+  Future<bool> setPreference(s.SourcePreference pref, value) async {
+    var data = SourcePreference.fromJson(pref.toJson())
+      ..sourceId = source.id?.toInt();
+    if (data.listPreference != null) {
+      data.listPreference?.valueIndex = data.listPreference?.entryValues
+          ?.indexOf(value ?? '');
+    } else if (data.checkBoxPreference != null) {
+      data.checkBoxPreference?.value = value;
+    } else if (data.switchPreferenceCompat != null) {
+      data.switchPreferenceCompat?.value = value;
+    } else if (data.editTextPreference != null) {
+      data.editTextPreference?.value = value;
+    } else if (data.multiSelectListPreference != null) {
+      data.multiSelectListPreference?.values = value;
+    }
+    _ensureSource((mSource) => setPreferenceSetting(data, mSource));
+    return true;
   }
 }

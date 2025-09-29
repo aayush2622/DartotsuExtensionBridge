@@ -25,4 +25,6 @@ abstract class SourceMethods {
   Future<String?> getNovelContent(String chapterTitle, String chapterId);
 
   Future<List<SourcePreference>> getPreference();
+
+  Future<bool> setPreference(SourcePreference pref, dynamic value);
 }

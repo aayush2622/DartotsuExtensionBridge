@@ -155,6 +155,16 @@ class AniyomiSourceMethods implements SourceMethods {
       result,
     ).map((e) => mapToSourcePreference(Map<String, dynamic>.from(e))).toList();
   }
+
+  @override
+  Future<bool> setPreference(SourcePreference pref, dynamic value) async {
+    final result = await platform.invokeMethod('saveSourcePreference', {
+      'sourceId': source.id,
+      'key': pref.key,
+      'value': value,
+    });
+    return result;
+  }
 }
 
 SourcePreference mapToSourcePreference(Map<String, dynamic> json) {

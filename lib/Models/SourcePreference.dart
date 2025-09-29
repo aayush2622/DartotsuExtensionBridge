@@ -1,4 +1,5 @@
 class SourcePreference {
+  int? id;
   String? key;
   String? type;
   CheckBoxPreference? checkBoxPreference;
@@ -8,6 +9,7 @@ class SourcePreference {
   EditTextPreference? editTextPreference;
 
   SourcePreference({
+    this.id,
     this.key,
     this.type,
     this.checkBoxPreference,
@@ -20,6 +22,7 @@ class SourcePreference {
   Map<String, dynamic> toJson() => {
     'type': type,
     'key': key,
+    'id': id,
     if (checkBoxPreference != null)
       'checkBoxPreference': checkBoxPreference!.toJson(),
     if (switchPreferenceCompat != null)
@@ -35,6 +38,7 @@ class SourcePreference {
     return SourcePreference(
       key: json['key'],
       type: json['type'],
+      id: json['id'],
       checkBoxPreference: json['checkBoxPreference'] != null
           ? CheckBoxPreference.fromJson(json['checkBoxPreference'])
           : null,
