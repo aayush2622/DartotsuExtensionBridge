@@ -34,7 +34,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
     override fun onMethodCall(
         call: MethodCall,
         result: MethodChannel.Result
-    ) { // just to keep the context reference alive
+    ) {
         Log.d("AniyomiBridge", "Method called: ${call.method} with args: ${call.arguments}")
         when (call.method) {
             "getInstalledAnimeExtensions" -> getInstalledAnimeExtensions(call, result)
@@ -565,50 +565,29 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
     fun saveSourcePreference(call: MethodCall, result: MethodChannel.Result) {
         val args = call.arguments as? Map<*, *>
         if (args == null) {
-            Log.d("PrefsDebug", "saveSourcePreference: args are null")
             return result.error("INVALID_ARGS", "Args null", null)
         }
-        Log.d("PrefsDebug", "Arguments received: $args")
 
-        val sourceId = args["sourceId"] as? String
-        if (sourceId == null) {
-            Log.d("PrefsDebug", "sourceId is null")
-            return
-        }
-        Log.d("PrefsDebug", "sourceId: $sourceId")
+        val sourceId = args["sourceId"] as? String ?: return
 
-        val prefKey = args["key"] as? String
-        if (prefKey == null) {
-            Log.d("PrefsDebug", "prefKey is null")
-            return
-        }
-        Log.d("PrefsDebug", "prefKey: $prefKey")
+        val prefKey = args["key"] as? String ?: return
 
         val action = args["action"] as? String ?: "change"
         val newValue = args["value"]
-        Log.d("PrefsDebug", "Action: $action, New Value: $newValue")
 
-        val handlers = sourcePreferences[sourceId]?.get(prefKey)
-        if (handlers == null) {
-            Log.d("PrefsDebug", "No handlers found for sourceId=$sourceId, key=$prefKey")
-            return
-        }
-
+        val handlers = sourcePreferences[sourceId]?.get(prefKey) ?: return
         val pref = handlers.pref
-        Log.d("PrefsDebug", "Preference found: $pref")
 
         when (action) {
             "click" -> {
                 if (handlers.clickListener == null) {
                     Log.d("PrefsDebug", "Click listener is null")
                 } else {
-                    Log.d("PrefsDebug", "Invoking click listener")
                     handlers.clickListener.onPreferenceClick(pref)
                 }
             }
 
             "change" -> {
-                Log.d("PrefsDebug", "Invoking change listener with value: $newValue")
                 val valueForListener = when (pref) {
                     is MultiSelectListPreference -> when (newValue) {
                         is List<*> -> newValue.filterIsInstance<String>().toSet()
@@ -638,11 +617,9 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             }
 
             else -> {
-                Log.d("PrefsDebug", "Unknown action: $action")
             }
         }
 
-        Log.d("PrefsDebug", "Preference action processed successfully")
         result.success(true)
     }
 
