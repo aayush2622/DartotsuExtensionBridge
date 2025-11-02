@@ -3,7 +3,7 @@ import 'package:d4rt/d4rt.dart';
 import '../model/m_manga.dart';
 
 class MMangaBridge {
-  final mMangaBridgedClass = BridgedClassDefinition(
+  final mMangaBridgedClass = BridgedClass(
     nativeType: MManga,
     name: 'MManga',
     constructors: {
@@ -53,7 +53,6 @@ class MMangaBridge {
           (target as MManga).chapters = (value as List?)?.cast(),
     },
   );
-
   void registerBridgedClasses(D4rt interpreter) {
     interpreter.registerBridgedClass(
       mMangaBridgedClass,

@@ -3,7 +3,7 @@ import 'package:d4rt/d4rt.dart';
 import '../model/video.dart';
 
 class MVideoBridge {
-  final mVideoBridgedClass = BridgedClassDefinition(
+  final mVideoBridgedClass = BridgedClass(
     nativeType: Video,
     name: 'MVideo',
     constructors: {
@@ -41,7 +41,6 @@ class MVideoBridge {
           (target as Video).audios = (value as List?)?.cast(),
     },
   );
-
   void registerBridgedClasses(D4rt interpreter) {
     interpreter.registerBridgedClass(
       mVideoBridgedClass,

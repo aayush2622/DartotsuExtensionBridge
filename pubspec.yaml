@@ -13,9 +13,9 @@ dependencies:
     sdk: flutter
   plugin_platform_interface: ^2.0.2
   http: ^1.4.0
-  isar: 3.1.0+1
-  isar_flutter_libs: 3.1.0+1
-  d4rt: ^0.0.8
+  isar_community: ^3.3.0-dev.2
+  isar_community_flutter_libs: ^3.3.0-dev.2
+  d4rt: ^0.1.7
   get: ^4.7.2
   path_provider: ^2.1.5
   path: ^1.9.1
@@ -42,11 +42,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  isar_generator: ^3.1.0+1
+  isar_community_generator: ^3.3.0-dev.2
   build_runner: ^2.5.4
 
 dependency_overrides:
-  analyzer: ">=5.2.0 <7.0.0"
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

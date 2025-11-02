@@ -39,7 +39,7 @@ class MangayomiSourceMethods implements SourceMethods {
         : manager.installedNovelExtensions;
 
     final mSource = sources.value.firstWhereOrNull(
-      (s) => s.id.toString() == source.id,
+      (s) => s.sourceId == source.id,
     );
 
     if (mSource == null) throw Exception('Source is not initialized');

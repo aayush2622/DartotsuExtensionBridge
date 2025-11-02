@@ -3,7 +3,7 @@ import 'package:d4rt/d4rt.dart';
 import '../model/m_source.dart';
 
 class MSourceBridge {
-  final mSourceBridgedClass = BridgedClassDefinition(
+  final mSourceBridgedClass = BridgedClass(
     nativeType: MSource,
     name: 'MSource',
     constructors: {
@@ -39,7 +39,6 @@ class MSourceBridge {
       'notes': (visitor, target) => (target as MSource).notes,
     },
   );
-
   void registerBridgedClasses(D4rt interpreter) {
     interpreter.registerBridgedClass(
       mSourceBridgedClass,
