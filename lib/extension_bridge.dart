@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
+import 'package:isar_community/isar.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:isar/isar.dart';
 
 import 'Aniyomi/AniyomiExtensions.dart';
 import 'ExtensionManager.dart';

@@ -61,8 +61,9 @@ const BridgeSettingsSchema = CollectionSchema(
       id: 8,
       name: r'sortedNovelExtensions',
       type: IsarType.stringList,
-    )
+    ),
   },
+
   estimateSize: _bridgeSettingsEstimateSize,
   serialize: _bridgeSettingsSerialize,
   deserialize: _bridgeSettingsDeserialize,
@@ -71,10 +72,11 @@ const BridgeSettingsSchema = CollectionSchema(
   indexes: {},
   links: {},
   embeddedSchemas: {},
+
   getId: _bridgeSettingsGetId,
   getLinks: _bridgeSettingsGetLinks,
   attach: _bridgeSettingsAttach,
-  version: '3.1.0+1',
+  version: '3.3.0-dev.3',
 );
 
 int _bridgeSettingsEstimateSize(
@@ -225,7 +227,10 @@ List<IsarLinkBase<dynamic>> _bridgeSettingsGetLinks(BridgeSettings object) {
 }
 
 void _bridgeSettingsAttach(
-    IsarCollection<dynamic> col, Id id, BridgeSettings object) {
+  IsarCollection<dynamic> col,
+  Id id,
+  BridgeSettings object,
+) {
   object.id = id;
 }
 
@@ -241,17 +246,16 @@ extension BridgeSettingsQueryWhereSort
 extension BridgeSettingsQueryWhere
     on QueryBuilder<BridgeSettings, BridgeSettings, QWhereClause> {
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterWhereClause> idEqualTo(
-      Id id) {
+    Id id,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: id,
-        upper: id,
-      ));
+      return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterWhereClause> idNotEqualTo(
-      Id id) {
+    Id id,
+  ) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -274,8 +278,9 @@ extension BridgeSettingsQueryWhere
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterWhereClause> idGreaterThan(
-      Id id,
-      {bool include = false}) {
+    Id id, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.greaterThan(lower: id, includeLower: include),
@@ -284,8 +289,9 @@ extension BridgeSettingsQueryWhere
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterWhereClause> idLessThan(
-      Id id,
-      {bool include = false}) {
+    Id id, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: id, includeUpper: include),
@@ -300,12 +306,14 @@ extension BridgeSettingsQueryWhere
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: lowerId,
-        includeLower: includeLower,
-        upper: upperId,
-        includeUpper: includeUpper,
-      ));
+      return query.addWhereClause(
+        IdWhereClause.between(
+          lower: lowerId,
+          includeLower: includeLower,
+          upper: upperId,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 }
@@ -313,53 +321,59 @@ extension BridgeSettingsQueryWhere
 extension BridgeSettingsQueryFilter
     on QueryBuilder<BridgeSettings, BridgeSettings, QFilterCondition> {
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsElementEqualTo(
+  aniyomiAnimeExtensionsElementEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'aniyomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'aniyomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'aniyomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsElementLessThan(
+  aniyomiAnimeExtensionsElementGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'aniyomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'aniyomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsElementBetween(
+  aniyomiAnimeExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'aniyomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+  aniyomiAnimeExtensionsElementBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -367,91 +381,106 @@ extension BridgeSettingsQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'aniyomiAnimeExtensions',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'aniyomiAnimeExtensions',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsElementStartsWith(
+  aniyomiAnimeExtensionsElementStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'aniyomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'aniyomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsElementEndsWith(
+  aniyomiAnimeExtensionsElementEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'aniyomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'aniyomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsElementContains(String value,
-          {bool caseSensitive = true}) {
+  aniyomiAnimeExtensionsElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'aniyomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'aniyomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsElementMatches(String pattern,
-          {bool caseSensitive = true}) {
+  aniyomiAnimeExtensionsElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'aniyomiAnimeExtensions',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'aniyomiAnimeExtensions',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsElementIsEmpty() {
+  aniyomiAnimeExtensionsElementIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'aniyomiAnimeExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'aniyomiAnimeExtensions', value: ''),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsElementIsNotEmpty() {
+  aniyomiAnimeExtensionsElementIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'aniyomiAnimeExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'aniyomiAnimeExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsLengthEqualTo(int length) {
+  aniyomiAnimeExtensionsLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'aniyomiAnimeExtensions',
@@ -464,20 +493,14 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsIsEmpty() {
+  aniyomiAnimeExtensionsIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'aniyomiAnimeExtensions',
-        0,
-        true,
-        0,
-        true,
-      );
+      return query.listLength(r'aniyomiAnimeExtensions', 0, true, 0, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsIsNotEmpty() {
+  aniyomiAnimeExtensionsIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'aniyomiAnimeExtensions',
@@ -490,10 +513,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
+  aniyomiAnimeExtensionsLengthLessThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'aniyomiAnimeExtensions',
@@ -506,10 +526,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
+  aniyomiAnimeExtensionsLengthGreaterThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'aniyomiAnimeExtensions',
@@ -522,7 +539,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiAnimeExtensionsLengthBetween(
+  aniyomiAnimeExtensionsLengthBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -540,53 +557,59 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsElementEqualTo(
+  aniyomiMangaExtensionsElementEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'aniyomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'aniyomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'aniyomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsElementLessThan(
+  aniyomiMangaExtensionsElementGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'aniyomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'aniyomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsElementBetween(
+  aniyomiMangaExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'aniyomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+  aniyomiMangaExtensionsElementBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -594,91 +617,106 @@ extension BridgeSettingsQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'aniyomiMangaExtensions',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'aniyomiMangaExtensions',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsElementStartsWith(
+  aniyomiMangaExtensionsElementStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'aniyomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'aniyomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsElementEndsWith(
+  aniyomiMangaExtensionsElementEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'aniyomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'aniyomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsElementContains(String value,
-          {bool caseSensitive = true}) {
+  aniyomiMangaExtensionsElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'aniyomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'aniyomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsElementMatches(String pattern,
-          {bool caseSensitive = true}) {
+  aniyomiMangaExtensionsElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'aniyomiMangaExtensions',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'aniyomiMangaExtensions',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsElementIsEmpty() {
+  aniyomiMangaExtensionsElementIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'aniyomiMangaExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'aniyomiMangaExtensions', value: ''),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsElementIsNotEmpty() {
+  aniyomiMangaExtensionsElementIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'aniyomiMangaExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'aniyomiMangaExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsLengthEqualTo(int length) {
+  aniyomiMangaExtensionsLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'aniyomiMangaExtensions',
@@ -691,20 +729,14 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsIsEmpty() {
+  aniyomiMangaExtensionsIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'aniyomiMangaExtensions',
-        0,
-        true,
-        0,
-        true,
-      );
+      return query.listLength(r'aniyomiMangaExtensions', 0, true, 0, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsIsNotEmpty() {
+  aniyomiMangaExtensionsIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'aniyomiMangaExtensions',
@@ -717,10 +749,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
+  aniyomiMangaExtensionsLengthLessThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'aniyomiMangaExtensions',
@@ -733,10 +762,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
+  aniyomiMangaExtensionsLengthGreaterThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'aniyomiMangaExtensions',
@@ -749,7 +775,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      aniyomiMangaExtensionsLengthBetween(
+  aniyomiMangaExtensionsLengthBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -767,71 +793,74 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerIsNull() {
+  currentManagerIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'currentManager',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'currentManager'),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerIsNotNull() {
+  currentManagerIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'currentManager',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'currentManager'),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
+  currentManagerEqualTo(String? value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'currentManager',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'currentManager',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'currentManager',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerLessThan(
+  currentManagerGreaterThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'currentManager',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'currentManager',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerBetween(
+  currentManagerLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'currentManager',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+  currentManagerBetween(
     String? lower,
     String? upper, {
     bool includeLower = true,
@@ -839,140 +868,140 @@ extension BridgeSettingsQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'currentManager',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'currentManager',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  currentManagerStartsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'currentManager',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'currentManager',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  currentManagerEndsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'currentManager',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'currentManager',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerContains(String value, {bool caseSensitive = true}) {
+  currentManagerContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'currentManager',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'currentManager',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerMatches(String pattern, {bool caseSensitive = true}) {
+  currentManagerMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'currentManager',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'currentManager',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerIsEmpty() {
+  currentManagerIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'currentManager',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'currentManager', value: ''),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      currentManagerIsNotEmpty() {
+  currentManagerIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'currentManager',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'currentManager', value: ''),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      idIsNull() {
+  idIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'id',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'id'),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      idIsNotNull() {
+  idIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'id',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'id'),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition> idEqualTo(
-      Id? value) {
+    Id? value,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'id', value: value),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      idGreaterThan(
-    Id? value, {
-    bool include = false,
-  }) {
+  idGreaterThan(Id? value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      idLessThan(
-    Id? value, {
-    bool include = false,
-  }) {
+  idLessThan(Id? value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
@@ -983,64 +1012,72 @@ extension BridgeSettingsQueryFilter
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'id',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'id',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsElementEqualTo(
+  mangayomiAnimeExtensionsElementEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'mangayomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'mangayomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'mangayomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsElementLessThan(
+  mangayomiAnimeExtensionsElementGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'mangayomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'mangayomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsElementBetween(
+  mangayomiAnimeExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'mangayomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+  mangayomiAnimeExtensionsElementBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1048,91 +1085,109 @@ extension BridgeSettingsQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'mangayomiAnimeExtensions',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'mangayomiAnimeExtensions',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsElementStartsWith(
+  mangayomiAnimeExtensionsElementStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'mangayomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'mangayomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsElementEndsWith(
+  mangayomiAnimeExtensionsElementEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'mangayomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'mangayomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsElementContains(String value,
-          {bool caseSensitive = true}) {
+  mangayomiAnimeExtensionsElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'mangayomiAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'mangayomiAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsElementMatches(String pattern,
-          {bool caseSensitive = true}) {
+  mangayomiAnimeExtensionsElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'mangayomiAnimeExtensions',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'mangayomiAnimeExtensions',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsElementIsEmpty() {
+  mangayomiAnimeExtensionsElementIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'mangayomiAnimeExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'mangayomiAnimeExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsElementIsNotEmpty() {
+  mangayomiAnimeExtensionsElementIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'mangayomiAnimeExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'mangayomiAnimeExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsLengthEqualTo(int length) {
+  mangayomiAnimeExtensionsLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'mangayomiAnimeExtensions',
@@ -1145,20 +1200,14 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsIsEmpty() {
+  mangayomiAnimeExtensionsIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'mangayomiAnimeExtensions',
-        0,
-        true,
-        0,
-        true,
-      );
+      return query.listLength(r'mangayomiAnimeExtensions', 0, true, 0, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsIsNotEmpty() {
+  mangayomiAnimeExtensionsIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'mangayomiAnimeExtensions',
@@ -1171,10 +1220,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
+  mangayomiAnimeExtensionsLengthLessThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'mangayomiAnimeExtensions',
@@ -1187,7 +1233,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsLengthGreaterThan(
+  mangayomiAnimeExtensionsLengthGreaterThan(
     int length, {
     bool include = false,
   }) {
@@ -1203,7 +1249,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiAnimeExtensionsLengthBetween(
+  mangayomiAnimeExtensionsLengthBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -1221,53 +1267,59 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsElementEqualTo(
+  mangayomiMangaExtensionsElementEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'mangayomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'mangayomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'mangayomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsElementLessThan(
+  mangayomiMangaExtensionsElementGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'mangayomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'mangayomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsElementBetween(
+  mangayomiMangaExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'mangayomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+  mangayomiMangaExtensionsElementBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1275,91 +1327,109 @@ extension BridgeSettingsQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'mangayomiMangaExtensions',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'mangayomiMangaExtensions',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsElementStartsWith(
+  mangayomiMangaExtensionsElementStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'mangayomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'mangayomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsElementEndsWith(
+  mangayomiMangaExtensionsElementEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'mangayomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'mangayomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsElementContains(String value,
-          {bool caseSensitive = true}) {
+  mangayomiMangaExtensionsElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'mangayomiMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'mangayomiMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsElementMatches(String pattern,
-          {bool caseSensitive = true}) {
+  mangayomiMangaExtensionsElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'mangayomiMangaExtensions',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'mangayomiMangaExtensions',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsElementIsEmpty() {
+  mangayomiMangaExtensionsElementIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'mangayomiMangaExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'mangayomiMangaExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsElementIsNotEmpty() {
+  mangayomiMangaExtensionsElementIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'mangayomiMangaExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'mangayomiMangaExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsLengthEqualTo(int length) {
+  mangayomiMangaExtensionsLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'mangayomiMangaExtensions',
@@ -1372,20 +1442,14 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsIsEmpty() {
+  mangayomiMangaExtensionsIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'mangayomiMangaExtensions',
-        0,
-        true,
-        0,
-        true,
-      );
+      return query.listLength(r'mangayomiMangaExtensions', 0, true, 0, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsIsNotEmpty() {
+  mangayomiMangaExtensionsIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'mangayomiMangaExtensions',
@@ -1398,10 +1462,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
+  mangayomiMangaExtensionsLengthLessThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'mangayomiMangaExtensions',
@@ -1414,7 +1475,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsLengthGreaterThan(
+  mangayomiMangaExtensionsLengthGreaterThan(
     int length, {
     bool include = false,
   }) {
@@ -1430,7 +1491,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiMangaExtensionsLengthBetween(
+  mangayomiMangaExtensionsLengthBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -1448,53 +1509,59 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsElementEqualTo(
+  mangayomiNovelExtensionsElementEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'mangayomiNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'mangayomiNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'mangayomiNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsElementLessThan(
+  mangayomiNovelExtensionsElementGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'mangayomiNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'mangayomiNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsElementBetween(
+  mangayomiNovelExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'mangayomiNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+  mangayomiNovelExtensionsElementBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1502,91 +1569,109 @@ extension BridgeSettingsQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'mangayomiNovelExtensions',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'mangayomiNovelExtensions',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsElementStartsWith(
+  mangayomiNovelExtensionsElementStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'mangayomiNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'mangayomiNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsElementEndsWith(
+  mangayomiNovelExtensionsElementEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'mangayomiNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'mangayomiNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsElementContains(String value,
-          {bool caseSensitive = true}) {
+  mangayomiNovelExtensionsElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'mangayomiNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'mangayomiNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsElementMatches(String pattern,
-          {bool caseSensitive = true}) {
+  mangayomiNovelExtensionsElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'mangayomiNovelExtensions',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'mangayomiNovelExtensions',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsElementIsEmpty() {
+  mangayomiNovelExtensionsElementIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'mangayomiNovelExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'mangayomiNovelExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsElementIsNotEmpty() {
+  mangayomiNovelExtensionsElementIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'mangayomiNovelExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'mangayomiNovelExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsLengthEqualTo(int length) {
+  mangayomiNovelExtensionsLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'mangayomiNovelExtensions',
@@ -1599,20 +1684,14 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsIsEmpty() {
+  mangayomiNovelExtensionsIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'mangayomiNovelExtensions',
-        0,
-        true,
-        0,
-        true,
-      );
+      return query.listLength(r'mangayomiNovelExtensions', 0, true, 0, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsIsNotEmpty() {
+  mangayomiNovelExtensionsIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'mangayomiNovelExtensions',
@@ -1625,10 +1704,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
+  mangayomiNovelExtensionsLengthLessThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'mangayomiNovelExtensions',
@@ -1641,7 +1717,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsLengthGreaterThan(
+  mangayomiNovelExtensionsLengthGreaterThan(
     int length, {
     bool include = false,
   }) {
@@ -1657,7 +1733,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      mangayomiNovelExtensionsLengthBetween(
+  mangayomiNovelExtensionsLengthBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -1675,53 +1751,59 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsElementEqualTo(
+  sortedAnimeExtensionsElementEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'sortedAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'sortedAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'sortedAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsElementLessThan(
+  sortedAnimeExtensionsElementGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'sortedAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'sortedAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsElementBetween(
+  sortedAnimeExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'sortedAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+  sortedAnimeExtensionsElementBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1729,91 +1811,106 @@ extension BridgeSettingsQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'sortedAnimeExtensions',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'sortedAnimeExtensions',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsElementStartsWith(
+  sortedAnimeExtensionsElementStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'sortedAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'sortedAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsElementEndsWith(
+  sortedAnimeExtensionsElementEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'sortedAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'sortedAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsElementContains(String value,
-          {bool caseSensitive = true}) {
+  sortedAnimeExtensionsElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'sortedAnimeExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'sortedAnimeExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsElementMatches(String pattern,
-          {bool caseSensitive = true}) {
+  sortedAnimeExtensionsElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'sortedAnimeExtensions',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'sortedAnimeExtensions',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsElementIsEmpty() {
+  sortedAnimeExtensionsElementIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'sortedAnimeExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'sortedAnimeExtensions', value: ''),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsElementIsNotEmpty() {
+  sortedAnimeExtensionsElementIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'sortedAnimeExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'sortedAnimeExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsLengthEqualTo(int length) {
+  sortedAnimeExtensionsLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'sortedAnimeExtensions',
@@ -1826,36 +1923,21 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsIsEmpty() {
+  sortedAnimeExtensionsIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'sortedAnimeExtensions',
-        0,
-        true,
-        0,
-        true,
-      );
+      return query.listLength(r'sortedAnimeExtensions', 0, true, 0, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsIsNotEmpty() {
+  sortedAnimeExtensionsIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'sortedAnimeExtensions',
-        0,
-        false,
-        999999,
-        true,
-      );
+      return query.listLength(r'sortedAnimeExtensions', 0, false, 999999, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
+  sortedAnimeExtensionsLengthLessThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'sortedAnimeExtensions',
@@ -1868,10 +1950,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
+  sortedAnimeExtensionsLengthGreaterThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'sortedAnimeExtensions',
@@ -1884,7 +1963,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedAnimeExtensionsLengthBetween(
+  sortedAnimeExtensionsLengthBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -1902,53 +1981,59 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsElementEqualTo(
+  sortedMangaExtensionsElementEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'sortedMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'sortedMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'sortedMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsElementLessThan(
+  sortedMangaExtensionsElementGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'sortedMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'sortedMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsElementBetween(
+  sortedMangaExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'sortedMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+  sortedMangaExtensionsElementBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1956,91 +2041,106 @@ extension BridgeSettingsQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'sortedMangaExtensions',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'sortedMangaExtensions',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsElementStartsWith(
+  sortedMangaExtensionsElementStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'sortedMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'sortedMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsElementEndsWith(
+  sortedMangaExtensionsElementEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'sortedMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'sortedMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsElementContains(String value,
-          {bool caseSensitive = true}) {
+  sortedMangaExtensionsElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'sortedMangaExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'sortedMangaExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsElementMatches(String pattern,
-          {bool caseSensitive = true}) {
+  sortedMangaExtensionsElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'sortedMangaExtensions',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'sortedMangaExtensions',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsElementIsEmpty() {
+  sortedMangaExtensionsElementIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'sortedMangaExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'sortedMangaExtensions', value: ''),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsElementIsNotEmpty() {
+  sortedMangaExtensionsElementIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'sortedMangaExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'sortedMangaExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsLengthEqualTo(int length) {
+  sortedMangaExtensionsLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'sortedMangaExtensions',
@@ -2053,36 +2153,21 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsIsEmpty() {
+  sortedMangaExtensionsIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'sortedMangaExtensions',
-        0,
-        true,
-        0,
-        true,
-      );
+      return query.listLength(r'sortedMangaExtensions', 0, true, 0, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsIsNotEmpty() {
+  sortedMangaExtensionsIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'sortedMangaExtensions',
-        0,
-        false,
-        999999,
-        true,
-      );
+      return query.listLength(r'sortedMangaExtensions', 0, false, 999999, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
+  sortedMangaExtensionsLengthLessThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'sortedMangaExtensions',
@@ -2095,10 +2180,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
+  sortedMangaExtensionsLengthGreaterThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'sortedMangaExtensions',
@@ -2111,7 +2193,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedMangaExtensionsLengthBetween(
+  sortedMangaExtensionsLengthBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -2129,53 +2211,59 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsElementEqualTo(
+  sortedNovelExtensionsElementEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'sortedNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'sortedNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'sortedNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsElementLessThan(
+  sortedNovelExtensionsElementGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'sortedNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'sortedNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsElementBetween(
+  sortedNovelExtensionsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'sortedNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
+  sortedNovelExtensionsElementBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -2183,91 +2271,106 @@ extension BridgeSettingsQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'sortedNovelExtensions',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'sortedNovelExtensions',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsElementStartsWith(
+  sortedNovelExtensionsElementStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'sortedNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'sortedNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsElementEndsWith(
+  sortedNovelExtensionsElementEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'sortedNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'sortedNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsElementContains(String value,
-          {bool caseSensitive = true}) {
+  sortedNovelExtensionsElementContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'sortedNovelExtensions',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'sortedNovelExtensions',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsElementMatches(String pattern,
-          {bool caseSensitive = true}) {
+  sortedNovelExtensionsElementMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'sortedNovelExtensions',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'sortedNovelExtensions',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsElementIsEmpty() {
+  sortedNovelExtensionsElementIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'sortedNovelExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'sortedNovelExtensions', value: ''),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsElementIsNotEmpty() {
+  sortedNovelExtensionsElementIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'sortedNovelExtensions',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'sortedNovelExtensions',
+          value: '',
+        ),
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsLengthEqualTo(int length) {
+  sortedNovelExtensionsLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'sortedNovelExtensions',
@@ -2280,36 +2383,21 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsIsEmpty() {
+  sortedNovelExtensionsIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'sortedNovelExtensions',
-        0,
-        true,
-        0,
-        true,
-      );
+      return query.listLength(r'sortedNovelExtensions', 0, true, 0, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsIsNotEmpty() {
+  sortedNovelExtensionsIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'sortedNovelExtensions',
-        0,
-        false,
-        999999,
-        true,
-      );
+      return query.listLength(r'sortedNovelExtensions', 0, false, 999999, true);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
+  sortedNovelExtensionsLengthLessThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'sortedNovelExtensions',
@@ -2322,10 +2410,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
+  sortedNovelExtensionsLengthGreaterThan(int length, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'sortedNovelExtensions',
@@ -2338,7 +2423,7 @@ extension BridgeSettingsQueryFilter
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterFilterCondition>
-      sortedNovelExtensionsLengthBetween(
+  sortedNovelExtensionsLengthBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -2365,14 +2450,14 @@ extension BridgeSettingsQueryLinks
 extension BridgeSettingsQuerySortBy
     on QueryBuilder<BridgeSettings, BridgeSettings, QSortBy> {
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterSortBy>
-      sortByCurrentManager() {
+  sortByCurrentManager() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentManager', Sort.asc);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterSortBy>
-      sortByCurrentManagerDesc() {
+  sortByCurrentManagerDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentManager', Sort.desc);
     });
@@ -2382,14 +2467,14 @@ extension BridgeSettingsQuerySortBy
 extension BridgeSettingsQuerySortThenBy
     on QueryBuilder<BridgeSettings, BridgeSettings, QSortThenBy> {
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterSortBy>
-      thenByCurrentManager() {
+  thenByCurrentManager() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentManager', Sort.asc);
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QAfterSortBy>
-      thenByCurrentManagerDesc() {
+  thenByCurrentManagerDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentManager', Sort.desc);
     });
@@ -2411,64 +2496,66 @@ extension BridgeSettingsQuerySortThenBy
 extension BridgeSettingsQueryWhereDistinct
     on QueryBuilder<BridgeSettings, BridgeSettings, QDistinct> {
   QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
-      distinctByAniyomiAnimeExtensions() {
+  distinctByAniyomiAnimeExtensions() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'aniyomiAnimeExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
-      distinctByAniyomiMangaExtensions() {
+  distinctByAniyomiMangaExtensions() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'aniyomiMangaExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
-      distinctByCurrentManager({bool caseSensitive = true}) {
+  distinctByCurrentManager({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'currentManager',
-          caseSensitive: caseSensitive);
+      return query.addDistinctBy(
+        r'currentManager',
+        caseSensitive: caseSensitive,
+      );
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
-      distinctByMangayomiAnimeExtensions() {
+  distinctByMangayomiAnimeExtensions() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'mangayomiAnimeExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
-      distinctByMangayomiMangaExtensions() {
+  distinctByMangayomiMangaExtensions() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'mangayomiMangaExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
-      distinctByMangayomiNovelExtensions() {
+  distinctByMangayomiNovelExtensions() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'mangayomiNovelExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
-      distinctBySortedAnimeExtensions() {
+  distinctBySortedAnimeExtensions() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sortedAnimeExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
-      distinctBySortedMangaExtensions() {
+  distinctBySortedMangaExtensions() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sortedMangaExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, BridgeSettings, QDistinct>
-      distinctBySortedNovelExtensions() {
+  distinctBySortedNovelExtensions() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sortedNovelExtensions');
     });
@@ -2484,63 +2571,63 @@ extension BridgeSettingsQueryProperty
   }
 
   QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
-      aniyomiAnimeExtensionsProperty() {
+  aniyomiAnimeExtensionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'aniyomiAnimeExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
-      aniyomiMangaExtensionsProperty() {
+  aniyomiMangaExtensionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'aniyomiMangaExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, String?, QQueryOperations>
-      currentManagerProperty() {
+  currentManagerProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'currentManager');
     });
   }
 
   QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
-      mangayomiAnimeExtensionsProperty() {
+  mangayomiAnimeExtensionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'mangayomiAnimeExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
-      mangayomiMangaExtensionsProperty() {
+  mangayomiMangaExtensionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'mangayomiMangaExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
-      mangayomiNovelExtensionsProperty() {
+  mangayomiNovelExtensionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'mangayomiNovelExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
-      sortedAnimeExtensionsProperty() {
+  sortedAnimeExtensionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sortedAnimeExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
-      sortedMangaExtensionsProperty() {
+  sortedMangaExtensionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sortedMangaExtensions');
     });
   }
 
   QueryBuilder<BridgeSettings, List<String>, QQueryOperations>
-      sortedNovelExtensionsProperty() {
+  sortedNovelExtensionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sortedNovelExtensions');
     });

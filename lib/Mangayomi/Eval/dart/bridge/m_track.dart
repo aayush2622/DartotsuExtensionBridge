@@ -3,7 +3,7 @@ import 'package:d4rt/d4rt.dart';
 import '../model/video.dart';
 
 class MTrackBridge {
-  final mTrackBridgedClass = BridgedClassDefinition(
+  final mTrackBridgedClass = BridgedClass(
     nativeType: Track,
     name: 'MTrack',
     constructors: {
@@ -25,7 +25,6 @@ class MTrackBridge {
           (target as Track).label = value as String?,
     },
   );
-
   void registerBridgedClasses(D4rt interpreter) {
     interpreter.registerBridgedClass(
       mTrackBridgedClass,

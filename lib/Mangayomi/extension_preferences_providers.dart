@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 
 import '../extension_bridge.dart';
 import 'Eval/dart/model/source_preference.dart';
@@ -11,11 +11,6 @@ void setPreferenceSetting(SourcePreference sourcePreference, MSource source) {
       .sourceIdEqualTo(source.id)
       .keyEqualTo(sourcePreference.key)
       .findFirstSync();
-  final sourcePref2 = isar.sourcePreferences
-      .filter()
-      .sourceIdEqualTo(source.id)
-      .keyEqualTo(sourcePreference.key)
-      .findAllSync();
   isar.writeTxnSync(() {
     if (sourcePref != null) {
       isar.sourcePreferences.putSync(sourcePreference);

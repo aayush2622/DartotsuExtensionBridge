@@ -65,6 +65,7 @@ class MangayomiExtensions extends Extension {
         .map((e) {
           var map = e.toJson();
           map['extensionType'] = 0;
+          map["id"] = e.sourceId;
           return Source.fromJson(map);
         })
         .where((s) => !installedIds.contains(s.id))
@@ -94,6 +95,7 @@ class MangayomiExtensions extends Extension {
           (sources) => sources.map((s) {
             var map = s.toJson();
             map['extensionType'] = 0;
+            map["id"] = s.sourceId;
             return Source.fromJson(map);
           }).toList(),
         )
@@ -124,8 +126,7 @@ class MangayomiExtensions extends Extension {
     await _manager.uninstallSource(source);
 
     final availableList = _getAvailableList(source.itemType!);
-    final idInt = int.tryParse(source.id ?? '');
-    if (idInt != null && availableList.any((s) => s.id == idInt)) {
+    if (availableList.any((s) => s.sourceId == source.id)) {
       getAvailableRx(source.itemType!).update((list) => list?.add(source));
     }
   }

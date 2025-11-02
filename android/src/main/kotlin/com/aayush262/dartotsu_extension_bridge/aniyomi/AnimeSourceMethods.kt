@@ -45,9 +45,7 @@ class AnimeSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
 
     override suspend fun getDetails(media: SAnime): SAnime = source.getAnimeDetails(media)
 
-
     override suspend fun getEpisodeList(media: SAnime): List<SEpisode> = source.getEpisodeList(media)
-
 
     override suspend fun getVideoList(episode: SEpisode): List<Video> {
         if ((source as AnimeHttpSource).javaClass.declaredMethods.any { it.name == "getHosterList" }) {
@@ -64,7 +62,6 @@ class AnimeSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
 
     override suspend fun getChapterList(media: SAnime): List<SEpisode> =
         throw UnsupportedOperationException("Chapters are not supported in anime sources.")
-
 
     override suspend fun getPageList(chapter: SChapter): List<Page> =
         throw UnsupportedOperationException("Pages are not supported in anime sources.")

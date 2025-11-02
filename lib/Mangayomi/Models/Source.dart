@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 
 import '../../Models/Source.dart';
 import '../Eval/dart/model/m_source.dart' as m;
@@ -9,6 +9,8 @@ part 'Source.g.dart';
 @Name("Sources")
 class MSource {
   Id? id;
+
+  String? sourceId;
 
   String? name;
 
@@ -69,6 +71,7 @@ class MSource {
 
   MSource({
     this.id = 0,
+    this.sourceId = null,
     this.name = '',
     this.baseUrl = '',
     this.lang = '',
@@ -108,7 +111,8 @@ class MSource {
     hasCloudflare = json['hasCloudflare'];
     headers = json['headers'];
     iconUrl = json['iconUrl'];
-    id = json['id'];
+    id = json['id'] is int ? json['id'] : null;
+    sourceId = json['sourceId'].toString();
     isActive = json['isActive'];
     isAdded = json['isAdded'];
     isFullData = json['isFullData'];
@@ -142,6 +146,7 @@ class MSource {
     'headers': headers,
     'iconUrl': iconUrl,
     'id': id,
+    'sourceId': sourceId,
     'isActive': isActive,
     'isAdded': isAdded,
     'isFullData': isFullData,
@@ -182,4 +187,4 @@ class MSource {
   }
 }
 
-enum SourceCodeLanguage { dart, javascript }
+enum SourceCodeLanguage { dart, javascript, lnreader }
