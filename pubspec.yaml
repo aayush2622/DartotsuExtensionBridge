@@ -45,7 +45,6 @@ dev_dependencies:
   isar_community_generator: ^3.3.0-dev.2
   build_runner: ^2.5.4
 
-dependency_overrides:
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
