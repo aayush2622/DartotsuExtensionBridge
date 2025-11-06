@@ -31,7 +31,8 @@ dependencies:
   flutter_qjs:
     git:
       url: https://github.com/kodjodevf/flutter_qjs.git
-      ref: main
+      ref: f3cef51
+
   epubx:
     git:
       url: https://github.com/kodjodevf/epubx.dart.git
