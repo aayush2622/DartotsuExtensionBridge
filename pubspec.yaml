@@ -11,12 +11,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  plugin_platform_interface: ^2.0.2
-  http: ^1.4.0
+  plugin_platform_interface: ^2.1.8
+  http: ^1.6.0
   isar_community: ^3.3.0-dev.2
   isar_community_flutter_libs: ^3.3.0-dev.2
-  d4rt: ^0.1.7
-  get: ^4.7.2
+  d4rt: ^0.1.8
+  get: ^4.7.3
   path_provider: ^2.1.5
   path: ^1.9.1
   http_interceptor: ^2.0.0
@@ -27,7 +27,7 @@ dependencies:
   encrypt: ^5.0.3
   xpath_selector_html_parser: ^3.0.1
   js_packer: ^0.0.6
-  crypto: ^3.0.6
+  crypto: ^3.0.7
   flutter_qjs:
     git:
       url: https://github.com/kodjodevf/flutter_qjs.git
