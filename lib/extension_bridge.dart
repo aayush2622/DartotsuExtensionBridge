@@ -23,12 +23,10 @@ class DartotsuExtensionBridge {
     var document = await getDatabaseDirectory(dirName);
     httpClient = http;
     if (isarInstance == null) {
-      isar = Isar.openSync([
-        MSourceSchema,
-        SourcePreferenceSchema,
-        SourcePreferenceStringValueSchema,
-        BridgeSettingsSchema,
-      ], directory: p.join(document.path, 'isar'));
+      isar = Isar.openSync(
+        isarSchema,
+        directory: p.join(document.path, 'isar'),
+      );
     } else {
       isar = isarInstance;
     }
@@ -57,6 +55,13 @@ class DartotsuExtensionBridge {
       }
     }
   }
+
+  static var isarSchema = [
+    MSourceSchema,
+    SourcePreferenceSchema,
+    SourcePreferenceStringValueSchema,
+    BridgeSettingsSchema,
+  ];
 }
 
 Future<Directory> getDatabaseDirectory(String dirName) async {
