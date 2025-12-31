@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -15,10 +16,12 @@ import 'Mangayomi/Models/Source.dart';
 
 late Isar isar;
 WebViewEnvironment? webViewEnvironment;
+Client? httpClient;
 
 class DartotsuExtensionBridge {
-  Future<void> init(Isar? isarInstance, String dirName) async {
+  Future<void> init(Isar? isarInstance, String dirName, {Client? http}) async {
     var document = await getDatabaseDirectory(dirName);
+    httpClient = http;
     if (isarInstance == null) {
       isar = Isar.openSync([
         MSourceSchema,
@@ -38,12 +41,11 @@ class DartotsuExtensionBridge {
         () => isar.bridgeSettings.putSync(BridgeSettings()..id = 26),
       );
     }
-
     if (Platform.isAndroid) {
-      Get.put(AniyomiExtensions(), tag: 'AniyomiExtensions');
+      Get.lazyPut(() => AniyomiExtensions(), tag: 'AniyomiExtensions');
     }
-    Get.put(MangayomiExtensions(), tag: 'MangayomiExtensions');
-    Get.put(ExtensionManager());
+    Get.lazyPut(() => MangayomiExtensions(), tag: 'MangayomiExtensions');
+    Get.lazyPut(() => ExtensionManager());
     if (Platform.isWindows) {
       final availableVersion = await WebViewEnvironment.getAvailableVersion();
       if (availableVersion != null) {

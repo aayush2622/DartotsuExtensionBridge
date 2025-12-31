@@ -9,7 +9,6 @@ import 'package:dartotsu_extension_bridge/Mangayomi/http/m_client.dart';
 
 class JsHttpClient {
   late JavascriptRuntime runtime;
-
   JsHttpClient(this.runtime);
 
   void init() {

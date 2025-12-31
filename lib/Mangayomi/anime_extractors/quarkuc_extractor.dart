@@ -25,15 +25,15 @@ class QuarkUcExtractor {
   String _lastCookie = "";
 
   Future<void> initCloudDrive(
-      String cookie,
-      CloudDriveType cloudDriveType,
-      ) async {
+    String cookie,
+    CloudDriveType cloudDriveType,
+  ) async {
     this.cloudDriveType = cloudDriveType;
     if (cloudDriveType == CloudDriveType.quark) {
       apiUrl = "https://drive-pc.quark.cn/1/clouddrive/";
       pr = "pr=ucpro&fr=pc";
       ua =
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) quark-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch";
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) quark-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch";
       refererUrl = "https://pan.quark.cn/";
       host = "https://quark.cn";
       _lastCookie = "https://quarkcookie.last";
@@ -41,7 +41,7 @@ class QuarkUcExtractor {
       apiUrl = "https://pc-api.uc.cn/1/clouddrive/";
       pr = "pr=UCBrowser&fr=pc";
       ua =
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) uc-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch";
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) uc-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch";
       refererUrl = "https://drive.uc.cn/";
       host = "https://uc.cn";
       _lastCookie = "https://uccookie.last";
@@ -72,10 +72,10 @@ class QuarkUcExtractor {
   }
 
   Future<Map<String, dynamic>> api(
-      String url,
-      dynamic data,
-      String method,
-      ) async {
+    String url,
+    dynamic data,
+    String method,
+  ) async {
     InterceptedClient client = MClient.init(
       reqcopyWith: {'useDartHttpClient': true},
     );
@@ -161,14 +161,14 @@ class QuarkUcExtractor {
   }
 
   Future<List<dynamic>> listFile(
-      int shareIndex,
-      Map<String, String> shareData,
-      List<dynamic> videos,
-      List<dynamic> subtitles,
-      String shareId,
-      String folderId, {
-        int page = 1,
-      }) async {
+    int shareIndex,
+    Map<String, String> shareData,
+    List<dynamic> videos,
+    List<dynamic> subtitles,
+    String shareId,
+    String folderId, {
+    int page = 1,
+  }) async {
     const int prePage = 200;
     final listData = await api(
       'share/sharepage/detail?$pr&pwd_id=$shareId&stoken=${Uri.encodeComponent(shareTokenCache[shareId]['stoken'])}&pdir_fid=$folderId&force=0&_page=$page&_size=$prePage&_sort=file_type:asc,file_name:desc',
@@ -250,11 +250,11 @@ class QuarkUcExtractor {
   }
 
   Future<void> getFilesByShareUrl(
-      int shareIndex,
-      dynamic shareInfo,
-      List<dynamic> videos,
-      List<dynamic> subtitles,
-      ) async {
+    int shareIndex,
+    dynamic shareInfo,
+    List<dynamic> videos,
+    List<dynamic> subtitles,
+  ) async {
     final shareData = shareInfo is String ? getShareData(shareInfo) : shareInfo;
     if (shareData == null) return;
     await getShareToken(shareData);
@@ -331,12 +331,12 @@ class QuarkUcExtractor {
   }
 
   Future<String?> save(
-      String shareId,
-      String stoken,
-      String fileId,
-      String fileToken,
-      bool clean,
-      ) async {
+    String shareId,
+    String stoken,
+    String fileId,
+    String fileToken,
+    bool clean,
+  ) async {
     await createSaveDir(clean);
     if (clean) {
       this.clean();
@@ -378,11 +378,11 @@ class QuarkUcExtractor {
   }
 
   Future<List<Map<String, String>>?> getLiveTranscoding(
-      String shareId,
-      String stoken,
-      String fileId,
-      String fileToken,
-      ) async {
+    String shareId,
+    String stoken,
+    String fileId,
+    String fileToken,
+  ) async {
     if (!saveFileIdCaches.containsKey(fileId)) {
       final saveFileId = await save(shareId, stoken, fileId, fileToken, true);
       if (saveFileId == null) return null;
@@ -408,12 +408,12 @@ class QuarkUcExtractor {
   }
 
   Future<Map<String, dynamic>?> getDownload(
-      String shareId,
-      String stoken,
-      String fileId,
-      String fileToken,
-      bool clean,
-      ) async {
+    String shareId,
+    String stoken,
+    String fileId,
+    String fileToken,
+    bool clean,
+  ) async {
     if (!saveFileIdCaches.containsKey(fileId)) {
       final saveFileId = await save(shareId, stoken, fileId, fileToken, clean);
       if (saveFileId == null) return null;
@@ -429,9 +429,9 @@ class QuarkUcExtractor {
   }
 
   Future<List<Map<String, String>>> videoFilesFromUrl(
-      List<String> shareUrlList, {
-        String typeName = "电影",
-      }) async {
+    List<String> shareUrlList, {
+    String typeName = "电影",
+  }) async {
     List<dynamic> videoItems = [];
     List<dynamic> subItems = [];
 
@@ -444,10 +444,10 @@ class QuarkUcExtractor {
   }
 
   Future<List<Map<String, String>>> getVodFile(
-      List<dynamic> videoItemList,
-      List<dynamic> subItemList,
-      String typeName,
-      ) async {
+    List<dynamic> videoItemList,
+    List<dynamic> subItemList,
+    String typeName,
+  ) async {
     if (videoItemList.isEmpty) {
       return [];
     }
@@ -539,7 +539,7 @@ class QuarkUcExtractor {
     String subStr = "";
     for (var item in subItemList) {
       subStr +=
-      "+${removeExt(item.getName())}@@@${item.getFileExtension()}@@@${item.getFileId()}";
+          "+${removeExt(item.getName())}@@@${item.getFileExtension()}@@@${item.getFileId()}";
     }
     return subStr;
   }
@@ -613,11 +613,11 @@ class Item {
   late CloudDriveType cloudDriveType;
 
   static Item objectFrom(
-      Map<String, dynamic> itemJson,
-      String shareId,
-      int shareIndex,
-      CloudDriveType cloudDriveType,
-      ) {
+    Map<String, dynamic> itemJson,
+    String shareId,
+    int shareIndex,
+    CloudDriveType cloudDriveType,
+  ) {
     Item item = Item();
     item.fileId = itemJson['fid'] ?? "";
     item.shareId = shareId;
@@ -660,8 +660,9 @@ class Item {
   }
 
   String getDisplayName(String typeName) {
-    String drivePrefix =
-    cloudDriveType == CloudDriveType.quark ? '[quark]' : '[uc]';
+    String drivePrefix = cloudDriveType == CloudDriveType.quark
+        ? '[quark]'
+        : '[uc]';
     String displayName = getName();
     if (typeName == "电视剧") {
       List<String> replaceNameList = ["4k", "4K"];
@@ -672,9 +673,8 @@ class Item {
       }
       displayName =
           RegExp(r'\.S01E(.*?)\.').firstMatch(displayName)?.group(1) ??
-              displayName;
-      final numbers =
-      RegExp(
+          displayName;
+      final numbers = RegExp(
         r'\d+',
       ).allMatches(displayName).map((m) => m.group(0)).toList();
       if (numbers.isNotEmpty) {

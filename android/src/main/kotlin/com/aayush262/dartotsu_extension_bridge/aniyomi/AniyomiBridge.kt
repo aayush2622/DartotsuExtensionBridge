@@ -540,7 +540,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 val idx = part.indexOf("=")
                 if (idx != -1) {
                     try {
-                        val key = URLDecoder.decode(part.substring(0, idx), "UTF-8")
+                        val key = URLDecoder.decode(part.take(idx), "UTF-8")
                         val value = URLDecoder.decode(part.substring(idx + 1), "UTF-8")
                         Pair(key, value)
                     } catch (e: UnsupportedEncodingException) {
@@ -563,10 +563,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
 
     var sourcePreferences: MutableMap<String, MutableMap<String, PrefHandlers?>> = mutableMapOf()
     fun saveSourcePreference(call: MethodCall, result: MethodChannel.Result) {
-        val args = call.arguments as? Map<*, *>
-        if (args == null) {
-            return result.error("INVALID_ARGS", "Args null", null)
-        }
+        val args = call.arguments as? Map<*, *> ?: return result.error("INVALID_ARGS", "Args null", null)
 
         val sourceId = args["sourceId"] as? String ?: return
 

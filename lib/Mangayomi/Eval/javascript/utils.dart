@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'http.dart';
@@ -19,7 +18,6 @@ import '../dart/model/m_bridge.dart';
 
 class JsUtils {
   late JavascriptRuntime runtime;
-
   JsUtils(this.runtime);
 
   void init() {
