@@ -20,10 +20,12 @@ class JsExtensionService implements ExtensionService {
   late JavascriptRuntime runtime;
   @override
   late MSource source;
+  bool _isInitialized = false;
 
   JsExtensionService(this.source);
 
   void _init() {
+    if (_isInitialized) return;
     runtime = getJavascriptRuntime();
     JsHttpClient(runtime).init();
     JsDomSelector(runtime).init();
@@ -80,6 +82,7 @@ async function jsonStringify(fn) {
     runtime.evaluate('''${source.sourceCode}
 var extention = new DefaultExtension();
 ''');
+    _isInitialized = true;
   }
 
   @override
@@ -156,8 +159,7 @@ var extention = new DefaultExtension();
       await runtime.evaluateAsync(
         'jsonStringify(() => extention.getHtmlContent(`$name`, `$url`))',
       ),
-    ))
-        .stringResult;
+    )).stringResult;
     return res;
   }
 
@@ -168,8 +170,7 @@ var extention = new DefaultExtension();
       await runtime.evaluateAsync(
         'jsonStringify(() => extention.cleanHtmlContent(`$html`))',
       ),
-    ))
-        .stringResult;
+    )).stringResult;
     return res;
   }
 

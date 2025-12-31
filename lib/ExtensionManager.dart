@@ -45,9 +45,7 @@ extension SourceMethodsExtension on Source {
 }
 
 SourceMethods currentSourceMethods(Source source) {
-  if (source is HasSourceMethods) {
-    return (source as HasSourceMethods).methods;
-  }
+  if (source is HasSourceMethods) return source.methods;
 
   final type = source.extensionType;
   return type == ExtensionType.mangayomi

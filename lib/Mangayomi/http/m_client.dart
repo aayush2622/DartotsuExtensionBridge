@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
     as flutter_inappwebview;
 import 'package:http/io_client.dart';
@@ -16,10 +15,10 @@ class MClient {
     MSource? source,
     Map<String, dynamic>? reqcopyWith,
   }) {
-    return InterceptedClient.build(
-      client: IOClient(HttpClient()),
-      interceptors: [MCookieManager(reqcopyWith), LoggerInterceptor()],
-    );
+    var client = reqcopyWith?["useDartHttpClient"] == true || httpClient == null
+        ? IOClient(HttpClient())
+        : httpClient;
+    return InterceptedClient.build(client: client, interceptors: []);
   }
 
   static Map<String, String> getCookiesPref(String url) {
@@ -84,75 +83,5 @@ class MClient {
       (host, cookie) => host == urlHost || urlHost.contains(host),
     );
     //saveData(PrefName.cookies, cookiesMap);
-  }
-}
-
-class MCookieManager extends InterceptorContract {
-  MCookieManager(this.reqcopyWith);
-
-  Map<String, dynamic>? reqcopyWith;
-
-  @override
-  Future<BaseRequest> interceptRequest({required BaseRequest request}) async {
-    final cookie = MClient.getCookiesPref(request.url.toString());
-    if (cookie.isNotEmpty) {
-      final userAgent = ''; //loadData(PrefName.userAgent);
-      if (request.headers[HttpHeaders.cookieHeader] == null) {
-        request.headers.addAll(cookie);
-      }
-      if (request.headers[HttpHeaders.userAgentHeader] == null) {
-        request.headers[HttpHeaders.userAgentHeader] = userAgent;
-      }
-    }
-    try {
-      if (reqcopyWith != null) {
-        if (reqcopyWith!["followRedirects"] != null) {
-          request.followRedirects = reqcopyWith!["followRedirects"];
-        }
-        if (reqcopyWith!["maxRedirects"] != null) {
-          request.maxRedirects = reqcopyWith!["maxRedirects"];
-        }
-        if (reqcopyWith!["contentLength"] != null) {
-          request.contentLength = reqcopyWith!["contentLength"];
-        }
-        if (reqcopyWith!["persistentConnection"] != null) {
-          request.persistentConnection = reqcopyWith!["persistentConnection"];
-        }
-      }
-    } catch (_) {}
-    return request;
-  }
-
-  @override
-  Future<BaseResponse> interceptResponse({
-    required BaseResponse response,
-  }) async {
-    return response;
-  }
-}
-
-class LoggerInterceptor extends InterceptorContract {
-  @override
-  Future<BaseRequest> interceptRequest({required BaseRequest request}) async {
-    debugPrint(
-      '----- Request -----\n${request.toString()}\nheader: ${request.headers.toString()}',
-    );
-    return request;
-  }
-
-  @override
-  Future<BaseResponse> interceptResponse({
-    required BaseResponse response,
-  }) async {
-    final cloudflare =
-        [403, 503].contains(response.statusCode) &&
-        ["cloudflare-nginx", "cloudflare"].contains(response.headers["server"]);
-    debugPrint(
-      "----- Response -----\n${response.request?.method}: ${response.request?.url}, statusCode: ${response.statusCode} ${cloudflare ? "Failed to bypass Cloudflare" : ""}",
-    );
-    if (cloudflare) {
-      debugPrint("${response.statusCode} Failed to bypass Cloudflare");
-    }
-    return response;
   }
 }

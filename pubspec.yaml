@@ -15,7 +15,7 @@ dependencies:
   http: ^1.6.0
   isar_community: ^3.3.0-dev.2
   isar_community_flutter_libs: ^3.3.0-dev.2
-  d4rt: ^0.1.8
+  d4rt: ^0.1.9
   get: ^4.7.3
   path_provider: ^2.1.5
   path: ^1.9.1
