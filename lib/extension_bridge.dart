@@ -20,9 +20,9 @@ Client? httpClient;
 
 class DartotsuExtensionBridge {
   Future<void> init(Isar? isarInstance, String dirName, {Client? http}) async {
-    var document = await getDatabaseDirectory(dirName);
     httpClient = http;
     if (isarInstance == null) {
+      var document = await getDatabaseDirectory(dirName);
       isar = Isar.openSync(
         isarSchema,
         directory: p.join(document.path, 'isar'),
@@ -49,7 +49,10 @@ class DartotsuExtensionBridge {
       if (availableVersion != null) {
         webViewEnvironment = await WebViewEnvironment.create(
           settings: WebViewEnvironmentSettings(
-            userDataFolder: p.join(document.path, 'flutter_inappwebview'),
+            userDataFolder: p.join(
+              (await getDatabaseDirectory(dirName)).path,
+              'flutter_inappwebview',
+            ),
           ),
         );
       }
