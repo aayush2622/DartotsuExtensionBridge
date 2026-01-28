@@ -15,8 +15,10 @@ import androidx.preference.SwitchPreferenceCompat
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.online.HttpSource
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.CoroutineScope
@@ -58,9 +60,11 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
         try {
             val installedExtensions = extensionManager.fetchInstalledAnimeExtensions()
                 ?.map { ext ->
+                    var baseUrl = (ext.sources.first() as? AnimeHttpSource)?.baseUrl ?: ""
                     mapOf(
                         "id" to ext.pkgName,
                         "name" to ext.name,
+                        "baseUrl" to baseUrl,
                         "lang" to ext.lang,
                         "isNsfw" to ext.isNsfw,
                         "iconUrl" to ext.iconUrl,
@@ -89,9 +93,11 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
         try {
             val installedExtensions = extensionManager.fetchInstalledMangaExtensions()
                 ?.map { ext ->
+                    var baseUrl = (ext.sources.first() as? HttpSource)?.baseUrl ?: ""
                     mapOf(
                         "id" to ext.pkgName,
                         "name" to ext.name,
+                        "baseUrl" to baseUrl,
                         "lang" to ext.lang,
                         "isNsfw" to ext.isNsfw,
                         "iconUrl" to ext.iconUrl,
@@ -125,6 +131,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 val availableExtensions = extensionManager.findAvailableAnimeExtensions(repos)
 
                 val mapped = availableExtensions.map { ext ->
+
                     mapOf(
                         "name" to ext.name,
                         "id" to ext.pkgName,
