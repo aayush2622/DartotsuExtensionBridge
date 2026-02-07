@@ -1,6 +1,6 @@
 import 'package:isar_community/isar.dart';
 
-import '../../Models/Source.dart';
+import '../../../Models/Source.dart';
 import '../Eval/dart/model/m_source.dart' as m;
 
 part 'Source.g.dart';

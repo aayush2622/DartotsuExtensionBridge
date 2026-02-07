@@ -4,7 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:isar_community/isar.dart';
 
-import '../dartotsu_extension_bridge.dart';
+import '../../dartotsu_extension_bridge.dart';
 import 'http/m_client.dart';
 import 'lib.dart';
 

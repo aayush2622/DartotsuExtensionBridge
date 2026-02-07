@@ -1,16 +1,14 @@
 import 'package:dartotsu_extension_bridge/Models/DEpisode.dart';
 import 'package:dartotsu_extension_bridge/Models/DMedia.dart';
-
 import 'package:dartotsu_extension_bridge/Models/Pages.dart';
-
 import 'package:dartotsu_extension_bridge/Models/Source.dart';
-
 import 'package:dartotsu_extension_bridge/Models/Video.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import '../Extensions/SourceMethods.dart';
-import '../Models/Page.dart';
-import '../Models/SourcePreference.dart';
+import 'package:flutter/services.dart';
+
+import '../../Extensions/SourceMethods.dart';
+import '../../Models/Page.dart';
+import '../../Models/SourcePreference.dart';
 
 class AniyomiSourceMethods implements SourceMethods {
   static const platform = MethodChannel('aniyomiExtensionBridge');

@@ -1,6 +1,6 @@
 import 'package:isar_community/isar.dart';
 
-import '../extension_bridge.dart';
+import '../../extension_bridge.dart';
 import 'Eval/dart/model/source_preference.dart';
 import 'Models/Source.dart';
 import 'get_source_preference.dart';

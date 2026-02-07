@@ -1,6 +1,6 @@
 name: dartotsu_extension_bridge
 description: "A new Flutter plugin project."
-version: 0.0.4
+version: 0.0.5
 homepage:
 publish_to: none
 
@@ -28,6 +28,7 @@ dependencies:
   xpath_selector_html_parser: ^3.0.1
   js_packer: ^0.0.6
   crypto: ^3.0.7
+  fjs: ^2.0.1
   flutter_qjs:
     git:
       url: https://github.com/kodjodevf/flutter_qjs.git

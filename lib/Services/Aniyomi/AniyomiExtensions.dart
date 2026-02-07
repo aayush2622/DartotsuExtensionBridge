@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
@@ -29,7 +30,6 @@ class AniyomiExtensions extends Extension {
     var settings = isar.bridgeSettings.getSync(26)!;
     getInstalledAnimeExtensions();
     getInstalledMangaExtensions();
-    getInstalledNovelExtensions();
     fetchAvailableAnimeExtensions(settings.aniyomiAnimeExtensions);
     fetchAvailableMangaExtensions(settings.aniyomiMangaExtensions);
   }

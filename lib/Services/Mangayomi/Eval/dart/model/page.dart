@@ -1,4 +1,4 @@
-import '../..//javascript/http.dart';
+import '../../javascript/http.dart';
 
 class PageUrl {
   String url;
