@@ -2,13 +2,22 @@
 
 A Flutter plugin that bridges **Aniyomi** and **Mangayomi** style extension sources into a unified Dart API.
 
-## Getting Started
-It provides:
-- Extension discovery (installed + available)
-- Install / update / uninstall flows
-- Source-level content methods (popular, latest, search, detail, pages, videos, preferences)
-- Optional ready-to-use extension manager UI base classes
+It is designed for apps that need to:
+- Discover extension repositories and installed extensions.
+- Install, update, and uninstall extensions.
+- Call source APIs in a consistent way (`popular`, `latest`, `search`, details, pages/videos, preferences).
+- Reuse optional UI components for extension management.
+
+## Features
+
+- Unified extension manager abstraction (`ExtensionManager`) across backends.
+- Runtime backend switching (`ExtensionType.mangayomi` / `ExtensionType.aniyomi`).
+- Source-level API wrappers through `SourceMethods`.
+- Built-in models for content and stream/page payloads.
+- Optional ready-to-use UI helpers (`ExtensionManagerScreen`, `ExtensionList`).
+
 ## Platform support
+
 Plugin platforms declared in `pubspec.yaml`:
 - Android
 - iOS
@@ -16,11 +25,58 @@ Plugin platforms declared in `pubspec.yaml`:
 - macOS
 - Windows
 
-> Note: Aniyomi extensions are Android-only. On non-Android platforms, the manager falls back to Mangayomi.
+> Note: **Aniyomi extensions are Android-only**. On non-Android platforms, use the Mangayomi backend.
+
+## Requirements
+
+- Dart SDK: `^3.8.1`
+- Flutter: `>=3.3.0`
+
+## Dependencies
+
+### Runtime dependencies
+
+Core dependencies used by this package (from `pubspec.yaml`):
+
+- `plugin_platform_interface`
+- `http`, `http_interceptor`
+- `isar_community`, `isar_community_flutter_libs`
+- `get`
+- `path`, `path_provider`
+- `html`, `intl`, `crypto`, `encrypt`
+- `xpath_selector_html_parser`, `js_packer`, `pseudom`, `fjs`, `d4rt`
+- `flutter_inappwebview`
+- `install_plugin`, `device_apps`
+- `flutter_qjs` (git dependency)
+- `epubx` (git dependency)
+
+### Development dependencies
+
+- `flutter_test`
+- `flutter_lints`
+- `isar_community_generator`
+- `build_runner`
+
+### Notes on dependency behavior
+
+- `flutter_inappwebview` is used for webview-based runtime behavior on supported platforms.
+- `isar_community` is used for persistent storage (settings/source metadata/cache).
+- Android extension install workflows rely on `install_plugin` and (in parts of the flow) device app visibility helpers.
+- Git dependencies (`flutter_qjs`, `epubx`) require network access when resolving packages.
 
 ## Installation
 
-Add this package to your Flutter project dependencies (path, git, or pub source depending on your setup), then run:
+Add `dartotsu_extension_bridge` to your project:
+
+```yaml
+dependencies:
+  dartotsu_extension_bridge:
+    git:
+      url: https://github.com/<your-org-or-user>/DartotsuExtensionBridge.git
+      ref: <branch-or-tag>
+```
+
+Then fetch packages:
 
 ```bash
 flutter pub get
@@ -28,9 +84,9 @@ flutter pub get
 
 ## Quick start
 
-### 1) Initialize the bridge
+### 1) Initialize the bridge early
 
-Call `init` early in app startup.
+Call `init` during app startup (before accessing extensions):
 
 ```dart
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
@@ -38,30 +94,39 @@ import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 final bridge = DartotsuExtensionBridge();
 
 await bridge.init(
-  null,               // provide your own Isar instance or null to auto-create
-  'my_app_data_dir',  // used for desktop db location
+  null,               // pass an Isar instance, or null to auto-create
+  'my_app_data_dir',  // desktop data dir hint
 );
 ```
 
-### 2) Access the extension manager
+### 2) Access and configure manager backend
 
 ```dart
 import 'package:get/get.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 
 final extensionManager = Get.find<ExtensionManager>();
+
+// Optional: switch backend at runtime
+extensionManager.setCurrentManager(ExtensionType.mangayomi);
+
 final manager = extensionManager.currentManager;
+```
 
-// Installed extensions
+### 3) Query installed/available extensions
+
+```dart
+// Installed
 final installedAnime = await manager.getInstalledAnimeExtensions();
+final installedManga = await manager.getInstalledMangaExtensions();
 
-// Fetch available extensions from repos
+// Remote repo index -> available
 final availableAnime = await manager.fetchAvailableAnimeExtensions([
   'https://raw.githubusercontent.com/your/repo/index.min.json',
 ]);
 ```
 
-### 3) Query content from a source
+### 4) Call source methods
 
 ```dart
 final source = installedAnime.first;
@@ -69,18 +134,18 @@ final methods = source.methods;
 
 final popular = await methods.getPopular(1);
 final latest = await methods.getLatestUpdates(1);
-final results = await methods.search('one piece', 1, []);
+final search = await methods.search('one piece', 1, []);
 
-final detailed = await methods.getDetail(results.list.first);
+final detailed = await methods.getDetail(search.list.first);
 ```
 
-### 4) Get pages/videos and preferences
+### 5) Fetch pages/videos and manage preferences
 
 ```dart
-final episode = detailed.episodes!.first;
+final item = detailed.episodes!.first;
 
-final pages = await methods.getPageList(episode);
-final videos = await methods.getVideoList(episode);
+final pages = await methods.getPageList(item);
+final videos = await methods.getVideoList(item);
 
 final prefs = await methods.getPreference();
 if (prefs.isNotEmpty) {
@@ -88,46 +153,25 @@ if (prefs.isNotEmpty) {
 }
 ```
 
-## Choosing the extension backend
+## Public API overview
 
-The package supports two extension backends:
-- `ExtensionType.mangayomi`
-- `ExtensionType.aniyomi` (Android only)
-
-Switch at runtime:
-
-```dart
-final extensionManager = Get.find<ExtensionManager>();
-extensionManager.setCurrentManager(ExtensionType.mangayomi);
-```
-
-## UI helpers
-
-If you want built-in scaffolding for extension management UI, use:
-- `ExtensionManagerScreen`
-- `ExtensionList`
-
-These are exported by `dartotsu_extension_bridge.dart`.
-
-## Public exports
-
-Main library export:
+Main import:
 
 ```dart
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 ```
 
-This exposes core models and APIs including:
+Commonly used exports include:
 - `DartotsuExtensionBridge`
 - `ExtensionManager`, `ExtensionType`
 - `Extension`, `SourceMethods`
 - `Source`, `DMedia`, `DEpisode`, `PageUrl`, `Pages`, `Video`, `SourcePreference`
 
-## Notes
+## UI helpers
 
-- The plugin persists settings and source metadata using Isar.
-- On Windows, `flutter_inappwebview` environment setup is initialized when available.
-- For Android Aniyomi install flows, APK install permission/user confirmation behavior depends on device settings.
+Use these prebuilt widgets if you want a quick extension UI scaffold:
+- `ExtensionManagerScreen`
+- `ExtensionList`
 
 ## Development
 
@@ -135,6 +179,12 @@ This exposes core models and APIs including:
 flutter pub get
 flutter analyze
 ```
+
+## Operational notes
+
+- Settings and source metadata are persisted via Isar.
+- On Windows, `flutter_inappwebview` setup is initialized when available.
+- Android Aniyomi APK install behavior depends on OS permissions and device settings.
 
 ## License
 
