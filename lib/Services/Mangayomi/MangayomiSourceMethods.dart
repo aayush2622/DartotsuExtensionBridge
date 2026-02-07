@@ -1,21 +1,16 @@
-import 'package:dartotsu_extension_bridge/Mangayomi/Eval/dart/model/source_preference.dart';
-import 'package:dartotsu_extension_bridge/Mangayomi/string_extensions.dart';
 import 'package:dartotsu_extension_bridge/Models/DEpisode.dart';
-
 import 'package:dartotsu_extension_bridge/Models/DMedia.dart';
-
 import 'package:dartotsu_extension_bridge/Models/Page.dart';
-
 import 'package:dartotsu_extension_bridge/Models/Pages.dart';
-
 import 'package:dartotsu_extension_bridge/Models/Source.dart';
 import 'package:dartotsu_extension_bridge/Models/SourcePreference.dart' as s;
-
 import 'package:dartotsu_extension_bridge/Models/Video.dart';
+import 'package:dartotsu_extension_bridge/Services/Mangayomi/Eval/dart/model/source_preference.dart';
+import 'package:dartotsu_extension_bridge/Services/Mangayomi/string_extensions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
-import '../Extensions/SourceMethods.dart';
+import '../../Extensions/SourceMethods.dart';
 import 'ChapterRecognition.dart';
 import 'Eval/dart/model/m_manga.dart';
 import 'MangayomiExtensionManager.dart';

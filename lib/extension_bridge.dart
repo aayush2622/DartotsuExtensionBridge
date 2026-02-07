@@ -8,11 +8,11 @@ import 'package:isar_community/isar.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import 'Aniyomi/AniyomiExtensions.dart';
 import 'ExtensionManager.dart';
-import 'Mangayomi/Eval/dart/model/source_preference.dart';
-import 'Mangayomi/MangayomiExtensions.dart';
-import 'Mangayomi/Models/Source.dart';
+import 'Services/Aniyomi/AniyomiExtensions.dart';
+import 'Services/Mangayomi/Eval/dart/model/source_preference.dart';
+import 'Services/Mangayomi/MangayomiExtensions.dart';
+import 'Services/Mangayomi/Models/Source.dart';
 
 late Isar isar;
 WebViewEnvironment? webViewEnvironment;

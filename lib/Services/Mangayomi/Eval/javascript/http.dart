@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dartotsu_extension_bridge/Services/Mangayomi/http/m_client.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_interceptor/http_interceptor.dart';
-
-import 'package:dartotsu_extension_bridge/Mangayomi/http/m_client.dart';
 
 class JsHttpClient {
   late JavascriptRuntime runtime;

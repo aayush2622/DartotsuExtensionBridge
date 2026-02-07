@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:dartotsu_extension_bridge/Mangayomi/dom_extensions.dart';
+import 'package:dartotsu_extension_bridge/Services/Mangayomi/dom_extensions.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
