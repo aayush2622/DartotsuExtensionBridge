@@ -79,7 +79,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 }
             result.success(installedExtensions)
             Log.d(
-                "AniyomiBridge",
+                "DartotsuExtensionBridge",
                 "Method called: ${call.method} returned ${installedExtensions?.size ?: 0} extensions"
             )
         } catch (e: Exception) {
@@ -112,7 +112,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 }
             result.success(installedExtensions)
             Log.d(
-                "AniyomiBridge",
+                "DartotsuExtensionBridge",
                 "Method called: ${call.method} returned ${installedExtensions?.size ?: 0} extensions"
             )
         } catch (e: Exception) {
@@ -147,7 +147,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 }
                 withContext(Dispatchers.Main) {
                     result.success(mapped)
-                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $mapped")
+                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $mapped")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -184,10 +184,10 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "itemType" to 0,
                     )
                 }
-                Log.d("AniyomiBridge", "Fetched ${mapped.size} manga extensions")
+                Log.d("DartotsuExtensionBridge", "Fetched ${mapped.size} manga extensions")
                 withContext(Dispatchers.Main) {
                     result.success(mapped)
-                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $mapped")
+                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $mapped")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -257,7 +257,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 )
                 withContext(Dispatchers.Main) {
                     result.success(resultMap)
-                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultMap")
+                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultMap")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -309,7 +309,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 )
                 withContext(Dispatchers.Main) {
                     result.success(resultMap)
-                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultMap")
+                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultMap")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -357,7 +357,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 )
                 withContext(Dispatchers.Main) {
                     result.success(resultMap)
-                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultMap")
+                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultMap")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -422,7 +422,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 }
                 withContext(Dispatchers.Main) {
                     result.success(resultList)
-                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultList")
+                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultList")
 
                 }
             } catch (e: Exception) {
@@ -469,7 +469,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 )
                 withContext(Dispatchers.Main) {
                     result.success(resultMap)
-                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultMap")
+                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultMap")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -525,7 +525,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                 }
                 withContext(Dispatchers.Main) {
                     result.success(resultList)
-                    Log.d("AniyomiBridge", "Method called: ${call.method} returned $resultList")
+                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultList")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -551,7 +551,7 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         val value = URLDecoder.decode(part.substring(idx + 1), "UTF-8")
                         Pair(key, value)
                     } catch (e: UnsupportedEncodingException) {
-                        Log.e("AniyomiBridge", "Error decoding URL part: $part", e)
+                        Log.e("DartotsuExtensionBridge", "Error decoding URL part: $part", e)
                         null
                     }
                 } else {

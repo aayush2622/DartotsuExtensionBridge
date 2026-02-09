@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:dartotsu_extension_bridge/Services/Sora/FetchV2.dart';
 import 'package:fjs/fjs.dart';
 import 'package:flutter/services.dart';
 
+import 'FetchV2.dart';
 import 'SoraExtensions.dart';
 
 late JsEngine engine;

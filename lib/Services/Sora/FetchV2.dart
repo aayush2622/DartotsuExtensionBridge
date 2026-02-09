@@ -106,8 +106,4 @@ class FetchV2 {
       return JsResult.err(JsError.cancelled('fetchv2 failed: $e'));
     }
   }
-
-  void dispose() {
-    _client.close();
-  }
 }

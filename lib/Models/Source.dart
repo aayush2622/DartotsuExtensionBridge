@@ -1,5 +1,4 @@
-import 'package:dartotsu_extension_bridge/ExtensionManager.dart'
-    show ExtensionType;
+import '../ExtensionManager.dart' show ExtensionType;
 
 class Source {
   String? id;
