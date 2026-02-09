@@ -76,7 +76,7 @@ const BridgeSettingsSchema = CollectionSchema(
   getId: _bridgeSettingsGetId,
   getLinks: _bridgeSettingsGetLinks,
   attach: _bridgeSettingsAttach,
-  version: '3.3.0-dev.3',
+  version: '3.3.0',
 );
 
 int _bridgeSettingsEstimateSize(

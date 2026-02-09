@@ -3,11 +3,13 @@ package eu.kanade.tachiyomi.extension.util
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
+import dalvik.system.BaseDexClassLoader
 import dalvik.system.PathClassLoader
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
@@ -99,7 +101,27 @@ internal object ExtensionLoader {
             deferred.map { it.await() }
         }
     }
-
+    private fun addDexToClasspath(dex: File, classLoader: ClassLoader) {
+        // https://android.googlesource.com/platform/libcore/+/58b4e5dbb06579bec9a8fc892012093b6f4fbe20/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java#59
+        val pathListField = BaseDexClassLoader::class.java.getDeclaredField("pathList")
+            .apply { isAccessible = true }
+        val pathList = pathListField[classLoader]!!
+        val addDexPath =
+            pathList.javaClass.getDeclaredMethod(
+                "addDexPath",
+                String::class.java,
+                File::class.java
+            )
+                .apply { isAccessible = true }
+        addDexPath.invoke(pathList, dex.absolutePath, null)
+    }
+    fun loadAssets(file: File) {
+        // based on https://stackoverflow.com/questions/7483568/dynamic-resource-loading-from-other-apk
+        val assets = AssetManager::class.java.getDeclaredConstructor().newInstance()
+        val addAssetPath =
+            AssetManager::class.java.getMethod("addAssetPath", String::class.java)
+        addAssetPath.invoke(assets, file.absolutePath)
+    }
     private fun loadAnimeExtension(
         context: Context,
         pkgName: String,

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart';
@@ -13,6 +12,7 @@ import 'Services/Aniyomi/AniyomiExtensions.dart';
 import 'Services/Mangayomi/Eval/dart/model/source_preference.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
 import 'Services/Mangayomi/Models/Source.dart';
+import 'Settings/Settings.dart';
 
 late Isar isar;
 WebViewEnvironment? webViewEnvironment;
@@ -21,6 +21,7 @@ Client? httpClient;
 class DartotsuExtensionBridge {
   Future<void> init(Isar? isarInstance, String dirName, {Client? http}) async {
     httpClient = http;
+
     if (isarInstance == null) {
       var document = await getDatabaseDirectory(dirName);
       isar = Isar.openSync(

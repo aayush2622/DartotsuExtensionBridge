@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+
+import '../../dartotsu_extension_bridge.dart';
 
 class AniyomiExtensions extends Extension {
   AniyomiExtensions() {
