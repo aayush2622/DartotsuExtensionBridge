@@ -34,9 +34,30 @@ object FlutterNetworkBridge {
                 "initClient" -> {
                     val args = call.arguments as? Map<*, *> ?: return@setMethodCallHandler result.error("INVALID_ARGUMENTS", "Expected a map of arguments", null)
                     enableFlutterNetworking(args);
+                    var client = Injekt.get<NetworkHelper>()
+                    Log.d( "DartotsuExtensionBridge", "Flutter networking enabled");
                     result.success(null)
                 }
+                "testRequest" -> {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val client = Injekt.get<NetworkHelper>()
+                            val response = client.client.newCall(
+                                Request.Builder()
+                                    .url(call.arguments as String)
+                                    .build()
+                            ).execute()
 
+                            withContext(Dispatchers.Main) {
+                                result.success(response.code)
+                            }
+                        } catch (t: Throwable) {
+                            withContext(Dispatchers.Main) {
+                                result.error("REQUEST_FAILED", t.message, null)
+                            }
+                        }
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
@@ -61,6 +82,7 @@ object FlutterNetworkBridge {
             client.client = client.client.newBuilder()
                 .dns(doh ?: client.client.dns)
                 .addInterceptor(LogInterceptor())
+                .addInterceptor(CookieInterceptor(channel))
                 .build()
         } catch (t: Throwable) {
             // log, but never crash
