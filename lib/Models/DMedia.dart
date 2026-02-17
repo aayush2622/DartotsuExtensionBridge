@@ -1,6 +1,4 @@
-// ignore_for_file: prefer_relative_imports
-
-import 'package:dartotsu_extension_bridge/Models/DEpisode.dart';
+import 'DEpisode.dart';
 
 class DMedia {
   String? title;

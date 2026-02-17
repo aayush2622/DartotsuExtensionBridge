@@ -87,5 +87,6 @@ dependencies {
     implementation 'androidx.compose.runtime:runtime-android:1.8.3'
     implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+
     //api "io.flutter:flutter_embedding_debug:1.0.0-1d25906b4cf0076604a67360b21b1e092eb01b19"
 }

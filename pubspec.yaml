@@ -4,7 +4,7 @@ version: 0.0.5
 publish_to: none
 
 environment:
-  sdk: ^3.8.1
+  sdk: '>=3.0.0 <4.0.0'
   flutter: '>=3.3.0'
 
 dependencies:
@@ -14,7 +14,7 @@ dependencies:
   http: ^1.6.0
   isar_community: ^3.3.0
   isar_community_flutter_libs: ^3.3.0
-  d4rt: ^0.2.0
+  d4rt: ^0.2.1
   get: ^4.7.3
   path_provider: ^2.1.5
   path: ^1.9.1
@@ -47,7 +47,7 @@ dev_dependencies:
     git:
       url: https://github.com/kodjodevf/isar-community-generator.git
       ref: v3
-  build_runner: ^2.11.0
+  build_runner: ^2.11.1
 
 flutter:
 

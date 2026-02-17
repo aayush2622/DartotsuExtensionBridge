@@ -27,7 +27,7 @@ Future<void> initJsEngine() async {
       return const JsResult.err(JsError.cancelled('Unknown bridge call'));
     },
   );
-  fetch.inject();
+  await fetch.inject();
   await runtime.setMemoryLimit(limit: BigInt.from(32 * 1024 * 1024));
   await runtime.setGcThreshold(threshold: BigInt.from(8 * 1024 * 1024));
 }
@@ -35,8 +35,7 @@ Future<void> initJsEngine() async {
 Future<void> loadExtensionJs() async {
   final jsSource = await rootBundle.loadString('assets/hianime.js');
 
-  final wrapped =
-      '''
+  final wrapped = '''
 $jsSource
 
 export {
