@@ -26,7 +26,7 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
     init {
         val manager = Injekt.get<AniyomiExtensionManager>()
         val extension = manager.installedMangaExtensions
-            .find { it.pkgName == sourceID }
+            .find { it.sources.first().id.toString() == sourceID }
             ?: throw IllegalArgumentException("Manga source with ID '$sourceID' not found.")
 
         val src = extension.sources.getOrNull(langIndex) ?: extension.sources.firstOrNull()

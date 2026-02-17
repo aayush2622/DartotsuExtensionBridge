@@ -2,139 +2,138 @@ package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
 import android.util.Log
-import androidx.preference.CheckBoxPreference
-import androidx.preference.EditTextPreference
-import androidx.preference.ListPreference
-import androidx.preference.MultiSelectListPreference
-import androidx.preference.Preference
-import androidx.preference.PreferenceCategory
-import androidx.preference.PreferenceGroup
-import androidx.preference.PreferenceManager
-import androidx.preference.SwitchPreferenceCompat
+import androidx.preference.*
 import eu.kanade.tachiyomi.PreferenceScreen
+import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
+import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.online.HttpSource
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import okhttp3.Headers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.io.UnsupportedEncodingException
-import java.net.URLDecoder
+
+private const val TAG = "DartotsuExtensionBridge"
 
 class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHandler {
 
-    override fun onMethodCall(
-        call: MethodCall,
-        result: MethodChannel.Result
-    ) {
-        Log.d("AniyomiBridge", "Method called: ${call.method} with args: ${call.arguments}")
-        when (call.method) {
-            "getInstalledAnimeExtensions" -> getInstalledAnimeExtensions(call, result)
-            "getInstalledMangaExtensions" -> getInstalledMangaExtensions(call, result)
-            "fetchAnimeExtensions" -> fetchAnimeExtensions(call, result)
-            "fetchMangaExtensions" -> fetchMangaExtensions(call, result)
-            "getLatestUpdates" -> getLatestUpdates(call, result)
-            "getPopular" -> getPopular(call, result)
-            "getDetail" -> getDetail(call, result)
-            "getVideoList" -> getVideoList(call, result)
-            "getPageList" -> getPageList(call, result)
-            "search" -> search(call, result)
-            "getPreference" -> getPreference(call, result)
-            "saveSourcePreference" -> saveSourcePreference(call, result)
-            else -> result.notImplemented()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+
+    override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
+        runCatching {
+            handlers[call.method]?.invoke(call, result)
+                ?: result.notImplemented()
+        }.onFailure {
+            Log.e(TAG, "Bad method call", it)
+            result.error("INVALID_ARGS", it.message, null)
         }
     }
 
-    private fun getInstalledAnimeExtensions(call: MethodCall, result: MethodChannel.Result) {
-        val extensionManager = Injekt.get<AniyomiExtensionManager>()
-        try {
-            val installedExtensions = extensionManager.fetchInstalledAnimeExtensions()
-                ?.map { ext ->
-                    var baseUrl = (ext.sources.first() as? AnimeHttpSource)?.baseUrl ?: ""
-                    mapOf(
-                        "id" to ext.pkgName,
-                        "name" to ext.name,
-                        "baseUrl" to baseUrl,
-                        "lang" to ext.lang,
-                        "isNsfw" to ext.isNsfw,
-                        "iconUrl" to ext.iconUrl,
-                        "version" to ext.versionName,
-                        "libVersion" to ext.libVersion,
-                        "supportedLanguages" to ext.sources.map { it.lang },
-                        "itemType" to 1,
-                        "hasUpdate" to ext.hasUpdate,
-                        "isObsolete" to ext.isObsolete,
-                        "isUnofficial" to ext.isUnofficial,
-                    )
+
+
+    private val handlers = mapOf(
+        "getInstalledAnimeExtensions" to ::getInstalledAnimeExtensions,
+        "getInstalledMangaExtensions" to ::getInstalledMangaExtensions,
+        "fetchAnimeExtensions" to ::fetchAnimeExtensions,
+        "fetchMangaExtensions" to ::fetchMangaExtensions,
+        "getLatestUpdates" to ::getLatestUpdates,
+        "getPopular" to ::getPopular,
+        "getDetail" to ::getDetail,
+        "getVideoList" to ::getVideoList,
+        "getPageList" to ::getPageList,
+        "search" to ::search,
+        "getPreference" to ::getPreference,
+        "saveSourcePreference" to ::saveSourcePreference
+    )
+
+
+    private fun media(sourceId: String, isAnime: Boolean) =
+        if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
+
+    private inline fun <reified T> MethodCall.arg(key: String): T =
+        (arguments as? Map<*, *>)?.get(key) as? T
+            ?: throw IllegalArgumentException("Missing or invalid arg: $key")
+
+    private fun launch(result: MethodChannel.Result, block: suspend () -> Any?) {
+        scope.launch {
+            runCatching { block() }
+                .onSuccess { withContext(Dispatchers.Main) { result.success(it) } }
+                .onFailure {
+                    Log.e(TAG, "Error", it)
+                    withContext(Dispatchers.Main) {
+                        result.error("ERROR", it.message, null)
+                    }
                 }
-            result.success(installedExtensions)
-            Log.d(
-                "DartotsuExtensionBridge",
-                "Method called: ${call.method} returned ${installedExtensions?.size ?: 0} extensions"
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-            result.error("ERROR", "Failed to get installed extensions: ${e.message}", null)
         }
+    }
+
+
+    private fun getInstalledAnimeExtensions(call: MethodCall, result: MethodChannel.Result) {
+        val manager = Injekt.get<AniyomiExtensionManager>()
+        val data = manager.fetchInstalledAnimeExtensions()?.map { ext ->
+            val baseUrl = (ext.sources.firstOrNull() as? AnimeHttpSource)?.baseUrl.orEmpty()
+            mapOf(
+                "id" to ext.sources.first().id,
+                "name" to ext.name,
+                "baseUrl" to baseUrl,
+                "lang" to ext.lang,
+                "isNsfw" to ext.isNsfw,
+                "iconUrl" to ext.iconUrl,
+                "version" to ext.versionName,
+                "libVersion" to ext.libVersion,
+                "supportedLanguages" to ext.sources.map { it.lang },
+                "itemType" to 1,
+                "hasUpdate" to ext.hasUpdate,
+                "isObsolete" to ext.isObsolete,
+                "isUnofficial" to ext.isUnofficial,
+            )
+        }
+        result.success(data)
     }
 
     private fun getInstalledMangaExtensions(call: MethodCall, result: MethodChannel.Result) {
-        val extensionManager = Injekt.get<AniyomiExtensionManager>()
-        try {
-            val installedExtensions = extensionManager.fetchInstalledMangaExtensions()
-                ?.map { ext ->
-                    var baseUrl = (ext.sources.first() as? HttpSource)?.baseUrl ?: ""
-                    mapOf(
-                        "id" to ext.pkgName,
-                        "name" to ext.name,
-                        "baseUrl" to baseUrl,
-                        "lang" to ext.lang,
-                        "isNsfw" to ext.isNsfw,
-                        "iconUrl" to ext.iconUrl,
-                        "version" to ext.versionName,
-                        "libVersion" to ext.libVersion,
-                        "supportedLanguages" to ext.sources.map { it.lang },
-                        "itemType" to 0,
-                        "hasUpdate" to ext.hasUpdate,
-                        "isObsolete" to ext.isObsolete,
-                        "isUnofficial" to ext.isUnofficial,
-                    )
-                }
-            result.success(installedExtensions)
-            Log.d(
-                "DartotsuExtensionBridge",
-                "Method called: ${call.method} returned ${installedExtensions?.size ?: 0} extensions"
+        val manager = Injekt.get<AniyomiExtensionManager>()
+        val data = manager.fetchInstalledMangaExtensions()?.map { ext ->
+            val baseUrl = (ext.sources.firstOrNull() as? HttpSource)?.baseUrl.orEmpty()
+            mapOf(
+                "id" to ext.sources.first().id,
+                "name" to ext.name,
+                "baseUrl" to baseUrl,
+                "lang" to ext.lang,
+                "isNsfw" to ext.isNsfw,
+                "iconUrl" to ext.iconUrl,
+                "version" to ext.versionName,
+                "libVersion" to ext.libVersion,
+                "supportedLanguages" to ext.sources.map { it.lang },
+                "itemType" to 0,
+                "hasUpdate" to ext.hasUpdate,
+                "isObsolete" to ext.isObsolete,
+                "isUnofficial" to ext.isUnofficial,
             )
-        } catch (e: Exception) {
-            e.printStackTrace()
-            result.error("ERROR", "Failed to get installed extensions: ${e.message}", null)
         }
+        result.success(data)
     }
 
-
-    private fun fetchAnimeExtensions(call: MethodCall, result: MethodChannel.Result) {
-        val extensionManager = Injekt.get<AniyomiExtensionManager>()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val args = call.arguments as? List<*>
-                val repos = args?.filterIsInstance<String>() ?: emptyList()
-                val availableExtensions = extensionManager.findAvailableAnimeExtensions(repos)
-
-                val mapped = availableExtensions.map { ext ->
+    private fun fetchAnimeExtensions(call: MethodCall, result: MethodChannel.Result) =
+        launch(result) {
+            val args = call.arguments as? List<*>
+            val repos = args?.filterIsInstance<String>() ?: emptyList()
+            Injekt.get<AniyomiExtensionManager>()
+                .findAvailableAnimeExtensions(repos)
+                .map { ext ->
 
                     mapOf(
                         "name" to ext.name,
-                        "id" to ext.pkgName,
+                        "id" to ext.sources.first().id,
                         "version" to ext.versionName,
                         "libVersion" to ext.libVersion,
                         "supportedLanguages" to ext.sources.map { it.lang },
@@ -145,35 +144,18 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "itemType" to 1,
                     )
                 }
-                withContext(Dispatchers.Main) {
-                    result.success(mapped)
-                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $mapped")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    result.error(
-                        "ERROR",
-                        "Failed to fetch available extensions: ${e.message}",
-                        null
-                    )
-                }
-            }
         }
-    }
 
-    private fun fetchMangaExtensions(call: MethodCall, result: MethodChannel.Result) {
-        val extensionManager = Injekt.get<AniyomiExtensionManager>()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val args = call.arguments as? List<*>
-                val repos = args?.filterIsInstance<String>() ?: emptyList()
-                val availableExtensions = extensionManager.findAvailableMangaExtensions(repos)
-
-                val mapped = availableExtensions.map { ext ->
+    private fun fetchMangaExtensions(call: MethodCall, result: MethodChannel.Result) =
+        launch(result) {
+            val args = call.arguments as? List<*>
+            val repos = args?.filterIsInstance<String>() ?: emptyList()
+            Injekt.get<AniyomiExtensionManager>()
+                .findAvailableMangaExtensions(repos)
+                .map { ext ->
                     mapOf(
                         "name" to ext.name,
-                        "id" to ext.pkgName,
+                        "id" to ext.sources.first().id,
                         "version" to ext.versionName,
                         "libVersion" to ext.libVersion,
                         "supportedLanguages" to ext.sources.map { it.lang },
@@ -184,444 +166,160 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                         "itemType" to 0,
                     )
                 }
-                Log.d("DartotsuExtensionBridge", "Fetched ${mapped.size} manga extensions")
-                withContext(Dispatchers.Main) {
-                    result.success(mapped)
-                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $mapped")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    result.error(
-                        "ERROR",
-                        "Failed to fetch available extensions: ${e.message}",
-                        null
-                    )
-                }
-            }
         }
+
+
+
+    private fun getPopular(call: MethodCall, result: MethodChannel.Result) =
+        paged(call, result) { media, page -> media.getPopular(page) }
+
+    private fun getLatestUpdates(call: MethodCall, result: MethodChannel.Result) =
+        paged(call, result) { media, page -> media.getLatestUpdates(page) }
+
+    private fun search(call: MethodCall, result: MethodChannel.Result) =
+        paged(call, result) { media, page ->
+            media.getSearchResults(call.arg("query"), page)
+        }
+
+    private fun paged(
+        call: MethodCall,
+        result: MethodChannel.Result,
+        block: suspend (AniyomiSourceMethods, Int) -> AnimesPage
+    ) = launch(result) {
+        val sourceId = call.arg<String>("sourceId")
+        val isAnime = call.arg<Boolean>("isAnime")
+        val page = call.arg<Int>("page")
+
+        val res = block(media(sourceId, isAnime), page)
+        mapOf(
+            "list" to res.animes.map { it.toMap() },
+            "hasNextPage" to res.hasNextPage
+        )
     }
 
-    private fun getDetail(call: MethodCall, result: MethodChannel.Result) {
-        val args = call.arguments as? Map<*, *> ?: return result.error(
-            "INVALID_ARGS",
-            "Arguments were null or invalid",
-            null
-        )
-
-        val sourceId = args["sourceId"] as? String
-        val isAnime = args["isAnime"] as? Boolean
-        val animeMap = args["media"] as? Map<*, *>
-
-        if (sourceId == null || isAnime == null || animeMap == null) {
-            return result.error("INVALID_ARGS", "Missing required parameters", null)
-        }
+    private fun getDetail(call: MethodCall, result: MethodChannel.Result) = launch(result) {
+        val sourceId = call.arg<String>("sourceId")
+        val isAnime = call.arg<Boolean>("isAnime")
+        val map = call.arg<Map<String, Any?>>("media")
 
         val anime = SAnime.create().apply {
-            title = animeMap["title"] as? String ?: ""
-            url = animeMap["url"] as? String ?: return result.error(
-                "EMPTY_URL",
-                "Url cant be empty",
-                null
+            title = map["title"] as String
+            url = map["url"] as String
+            thumbnail_url = map["thumbnail_url"] as? String
+            description = map["description"] as? String
+            artist = map["artist"] as? String
+            author = map["author"] as? String
+            genre = map["genre"] as? String
+        }
+
+        val media = media(sourceId, isAnime)
+        val details = media.getDetails(anime)
+        val eps = if (isAnime) media.getEpisodeList(anime) else media.getChapterList(anime)
+
+        mapOf(
+            "title" to anime.title,
+            "url" to anime.url,
+            "cover" to anime.thumbnail_url,
+            "artist" to details.artist,
+            "author" to details.author,
+            "description" to details.description,
+            "genre" to details.getGenres(),
+            "status" to details.status,
+            "episodes" to eps.map {
+                mapOf(
+                    "name" to it.name,
+                    "url" to it.url,
+                    "date_upload" to it.date_upload,
+                    "episode_number" to it.episode_number,
+                    "scanlator" to it.scanlator
+                )
+            }
+        )
+    }
+
+    private fun getVideoList(call: MethodCall, result: MethodChannel.Result) = launch(result) {
+        val sourceId = call.arg<String>("sourceId")
+        val isAnime = call.arg<Boolean>("isAnime")
+        val map = call.arg<Map<String, Any?>>("episode")
+
+        val ep = SEpisode.create().apply {
+            name = map["name"] as String
+            url = map["url"] as String
+            episode_number = (map["episode_number"] as? Double)?.toFloat() ?: 0f
+            scanlator = map["scanlator"] as? String
+        }
+
+        media(sourceId, isAnime).getVideoList(ep).map {
+            mapOf(
+                "title" to it.videoTitle,
+                "url" to it.videoUrl,
+                "quality" to it.resolution,
+                "headers" to it.headers?.toMap(),
+                "subtitles" to it.subtitleTracks.map { t -> mapOf("file" to t.url, "label" to t.lang) },
+                "audios" to it.audioTracks.map { t -> mapOf("file" to t.url, "label" to t.lang) }
             )
-            thumbnail_url = animeMap["thumbnail_url"] as? String
-            description = animeMap["description"] as? String
-            artist = animeMap["artist"] as? String
-            author = animeMap["author"] as? String
-            genre = animeMap["genre"] as? String
-        }
-        val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val res = media.getDetails(anime)
-                val eps = if (isAnime) media.getEpisodeList(anime) else media.getChapterList(anime)
-                val resultMap = mapOf(
-                    "title" to anime.title,
-                    "url" to anime.url,
-                    "cover" to anime.thumbnail_url,
-                    "artist" to res.artist,
-                    "author" to res.author,
-                    "description" to res.description,
-                    "genre" to res.getGenres(),
-                    "status" to res.status,
-                    "episodes" to eps.map {
-                        mapOf(
-                            "name" to it.name,
-                            "url" to it.url,
-                            "date_upload" to it.date_upload.toString(),
-                            "episode_number" to it.episode_number.toString(),
-                            "scanlator" to it.scanlator
-                        )
-                    }
-                )
-                withContext(Dispatchers.Main) {
-                    result.success(resultMap)
-                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultMap")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    result.error(
-                        "ERROR",
-                        "Failed to get details: ${e.message} ${e.stackTrace}",
-                        null
-                    )
-                }
-            }
         }
     }
 
-    private fun getLatestUpdates(call: MethodCall, result: MethodChannel.Result) {
-        val args = call.arguments as? Map<*, *> ?: return result.error(
-            "INVALID_ARGS",
-            "Arguments were null or invalid",
-            null
-        )
+    private fun Headers.toMap() = names().associateWith { this[it].orEmpty() }
 
-        val sourceId = args["sourceId"] as? String
-        val isAnime = args["isAnime"] as? Boolean
-        val page = args["page"] as? Int
+    private fun Page.toPayload(baseUrl: String): Map<String, Any> {
+        val uri = Uri.parse(imageUrl!!)
+        val headers = uri.queryParameterNames.associateWith {
+            uri.getQueryParameter(it).orEmpty()
+        } + mapOf("Referer" to "$baseUrl/", "Origin" to baseUrl)
 
-        if (sourceId == null || isAnime == null || page == null) {
-            return result.error("INVALID_ARGS", "Missing required parameters", null)
-        }
-
-        val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val res = media.getLatestUpdates(page)
-                val resultMap = mapOf(
-                    "list" to res.animes.map {
-                        mapOf(
-                            "title" to it.title,
-                            "url" to it.url,
-                            "cover" to it.thumbnail_url,
-                            "artist" to it.artist,
-                            "author" to it.author,
-                            "description" to it.description,
-                            "genre" to it.getGenres(),
-                            "status" to it.status,
-                        )
-                    },
-                    "hasNextPage" to res.hasNextPage
-                )
-                withContext(Dispatchers.Main) {
-                    result.success(resultMap)
-                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultMap")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    result.error("ERROR", "Failed to get latest updates: ${e.message}", null)
-                }
-            }
-        }
+        return mapOf("url" to imageUrl!!, "headers" to headers)
     }
 
-    private fun getPopular(call: MethodCall, result: MethodChannel.Result) {
-        val args = call.arguments as? Map<*, *> ?: return result.error(
-            "INVALID_ARGS",
-            "Arguments were null or invalid",
-            null
-        )
+    private fun getPageList(call: MethodCall, result: MethodChannel.Result) = launch(result) {
+        val sourceId = call.arg<String>("sourceId")
+        val isAnime = call.arg<Boolean>("isAnime")
+        val map = call.arg<Map<String, Any?>>("episode")
 
-        val sourceId = args["sourceId"] as? String
-        val isAnime = args["isAnime"] as? Boolean
-        val page = args["page"] as? Int
-
-        if (sourceId == null || isAnime == null || page == null) {
-            return result.error("INVALID_ARGS", "Missing required parameters", null)
+        val chapter = SChapter.create().apply {
+            name = map["name"] as String
+            url = map["url"] as String
         }
 
-        val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val res = media.getPopular(page)
-                val resultMap = mapOf(
-                    "list" to res.animes.map {
-                        mapOf(
-                            "title" to it.title,
-                            "url" to it.url,
-                            "cover" to it.thumbnail_url,
-                            "artist" to it.artist,
-                            "author" to it.author,
-                            "description" to it.description,
-                            "genre" to it.getGenres(),
-                            "status" to it.status,
-                        )
-                    },
-                    "hasNextPage" to res.hasNextPage
-                )
-                withContext(Dispatchers.Main) {
-                    result.success(resultMap)
-                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultMap")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    result.error("ERROR", "Failed to get popular: ${e.message}", null)
-                }
-            }
-        }
-    }
-
-    private fun getVideoList(call: MethodCall, result: MethodChannel.Result) {
-        val args = call.arguments as? Map<*, *> ?: return result.error(
-            "INVALID_ARGS",
-            "Arguments were null or invalid",
-            null
-        )
-
-        val sourceId = args["sourceId"] as? String
-        val isAnime = args["isAnime"] as? Boolean
-        val mediaUrl = args["episode"] as? Map<*, *>
-
-        if (sourceId == null || isAnime == null || mediaUrl == null) {
-            return result.error("INVALID_ARGS", "Missing required parameters", null)
-        }
-        val episode = SEpisode.create().apply {
-            name = mediaUrl["name"] as? String ?: ""
-            url = mediaUrl["url"] as? String ?: return result.error(
-                "EMPTY_URL",
-                "Url cant be empty",
-                null
-            )
-            date_upload = (mediaUrl["date_upload"] as? Long)?.takeIf { it > 0 } ?: 0L
-            episode_number = (mediaUrl["episode_number"] as? Double)?.toFloat() ?: 0f
-            scanlator = mediaUrl["scanlator"] as? String
-        }
-        val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
-        fun Headers.toMap(): Map<String, String> =
-            names().associateWith { name -> this[name] ?: "" }
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val res = media.getVideoList(episode)
-                val resultList = res.map { video ->
-                    mapOf(
-                        "title" to video.videoTitle,
-                        "url" to video.videoUrl,
-                        "quality" to video.resolution,
-                        "headers" to video.headers?.toMap(),
-                        "subtitles" to video.subtitleTracks.map { track ->
-                            mapOf(
-                                "file" to track.url,
-                                "label" to track.lang
-                            )
-                        },
-                        "audios" to video.audioTracks.map { track ->
-                            mapOf(
-                                "file" to track.url,
-                                "label" to track.lang
-                            )
-                        },
-                    )
-                }
-                withContext(Dispatchers.Main) {
-                    result.success(resultList)
-                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultList")
-
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    result.error("ERROR", "Failed to get video list: ${e.message}", null)
-                }
-            }
-        }
-    }
-
-    private fun search(call: MethodCall, result: MethodChannel.Result) {
-        val args = call.arguments as? Map<*, *> ?: return result.error(
-            "INVALID_ARGS",
-            "Arguments were null or invalid",
-            null
-        )
-        val sourceId = args["sourceId"] as? String
-        val isAnime = args["isAnime"] as? Boolean
-        val query = args["query"] as? String
-        val page = args["page"] as? Int
-        if (sourceId == null || isAnime == null || query == null || page == null) {
-            return result.error("INVALID_ARGS", "Missing required parameters", null)
-        }
-        val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val res = media.getSearchResults(query, page)
-                val resultMap = mapOf(
-                    "list" to res.animes.map {
-                        mapOf(
-                            "title" to it.title,
-                            "url" to it.url,
-                            "cover" to it.thumbnail_url,
-                            "artist" to it.artist,
-                            "author" to it.author,
-                            "description" to it.description,
-                            "genre" to it.getGenres(),
-                            "status" to it.status,
-                        )
-                    },
-                    "hasNextPage" to res.hasNextPage
-                )
-                withContext(Dispatchers.Main) {
-                    result.success(resultMap)
-                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultMap")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    result.error("ERROR", "Failed to get video list: ${e.message}", null)
-                }
-            }
-        }
-
-    }
-
-    private fun getPageList(call: MethodCall, result: MethodChannel.Result) {
-        val args = call.arguments as? Map<*, *> ?: return result.error(
-            "INVALID_ARGS",
-            "Arguments were null or invalid",
-            null
-        )
-
-        val sourceId = args["sourceId"] as? String
-        val isAnime = args["isAnime"] as? Boolean
-        val mediaUrl = args["episode"] as? Map<*, *>
-
-        if (sourceId == null || isAnime == null || mediaUrl == null) {
-            return result.error("INVALID_ARGS", "Missing required parameters", null)
-        }
-        val episode = SChapter.create().apply {
-            name = mediaUrl["name"] as? String ?: ""
-            url = mediaUrl["url"] as? String ?: return result.error(
-                "EMPTY_URL",
-                "Url cant be empty",
-                null
-            )
-            date_upload = (mediaUrl["date_upload"] as? Long)?.takeIf { it > 0 } ?: 0L
-            chapter_number = (mediaUrl["episode_number"] as? Double)?.toFloat() ?: 0f
-            scanlator = mediaUrl["scanlator"] as? String
-        }
-
-        val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val res = media.getPageList(episode)
-                val resultList = res.map { chapter ->
-                    val (url, headers) = pageToUrlAndHeaders(chapter)
-                    mapOf(
-                        "url" to url,
-                        "headers" to headers.plus(
-                            mapOf(
-                                "Referer" to "${media.baseUrl}/",
-                                "Origin" to media.baseUrl,
-                            )
-                        ),
-                    )
-                }
-                withContext(Dispatchers.Main) {
-                    result.success(resultList)
-                    Log.d("DartotsuExtensionBridge", "Method called: ${call.method} returned $resultList")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    result.error("ERROR", "Failed to get video list: ${e.message}", null)
-                }
-            }
-        }
-    }
-
-    private fun pageToUrlAndHeaders(page: Page): Pair<String, Map<String, String>> {
-        var headersMap = emptyMap<String, String>()
-        var url = ""
-
-        page.imageUrl?.let {
-            url = it
-            val splitUrl = it.split("&")
-            headersMap = splitUrl.mapNotNull { part ->
-                val idx = part.indexOf("=")
-                if (idx != -1) {
-                    try {
-                        val key = URLDecoder.decode(part.take(idx), "UTF-8")
-                        val value = URLDecoder.decode(part.substring(idx + 1), "UTF-8")
-                        Pair(key, value)
-                    } catch (e: UnsupportedEncodingException) {
-                        Log.e("DartotsuExtensionBridge", "Error decoding URL part: $part", e)
-                        null
-                    }
-                } else {
-                    null
-                }
-            }.toMap()
-        }
-        return Pair(url, headersMap)
+        val media = media(sourceId, isAnime)
+        media.getPageList(chapter).map { it.toPayload(media.baseUrl ?: "") }
     }
 
     data class PrefHandlers(
         val pref: Preference,
-        val clickListener: Preference.OnPreferenceClickListener? = null,
-        val changeListener: Preference.OnPreferenceChangeListener? = null
+        val click: Preference.OnPreferenceClickListener?,
+        val change: Preference.OnPreferenceChangeListener?
     )
 
-    var sourcePreferences: MutableMap<String, MutableMap<String, PrefHandlers?>> = mutableMapOf()
+    private val sourcePreferences = mutableMapOf<String, MutableMap<String, PrefHandlers>>()
+
     fun saveSourcePreference(call: MethodCall, result: MethodChannel.Result) {
-        val args = call.arguments as? Map<*, *> ?: return result.error("INVALID_ARGS", "Args null", null)
+        val sourceId = call.arg<String>("sourceId")
+        val key = call.arg<String>("key")
+        val action = (call.arguments as Map<*, *>)["action"] as? String ?: "change"
+        val newValue = (call.arguments as Map<*, *>)["value"]
 
-        val sourceId = args["sourceId"] as? String ?: return
+        val handler = sourcePreferences[sourceId]?.get(key) ?: return
+        val pref = handler.pref
 
-        val prefKey = args["key"] as? String ?: return
+        if (action == "click") handler.click?.onPreferenceClick(pref)
+        else handler.change?.onPreferenceChange(pref, newValue)
 
-        val action = args["action"] as? String ?: "change"
-        val newValue = args["value"]
-
-        val handlers = sourcePreferences[sourceId]?.get(prefKey) ?: return
-        val pref = handlers.pref
-
-        when (action) {
-            "click" -> {
-                if (handlers.clickListener == null) {
-                    Log.d("PrefsDebug", "Click listener is null")
-                } else {
-                    handlers.clickListener.onPreferenceClick(pref)
+        when (pref) {
+            is SwitchPreferenceCompat -> pref.isChecked = newValue as Boolean
+            is ListPreference -> pref.value = newValue as String
+            is EditTextPreference -> pref.text = newValue as String
+            is MultiSelectListPreference -> {
+                val newSet = when (newValue) {
+                    is List<*> -> newValue.filterIsInstance<String>().toSet()
+                    is Set<*> -> newValue.filterIsInstance<String>()
+                    else -> emptySet()
                 }
+                pref.values = newSet.toMutableSet()
             }
 
-            "change" -> {
-                val valueForListener = when (pref) {
-                    is MultiSelectListPreference -> when (newValue) {
-                        is List<*> -> newValue.filterIsInstance<String>().toSet()
-                        is Set<*> -> newValue.filterIsInstance<String>()
-                        else -> emptySet()
-                    }
-
-                    else -> newValue
-                }
-                handlers.changeListener?.onPreferenceChange(pref,valueForListener)
-                when (pref) {
-                    is SwitchPreferenceCompat -> pref.isChecked = newValue as Boolean
-                    is ListPreference -> pref.value = newValue as String
-                    is EditTextPreference -> pref.text = newValue as String
-                    is MultiSelectListPreference -> {
-                        val newSet = when (newValue) {
-                            is List<*> -> newValue.filterIsInstance<String>().toSet()
-                            is Set<*> -> newValue.filterIsInstance<String>()
-                            else -> emptySet()
-                        }
-                        pref.values = newSet.toMutableSet()
-                    }
-
-                    is CheckBoxPreference -> pref.isChecked = newValue as Boolean
-                }
-
-            }
-
-            else -> {
-            }
+            is CheckBoxPreference -> pref.isChecked = newValue as Boolean
         }
 
         result.success(true)
@@ -629,102 +327,67 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
 
     @SuppressLint("RestrictedApi")
     private fun getPreference(call: MethodCall, result: MethodChannel.Result) {
-        val args = call.arguments as? Map<*, *> ?: return result.error(
-            "INVALID_ARGS",
-            "Arguments were null or invalid",
-            null
-        )
+        val sourceId = call.arg<String>("sourceId")
+        val isAnime = call.arg<Boolean>("isAnime")
 
-        val sourceId = args["sourceId"] as? String
-        val isAnime = args["isAnime"] as? Boolean
+        sourcePreferences.remove(sourceId)
 
-        if (sourceId == null || isAnime == null) {
-            return result.error("INVALID_ARGS", "Missing required parameters", null)
-        }
+        val screen = PreferenceManager(context).createPreferenceScreen(context)
+        media(sourceId, isAnime).setupPreferenceScreen(screen)
 
-        val media = if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
-
-        try {
-            val pm = PreferenceManager(context)
-            val screen = pm.createPreferenceScreen(context)
-
-            media.setupPreferenceScreen(screen)
-
-            val map = screen.toDynamicMap(sourceId)
-
-            result.success(map)
-        } catch (e: NoPreferenceScreenException) {
-            result.success(e.message)
-        }
-
+        result.success(screen.toDynamicMap(sourceId))
     }
 
-
-    fun PreferenceScreen.toDynamicMap(sourceID: String): List<Map<String, Any?>> {
+    private fun PreferenceScreen.toDynamicMap(sourceId: String): List<Map<String, Any?>> {
         val list = mutableListOf<Map<String, Any?>>()
-        val clickMap = sourcePreferences.getOrPut(sourceID) { mutableMapOf() }
-        fun traverse(prefGroup: PreferenceGroup) {
-            for (i in 0 until prefGroup.preferenceCount) {
-                val pref = prefGroup.getPreference(i)
+        val store = sourcePreferences.getOrPut(sourceId) { mutableMapOf() }
 
-                clickMap[pref.key] = PrefHandlers(
-                    pref = pref,
-                    clickListener = pref.onPreferenceClickListener,
-                    changeListener = pref.onPreferenceChangeListener
-                )
-                val prefMap = mutableMapOf<String, Any?>(
-                    "key" to pref.key,
-                    "title" to pref.title.toString(),
-                    "summary" to pref.summary?.toString(),
-                    "enabled" to pref.isEnabled,
-                    "type" to when (pref) {
+        fun walk(group: PreferenceGroup) {
+            for (i in 0 until group.preferenceCount) {
+                val p = group.getPreference(i)
+                store[p.key] = PrefHandlers(p, p.onPreferenceClickListener, p.onPreferenceChangeListener)
+
+                val map = mutableMapOf(
+                    "key" to p.key,
+                    "title" to p.title?.toString(),
+                    "summary" to p.summary?.toString(),
+                    "enabled" to p.isEnabled,
+                    "type" to when (p) {
                         is ListPreference -> "list"
                         is MultiSelectListPreference -> "multi_select"
                         is SwitchPreferenceCompat -> "switch"
                         is EditTextPreference -> "text"
                         is CheckBoxPreference -> "checkbox"
                         else -> "other"
+                    },
+                    "value" to when (p) {
+                        is ListPreference -> p.value
+                        is MultiSelectListPreference -> p.values.toList()
+                        is SwitchPreferenceCompat -> p.isChecked
+                        is EditTextPreference -> p.text
+                        is CheckBoxPreference -> p.isChecked
+                        else -> null
                     }
                 )
-                when (pref) {
-                    is ListPreference -> {
-                        prefMap["entries"] = pref.entries.map { it.toString() }
-                        prefMap["entryValues"] = pref.entryValues.map { it.toString() }
-                        prefMap["value"] = pref.value
-                    }
 
-                    is MultiSelectListPreference -> {
-                        prefMap["entries"] = pref.entries.map { it.toString() }
-                        prefMap["entryValues"] = pref.entryValues.map { it.toString() }
-                        prefMap["value"] = pref.values.toList()
-                    }
-
-                    is SwitchPreferenceCompat -> {
-                        prefMap["value"] = pref.isChecked
-                    }
-
-                    is EditTextPreference -> {
-                        prefMap["value"] = pref.text
-                    }
-
-                    is CheckBoxPreference -> {
-                        prefMap["value"] = pref.isChecked
-                    }
-
-                    else -> {
-                        prefMap["value"] = pref.sharedPreferences?.all?.get(pref.key)
-                    }
-                }
-                list.add(prefMap)
-
-                if (pref is PreferenceCategory) {
-                    traverse(pref)
-                }
+                list += map
+                if (p is PreferenceCategory) walk(p)
             }
         }
 
-        traverse(this)
+        walk(this)
         return list
     }
 }
 
+
+private fun SAnime.toMap() = mapOf(
+    "title" to title,
+    "url" to url,
+    "cover" to thumbnail_url,
+    "artist" to artist,
+    "author" to author,
+    "description" to description,
+    "genre" to getGenres(),
+    "status" to status,
+)
