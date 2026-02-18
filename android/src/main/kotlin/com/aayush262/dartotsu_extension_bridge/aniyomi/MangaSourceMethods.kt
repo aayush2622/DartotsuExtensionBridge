@@ -2,7 +2,9 @@ package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import android.util.Log
 import eu.kanade.tachiyomi.PreferenceScreen
+import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
+import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
@@ -95,7 +97,10 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
             override var name: String = chapter.name
             override var date_upload: Long = chapter.date_upload
             override var episode_number: Float = findChapterNumber(chapter.name) ?: chapter.chapter_number
+            override var fillermark: Boolean = false
             override var scanlator: String? = chapter.scanlator
+            override var summary: String?= null
+            override var preview_url: String? = null
         }
     }
 
@@ -110,7 +115,7 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
             override var genre: String? = anime.genre
             override var status: Int = anime.status
             override var thumbnail_url: String? = anime.thumbnail_url
-            override var update_strategy: UpdateStrategy = anime.update_strategy
+            override var update_strategy: UpdateStrategy = UpdateStrategy.ALWAYS_UPDATE
             override var initialized: Boolean = anime.initialized
         }
     }
@@ -135,8 +140,15 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
             override var genre: String? = runCatching { manga.genre }.getOrNull()
             override var status: Int = runCatching { manga.status }.getOrDefault(SAnime.UNKNOWN)
             override var thumbnail_url: String? = runCatching { manga.thumbnail_url }.getOrNull()
-            override var update_strategy: UpdateStrategy =
-                runCatching { manga.update_strategy }.getOrDefault(UpdateStrategy.ALWAYS_UPDATE)
+            override var background_url: String?
+                get() = TODO("Not yet implemented")
+                set(value) {}
+            override var update_strategy: AnimeUpdateStrategy =
+                runCatching { AnimeUpdateStrategy.ALWAYS_UPDATE }.getOrDefault(AnimeUpdateStrategy.ALWAYS_UPDATE)
+            override var fetch_type: FetchType
+                get() = TODO("Not yet implemented")
+                set(value) {}
+            override var season_number: Double = runCatching { 1.0 }.getOrDefault(0.0)
             override var initialized: Boolean = runCatching { manga.initialized }.getOrDefault(false)
         }
     }
