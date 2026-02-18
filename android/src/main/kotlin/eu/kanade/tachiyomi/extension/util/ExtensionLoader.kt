@@ -51,7 +51,7 @@ internal object ExtensionLoader {
     private const val XX_METADATA_HAS_CHANGELOG = ".hasChangelog"
 
     const val ANIME_LIB_VERSION_MIN = 12
-    const val ANIME_LIB_VERSION_MAX = 15
+    const val ANIME_LIB_VERSION_MAX = 16
     const val MANGA_LIB_VERSION_MIN = 1.2
     const val MANGA_LIB_VERSION_MAX = 1.5
     val PACKAGE_FLAGS = PackageManager.GET_CONFIGURATIONS or
@@ -101,27 +101,7 @@ internal object ExtensionLoader {
             deferred.map { it.await() }
         }
     }
-    private fun addDexToClasspath(dex: File, classLoader: ClassLoader) {
-        // https://android.googlesource.com/platform/libcore/+/58b4e5dbb06579bec9a8fc892012093b6f4fbe20/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java#59
-        val pathListField = BaseDexClassLoader::class.java.getDeclaredField("pathList")
-            .apply { isAccessible = true }
-        val pathList = pathListField[classLoader]!!
-        val addDexPath =
-            pathList.javaClass.getDeclaredMethod(
-                "addDexPath",
-                String::class.java,
-                File::class.java
-            )
-                .apply { isAccessible = true }
-        addDexPath.invoke(pathList, dex.absolutePath, null)
-    }
-    fun loadAssets(file: File) {
-        // based on https://stackoverflow.com/questions/7483568/dynamic-resource-loading-from-other-apk
-        val assets = AssetManager::class.java.getDeclaredConstructor().newInstance()
-        val addAssetPath =
-            AssetManager::class.java.getMethod("addAssetPath", String::class.java)
-        addAssetPath.invoke(assets, file.absolutePath)
-    }
+
     private fun loadAnimeExtension(
         context: Context,
         pkgName: String,
