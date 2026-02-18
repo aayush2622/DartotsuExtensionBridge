@@ -13,42 +13,31 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
 const val TAG = "DartotsuExtensionBridge"
+
 /** DartotsuExtensionBridgePlugin */
 class DartotsuExtensionBridgePlugin : FlutterPlugin {
 
-    private var aniyomiChannel: MethodChannel? = null
-    private var flutterKotlinBridge: MethodChannel? = null
+    private lateinit var aniyomiBridge: AniyomiBridge
+    private val flutterBridge = FlutterKotlinBridge()
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         Log.d(TAG, "Plugin attached to engine")
 
-        val appContext = binding.applicationContext
-        val application = appContext as? Application
+        val application = binding.applicationContext as? Application
             ?: error("Application context is not an Application")
 
         initInjekt(application)
 
-        flutterKotlinBridge = MethodChannel(
-            binding.binaryMessenger,
-            "flutterKotlinBridge"
-        ).apply {
-            setMethodCallHandler(FlutterKotlinBridge(this))
-        }
+        flutterBridge.attach(binding)
 
-        aniyomiChannel = MethodChannel(
-            binding.binaryMessenger,
-            "aniyomiExtensionBridge"
-        ).apply {
-            setMethodCallHandler(AniyomiBridge(appContext))
+        aniyomiBridge = AniyomiBridge(application).apply {
+            attach(binding)
         }
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        flutterKotlinBridge?.setMethodCallHandler(null)
-        aniyomiChannel?.setMethodCallHandler(null)
-
-        flutterKotlinBridge = null
-        aniyomiChannel = null
+        flutterBridge.detach()
+        aniyomiBridge.detach()
     }
 
     private fun initInjekt(application: Application) {

@@ -1,6 +1,8 @@
 package com.aayush262.dartotsu_extension_bridge.network
 
 import LogInterceptor
+import android.util.Log
+import com.aayush262.dartotsu_extension_bridge.TAG
 import eu.kanade.tachiyomi.network.NetworkHelper
 import io.flutter.plugin.common.MethodChannel
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -12,7 +14,7 @@ import java.util.concurrent.TimeUnit
 
 object FlutterNetwork {
 
-    fun enableFlutterNetworking(channel: MethodChannel, data: Map<*, *>) {
+    fun enableFlutterNetworking(channel: MethodChannel, data: Map<*, *>): Boolean {
         try {
             val client = Injekt.get<NetworkHelper>()
             val dns = data["dns"] as? String? ?: ""
@@ -33,9 +35,10 @@ object FlutterNetwork {
                 .addInterceptor(LogInterceptor())
                 .addInterceptor(CookieInterceptor(channel))
                 .build()
+            Log.d(TAG, "Flutter networking enabled");
+            return true
         } catch (t: Throwable) {
-            // log, but never crash
+            return false
         }
-
     }
 }
