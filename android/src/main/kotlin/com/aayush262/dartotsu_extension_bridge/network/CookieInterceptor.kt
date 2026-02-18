@@ -10,7 +10,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class CookieInterceptor(
-    private val channel: MethodChannel?
+    private val channel: MethodChannel
 ) : Interceptor {
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -19,9 +19,7 @@ class CookieInterceptor(
         val request = chain.request()
         val url = request.url.toString()
 
-        val cookieHeader = channel?.let {
-            getCookiesBlocking(it, url)
-        }
+        val cookieHeader = getCookiesBlocking(channel, url)
         val newRequest = if (!cookieHeader.isNullOrEmpty()) {
             request.newBuilder()
                 .removeHeader("Cookie")
@@ -35,9 +33,7 @@ class CookieInterceptor(
 
         val setCookies = response.headers("Set-Cookie")
         if (setCookies.isNotEmpty()) {
-            channel?.let {
-                sendCookiesToFlutter(it, url, setCookies)
-            }
+            sendCookiesToFlutter(channel, url, setCookies)
         }
 
         return response

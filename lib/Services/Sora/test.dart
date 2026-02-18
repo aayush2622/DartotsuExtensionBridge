@@ -27,9 +27,9 @@ Future<void> initJsEngine() async {
       return const JsResult.err(JsError.cancelled('Unknown bridge call'));
     },
   );
-  await fetch.inject();
   await runtime.setMemoryLimit(limit: BigInt.from(32 * 1024 * 1024));
   await runtime.setGcThreshold(threshold: BigInt.from(8 * 1024 * 1024));
+  await fetch.inject();
 }
 
 Future<void> loadExtensionJs() async {

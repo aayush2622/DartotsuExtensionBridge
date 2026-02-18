@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.preference.*
+import com.aayush262.dartotsu_extension_bridge.TAG
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
@@ -21,7 +22,7 @@ import okhttp3.Headers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-private const val TAG = "DartotsuExtensionBridge"
+
 
 class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHandler {
 
@@ -37,7 +38,6 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
             result.error("INVALID_ARGS", it.message, null)
         }
     }
-
 
 
     private val handlers = mapOf(
@@ -77,51 +77,50 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
     }
 
 
-    private fun getInstalledAnimeExtensions(call: MethodCall, result: MethodChannel.Result) {
-        val manager = Injekt.get<AniyomiExtensionManager>()
-        val data = manager.fetchInstalledAnimeExtensions()?.map { ext ->
-            val baseUrl = (ext.sources.firstOrNull() as? AnimeHttpSource)?.baseUrl.orEmpty()
-            mapOf(
-                "id" to ext.sources.first().id,
-                "name" to ext.name,
-                "baseUrl" to baseUrl,
-                "lang" to ext.lang,
-                "isNsfw" to ext.isNsfw,
-                "iconUrl" to ext.iconUrl,
-                "version" to ext.versionName,
-                "libVersion" to ext.libVersion,
-                "supportedLanguages" to ext.sources.map { it.lang },
-                "itemType" to 1,
-                "hasUpdate" to ext.hasUpdate,
-                "isObsolete" to ext.isObsolete,
-                "isUnofficial" to ext.isUnofficial,
-            )
+    private fun getInstalledAnimeExtensions(call: MethodCall, result: MethodChannel.Result) =
+        launch(result) {
+            Injekt.get<AniyomiExtensionManager>().fetchInstalledAnimeExtensions()?.map { ext ->
+                val baseUrl = (ext.sources.firstOrNull() as? AnimeHttpSource)?.baseUrl.orEmpty()
+                mapOf(
+                    "id" to ext.sources.first().id,
+                    "name" to ext.name,
+                    "baseUrl" to baseUrl,
+                    "lang" to ext.lang,
+                    "isNsfw" to ext.isNsfw,
+                    "iconUrl" to ext.iconUrl,
+                    "version" to ext.versionName,
+                    "libVersion" to ext.libVersion,
+                    "supportedLanguages" to ext.sources.map { it.lang },
+                    "itemType" to 1,
+                    "hasUpdate" to ext.hasUpdate,
+                    "isObsolete" to ext.isObsolete,
+                    "isUnofficial" to ext.isUnofficial,
+                )
+            }
         }
-        result.success(data)
-    }
 
-    private fun getInstalledMangaExtensions(call: MethodCall, result: MethodChannel.Result) {
-        val manager = Injekt.get<AniyomiExtensionManager>()
-        val data = manager.fetchInstalledMangaExtensions()?.map { ext ->
-            val baseUrl = (ext.sources.firstOrNull() as? HttpSource)?.baseUrl.orEmpty()
-            mapOf(
-                "id" to ext.sources.first().id,
-                "name" to ext.name,
-                "baseUrl" to baseUrl,
-                "lang" to ext.lang,
-                "isNsfw" to ext.isNsfw,
-                "iconUrl" to ext.iconUrl,
-                "version" to ext.versionName,
-                "libVersion" to ext.libVersion,
-                "supportedLanguages" to ext.sources.map { it.lang },
-                "itemType" to 0,
-                "hasUpdate" to ext.hasUpdate,
-                "isObsolete" to ext.isObsolete,
-                "isUnofficial" to ext.isUnofficial,
-            )
+    private fun getInstalledMangaExtensions(call: MethodCall, result: MethodChannel.Result) =
+        launch(result) {
+            Injekt.get<AniyomiExtensionManager>().fetchInstalledMangaExtensions()?.map { ext ->
+                val baseUrl = (ext.sources.firstOrNull() as? HttpSource)?.baseUrl.orEmpty()
+                mapOf(
+                    "id" to ext.sources.first().id,
+                    "name" to ext.name,
+                    "baseUrl" to baseUrl,
+                    "lang" to ext.lang,
+                    "isNsfw" to ext.isNsfw,
+                    "iconUrl" to ext.iconUrl,
+                    "version" to ext.versionName,
+                    "libVersion" to ext.libVersion,
+                    "supportedLanguages" to ext.sources.map { it.lang },
+                    "itemType" to 0,
+                    "hasUpdate" to ext.hasUpdate,
+                    "isObsolete" to ext.isObsolete,
+                    "isUnofficial" to ext.isUnofficial,
+                )
+            }
         }
-        result.success(data)
-    }
+
 
     private fun fetchAnimeExtensions(call: MethodCall, result: MethodChannel.Result) =
         launch(result) {
@@ -167,7 +166,6 @@ class AniyomiBridge(private val context: Context) : MethodChannel.MethodCallHand
                     )
                 }
         }
-
 
 
     private fun getPopular(call: MethodCall, result: MethodChannel.Result) =
