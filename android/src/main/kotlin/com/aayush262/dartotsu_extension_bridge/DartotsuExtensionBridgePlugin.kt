@@ -12,7 +12,6 @@ import kotlinx.serialization.json.Json
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
-const val TAG = "DartotsuExtensionBridge"
 
 /** DartotsuExtensionBridgePlugin */
 class DartotsuExtensionBridgePlugin : FlutterPlugin {
@@ -21,18 +20,19 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
     private val flutterBridge = FlutterKotlinBridge()
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        Log.d(TAG, "Plugin attached to engine")
 
         val application = binding.applicationContext as? Application
             ?: error("Application context is not an Application")
 
         initInjekt(application)
-
+        
         flutterBridge.attach(binding)
 
         aniyomiBridge = AniyomiBridge(application).apply {
             attach(binding)
         }
+        Logger.log("Plugin attached to engine", LogLevel.INFO)
+        println("Plugin attached to engine")
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {

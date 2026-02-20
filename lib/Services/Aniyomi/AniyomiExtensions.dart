@@ -9,6 +9,7 @@ import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../../Logger.dart';
 import '../../dartotsu_extension_bridge.dart';
 
 class AniyomiExtensions extends Extension {
@@ -70,9 +71,8 @@ class AniyomiExtensions extends Extension {
       map['extensionType'] = 1;
       return Source.fromJson(map);
     }).toList();
-    final list = unmodifiedList
-        .where((s) => !installedIds.contains(s.id))
-        .toList();
+    final list =
+        unmodifiedList.where((s) => !installedIds.contains(s.id)).toList();
     getAvailableRx(type).value = list;
     getAvailableUnmodified(type).value = unmodifiedList;
     checkForUpdates(type);
@@ -170,11 +170,9 @@ class AniyomiExtensions extends Extension {
         default:
           throw Exception('Unsupported item type: ${source.itemType}');
       }
-      debugPrint('Successfully installed package: $packageName');
+      Logger.log('Successfully installed package: $packageName');
     } catch (e) {
-      if (kDebugMode) {
-        print('Error installing source: $e');
-      }
+      Logger.log('Error installing source: $e');
       rethrow;
     }
   }
@@ -222,9 +220,9 @@ class AniyomiExtensions extends Extension {
         }
       }
 
-      debugPrint('Successfully uninstalled package: $packageName');
+      Logger.log('Successfully uninstalled package: $packageName');
     } catch (e) {
-      debugPrint('Error uninstalling $packageName: $e');
+      Logger.log('Error uninstalling $packageName: $e');
       rethrow;
     }
   }
@@ -255,7 +253,7 @@ class AniyomiExtensions extends Extension {
         appId: packageName,
       );
       if (result['isSuccess'] != true) {
-        debugPrint(
+        Logger.log(
           'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
         );
       }
@@ -275,7 +273,7 @@ class AniyomiExtensions extends Extension {
         default:
           throw Exception('Unsupported item type: ${source.itemType}');
       }
-      debugPrint('Successfully update package: $packageName');
+      Logger.log('Successfully update package: $packageName');
     } catch (e) {
       if (kDebugMode) {
         print('Error installing source: $e');

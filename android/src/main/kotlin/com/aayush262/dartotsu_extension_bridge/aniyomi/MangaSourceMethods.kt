@@ -1,6 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import android.util.Log
+import com.aayush262.dartotsu_extension_bridge.Logger
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
@@ -125,12 +126,12 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
 
         return object : SAnime {
             override var url: String = runCatching { manga.url }.getOrElse {
-                Log.d("AniyomiExtensionBridge", "Uninitialized URL for SManga: ${safeUrl(manga)}")
+                Logger.log("Uninitialized URL for SManga: ${safeUrl(manga)}")
                 "[UNINITIALIZED_URL]"
             }
 
             override var title: String = runCatching { manga.title }.getOrElse {
-                Log.d("AniyomiExtensionBridge", "Uninitialized title for SManga: ${safeTitle(manga)}")
+                Logger.log( "Uninitialized title for SManga: ${safeTitle(manga)}")
                 "[UNINITIALIZED_TITLE]"
             }
 

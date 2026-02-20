@@ -9,6 +9,8 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
+import com.aayush262.dartotsu_extension_bridge.LogLevel
+import com.aayush262.dartotsu_extension_bridge.Logger
 import dalvik.system.BaseDexClassLoader
 import dalvik.system.PathClassLoader
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
@@ -113,7 +115,7 @@ internal object ExtensionLoader {
             pkgManager.getApplicationInfo(pkgName, PackageManager.GET_META_DATA)
         } catch (error: PackageManager.NameNotFoundException) {
             // Unlikely, but the package may have been uninstalled at this point
-            println(error)
+            Logger.log(error.toString(), LogLevel.ERROR)
             return AnimeLoadResult.Error
         }
 
@@ -122,16 +124,17 @@ internal object ExtensionLoader {
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
 
         if (versionName.isNullOrEmpty()) {
-            println("Missing versionName for extension $extName")
+            Logger.log("Missing versionName for extension $extName", LogLevel.ERROR)
             return AnimeLoadResult.Error
         }
 
         // Validate lib version
         val libVersion = versionName.substringBeforeLast('.').toDoubleOrNull()
         if (libVersion == null || libVersion < ANIME_LIB_VERSION_MIN || libVersion > ANIME_LIB_VERSION_MAX) {
-            println(
+            Logger.log(
                 "Lib version is $libVersion, while only versions " +
-                        "$ANIME_LIB_VERSION_MIN to $ANIME_LIB_VERSION_MAX are allowed"
+                        "$ANIME_LIB_VERSION_MIN to $ANIME_LIB_VERSION_MAX are allowed",
+                LogLevel.ERROR
             )
             return AnimeLoadResult.Error
         }
@@ -146,7 +149,7 @@ internal object ExtensionLoader {
         val classLoader = try{
             PathClassLoader(appInfo.sourceDir, null, context.classLoader)
         } catch (e: Throwable) {
-            println("Error creating class loader for $pkgName: ${e.message}")
+            Logger.log("Error creating class loader for $pkgName: ${e.message}", LogLevel.ERROR)
             return AnimeLoadResult.Error
         }
         val sources = appInfo.metaData.getString("$ANIME_PACKAGE$XX_METADATA_SOURCE_CLASS")!!
@@ -168,7 +171,7 @@ internal object ExtensionLoader {
                         else -> throw Exception("Unknown source class type! ${obj.javaClass}")
                     }
                 } catch (e : Throwable) {
-                    println("Error loading $it: ${e.message}")
+                    Logger.log("Error loading $it: ${e.message}", LogLevel.ERROR)
                     return AnimeLoadResult.Error
                 }
             }
@@ -211,7 +214,7 @@ internal object ExtensionLoader {
             pkgManager.getApplicationInfo(pkgName, PackageManager.GET_META_DATA)
         } catch (error: PackageManager.NameNotFoundException) {
             // Unlikely, but the package may have been uninstalled at this point
-            println(error)
+            Logger.log(error.toString(), LogLevel.ERROR)
             return MangaLoadResult.Error
         }
 
@@ -221,16 +224,16 @@ internal object ExtensionLoader {
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
 
         if (versionName.isNullOrEmpty()) {
-            println("Missing versionName for extension $extName")
+            Logger.log("Missing versionName for extension $extName", LogLevel.ERROR)
             return MangaLoadResult.Error
         }
 
         // Validate lib version
         val libVersion = versionName.substringBeforeLast('.').toDoubleOrNull()
         if (libVersion == null || libVersion < MANGA_LIB_VERSION_MIN || libVersion > MANGA_LIB_VERSION_MAX) {
-            println(
+            Logger.log(
                 "Lib version is $libVersion, while only versions " +
-                        "$MANGA_LIB_VERSION_MIN to $MANGA_LIB_VERSION_MAX are allowed"
+                        "$MANGA_LIB_VERSION_MIN to $MANGA_LIB_VERSION_MAX are allowed", LogLevel.ERROR
             )
             return MangaLoadResult.Error
         }
@@ -244,7 +247,7 @@ internal object ExtensionLoader {
         val classLoader = try{
             PathClassLoader(appInfo.sourceDir, null, context.classLoader)
         } catch (e: Throwable) {
-            println("Extension load error: $extName - ${e.message}")
+            Logger.log("Extension load error: $extName - ${e.message}", LogLevel.ERROR)
             return MangaLoadResult.Error
         }
 
@@ -267,7 +270,7 @@ internal object ExtensionLoader {
                         else -> throw Exception("Unknown source class type! ${obj.javaClass}")
                     }
                 } catch (e: Throwable) {
-                    println("Extension load error: $extName ($it) - ${e.message}")
+                    Logger.log("Extension load error: $extName ($it) - ${e.message}", LogLevel.ERROR)
                     return MangaLoadResult.Error
                 }
             }
@@ -323,7 +326,7 @@ fun Context.getApplicationIcon(pkgName: String): String? {
         output.close()
         file.absolutePath
     } catch (e: PackageManager.NameNotFoundException) {
-        println("Error getting icon for $pkgName: ${e.message}")
+        Logger.log("Error getting icon for $pkgName: ${e.message}", LogLevel.ERROR)
         null
     }
 }

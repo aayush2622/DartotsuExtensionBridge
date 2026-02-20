@@ -5,21 +5,31 @@ import com.aayush262.dartotsu_extension_bridge.network.FlutterNetwork.enableFlut
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+
 class FlutterKotlinBridge {
 
-    private lateinit var channel: MethodChannel
-
+    private lateinit var networkChannel: MethodChannel
+    private lateinit var loggerChannel: MethodChannel
     fun attach(binding: FlutterPlugin.FlutterPluginBinding) {
-        Logger.init(channel)
-        channel = MethodChannel(
+        networkChannel = MethodChannel(
             binding.binaryMessenger,
-            "flutterKotlinBridge"
+            "flutterKotlinBridge.network"
         ).apply {
             setMethodCallHandler(Handler())
         }
+
+        loggerChannel = MethodChannel(
+            binding.binaryMessenger,
+            "flutterKotlinBridge.logger"
+        )
+
+        Logger.init(loggerChannel)
     }
 
-    fun detach() = channel.setMethodCallHandler(null)
+    fun detach() {
+        networkChannel.setMethodCallHandler(null)
+        loggerChannel.setMethodCallHandler(null)
+    }
 
 
     private inner class Handler : MethodChannel.MethodCallHandler {
@@ -33,9 +43,10 @@ class FlutterKotlinBridge {
                             null
                         )
 
-                    enableFlutterNetworking(channel, args)
+                    enableFlutterNetworking(networkChannel, args)
                     result.success(null)
                 }
+
                 else -> result.notImplemented()
             }
         }
