@@ -1,4 +1,6 @@
 import android.util.Log
+import com.aayush262.dartotsu_extension_bridge.LogLevel
+import com.aayush262.dartotsu_extension_bridge.Logger
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.util.concurrent.TimeUnit
@@ -9,9 +11,9 @@ class LogInterceptor() : Interceptor {
         val request = chain.request()
         val startTime = System.nanoTime()
 
-        Log.d(
-            "DartotsuExtensionBridge",
+        Logger.log(
             "→ ${request.method} ${request.url}"
+
         )
 
         try {
@@ -21,8 +23,7 @@ class LogInterceptor() : Interceptor {
                 System.nanoTime() - startTime
             )
 
-            Log.d(
-                "DartotsuExtensionBridge",
+            Logger.log(
                 "← ${response.code} ${request.url} (${tookMs}ms)"
             )
 
@@ -32,7 +33,7 @@ class LogInterceptor() : Interceptor {
                         server in listOf("cloudflare", "cloudflare-nginx")
 
             if (cloudflare) {
-                Log.w("DartotsuExtensionBridge", "⚠️ Detected Cloudflare protection")
+                Logger.log("⚠️ Detected Cloudflare protection", LogLevel.DEBUG)
             }
 
             return response
@@ -42,8 +43,7 @@ class LogInterceptor() : Interceptor {
                 System.nanoTime() - startTime
             )
 
-            Log.e(
-                "DartotsuExtensionBridge",
+            Logger.log(
                 "× ${request.method} ${request.url} (${tookMs}ms)\n$e"
             )
 

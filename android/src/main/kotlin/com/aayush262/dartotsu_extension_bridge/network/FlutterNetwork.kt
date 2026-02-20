@@ -1,8 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.network
 
 import LogInterceptor
-import android.util.Log
-import com.aayush262.dartotsu_extension_bridge.TAG
+import com.aayush262.dartotsu_extension_bridge.Logger
 import eu.kanade.tachiyomi.network.NetworkHelper
 import io.flutter.plugin.common.MethodChannel
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -35,7 +34,7 @@ object FlutterNetwork {
                 .addInterceptor(LogInterceptor())
                 .addInterceptor(CookieInterceptor(channel))
                 .build()
-            Log.d(TAG, "Flutter networking enabled");
+            Logger.log("Flutter networking enabled");
             return true
         } catch (t: Throwable) {
             return false

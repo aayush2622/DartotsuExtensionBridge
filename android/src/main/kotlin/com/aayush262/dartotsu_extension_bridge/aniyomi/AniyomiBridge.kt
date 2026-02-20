@@ -19,6 +19,7 @@ import okhttp3.Headers
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import androidx.core.net.toUri
+import com.aayush262.dartotsu_extension_bridge.LogLevel
 import com.aayush262.dartotsu_extension_bridge.Logger
 
 class AniyomiBridge(private val context: Context) {
@@ -45,7 +46,7 @@ class AniyomiBridge(private val context: Context) {
                 handlers[call.method]?.invoke(call, result)
                     ?: result.notImplemented()
             }.onFailure {
-                Logger.log("Bad method call $it")
+                Logger.log("Bad method call $it", LogLevel.INFO)
                 result.error("INVALID_ARGS", it.message, null)
             }
         }
@@ -74,12 +75,12 @@ class AniyomiBridge(private val context: Context) {
             (arguments as? Map<*, *>)?.get(key) as? T
                 ?: throw IllegalArgumentException("Missing or invalid arg: $key")
 
-        private fun launch(result: MethodChannel.Result, block: suspend () -> Any?) {
+        private fun launch(call: MethodCall,result: MethodChannel.Result, block: suspend () -> Any?) {
             scope.launch {
                 runCatching { block() }
                     .onSuccess { withContext(Dispatchers.Main) { result.success(it) } }
                     .onFailure {
-                        Logger.log("Error $it")
+                        Logger.log("Error for [${call.method}]: $it", LogLevel.ERROR)
                         withContext(Dispatchers.Main) {
                             result.error("ERROR", it.message, null)
                         }
@@ -89,8 +90,9 @@ class AniyomiBridge(private val context: Context) {
 
 
         private fun getInstalledAnimeExtensions(call: MethodCall, result: MethodChannel.Result) =
-            launch(result) {
-                Injekt.get<AniyomiExtensionManager>().fetchInstalledAnimeExtensions()?.map { ext ->
+            launch(call,result) {
+
+                Injekt.get<AniyomiExtensionManager>().fetchInstalledAnimeExtensions().map { ext ->
                     val baseUrl = (ext.sources.firstOrNull() as? AnimeHttpSource)?.baseUrl.orEmpty()
                     mapOf(
                         "id" to ext.sources.first().id,
@@ -111,8 +113,8 @@ class AniyomiBridge(private val context: Context) {
             }
 
         private fun getInstalledMangaExtensions(call: MethodCall, result: MethodChannel.Result) =
-            launch(result) {
-                Injekt.get<AniyomiExtensionManager>().fetchInstalledMangaExtensions()?.map { ext ->
+            launch(call,result) {
+                Injekt.get<AniyomiExtensionManager>().fetchInstalledMangaExtensions().map { ext ->
                     val baseUrl = (ext.sources.firstOrNull() as? HttpSource)?.baseUrl.orEmpty()
                     mapOf(
                         "id" to ext.sources.first().id,
@@ -134,7 +136,7 @@ class AniyomiBridge(private val context: Context) {
 
 
         private fun fetchAnimeExtensions(call: MethodCall, result: MethodChannel.Result) =
-            launch(result) {
+            launch(call,result) {
                 val args = call.arguments as? List<*>
                 val repos = args?.filterIsInstance<String>() ?: emptyList()
                 Injekt.get<AniyomiExtensionManager>()
@@ -157,7 +159,7 @@ class AniyomiBridge(private val context: Context) {
             }
 
         private fun fetchMangaExtensions(call: MethodCall, result: MethodChannel.Result) =
-            launch(result) {
+            launch(call,result) {
                 val args = call.arguments as? List<*>
                 val repos = args?.filterIsInstance<String>() ?: emptyList()
                 Injekt.get<AniyomiExtensionManager>()
@@ -194,7 +196,7 @@ class AniyomiBridge(private val context: Context) {
             call: MethodCall,
             result: MethodChannel.Result,
             block: suspend (AniyomiSourceMethods, Int) -> AnimesPage
-        ) = launch(result) {
+        ) = launch(call,result) {
             val sourceId = call.arg<String>("sourceId")
             val isAnime = call.arg<Boolean>("isAnime")
             val page = call.arg<Int>("page")
@@ -206,7 +208,7 @@ class AniyomiBridge(private val context: Context) {
             )
         }
 
-        private fun getDetail(call: MethodCall, result: MethodChannel.Result) = launch(result) {
+        private fun getDetail(call: MethodCall, result: MethodChannel.Result) = launch(call,result) {
             val sourceId = call.arg<String>("sourceId")
             val isAnime = call.arg<Boolean>("isAnime")
             val map = call.arg<Map<String, Any?>>("media")
@@ -246,7 +248,7 @@ class AniyomiBridge(private val context: Context) {
             )
         }
 
-        private fun getVideoList(call: MethodCall, result: MethodChannel.Result) = launch(result) {
+        private fun getVideoList(call: MethodCall, result: MethodChannel.Result) = launch(call,result) {
             val sourceId = call.arg<String>("sourceId")
             val isAnime = call.arg<Boolean>("isAnime")
             val map = call.arg<Map<String, Any?>>("episode")
@@ -281,7 +283,7 @@ class AniyomiBridge(private val context: Context) {
             return mapOf("url" to imageUrl!!, "headers" to headers)
         }
 
-        private fun getPageList(call: MethodCall, result: MethodChannel.Result) = launch(result) {
+        private fun getPageList(call: MethodCall, result: MethodChannel.Result) = launch(call,result) {
             val sourceId = call.arg<String>("sourceId")
             val isAnime = call.arg<Boolean>("isAnime")
             val map = call.arg<Map<String, Any?>>("episode")

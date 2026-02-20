@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:isar_community/isar.dart';
 
+import '../../Logger.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'http/m_client.dart';
 import 'lib.dart';
@@ -46,7 +46,7 @@ class MangayomiExtensionManager extends GetxController {
       if (repo.trim().isEmpty) continue;
       final req = await http.get(Uri.parse(repo.trim()));
       if (req.statusCode != 200) {
-        debugPrint("Failed to fetch sources from $repo: ${req.statusCode}");
+        Logger.log("Failed to fetch sources from $repo: ${req.statusCode}");
         continue;
       }
       final sourceList = (jsonDecode(req.body) as List)
@@ -181,7 +181,7 @@ class MangayomiExtensionManager extends GetxController {
 
       await isar.writeTxnSync(() async => isar.mSources.putSync(s));
     } catch (e) {
-      debugPrint("Error installing source: $e");
+      Logger.log("Error installing source: $e");
       return Future.error(e);
     }
   }
@@ -193,7 +193,7 @@ class MangayomiExtensionManager extends GetxController {
         () async => isar.mSources.deleteSync(mSource.id!),
       );
     } catch (e) {
-      debugPrint("Error uninstalling source: $e");
+      Logger.log("Error uninstalling source: $e");
       return Future.error(e);
     }
   }
@@ -213,7 +213,7 @@ class MangayomiExtensionManager extends GetxController {
 
       await isar.writeTxnSync(() async => isar.mSources.putSync(s));
     } catch (e) {
-      debugPrint("Error updating source: $e");
+      Logger.log("Error updating source: $e");
       return Future.error(e);
     }
   }
