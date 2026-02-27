@@ -1,5 +1,6 @@
 library;
 
+export './ExtensionBridge.dart';
 export './ExtensionManager.dart';
 export './Extensions/Extensions.dart';
 export './Extensions/SourceMethods.dart';
@@ -14,5 +15,3 @@ export './Screen/ExtensionList.dart';
 export './Screen/ExtensionManagerScreen.dart';
 // maybe needed sometimes
 export './Services/Mangayomi/Models/Source.dart';
-export './Settings/Settings.dart';
-export './extension_bridge.dart';

@@ -3,8 +3,6 @@ import 'package:get/get.dart';
 
 import '../ExtensionManager.dart';
 import '../Models/Source.dart';
-import '../Settings/Settings.dart';
-import '../extension_bridge.dart';
 
 abstract class ExtensionConfig {
   ItemType get itemType;
@@ -20,7 +18,7 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
   final controller = ScrollController();
   var sortedList = <String>[];
 
-  var manager = Get.find<ExtensionManager>().currentManager;
+  var manager = Get.find<ExtensionManager>().current.value;
 
   ExtensionConfig get config => widget as ExtensionConfig;
 
@@ -35,7 +33,7 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
   @override
   void initState() {
     super.initState();
-    var settings = isar.bridgeSettings.getSync(26) ?? BridgeSettings();
+    /* var settings = isar.bridgeSettings.getSync(26) ?? BridgeSettings();
     switch (itemType) {
       case ItemType.anime:
         sortedList = settings.sortedAnimeExtensions;
@@ -43,7 +41,7 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
         sortedList = settings.sortedMangaExtensions;
       case ItemType.novel:
         sortedList = settings.sortedNovelExtensions;
-    }
+    }*/
   }
 
   @override
@@ -58,18 +56,15 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
   Widget build(BuildContext context) {
     return Obx(() {
       final fullList = switch (itemType) {
-        ItemType.anime =>
-          isInstalled
-              ? manager.installedAnimeExtensions.value
-              : manager.availableAnimeExtensions.value,
-        ItemType.manga =>
-          isInstalled
-              ? manager.installedMangaExtensions.value
-              : manager.availableMangaExtensions.value,
-        ItemType.novel =>
-          isInstalled
-              ? manager.installedNovelExtensions.value
-              : manager.availableNovelExtensions.value,
+        ItemType.anime => isInstalled
+            ? manager.installedAnimeExtensions.value
+            : manager.availableAnimeExtensions.value,
+        ItemType.manga => isInstalled
+            ? manager.installedMangaExtensions.value
+            : manager.availableMangaExtensions.value,
+        ItemType.novel => isInstalled
+            ? manager.installedNovelExtensions.value
+            : manager.availableNovelExtensions.value,
       };
 
       final search = searchQuery.toLowerCase();

@@ -10,7 +10,7 @@ import '../Models/Source.dart';
 abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     with TickerProviderStateMixin {
   late TabController _tabBarController;
-  var manager = Get.find<ExtensionManager>().currentManager;
+  var manager = Get.find<ExtensionManager>().current.value;
   final _selectedLanguage = 'All'.obs;
   final _textEditingController = TextEditingController();
 
@@ -122,7 +122,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
   }
 
   List<Widget> _buildTabs(BuildContext context) {
-    final manager = Get.find<ExtensionManager>().currentManager;
+    final manager = Get.find<ExtensionManager>().current.value;
 
     List<Widget> tabs = [];
 
@@ -160,7 +160,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     ColorScheme theme,
     ExtensionScreenBuilder builder,
   ) {
-    final manager = Get.find<ExtensionManager>().currentManager;
+    final manager = Get.find<ExtensionManager>().current.value;
     final query = _textEditingController.text;
     final lang = _selectedLanguage.value;
 
@@ -211,10 +211,9 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
   }
 }
 
-typedef ExtensionScreenBuilder =
-    Widget Function(
-      ItemType itemType,
-      bool isInstalled,
-      String searchQuery,
-      String selectedLanguage,
-    );
+typedef ExtensionScreenBuilder = Widget Function(
+  ItemType itemType,
+  bool isInstalled,
+  String searchQuery,
+  String selectedLanguage,
+);

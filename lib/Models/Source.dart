@@ -1,35 +1,19 @@
-import '../ExtensionManager.dart' show ExtensionType;
-
 class Source {
   String? id;
-
   String? name;
-
   String? baseUrl;
-
   String? lang;
-
   bool? isNsfw;
-
   String? iconUrl;
-
   String? version;
-
   String? versionLast;
-
   ItemType? itemType;
-
   bool? isObsolete;
-
   String? repo;
-
   bool? hasUpdate;
-
   String? apkUrl;
-
   String? apkName;
-
-  ExtensionType? extensionType;
+  bool? isShared;
 
   Source({
     this.id = '',
@@ -44,7 +28,6 @@ class Source {
     this.isObsolete = false,
     this.repo,
     this.hasUpdate = false,
-    this.extensionType = ExtensionType.mangayomi,
     this.apkUrl = '',
     this.apkName = '',
   });
@@ -64,7 +47,6 @@ class Source {
     isObsolete = json['isObsolete'];
     repo = json['repo'];
     hasUpdate = json['hasUpdate'] ?? false;
-    extensionType = ExtensionType.values[json['extensionType'] ?? 0];
   }
 
   Map<String, dynamic> toJson() => {
@@ -82,7 +64,6 @@ class Source {
         'isObsolete': isObsolete,
         'repo': repo,
         'hasUpdate': hasUpdate,
-        'extensionType': extensionType?.index ?? 0,
       };
 }
 

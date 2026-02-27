@@ -1,8 +1,11 @@
 import 'package:get/get.dart';
 
 import '../Models/Source.dart';
+import 'SourceMethods.dart';
 
-abstract class Extension extends GetxController {
+abstract class Extension {
+  String get id;
+  String get name;
   var isInitialized = false.obs;
   bool get supportsAnime => true;
   bool get supportsManga => true;
@@ -15,12 +18,20 @@ abstract class Extension extends GetxController {
   final Rx<List<Source>> availableMangaExtensions = Rx([]);
   final Rx<List<Source>> availableNovelExtensions = Rx([]);
 
-  Future<List<Source>> getInstalledAnimeExtensions() => Future.value([]);
+  SourceMethods createSourceMethods(Source source);
+
+  /// Returns a list of installed anime extensions.
+  /// If [customPath] is provided, it will look for extensions in that path.
+  Future<List<Source>> getInstalledAnimeExtensions({String? customPath}) =>
+      Future.value([]);
 
   Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) =>
       Future.value([]);
 
-  Future<List<Source>> getInstalledMangaExtensions() => Future.value([]);
+  /// Returns a list of installed manga extensions.
+  /// If [customPath] is provided, it will look for extensions in that path.
+  Future<List<Source>> getInstalledMangaExtensions({String? customPath}) =>
+      Future.value([]);
 
   Future<List<Source>> fetchAvailableMangaExtensions(List<String>? repos) =>
       Future.value([]);
@@ -32,7 +43,8 @@ abstract class Extension extends GetxController {
 
   Future<void> initialize();
 
-  Future<void> installSource(Source source);
+  /// Installs the given [source]. If [customPath] is provided, it will install the source in that path.
+  Future<void> installSource(Source source, {String? customPath});
 
   Future<void> uninstallSource(Source source);
 

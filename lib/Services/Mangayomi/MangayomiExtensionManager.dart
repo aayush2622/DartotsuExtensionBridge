@@ -15,7 +15,7 @@ class MangayomiExtensionManager extends GetxController {
   final availableMangaExtensions = Rx<List<MSource>>([]);
   final installedNovelExtensions = Rx<List<MSource>>([]);
   final availableNovelExtensions = Rx<List<MSource>>([]);
-  final http = MClient.init(reqcopyWith: {'useDartHttpClient': true});
+  final http = MClient.init();
 
   @override
   void onInit() {

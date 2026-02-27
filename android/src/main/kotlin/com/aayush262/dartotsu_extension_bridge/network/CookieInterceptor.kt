@@ -2,7 +2,6 @@ package com.aayush262.dartotsu_extension_bridge.network
 
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import okhttp3.Interceptor
 import okhttp3.Response
 import io.flutter.plugin.common.MethodChannel

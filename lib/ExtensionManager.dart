@@ -6,92 +6,61 @@ import 'Extensions/Extensions.dart';
 import 'Extensions/SourceMethods.dart';
 import 'Models/Source.dart';
 import 'Services/Aniyomi/AniyomiExtensions.dart';
-import 'Services/Aniyomi/AniyomiSourceMethods.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
-import 'Services/Mangayomi/MangayomiSourceMethods.dart';
-import 'Settings/Settings.dart';
-import 'extension_bridge.dart';
+import 'Settings/KvStore.dart';
 
 class ExtensionManager extends GetxController {
-  ExtensionManager() {
-    initialize();
-  }
-
-  late final Rx<Extension> _currentManager;
-
-  Extension get currentManager => _currentManager.value;
-
-  void initialize() {
-    final settings = isar.bridgeSettings.getSync(26)!;
-    final savedType = ExtensionType.fromString(settings.currentManager);
-    _currentManager = savedType.getManager().obs;
-  }
-
-  void setCurrentManager(ExtensionType type) {
-    _currentManager.value = type.getManager();
-    final settings = isar.bridgeSettings.getSync(26)!;
-    isar.writeTxnSync(() {
-      isar.bridgeSettings.putSync(settings..currentManager = type.toString());
-    });
-  }
-}
-
-abstract class HasSourceMethods {
-  SourceMethods get methods;
-}
-
-extension SourceMethodsExtension on Source {
-  SourceMethods get methods => currentSourceMethods(this);
-}
-
-SourceMethods currentSourceMethods(Source source) {
-  if (source is HasSourceMethods) return source.methods;
-
-  final type = source.extensionType;
-  return type == ExtensionType.mangayomi
-      ? MangayomiSourceMethods(source)
-      : AniyomiSourceMethods(source);
-}
-
-List<ExtensionType> get getSupportedExtensions =>
-    Platform.isAndroid ? ExtensionType.values : [ExtensionType.mangayomi];
-
-enum ExtensionType {
-  mangayomi,
-  aniyomi;
-
-  Extension getManager() {
-    switch (this) {
-      case ExtensionType.aniyomi:
-        return Get.find<AniyomiExtensions>(tag: 'AniyomiExtensions');
-      case ExtensionType.mangayomi:
-        return Get.find<MangayomiExtensions>(tag: 'MangayomiExtensions');
-    }
-  }
+  final managers = <Extension>[].obs;
+  late final Rx<Extension> current;
 
   @override
-  String toString() {
-    switch (this) {
-      case ExtensionType.aniyomi:
-        return 'Aniyomi';
-      case ExtensionType.mangayomi:
-        return 'Mangayomi';
-    }
+  void onInit() {
+    super.onInit();
+
+    managers.assignAll(defaultManagers());
+
+    final savedId = getVal('currentManager', defaultValue: 'mangayomi');
+
+    current = Rx(_findById(savedId) ?? managers.first);
   }
 
-  static ExtensionType fromString(String? name) {
-    return ExtensionType.values.firstWhere(
-      (e) => e.toString() == name,
-      orElse: () => getSupportedExtensions.first,
-    );
+  void switchManager(String id) {
+    final next = _findById(id);
+    if (next == null) return;
+    current.value = next;
+    setVal('currentManager', id);
   }
 
-  static ExtensionType fromManager(Extension manager) {
-    if (manager is AniyomiExtensions) {
-      return ExtensionType.aniyomi;
-    } else if (manager is MangayomiExtensions) {
-      return ExtensionType.mangayomi;
+  T? find<T extends Extension>() {
+    for (final manager in managers) {
+      if (manager is T) return manager;
     }
-    throw Exception('Unknown extension manager type');
+    return null;
+  }
+
+  T get<T extends Extension>() {
+    final result = find<T>();
+    if (result == null) {
+      throw Exception('Extension manager of type $T not registered');
+    }
+    return result;
+  }
+
+  Extension? _findById(String? id) =>
+      managers.firstWhereOrNull((m) => m.id == id);
+
+  List<Extension> defaultManagers() {
+    return [
+      MangayomiExtensions(),
+      if (Platform.isAndroid) AniyomiExtensions(),
+    ];
+  }
+}
+
+extension SourceExecution on Source {
+  SourceMethods get methods {
+    final controller = Get.find<ExtensionManager>();
+    final manager = controller.current.value;
+    return manager.createSourceMethods(this);
   }
 }

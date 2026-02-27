@@ -1,6 +1,5 @@
 package com.aayush262.dartotsu_extension_bridge
 
-import android.util.Log
 import com.aayush262.dartotsu_extension_bridge.network.FlutterNetwork.enableFlutterNetworking
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall

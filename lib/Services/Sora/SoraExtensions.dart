@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import '../../Extensions/Extensions.dart';
+import '../../Extensions/SourceMethods.dart';
 import '../../Models/Source.dart';
 import '../Mangayomi/http/m_client.dart';
+import 'SoraSourceMethods.dart';
 
 class SoraExtensions extends Extension {
   @override
@@ -37,7 +39,7 @@ class SoraExtensions extends Extension {
   }
 
   @override
-  Future<void> installSource(Source source) {
+  Future<void> installSource(Source source, {String? customPath}) {
     throw UnimplementedError();
   }
 
@@ -50,4 +52,16 @@ class SoraExtensions extends Extension {
   Future<void> updateSource(Source source) {
     throw UnimplementedError();
   }
+
+  @override
+  SourceMethods createSourceMethods(Source source) {
+    return SoraSourceMethods(source);
+  }
+
+  @override
+  //
+  String get id => 'sora';
+
+  @override
+  String get name => 'Sora';
 }
