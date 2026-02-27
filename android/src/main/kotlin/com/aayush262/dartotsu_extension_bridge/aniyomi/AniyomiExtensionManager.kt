@@ -27,10 +27,9 @@ class AniyomiExtensionManager(var context: Context) {
     lateinit var availableMangaExtensions: List<MangaExtension.Available>
     private val json: Json by injectLazy()
 
-    suspend fun fetchInstalledAnimeExtensions(): List<AnimeExtension.Installed> {
-        val sources = AnimeExtensionLoader.loadExtensions(context)
-        installedAnimeExtensions =
-            sources.filterIsInstance<AnimeLoadResult.Success>().map { it.extension }
+    fun fetchInstalledAnimeExtensions(path: String?): List<AnimeExtension.Installed> {
+        installedAnimeExtensions = AnimeExtensionLoader.loadExtensions(context, path)
+
         return installedAnimeExtensions
     }
 

@@ -7,7 +7,6 @@ class Source {
   String? iconUrl;
   String? version;
   String? versionLast;
-  ItemType? itemType;
   bool? isObsolete;
   String? repo;
   bool? hasUpdate;
@@ -24,12 +23,12 @@ class Source {
     this.isNsfw = false,
     this.version = "0.0.1",
     this.versionLast = "0.0.1",
-    this.itemType = ItemType.manga,
     this.isObsolete = false,
     this.repo,
     this.hasUpdate = false,
     this.apkUrl = '',
     this.apkName = '',
+    this.isShared = false,
   });
 
   Source.fromJson(Map<String, dynamic> json) {
@@ -38,7 +37,6 @@ class Source {
     apkUrl = json['apkUrl'];
     apkName = json['apkName'];
     id = json['id'].toString();
-    itemType = ItemType.values[json['itemType'] ?? 0];
     isNsfw = json['isNsfw'];
     lang = json['lang'];
     name = json['name'];
@@ -47,6 +45,7 @@ class Source {
     isObsolete = json['isObsolete'];
     repo = json['repo'];
     hasUpdate = json['hasUpdate'] ?? false;
+    isShared = json['isShared'] ?? false;
   }
 
   Map<String, dynamic> toJson() => {
@@ -60,27 +59,9 @@ class Source {
         'isNsfw': isNsfw,
         'version': version,
         'versionLast': versionLast,
-        'itemType': itemType?.index ?? 0,
         'isObsolete': isObsolete,
         'repo': repo,
         'hasUpdate': hasUpdate,
+        'isShared': isShared,
       };
-}
-
-enum ItemType {
-  manga,
-  anime,
-  novel;
-
-  @override
-  String toString() {
-    switch (this) {
-      case ItemType.manga:
-        return 'Manga';
-      case ItemType.anime:
-        return 'Anime';
-      case ItemType.novel:
-        return 'Novel';
-    }
-  }
 }

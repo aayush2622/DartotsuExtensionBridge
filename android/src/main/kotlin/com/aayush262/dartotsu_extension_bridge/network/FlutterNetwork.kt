@@ -1,6 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge.network
 
-import LogInterceptor
+import com.aayush262.dartotsu_extension_bridge.LogLevel
 import com.aayush262.dartotsu_extension_bridge.Logger
 import eu.kanade.tachiyomi.network.NetworkHelper
 import io.flutter.plugin.common.MethodChannel
@@ -34,9 +34,10 @@ object FlutterNetwork {
                 .addInterceptor(LogInterceptor())
                 .addInterceptor(CookieInterceptor(channel))
                 .build()
-            Logger.log("Flutter networking enabled");
+            Logger.log("Flutter networking enabled")
             return true
-        } catch (t: Throwable) {
+        } catch (e: Throwable) {
+            Logger.log("Failed to enable Flutter networking: ${e.message}", LogLevel.WARNING)
             return false
         }
     }

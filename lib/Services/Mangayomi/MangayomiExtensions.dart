@@ -1,12 +1,25 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 
+import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'MangayomiExtensionManager.dart';
+import 'MangayomiSourceMethods.dart';
 
 class MangayomiExtensions extends Extension {
   MangayomiExtensions() {
     initialize();
   }
+  @override
+  String get id => 'mangayomi';
+
+  @override
+  String get name => 'Mangayomi';
+
+  @override
+  SourceMethods createSourceMethods(Source source) =>
+      MangayomiSourceMethods(source);
 
   final _manager = Get.put(MangayomiExtensionManager());
 
@@ -15,15 +28,16 @@ class MangayomiExtensions extends Extension {
     if (isInitialized.value) return;
     isInitialized.value = true;
 
-    final settings = isar.bridgeSettings.getSync(26)!;
-
     await Future.wait([
       getInstalledAnimeExtensions(),
       getInstalledMangaExtensions(),
       getInstalledNovelExtensions(),
-      fetchAvailableAnimeExtensions(settings.mangayomiAnimeExtensions),
-      fetchAvailableMangaExtensions(settings.mangayomiMangaExtensions),
-      fetchAvailableNovelExtensions(settings.mangayomiNovelExtensions),
+      fetchAvailableAnimeExtensions(
+          getVal('mangayomiAnimeRepos', defaultValue: [])),
+      fetchAvailableMangaExtensions(
+          getVal('mangayomiMangaRepos', defaultValue: [])),
+      fetchAvailableNovelExtensions(
+          getVal('mangayomiNovelRepos', defaultValue: [])),
     ]);
   }
 
@@ -43,20 +57,17 @@ class MangayomiExtensions extends Extension {
     ItemType type,
     List<String>? repos,
   ) async {
-    final settings = isar.bridgeSettings.getSync(26)!;
-
     switch (type) {
       case ItemType.anime:
-        settings.mangayomiAnimeExtensions = repos ?? [];
+        unawaited(setVal('mangayomiAnimeRepos', repos));
         break;
       case ItemType.manga:
-        settings.mangayomiMangaExtensions = repos ?? [];
+        unawaited(setVal('mangayomiMangaRepos', repos));
         break;
       case ItemType.novel:
-        settings.mangayomiNovelExtensions = repos ?? [];
+        unawaited(setVal('mangayomiNovelRepos', repos));
         break;
     }
-    isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
 
     final sources = await _manager.fetchAvailableExtensionsStream(type, repos);
     final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();
@@ -77,11 +88,11 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<List<Source>> getInstalledAnimeExtensions() =>
+  Future<List<Source>> getInstalledAnimeExtensions({String? customPath}) =>
       _getInstalled(ItemType.anime);
 
   @override
-  Future<List<Source>> getInstalledMangaExtensions() =>
+  Future<List<Source>> getInstalledMangaExtensions({String? customPath}) =>
       _getInstalled(ItemType.manga);
 
   @override
@@ -106,7 +117,7 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<void> installSource(Source source) async {
+  Future<void> installSource(Source source, {String? customPath}) async {
     if (source.id?.isEmpty ?? true) {
       return Future.error('Source ID is required for installation.');
     }

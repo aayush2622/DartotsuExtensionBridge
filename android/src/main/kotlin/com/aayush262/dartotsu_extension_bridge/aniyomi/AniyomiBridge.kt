@@ -28,7 +28,7 @@ class AniyomiBridge(private val context: Context) {
     fun attach(binding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(
             binding.binaryMessenger,
-            "flutterKotlinBridge"
+            "aniyomiExtensionBridge"
         ).apply {
             setMethodCallHandler(Handler())
         }
@@ -64,9 +64,11 @@ class AniyomiBridge(private val context: Context) {
             "getPageList" to ::getPageList,
             "search" to ::search,
             "getPreference" to ::getPreference,
-            "saveSourcePreference" to ::saveSourcePreference
+            "saveSourcePreference" to ::saveSourcePreference,
+            "test" to ::test
         )
 
+        private fun test(call: MethodCall, result: MethodChannel.Result) = result.success(null)
 
         private fun media(sourceId: String, isAnime: Boolean) =
             if (isAnime) AnimeSourceMethods(sourceId) else MangaSourceMethods(sourceId)
@@ -91,8 +93,8 @@ class AniyomiBridge(private val context: Context) {
 
         private fun getInstalledAnimeExtensions(call: MethodCall, result: MethodChannel.Result) =
             launch(call,result) {
-
-                Injekt.get<AniyomiExtensionManager>().fetchInstalledAnimeExtensions().map { ext ->
+                val path = call.arguments as? String?
+                Injekt.get<AniyomiExtensionManager>().fetchInstalledAnimeExtensions(path).map { ext ->
                     val baseUrl = (ext.sources.firstOrNull() as? AnimeHttpSource)?.baseUrl.orEmpty()
                     mapOf(
                         "id" to ext.sources.first().id,
@@ -107,13 +109,14 @@ class AniyomiBridge(private val context: Context) {
                         "itemType" to 1,
                         "hasUpdate" to ext.hasUpdate,
                         "isObsolete" to ext.isObsolete,
-                        "isUnofficial" to ext.isUnofficial,
+                        "isShared" to ext.isShared,
                     )
                 }
             }
 
         private fun getInstalledMangaExtensions(call: MethodCall, result: MethodChannel.Result) =
             launch(call,result) {
+                val path = call.arguments as? String?
                 Injekt.get<AniyomiExtensionManager>().fetchInstalledMangaExtensions().map { ext ->
                     val baseUrl = (ext.sources.firstOrNull() as? HttpSource)?.baseUrl.orEmpty()
                     mapOf(
@@ -130,6 +133,7 @@ class AniyomiBridge(private val context: Context) {
                         "hasUpdate" to ext.hasUpdate,
                         "isObsolete" to ext.isObsolete,
                         "isUnofficial" to ext.isUnofficial,
+                        //"isShared" to ext.isShared,
                     )
                 }
             }

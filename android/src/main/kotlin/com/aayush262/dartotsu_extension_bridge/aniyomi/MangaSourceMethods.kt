@@ -1,6 +1,5 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
-import android.util.Log
 import com.aayush262.dartotsu_extension_bridge.Logger
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
@@ -11,6 +10,7 @@ import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.ConfigurableSource
+import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -22,6 +22,7 @@ import uy.kohesive.injekt.api.get
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
+@Suppress("PrivatePropertyName")
 class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMethods {
 
     private val source: CatalogueSource
@@ -52,7 +53,7 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
             source.getSearchManga(
                 page = page,
                 query = query,
-                filters = source.getFilterList()
+                filters = FilterList()
             )
         )
     }
@@ -141,14 +142,10 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
             override var genre: String? = runCatching { manga.genre }.getOrNull()
             override var status: Int = runCatching { manga.status }.getOrDefault(SAnime.UNKNOWN)
             override var thumbnail_url: String? = runCatching { manga.thumbnail_url }.getOrNull()
-            override var background_url: String?
-                get() = TODO("Not yet implemented")
-                set(value) {}
+            override var background_url: String? = null
             override var update_strategy: AnimeUpdateStrategy =
                 runCatching { AnimeUpdateStrategy.ALWAYS_UPDATE }.getOrDefault(AnimeUpdateStrategy.ALWAYS_UPDATE)
-            override var fetch_type: FetchType
-                get() = TODO("Not yet implemented")
-                set(value) {}
+            override var fetch_type: FetchType = runCatching { FetchType.Episodes }.getOrDefault(FetchType.Episodes)
             override var season_number: Double = runCatching { 1.0 }.getOrDefault(0.0)
             override var initialized: Boolean = runCatching { manga.initialized }.getOrDefault(false)
         }

@@ -1,9 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi.models
 
 import android.annotation.SuppressLint
-import com.aayush262.dartotsu_extension_bridge.aniyomi.models.extractLibVersion
-import com.aayush262.dartotsu_extension_bridge.aniyomi.models.toAnimeExtensionSources
-import com.aayush262.dartotsu_extension_bridge.aniyomi.models.toMangaExtensionSources
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.anime.model.AvailableAnimeSources
 import eu.kanade.tachiyomi.extension.manga.model.AvailableMangaSources

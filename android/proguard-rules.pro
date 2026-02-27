@@ -20,26 +20,25 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 -keepattributes Signature
--keep class uy.kohesive.injekt.** { *; }
--keep class eu.kanade.tachiyomi.** { *; }
--keep class com.aayush262.dartotsu_extension_bridge.** { *; }
--keep class kotlin.** { *; }
--dontwarn kotlin.**
--keep class kotlinx.** { *; }
+-keep,allowoptimization class uy.kohesive.injekt.** { public protected *; }
+-keep,allowoptimization class eu.kanade.tachiyomi.** { *; }
+-keep,allowoptimization class com.aayush262.dartotsu_extension_bridge.** { *; }
+-keep,allowoptimization class kotlin.** { public protected *; }
+-keep,allowoptimization class kotlinx.coroutines.** { public protected *; }
+-keep,allowoptimization class kotlinx.serialization.** { public protected *; }
+-keep,allowoptimization class app.cash.quickjs.** { public protected *; }
 -keepclassmembers class uy.kohesive.injekt.api.FullTypeReference {
     <init>(...);
 }
-
--keep class okhttp3.** { *; }
--dontwarn okhttp3.**
--keep class androidx.preference.** { *; }
+-dontobfuscate
+-keep,allowoptimization class okhttp3.** { public protected *; }
+-keep,allowoptimization class androidx.preference.** { public protected *; }
 # --- Okio (BufferedSource etc.) ---
--keep class okio.** { *; }
--dontwarn okio.**
+-keep,allowoptimization class okio.** { public protected *; }
 
 -keepattributes *Annotation*
 -keepattributes EnclosingMethod
--keep class org.jsoup.** { *; }
+-keep,allowoptimization class org.jsoup.** { *; }
 -keepclassmembers class org.jsoup.nodes.Document { *; }
 
 -keepattributes RuntimeVisibleAnnotations,AnnotationDefault

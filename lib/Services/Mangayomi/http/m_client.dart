@@ -6,7 +6,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart'
 import 'package:http/io_client.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
-import '../../../extension_bridge.dart';
+import '../../../ExtensionBridge.dart';
 import '../Eval/dart/model/m_source.dart';
 
 class MClient {
@@ -16,9 +16,11 @@ class MClient {
     MSource? source,
     Map<String, dynamic>? reqcopyWith,
   }) {
-    var client = reqcopyWith?["useDartHttpClient"] == true || httpClient == null
-        ? IOClient(HttpClient())
-        : httpClient;
+    var appHttpClient = DartotsuExtensionBridge.context.http;
+    var client =
+        reqcopyWith?["useDartHttpClient"] == true || appHttpClient == null
+            ? IOClient(HttpClient())
+            : appHttpClient;
     return InterceptedClient.build(client: client, interceptors: []);
   }
 
@@ -47,22 +49,20 @@ class MClient {
   }) async {
     List<String> cookies = [];
     if (Platform.isLinux) {
-      cookies =
-          cookie
+      cookies = cookie
               ?.split(RegExp('(?<=)(,)(?=[^;]+?=)'))
               .where((cookie) => cookie.isNotEmpty)
               .toList() ??
           [];
     } else {
-      cookies =
-          (await flutter_inappwebview.CookieManager.instance(
-                webViewEnvironment: webViewEnvironment,
-              ).getCookies(
-                url: flutter_inappwebview.WebUri(url),
-                webViewController: webViewController,
-              ))
-              .map((e) => "${e.name}=${e.value}")
-              .toList();
+      cookies = (await flutter_inappwebview.CookieManager.instance(
+        webViewEnvironment: DartotsuExtensionBridge.context.webViewEnvironment,
+      ).getCookies(
+        url: flutter_inappwebview.WebUri(url),
+        webViewController: webViewController,
+      ))
+          .map((e) => "${e.name}=${e.value}")
+          .toList();
     }
     if (cookies.isNotEmpty) {
       final host = Uri.parse(url).host;

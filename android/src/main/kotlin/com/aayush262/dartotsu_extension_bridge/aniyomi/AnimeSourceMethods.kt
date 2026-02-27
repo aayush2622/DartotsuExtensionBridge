@@ -3,6 +3,7 @@ package com.aayush262.dartotsu_extension_bridge.aniyomi
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
+import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
@@ -10,7 +11,6 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
-import eu.kanade.tachiyomi.source.model.SManga
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -40,7 +40,7 @@ class AnimeSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
         source.getSearchAnime(
             page = page,
             query = query,
-            filters = source.getFilterList()
+            filters = AnimeFilterList()
         )
 
     override suspend fun getDetails(media: SAnime): SAnime = source.getAnimeDetails(media)

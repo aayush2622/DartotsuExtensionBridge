@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:device_apps/device_apps.dart';
@@ -10,12 +11,23 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import '../../Logger.dart';
+import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
+import 'AniyomiSourceMethods.dart';
 
 class AniyomiExtensions extends Extension {
   AniyomiExtensions() {
     initialize();
   }
+  @override
+  String get id => 'aniyomi';
+
+  @override
+  String get name => 'Aniyomi';
+
+  @override
+  SourceMethods createSourceMethods(Source source) =>
+      AniyomiSourceMethods(source);
 
   static const platform = MethodChannel('aniyomiExtensionBridge');
   final Rx<List<Source>> availableAnimeExtensionsUnmodified = Rx([]);
@@ -29,11 +41,12 @@ class AniyomiExtensions extends Extension {
   Future<void> initialize() async {
     if (isInitialized.value) return;
     isInitialized.value = true;
-    var settings = isar.bridgeSettings.getSync(26)!;
     getInstalledAnimeExtensions();
     getInstalledMangaExtensions();
-    fetchAvailableAnimeExtensions(settings.aniyomiAnimeExtensions);
-    fetchAvailableMangaExtensions(settings.aniyomiMangaExtensions);
+    fetchAvailableAnimeExtensions(
+        getVal('aniyomiAnimeRepos', defaultValue: []));
+    fetchAvailableMangaExtensions(
+        getVal('aniyomiMangaRepos', defaultValue: []));
   }
 
   @override
@@ -49,19 +62,16 @@ class AniyomiExtensions extends Extension {
     ItemType type,
     List<String>? repos,
   ) async {
-    final settings = isar.bridgeSettings.getSync(26)!;
-
     switch (type) {
       case ItemType.anime:
-        settings.aniyomiAnimeExtensions = repos ?? [];
+        unawaited(setVal('aniyomiAnimeRepos', repos));
         break;
       case ItemType.manga:
-        settings.aniyomiMangaExtensions = repos ?? [];
+        unawaited(setVal('aniyomiMangaRepos', repos));
         break;
       case ItemType.novel:
         break;
     }
-    isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
 
     final sources = await _loadExtensions(method, repos: repos);
     final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();
@@ -80,17 +90,26 @@ class AniyomiExtensions extends Extension {
   }
 
   @override
-  Future<List<Source>> getInstalledAnimeExtensions() {
-    return _getInstalled('getInstalledAnimeExtensions', ItemType.anime);
+  Future<List<Source>> getInstalledAnimeExtensions({String? customPath}) {
+    return _getInstalled(
+      'getInstalledAnimeExtensions',
+      ItemType.anime,
+      customPath: customPath,
+    );
   }
 
   @override
-  Future<List<Source>> getInstalledMangaExtensions() {
-    return _getInstalled('getInstalledMangaExtensions', ItemType.manga);
+  Future<List<Source>> getInstalledMangaExtensions({String? customPath}) {
+    return _getInstalled(
+      'getInstalledMangaExtensions',
+      ItemType.manga,
+      customPath: customPath,
+    );
   }
 
-  Future<List<Source>> _getInstalled(String method, ItemType type) async {
-    final sources = await _loadExtensions(method);
+  Future<List<Source>> _getInstalled(String method, ItemType type,
+      {String? customPath}) async {
+    final sources = await _loadExtensions(method, customPath: customPath);
     getInstalledRx(type).value = sources;
     checkForUpdates(type);
     return sources;
@@ -99,9 +118,11 @@ class AniyomiExtensions extends Extension {
   Future<List<Source>> _loadExtensions(
     String method, {
     List<String>? repos,
+    String? customPath,
   }) async {
     try {
-      final List<dynamic> result = await platform.invokeMethod(method, repos);
+      final List<dynamic> result =
+          await platform.invokeMethod(method, repos ?? customPath);
       final parsed = await compute(_parseSources, result);
       return parsed;
     } catch (e) {
@@ -116,13 +137,12 @@ class AniyomiExtensions extends Extension {
         map['iconUrl'] ?? '',
         map['apkName'] ?? '',
       );
-      map['extensionType'] = 1;
       return Source.fromJson(map);
     }).toList();
   }
 
   @override
-  Future<void> installSource(Source source) async {
+  Future<void> installSource(Source source, {String? customPath}) async {
     if (source.apkUrl == null) {
       return Future.error('Source APK URL is required for installation.');
     }
