@@ -12,23 +12,19 @@ import 'Settings/KvStore.dart';
 class ExtensionManager extends GetxController {
   final managers = <Extension>[].obs;
   late final Rx<Extension> current;
-
+  final key = 'currentManager';
   @override
   void onInit() {
     super.onInit();
-
-    managers.assignAll(defaultManagers());
-
-    final savedId = getVal('currentManager', defaultValue: 'mangayomi');
-
-    current = Rx(_findById(savedId) ?? managers.first);
+    managers.assignAll(_extensionManagers);
+    current = Rx(_findById(getVal(key)) ?? managers.first);
   }
 
   void switchManager(String id) {
     final next = _findById(id);
     if (next == null) return;
     current.value = next;
-    setVal('currentManager', id);
+    setVal(key, id);
   }
 
   T? find<T extends Extension>() {
@@ -49,7 +45,7 @@ class ExtensionManager extends GetxController {
   Extension? _findById(String? id) =>
       managers.firstWhereOrNull((m) => m.id == id);
 
-  List<Extension> defaultManagers() {
+  List<Extension> get _extensionManagers {
     return [
       MangayomiExtensions(),
       if (Platform.isAndroid) AniyomiExtensions(),
@@ -59,6 +55,8 @@ class ExtensionManager extends GetxController {
 
 extension SourceExecution on Source {
   SourceMethods get methods {
+    if (this is SourceMethods) return this as SourceMethods;
+
     final controller = Get.find<ExtensionManager>();
     final manager = controller.current.value;
     return manager.createSourceMethods(this);

@@ -10,9 +10,7 @@ class test {
   Future<void> testF() async {
     final extensionManager =
         Get.find<AniyomiExtensions>(tag: 'AniyomiExtensions');
-    final extensions = await extensionManager.getInstalledAnimeExtensions(
-      customPath: "/storage/emulated/0/Dartotsu",
-    );
+    final extensions = await extensionManager.getInstalledAnimeExtensions();
     for (var extension in extensions) {
       print('Name: ${extension.name}');
       print('Version: ${extension.apkName}');

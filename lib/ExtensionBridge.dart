@@ -117,6 +117,27 @@ class DartotsuExtensionBridge {
   };
 }
 
+/// {@macro get_directory_contract}
+typedef GetDirectory = Future<Directory?> Function({
+  String? subPath,
+  bool useCustomPath,
+  bool useSystemPath,
+});
+
+class BridgeContext {
+  final Isar isar;
+  final Client? http;
+  final WebViewEnvironment? webViewEnvironment;
+  final GetDirectory getDirectory;
+
+  const BridgeContext({
+    required this.isar,
+    this.http,
+    this.webViewEnvironment,
+    required this.getDirectory,
+  });
+}
+
 /// {@template get_directory_contract}
 /// Resolves directories used by the Dartotsu Extension Bridge.
 ///
@@ -146,22 +167,3 @@ class DartotsuExtensionBridge {
 /// }
 /// ```
 /// {@endtemplate}
-typedef GetDirectory = Future<Directory?> Function({
-  String? subPath,
-  bool useCustomPath,
-  bool useSystemPath,
-});
-
-class BridgeContext {
-  final Isar isar;
-  final Client? http;
-  final WebViewEnvironment? webViewEnvironment;
-  final GetDirectory getDirectory;
-
-  const BridgeContext({
-    required this.isar,
-    this.http,
-    this.webViewEnvironment,
-    required this.getDirectory,
-  });
-}

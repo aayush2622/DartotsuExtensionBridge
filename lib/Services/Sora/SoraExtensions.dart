@@ -8,6 +8,15 @@ import 'SoraSourceMethods.dart';
 
 class SoraExtensions extends Extension {
   @override
+  String get id => 'sora';
+
+  @override
+  String get name => 'Sora';
+
+  @override
+  SourceMethods createSourceMethods(Source source) => SoraSourceMethods(source);
+
+  @override
   Future<List<Source>> fetchAvailableAnimeExtensions(
     List<String>? repos,
   ) async {
@@ -52,16 +61,4 @@ class SoraExtensions extends Extension {
   Future<void> updateSource(Source source) {
     throw UnimplementedError();
   }
-
-  @override
-  SourceMethods createSourceMethods(Source source) {
-    return SoraSourceMethods(source);
-  }
-
-  @override
-  //
-  String get id => 'sora';
-
-  @override
-  String get name => 'Sora';
 }

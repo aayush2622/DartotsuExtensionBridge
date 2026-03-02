@@ -4,9 +4,10 @@ import '../Models/Source.dart';
 import 'SourceMethods.dart';
 
 abstract class Extension {
+  var isInitialized = false.obs;
+
   String get id;
   String get name;
-  var isInitialized = false.obs;
   bool get supportsAnime => true;
   bool get supportsManga => true;
   bool get supportsNovel => true;
@@ -22,16 +23,14 @@ abstract class Extension {
 
   /// Returns a list of installed anime extensions.
   /// If [customPath] is provided, it will look for extensions in that path.
-  Future<List<Source>> getInstalledAnimeExtensions({String? customPath}) =>
-      Future.value([]);
+  Future<List<Source>> getInstalledAnimeExtensions() => Future.value([]);
 
   Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) =>
       Future.value([]);
 
   /// Returns a list of installed manga extensions.
   /// If [customPath] is provided, it will look for extensions in that path.
-  Future<List<Source>> getInstalledMangaExtensions({String? customPath}) =>
-      Future.value([]);
+  Future<List<Source>> getInstalledMangaExtensions() => Future.value([]);
 
   Future<List<Source>> fetchAvailableMangaExtensions(List<String>? repos) =>
       Future.value([]);
