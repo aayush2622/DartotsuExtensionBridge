@@ -7,7 +7,7 @@ import '../Models/SourcePreference.dart';
 import '../Models/Video.dart';
 
 abstract class SourceMethods {
-  late Source source;
+  Source get source;
 
   Future<Pages> getPopular(int page);
 

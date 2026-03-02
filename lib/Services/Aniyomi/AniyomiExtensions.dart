@@ -90,26 +90,26 @@ class AniyomiExtensions extends Extension {
   }
 
   @override
-  Future<List<Source>> getInstalledAnimeExtensions({String? customPath}) {
+  Future<List<Source>> getInstalledAnimeExtensions() {
     return _getInstalled(
       'getInstalledAnimeExtensions',
       ItemType.anime,
-      customPath: customPath,
     );
   }
 
   @override
-  Future<List<Source>> getInstalledMangaExtensions({String? customPath}) {
+  Future<List<Source>> getInstalledMangaExtensions() {
     return _getInstalled(
       'getInstalledMangaExtensions',
       ItemType.manga,
-      customPath: customPath,
     );
   }
 
-  Future<List<Source>> _getInstalled(String method, ItemType type,
-      {String? customPath}) async {
-    final sources = await _loadExtensions(method, customPath: customPath);
+  Future<List<Source>> _getInstalled(
+    String method,
+    ItemType type,
+  ) async {
+    final sources = await _loadExtensions(method);
     getInstalledRx(type).value = sources;
     checkForUpdates(type);
     return sources;
@@ -118,11 +118,9 @@ class AniyomiExtensions extends Extension {
   Future<List<Source>> _loadExtensions(
     String method, {
     List<String>? repos,
-    String? customPath,
   }) async {
     try {
-      final List<dynamic> result =
-          await platform.invokeMethod(method, repos ?? customPath);
+      final List<dynamic> result = await platform.invokeMethod(method, repos);
       final parsed = await compute(_parseSources, result);
       return parsed;
     } catch (e) {
