@@ -8,7 +8,7 @@ import '../../dartotsu_extension_bridge.dart';
 import 'http/m_client.dart';
 import 'lib.dart';
 
-class MangayomiExtensionManager extends GetxController {
+class MangayomiExtensionManager {
   final installedAnimeExtensions = Rx<List<MSource>>([]);
   final availableAnimeExtensions = Rx<List<MSource>>([]);
   final installedMangaExtensions = Rx<List<MSource>>([]);
@@ -17,9 +17,7 @@ class MangayomiExtensionManager extends GetxController {
   final availableNovelExtensions = Rx<List<MSource>>([]);
   final http = MClient.init();
 
-  @override
-  void onInit() {
-    super.onInit();
+  MangayomiExtensionManager() {
     installedAnimeExtensions.bindStream(getExtensionsStream(ItemType.anime));
     installedMangaExtensions.bindStream(getExtensionsStream(ItemType.manga));
     installedNovelExtensions.bindStream(getExtensionsStream(ItemType.novel));

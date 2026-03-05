@@ -112,7 +112,7 @@ class DartotsuExtensionBridge {
     KvEntrySchema,
   ];
 
-  static void Function(String log) onLog = (log) {
+  static void Function(String log, bool show) onLog = (log, _) {
     debugPrint('DartotsuExtensionBridge: $log');
   };
 }

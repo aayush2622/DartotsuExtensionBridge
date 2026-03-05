@@ -7,22 +7,27 @@ import 'Extensions/SourceMethods.dart';
 import 'Models/Source.dart';
 import 'Services/Aniyomi/AniyomiExtensions.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
+import 'Services/Sora/SoraExtensions.dart';
 import 'Settings/KvStore.dart';
 
 class ExtensionManager extends GetxController {
   final managers = <Extension>[].obs;
   late final Rx<Extension> current;
   final key = 'currentManager';
+
   @override
   void onInit() {
     super.onInit();
     managers.assignAll(_extensionManagers);
-    current = Rx(_findById(getVal(key)) ?? managers.first);
+    current = get<SoraExtensions>()
+        .obs; //Rx(_findById(getVal(key)) ?? managers.first);
+    current.value.initialize();
   }
 
   void switchManager(String id) {
     final next = _findById(id);
     if (next == null) return;
+    next.initialize();
     current.value = next;
     setVal(key, id);
   }
@@ -37,7 +42,8 @@ class ExtensionManager extends GetxController {
   T get<T extends Extension>() {
     final result = find<T>();
     if (result == null) {
-      throw Exception('Extension manager of type $T not registered');
+      throw Exception(
+          'Extension manager of type $T not registered \nPerhaps $T is not supported on ${Platform.operatingSystem}?');
     }
     return result;
   }
@@ -49,6 +55,7 @@ class ExtensionManager extends GetxController {
     return [
       MangayomiExtensions(),
       if (Platform.isAndroid) AniyomiExtensions(),
+      SoraExtensions(),
     ];
   }
 }

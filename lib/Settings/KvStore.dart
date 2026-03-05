@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:isar_community/isar.dart';
 
+import '../Logger.dart';
 import '../dartotsu_extension_bridge.dart';
 
 part 'KvStore.g.dart';
@@ -19,22 +20,14 @@ class KvEntry {
 class KvStore {
   static final Isar _isar = DartotsuExtensionBridge.context.isar;
 
-  static Future<void> set(String key, dynamic value) async {
-    final entry = KvEntry()
-      ..key = key
-      ..value = _encode(value);
-
-    await _isar.writeTxn(() async {
-      await _isar.kvEntrys.put(entry);
-    });
-  }
-
   static void setSync(String key, dynamic value) {
-    final entry = KvEntry()
-      ..key = key
-      ..value = _encode(value);
-
     _isar.writeTxnSync(() {
+      final existing = _isar.kvEntrys.filter().keyEqualTo(key).findFirstSync();
+
+      final entry = existing ?? KvEntry();
+      entry.key = key;
+      entry.value = _encode(value);
+
       _isar.kvEntrys.putSync(entry);
     });
   }
@@ -43,7 +36,32 @@ class KvStore {
     final entry = _isar.kvEntrys.filter().keyEqualTo(key).findFirstSync();
 
     if (entry == null) return null;
-    return _decode(entry.value) as T?;
+
+    final decoded = _decode(entry.value);
+
+    // Direct match
+    if (decoded is T) return decoded;
+
+    // Handle List<T>
+    if (decoded is List) {
+      if (T.toString() == 'List<String>') {
+        return List<String>.from(decoded) as T;
+      }
+      if (T.toString() == 'List<int>') {
+        return List<int>.from(decoded) as T;
+      }
+      if (T.toString() == 'List<double>') {
+        return List<double>.from(decoded) as T;
+      }
+      if (T.toString() == 'List<bool>') {
+        return List<bool>.from(decoded) as T;
+      }
+    }
+
+    throw StateError(
+      'Stored value for key "$key" is not of expected type $T '
+      '(actual: ${decoded.runtimeType})',
+    );
   }
 
   static Future<void> remove(String key) async {
@@ -52,9 +70,7 @@ class KvStore {
     });
   }
 
-  static String _encode(dynamic value) {
-    return jsonEncode(_wrap(value));
-  }
+  static String _encode(dynamic value) => jsonEncode(_wrap(value));
 
   static dynamic _decode(String raw) {
     final data = jsonDecode(raw);
@@ -106,15 +122,15 @@ T? getVal<T>(String key, {T? defaultValue}) {
   try {
     return KvStore.get<T>(key) ?? defaultValue;
   } catch (e) {
-    DartotsuExtensionBridge.onLog('Failed to get value for key "$key": $e');
+    Logger.log('Failed to get value for key "$key": $e');
     return defaultValue;
   }
 }
 
-Future<void> setVal(String key, dynamic value) async {
+void setVal(String key, dynamic value) async {
   try {
-    await KvStore.set(key, value);
+    KvStore.setSync(key, value);
   } catch (e) {
-    DartotsuExtensionBridge.onLog('Failed to set value for key "$key": $e');
+    Logger.log('Failed to set value for key "$key": $e');
   }
 }

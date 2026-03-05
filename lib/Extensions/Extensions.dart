@@ -1,100 +1,119 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../Models/Source.dart';
 import 'SourceMethods.dart';
 
-abstract class Extension {
-  var isInitialized = false.obs;
+class Repo {
+  final String url;
 
+  final String? name;
+  final String? iconUrl;
+
+  Repo({
+    required this.url,
+    this.name,
+    this.iconUrl,
+  });
+
+  factory Repo.fromJson(Map<String, dynamic> json) {
+    return Repo(
+      url: json['url'],
+      name: json['name'],
+      iconUrl: json['iconUrl'],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'url': url,
+        'name': name,
+        'iconUrl': iconUrl,
+      };
+}
+
+abstract class Extension {
   String get id;
   String get name;
+
   bool get supportsAnime => true;
   bool get supportsManga => true;
   bool get supportsNovel => true;
 
-  final Rx<List<Source>> installedAnimeExtensions = Rx([]);
-  final Rx<List<Source>> installedMangaExtensions = Rx([]);
-  final Rx<List<Source>> installedNovelExtensions = Rx([]);
-  final Rx<List<Source>> availableAnimeExtensions = Rx([]);
-  final Rx<List<Source>> availableMangaExtensions = Rx([]);
-  final Rx<List<Source>> availableNovelExtensions = Rx([]);
-
   SourceMethods createSourceMethods(Source source);
 
-  /// Returns a list of installed anime extensions.
-  /// If [customPath] is provided, it will look for extensions in that path.
-  Future<List<Source>> getInstalledAnimeExtensions() => Future.value([]);
+  final Map<ItemType, Rx<List<Source>>> _installed = {
+    ItemType.anime: Rx<List<Source>>([]),
+    ItemType.manga: Rx<List<Source>>([]),
+    ItemType.novel: Rx<List<Source>>([]),
+  };
 
-  Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) =>
-      Future.value([]);
+  final Map<ItemType, Rx<List<Source>>> _available = {
+    ItemType.anime: Rx<List<Source>>([]),
+    ItemType.manga: Rx<List<Source>>([]),
+    ItemType.novel: Rx<List<Source>>([]),
+  };
 
-  /// Returns a list of installed manga extensions.
-  /// If [customPath] is provided, it will look for extensions in that path.
-  Future<List<Source>> getInstalledMangaExtensions() => Future.value([]);
+  final Map<ItemType, Rx<List<Repo>>> _repos = {
+    ItemType.anime: Rx<List<Repo>>([]),
+    ItemType.manga: Rx<List<Repo>>([]),
+    ItemType.novel: Rx<List<Repo>>([]),
+  };
 
-  Future<List<Source>> fetchAvailableMangaExtensions(List<String>? repos) =>
-      Future.value([]);
+  @mustCallSuper
+  Future<void> initialize() async {
+    try {
+      if (supportsAnime) {
+        unawaited(fetchInstalledAnimeExtensions());
+        unawaited(fetchAnimeExtensions());
+      }
 
-  Future<List<Source>> getInstalledNovelExtensions() => Future.value([]);
+      if (supportsManga) {
+        unawaited(fetchInstalledMangaExtensions());
+        unawaited(fetchMangaExtensions());
+      }
 
-  Future<List<Source>> fetchAvailableNovelExtensions(List<String>? repos) =>
-      Future.value([]);
+      if (supportsNovel) {
+        unawaited(fetchInstalledNovelExtensions());
+        unawaited(fetchNovelExtensions());
+      }
+    } catch (e, s) {
+      debugPrint('Error initializing extension $id: $e\n$s');
+    }
+  }
 
-  Future<void> initialize();
+  Future<void> addRepo(String repoUrl, ItemType type);
 
-  /// Installs the given [source]. If [customPath] is provided, it will install the source in that path.
-  Future<void> installSource(Source source, {String? customPath});
+  Future<void> removeRepo(String repoUrl, ItemType type);
+
+  Future<void> installSource(Source source);
 
   Future<void> uninstallSource(Source source);
 
   Future<void> updateSource(Source source);
 
-  Future<void> onRepoSaved(List<String> repoUrl, ItemType type) async {
-    if (repoUrl.isEmpty) return;
-    switch (type) {
-      case ItemType.anime:
-        await fetchAvailableAnimeExtensions(repoUrl);
-        break;
-      case ItemType.manga:
-        await fetchAvailableMangaExtensions(repoUrl);
-        break;
-      case ItemType.novel:
-        await fetchAvailableNovelExtensions(repoUrl);
-        break;
-    }
-  }
+  Future<void> fetchAnimeExtensions();
 
-  Rx<List<Source>> getSortedInstalledExtension(ItemType itemType) {
-    switch (itemType) {
-      case ItemType.anime:
-        return installedAnimeExtensions;
-      case ItemType.manga:
-        return installedMangaExtensions;
-      case ItemType.novel:
-        return installedNovelExtensions;
-    }
-  }
+  Future<void> fetchMangaExtensions();
 
-  Rx<List<Source>> getAvailableRx(ItemType type) {
-    switch (type) {
-      case ItemType.anime:
-        return availableAnimeExtensions;
-      case ItemType.manga:
-        return availableMangaExtensions;
-      case ItemType.novel:
-        return availableNovelExtensions;
-    }
-  }
+  Future<void> fetchNovelExtensions();
 
-  Rx<List<Source>> getInstalledRx(ItemType type) {
-    switch (type) {
-      case ItemType.anime:
-        return installedAnimeExtensions;
-      case ItemType.manga:
-        return installedMangaExtensions;
-      case ItemType.novel:
-        return installedNovelExtensions;
-    }
+  Future<void> fetchInstalledAnimeExtensions();
+
+  Future<void> fetchInstalledMangaExtensions();
+
+  Future<void> fetchInstalledNovelExtensions();
+
+  /// Helpers
+  Rx<List<Source>> getInstalledRx(ItemType type) => _installed[type]!;
+
+  Rx<List<Source>> getAvailableRx(ItemType type) => _available[type]!;
+
+  Rx<List<Repo>> getReposRx(ItemType type) => _repos[type]!;
+
+  Future<void> setInstalled(ItemType type, List<Source> sources) async {
+    getInstalledRx(type).value = sources;
   }
 
   int compareVersions(String v1, String v2) {
@@ -104,8 +123,10 @@ abstract class Extension {
     for (int i = 0; i < a.length || i < b.length; i++) {
       final n1 = i < a.length ? a[i] ?? 0 : 0;
       final n2 = i < b.length ? b[i] ?? 0 : 0;
+
       if (n1 != n2) return n1.compareTo(n2);
     }
+
     return 0;
   }
 }
