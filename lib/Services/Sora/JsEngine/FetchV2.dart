@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:fjs/fjs.dart';
 import 'package:http/http.dart' as http;
 
-import '../Mangayomi/http/m_client.dart';
+import '../../Mangayomi/http/m_client.dart';
 
 class FetchV2 {
   final JsEngine engine;

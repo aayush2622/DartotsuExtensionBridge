@@ -7,8 +7,8 @@ class Logger {
     initKotlinLogging();
   }
 
-  static void log(String message) {
-    DartotsuExtensionBridge.onLog(message);
+  static void log(String message, {bool show = false}) {
+    DartotsuExtensionBridge.onLog(message, show);
   }
 
   static void initKotlinLogging() {

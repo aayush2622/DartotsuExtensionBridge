@@ -14,6 +14,7 @@ import '../../Logger.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'AniyomiSourceMethods.dart';
+import 'Models/Source.dart';
 
 class AniyomiExtensions extends Extension {
   AniyomiExtensions() {
@@ -38,18 +39,6 @@ class AniyomiExtensions extends Extension {
   bool get supportsNovel => false;
 
   @override
-  Future<void> initialize() async {
-    if (isInitialized.value) return;
-    isInitialized.value = true;
-    getInstalledAnimeExtensions();
-    getInstalledMangaExtensions();
-    fetchAvailableAnimeExtensions(
-        getVal('aniyomiAnimeRepos', defaultValue: []));
-    fetchAvailableMangaExtensions(
-        getVal('aniyomiMangaRepos', defaultValue: []));
-  }
-
-  @override
   Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) =>
       _fetchAvailable('fetchAnimeExtensions', ItemType.anime, repos);
 
@@ -64,10 +53,10 @@ class AniyomiExtensions extends Extension {
   ) async {
     switch (type) {
       case ItemType.anime:
-        unawaited(setVal('aniyomiAnimeRepos', repos));
+        setVal('aniyomiAnimeRepos', repos);
         break;
       case ItemType.manga:
-        unawaited(setVal('aniyomiMangaRepos', repos));
+        setVal('aniyomiMangaRepos', repos);
         break;
       case ItemType.novel:
         break;
@@ -77,9 +66,9 @@ class AniyomiExtensions extends Extension {
     final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();
 
     final unmodifiedList = sources.map((e) {
-      var map = e.toJson();
-      map['extensionType'] = 1;
-      return Source.fromJson(map);
+      final src = e as ASource;
+      src.extensionType = 1;
+      return src;
     }).toList();
     final list =
         unmodifiedList.where((s) => !installedIds.contains(s.id)).toList();
@@ -131,24 +120,28 @@ class AniyomiExtensions extends Extension {
   static List<Source> _parseSources(List<dynamic> data) {
     return data.map((e) {
       final map = Map<String, dynamic>.from(e);
+
       map['apkUrl'] = getAnimeApkUrl(
         map['iconUrl'] ?? '',
         map['apkName'] ?? '',
       );
-      return Source.fromJson(map);
+
+      return ASource.fromJson(map);
     }).toList();
   }
 
   @override
   Future<void> installSource(Source source, {String? customPath}) async {
-    if (source.apkUrl == null) {
+    var aSource = source as ASource;
+    if (aSource.apkUrl == null) {
       return Future.error('Source APK URL is required for installation.');
     }
 
     try {
-      final packageName = source.apkUrl!.split('/').last.replaceAll('.apk', '');
+      final packageName =
+          aSource.apkUrl!.split('/').last.replaceAll('.apk', '');
 
-      final response = await http.get(Uri.parse(source.apkUrl!));
+      final response = await http.get(Uri.parse(aSource.apkUrl!));
 
       if (response.statusCode != 200) {
         throw Exception('Failed to download APK: HTTP ${response.statusCode}');
@@ -174,9 +167,9 @@ class AniyomiExtensions extends Extension {
           'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
         );
       }
-      final rx = getAvailableRx(source.itemType!);
-      rx.value = rx.value.where((s) => s.id != source.id).toList();
-      switch (source.itemType) {
+      final rx = getAvailableRx(aSource.itemType!);
+      rx.value = rx.value.where((s) => s.id != aSource.id).toList();
+      switch (aSource.itemType) {
         case ItemType.anime:
           getInstalledAnimeExtensions(); // because it also update extension on kotlin side
           break;
@@ -247,79 +240,29 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<void> updateSource(Source source) async {
-    if (source.apkUrl == null) {
-      return Future.error('Source APK URL is required for installation.');
-    }
-
-    try {
-      final packageName = source.apkUrl!.split('/').last.replaceAll('.apk', '');
-
-      final response = await http.get(Uri.parse(source.apkUrl!));
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to download APK: HTTP ${response.statusCode}');
-      }
-
-      final tempDir = await getTemporaryDirectory();
-      final apkFileName = '$packageName.apk';
-      final apkFile = File(path.join(tempDir.path, apkFileName));
-
-      await apkFile.writeAsBytes(response.bodyBytes);
-
-      final result = await InstallPlugin.installApk(
-        apkFile.path,
-        appId: packageName,
-      );
-      if (result['isSuccess'] != true) {
-        Logger.log(
-          'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
-        );
-      }
-      if (await apkFile.exists()) {
-        await apkFile.delete();
-      }
-
-      switch (source.itemType) {
-        case ItemType.anime:
-          getInstalledAnimeExtensions(); // because it also update extension on kotlin side
-          break;
-        case ItemType.manga:
-          getInstalledMangaExtensions();
-          break;
-        case ItemType.novel:
-          break;
-        default:
-          throw Exception('Unsupported item type: ${source.itemType}');
-      }
-      Logger.log('Successfully update package: $packageName');
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error installing source: $e');
-      }
-      rethrow;
-    }
+    await installSource(source);
   }
 
   void _removeFromInstalledList(Source source) {
-    switch (source.itemType) {
+    /* switch (source.itemType) {
       case ItemType.anime:
         installedAnimeExtensions.value = installedAnimeExtensions.value
-            .where((e) => e.name != source.name)
+            .where((e) => e.id != source.id)
             .toList();
         break;
       case ItemType.manga:
         installedMangaExtensions.value = installedMangaExtensions.value
-            .where((e) => e.name != source.name)
+            .where((e) => e.id != source.id)
             .toList();
         break;
       case ItemType.novel:
         installedNovelExtensions.value = installedNovelExtensions.value
-            .where((e) => e.name != source.name)
+            .where((e) => e.id != source.id)
             .toList();
         break;
       case null:
         break;
-    }
+    }*/
   }
 
   Rx<List<Source>> getAvailableUnmodified(ItemType type) {
@@ -338,8 +281,9 @@ class AniyomiExtensions extends Extension {
       for (var s in getAvailableUnmodified(type).value) s.id: s,
     };
 
-    final updated = getInstalledRx(type).value.map((installed) {
-      final avail = availableMap[installed.id ?? ''];
+    final updated = getInstalledRx(type).value.map((i) {
+      var installed = i as ASource;
+      final avail = availableMap[installed.id ?? ''] as ASource?;
       if (avail != null &&
           installed.version != null &&
           avail.version != null &&
@@ -364,5 +308,53 @@ class AniyomiExtensions extends Extension {
 
     final cleanedUrl = baseUrl.substring(0, lastSlash);
     return '$cleanedUrl/$apkName';
+  }
+
+  @override
+  Future<void> addRepo(String repoUrl, ItemType type) {
+    // TODO: implement addRepo
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchAnimeExtensions() {
+    // TODO: implement fetchAnimeExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchInstalledAnimeExtensions() {
+    // TODO: implement fetchInstalledAnimeExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchInstalledMangaExtensions() {
+    // TODO: implement fetchInstalledMangaExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchInstalledNovelExtensions() {
+    // TODO: implement fetchInstalledNovelExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchMangaExtensions() {
+    // TODO: implement fetchMangaExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchNovelExtensions() {
+    // TODO: implement fetchNovelExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> removeRepo(String repoUrl, ItemType type) {
+    // TODO: implement removeRepo
+    throw UnimplementedError();
   }
 }

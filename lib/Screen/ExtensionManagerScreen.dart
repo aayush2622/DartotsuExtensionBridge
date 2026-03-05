@@ -3,34 +3,38 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../ExtensionManager.dart';
+import '../Extensions/Extensions.dart';
 import '../Models/Source.dart';
 
-///Extend this class to create a screen for managing extensions.
-///If you don't like manual labor
 abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     with TickerProviderStateMixin {
   late TabController _tabBarController;
-  var manager = Get.find<ExtensionManager>().current.value;
+
+  final managerController = Get.find<ExtensionManager>();
+
   final _selectedLanguage = 'All'.obs;
   final _textEditingController = TextEditingController();
+
+  Extension get manager => managerController.current.value;
 
   @override
   void initState() {
     super.initState();
+
     int totalTabs = 0;
     if (manager.supportsAnime) totalTabs += 2;
     if (manager.supportsManga) totalTabs += 2;
     if (manager.supportsNovel) totalTabs += 2;
+
     _tabBarController = TabController(length: totalTabs, vsync: this);
-    _tabBarController.animateTo(0);
   }
 
   @override
   void dispose() {
-    super.dispose();
     _tabBarController.dispose();
     _textEditingController.dispose();
     _selectedLanguage.close();
+    super.dispose();
   }
 
   Text get title;
@@ -41,7 +45,6 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     BuildContext context,
     TabController tabController,
     String currentLanguage,
-    Future<void> Function(List<String> repoUrl, ItemType type) onRepoSaved,
     void Function(String currentLanguage) onLanguageChanged,
   );
 
@@ -49,7 +52,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
 
   Widget searchBar(
     BuildContext context,
-    TextEditingController textEditingController,
+    TextEditingController controller,
     void Function() onChanged,
   );
 
@@ -67,91 +70,70 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
           PointerDeviceKind.trackpad,
         },
       ),
-      child: DefaultTabController(
-        length: 6,
-        child: Scaffold(
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            title: title,
-            iconTheme: IconThemeData(color: theme.primary),
-            actions: [
-              ...extensionActions(
-                context,
-                _tabBarController,
-                _selectedLanguage.value,
-                manager.onRepoSaved,
-                (lang) => setState(() => _selectedLanguage.value = lang),
+      child: Scaffold(
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          title: title,
+          iconTheme: IconThemeData(color: theme.primary),
+          actions: [
+            ...extensionActions(
+              context,
+              _tabBarController,
+              _selectedLanguage.value,
+              (lang) => _selectedLanguage.value = lang,
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: Column(
+          children: [
+            Obx(
+              () => TabBar(
+                controller: _tabBarController,
+                isScrollable: true,
+                indicatorSize: TabBarIndicatorSize.label,
+                dragStartBehavior: DragStartBehavior.start,
+                tabs: _buildTabs(context),
               ),
-              const SizedBox(width: 8),
-            ],
-          ),
-          body: Column(
-            children: [
-              Obx(
-                () => TabBar(
+            ),
+            const SizedBox(height: 8),
+            searchBar(
+              context,
+              _textEditingController,
+              () => setState(() {}),
+            ),
+            const SizedBox(height: 8),
+            Obx(
+              () => Expanded(
+                child: TabBarView(
                   controller: _tabBarController,
-                  isScrollable: true,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  dragStartBehavior: DragStartBehavior.start,
-                  tabs: _buildTabs(context),
+                  children: _buildTabViews(theme, extensionScreenBuilder),
                 ),
               ),
-              const SizedBox(height: 8),
-              searchBar(
-                context,
-                _textEditingController,
-                () => setState(
-                  () {},
-                ), // Trigger rebuild on search change _textEditingController handles the text input
-              ),
-              const SizedBox(height: 8),
-              Obx(
-                () => Expanded(
-                  child: TabBarView(
-                    controller: _tabBarController,
-                    children: _buildTabViews(theme, extensionScreenBuilder),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   List<Widget> _buildTabs(BuildContext context) {
-    final manager = Get.find<ExtensionManager>().current.value;
+    final ext = manager;
 
     List<Widget> tabs = [];
 
-    void addTabs(String label, int installedCount, int availableCount) {
-      tabs.add(tabWidget(context, 'Installed $label', installedCount));
-      tabs.add(tabWidget(context, 'Available $label', availableCount));
+    void addTabs(ItemType type, String label) {
+      final installed = ext.getInstalledRx(type).value.length;
+      final available = ext.getAvailableRx(type).value.length;
+
+      tabs.add(tabWidget(context, 'Installed $label', installed));
+      tabs.add(tabWidget(context, 'Available $label', available));
     }
 
-    if (manager.supportsAnime) {
-      addTabs(
-        'anime',
-        manager.installedAnimeExtensions.value.length,
-        manager.availableAnimeExtensions.value.length,
-      );
-    }
-    if (manager.supportsManga) {
-      addTabs(
-        'manga',
-        manager.installedMangaExtensions.value.length,
-        manager.availableMangaExtensions.value.length,
-      );
-    }
-    if (manager.supportsNovel) {
-      addTabs(
-        'novel',
-        manager.installedNovelExtensions.value.length,
-        manager.availableNovelExtensions.value.length,
-      );
-    }
+    if (ext.supportsAnime) addTabs(ItemType.anime, 'anime');
+    if (ext.supportsManga) addTabs(ItemType.manga, 'manga');
+    if (ext.supportsNovel) addTabs(ItemType.novel, 'novel');
 
     return tabs;
   }
@@ -160,18 +142,22 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     ColorScheme theme,
     ExtensionScreenBuilder builder,
   ) {
-    final manager = Get.find<ExtensionManager>().current.value;
+    final ext = manager;
     final query = _textEditingController.text;
     final lang = _selectedLanguage.value;
 
     List<Widget> views = [];
 
-    void addViews(ItemType type, List installed, List available) {
+    void addViews(ItemType type) {
+      final installed = ext.getInstalledRx(type).value;
+      final available = ext.getAvailableRx(type).value;
+
       views.add(
         installed.isEmpty
             ? _emptyMessage('No installed ${type.name} extensions', theme)
             : builder(type, true, query, lang),
       );
+
       views.add(
         available.isEmpty
             ? _emptyMessage('No available ${type.name} extensions', theme)
@@ -179,34 +165,19 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
       );
     }
 
-    if (manager.supportsAnime) {
-      addViews(
-        ItemType.anime,
-        manager.installedAnimeExtensions.value,
-        manager.availableAnimeExtensions.value,
-      );
-    }
-    if (manager.supportsManga) {
-      addViews(
-        ItemType.manga,
-        manager.installedMangaExtensions.value,
-        manager.availableMangaExtensions.value,
-      );
-    }
-    if (manager.supportsNovel) {
-      addViews(
-        ItemType.novel,
-        manager.installedNovelExtensions.value,
-        manager.availableNovelExtensions.value,
-      );
-    }
+    if (ext.supportsAnime) addViews(ItemType.anime);
+    if (ext.supportsManga) addViews(ItemType.manga);
+    if (ext.supportsNovel) addViews(ItemType.novel);
 
     return views;
   }
 
   Widget _emptyMessage(String message, ColorScheme theme) {
     return Center(
-      child: Text(message, style: TextStyle(color: theme.onSurface)),
+      child: Text(
+        message,
+        style: TextStyle(color: theme.onSurface),
+      ),
     );
   }
 }

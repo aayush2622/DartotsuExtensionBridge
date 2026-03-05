@@ -1,45 +1,21 @@
 import 'dart:async';
 
-import 'package:get/get.dart';
-
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'MangayomiExtensionManager.dart';
 import 'MangayomiSourceMethods.dart';
 
 class MangayomiExtensions extends Extension {
-  MangayomiExtensions() {
-    initialize();
-  }
   @override
   String get id => 'mangayomi';
 
   @override
   String get name => 'Mangayomi';
 
+  final _manager = MangayomiExtensionManager();
   @override
   SourceMethods createSourceMethods(Source source) =>
-      MangayomiSourceMethods(source);
-
-  final _manager = Get.put(MangayomiExtensionManager());
-
-  @override
-  Future<void> initialize() async {
-    if (isInitialized.value) return;
-    isInitialized.value = true;
-
-    await Future.wait([
-      getInstalledAnimeExtensions(),
-      getInstalledMangaExtensions(),
-      getInstalledNovelExtensions(),
-      fetchAvailableAnimeExtensions(
-          getVal('mangayomiAnimeRepos', defaultValue: [])),
-      fetchAvailableMangaExtensions(
-          getVal('mangayomiMangaRepos', defaultValue: [])),
-      fetchAvailableNovelExtensions(
-          getVal('mangayomiNovelRepos', defaultValue: [])),
-    ]);
-  }
+      MangayomiSourceMethods(source, _manager);
 
   @override
   Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) =>
@@ -59,13 +35,13 @@ class MangayomiExtensions extends Extension {
   ) async {
     switch (type) {
       case ItemType.anime:
-        unawaited(setVal('mangayomiAnimeRepos', repos));
+        setVal('mangayomiAnimeRepos', repos);
         break;
       case ItemType.manga:
-        unawaited(setVal('mangayomiMangaRepos', repos));
+        setVal('mangayomiMangaRepos', repos);
         break;
       case ItemType.novel:
-        unawaited(setVal('mangayomiNovelRepos', repos));
+        setVal('mangayomiNovelRepos', repos);
         break;
     }
 
@@ -178,5 +154,53 @@ class MangayomiExtensions extends Extension {
       case ItemType.novel:
         return _manager.availableNovelExtensions.value;
     }
+  }
+
+  @override
+  Future<void> addRepo(String repoUrl, ItemType type) {
+    // TODO: implement addRepo
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchAnimeExtensions() {
+    // TODO: implement fetchAnimeExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchInstalledAnimeExtensions() {
+    // TODO: implement fetchInstalledAnimeExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchInstalledMangaExtensions() {
+    // TODO: implement fetchInstalledMangaExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchInstalledNovelExtensions() {
+    // TODO: implement fetchInstalledNovelExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchMangaExtensions() {
+    // TODO: implement fetchMangaExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchNovelExtensions() {
+    // TODO: implement fetchNovelExtensions
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> removeRepo(String repoUrl, ItemType type) {
+    // TODO: implement removeRepo
+    throw UnimplementedError();
   }
 }

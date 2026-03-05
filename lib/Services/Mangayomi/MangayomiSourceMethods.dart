@@ -23,15 +23,16 @@ class MangayomiSourceMethods implements SourceMethods {
   @override
   Source source;
 
-  MangayomiSourceMethods(this.source);
+  final MangayomiExtensionManager manager;
+
+  MangayomiSourceMethods(this.source, this.manager);
 
   T _ensureSource<T>(T Function(MSource mSource) fn) {
-    var manager = Get.find<MangayomiExtensionManager>();
     final sources = source.itemType?.index == 0
         ? manager.installedMangaExtensions
         : source.itemType?.index == 1
-        ? manager.installedAnimeExtensions
-        : manager.installedNovelExtensions;
+            ? manager.installedAnimeExtensions
+            : manager.installedNovelExtensions;
 
     final mSource = sources.value.firstWhereOrNull(
       (s) => s.sourceId == source.id,
@@ -147,9 +148,8 @@ class MangayomiSourceMethods implements SourceMethods {
         e.url,
         e.quality,
         headers: e.headers,
-        audios: e.audios
-            ?.map((a) => Track(file: a.file, label: a.label))
-            .toList(),
+        audios:
+            e.audios?.map((a) => Track(file: a.file, label: a.label)).toList(),
         subtitles: e.subtitles
             ?.map((s) => Track(file: s.file, label: s.label))
             .toList(),
@@ -211,8 +211,8 @@ class MangayomiSourceMethods implements SourceMethods {
     var data = SourcePreference.fromJson(pref.toJson())
       ..sourceId = source.id?.toInt();
     if (data.listPreference != null) {
-      data.listPreference?.valueIndex = data.listPreference?.entryValues
-          ?.indexOf(value ?? '');
+      data.listPreference?.valueIndex =
+          data.listPreference?.entryValues?.indexOf(value ?? '');
     } else if (data.checkBoxPreference != null) {
       data.checkBoxPreference?.value = value;
     } else if (data.switchPreferenceCompat != null) {

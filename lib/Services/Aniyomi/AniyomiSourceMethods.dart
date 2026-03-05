@@ -9,14 +9,15 @@ import '../../Models/Pages.dart';
 import '../../Models/Source.dart';
 import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
+import 'Models/Source.dart';
 
-class AniyomiSourceMethods implements SourceMethods {
-  static const platform = MethodChannel('aniyomiExtensionBridge');
-
+class AniyomiSourceMethods extends SourceMethods {
   @override
-  Source source;
+  final ASource source;
 
-  AniyomiSourceMethods(this.source);
+  AniyomiSourceMethods(Source source) : source = source as ASource;
+
+  static const platform = MethodChannel('aniyomiExtensionBridge');
 
   bool get isAnime => source.itemType?.index == 1;
 
@@ -191,12 +192,10 @@ SourcePreference mapToSourcePreference(Map<String, dynamic> json) {
       );
 
     case 'list':
-      final entries = (json['entries'] as List?)
-          ?.map((e) => e.toString())
-          .toList();
-      final entryValues = (json['entryValues'] as List?)
-          ?.map((e) => e.toString())
-          .toList();
+      final entries =
+          (json['entries'] as List?)?.map((e) => e.toString()).toList();
+      final entryValues =
+          (json['entryValues'] as List?)?.map((e) => e.toString()).toList();
       final valueIndex = entryValues?.indexOf(json['value']?.toString() ?? '');
       return SourcePreference(
         key: json['key'],
@@ -211,12 +210,10 @@ SourcePreference mapToSourcePreference(Map<String, dynamic> json) {
       );
 
     case 'multi_select':
-      final entries = (json['entries'] as List?)
-          ?.map((e) => e.toString())
-          .toList();
-      final entryValues = (json['entryValues'] as List?)
-          ?.map((e) => e.toString())
-          .toList();
+      final entries =
+          (json['entries'] as List?)?.map((e) => e.toString()).toList();
+      final entryValues =
+          (json['entryValues'] as List?)?.map((e) => e.toString()).toList();
       final values =
           (json['value'] as List?)?.map((e) => e.toString()).toList() ?? [];
       return SourcePreference(
