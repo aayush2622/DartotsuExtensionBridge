@@ -1,7 +1,7 @@
-import '../string_extensions.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../Eval/dart/model/video.dart';
+import '../Util/string_extensions.dart';
 import '../http/m_client.dart';
 
 class StreamlareExtractor {
@@ -58,9 +58,8 @@ class StreamlareExtractor {
       } else {
         const separator = '"label":"';
         List<Video> videoList = [];
-        List<String> values = playlist
-            .substringAfter(separator)
-            .split(separator);
+        List<String> values =
+            playlist.substringAfter(separator).split(separator);
         for (var value in values) {
           final quality = value.substringAfter(separator).substringBefore('",');
           final apiUrl = value

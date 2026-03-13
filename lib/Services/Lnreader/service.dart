@@ -1,21 +1,23 @@
 import 'dart:convert';
+
 import 'package:flutter_qjs/flutter_qjs.dart';
+
 import '../Mangayomi/Eval/dart/model/filter.dart';
 import '../Mangayomi/Eval/dart/model/m_chapter.dart';
 import '../Mangayomi/Eval/dart/model/m_manga.dart';
 import '../Mangayomi/Eval/dart/model/m_pages.dart';
-import '../Mangayomi/Eval/dart/model/source_preference.dart';
-import 'http.dart';
-import 'm_plugin.dart';
 import '../Mangayomi/Eval/dart/model/page.dart';
-import '../Mangayomi/Models/Source.dart';
+import '../Mangayomi/Eval/dart/model/source_preference.dart';
 import '../Mangayomi/Eval/dart/model/video.dart';
-
-import '../Mangayomi/interface.dart';
+import '../Mangayomi/Models/Source.dart';
+import '../Mangayomi/Util/extension_preferences_providers.dart';
+import '../Mangayomi/Util/interface.dart';
+import 'http.dart';
 import 'js_cheerio.dart';
 import 'js_htmlparser.dart';
 import 'js_libs.dart';
 import 'js_polyfills.dart';
+import 'm_plugin.dart';
 
 JavascriptRuntime getJavascriptRuntime({
   Map<String, dynamic>? extraArgs = const {},
@@ -104,41 +106,39 @@ const extension = exports.default;
 
   @override
   Future<MPages> getPopular(int page) async {
-    final items =
-        ((await _extensionCallAsync(
-              'popularNovels($page, {showLatestNovels: false, filters: extension.filters})',
-              [],
-            )))
-            .map((e) => NovelItem.fromJson(e))
-            .map(
-              (e) => MManga(
-                name: e.name,
-                imageUrl: e.cover,
-                link: e.path,
-                chapters: [],
-              ),
-            )
-            .toList();
+    final items = ((await _extensionCallAsync(
+      'popularNovels($page, {showLatestNovels: false, filters: extension.filters})',
+      [],
+    )))
+        .map((e) => NovelItem.fromJson(e))
+        .map(
+          (e) => MManga(
+            name: e.name,
+            imageUrl: e.cover,
+            link: e.path,
+            chapters: [],
+          ),
+        )
+        .toList();
     return MPages(list: items, hasNextPage: true);
   }
 
   @override
   Future<MPages> getLatestUpdates(int page) async {
-    final items =
-        ((await _extensionCallAsync(
-              'popularNovels($page, {showLatestNovels: true, filters: extension.filters})',
-              [],
-            )))
-            .map((e) => NovelItem.fromJson(e))
-            .map(
-              (e) => MManga(
-                name: e.name,
-                imageUrl: e.cover,
-                link: e.path,
-                chapters: [],
-              ),
-            )
-            .toList();
+    final items = ((await _extensionCallAsync(
+      'popularNovels($page, {showLatestNovels: true, filters: extension.filters})',
+      [],
+    )))
+        .map((e) => NovelItem.fromJson(e))
+        .map(
+          (e) => MManga(
+            name: e.name,
+            imageUrl: e.cover,
+            link: e.path,
+            chapters: [],
+          ),
+        )
+        .toList();
     return MPages(list: items, hasNextPage: true);
   }
 
@@ -169,21 +169,21 @@ const extension = exports.default;
     );
     final chaps =
         ((chapters.chapters.isNotEmpty ? chapters.chapters : item.chapters)
-            ?.map(
-              (e) => MChapter(
-                name: e.name,
-                url: e.path,
-                dateUpload: e.releaseTime != null
-                    ? DateTime.tryParse(
-                            e.releaseTime!,
-                          )?.millisecondsSinceEpoch.toString() ??
-                          int.tryParse(e.releaseTime!)?.toString() ??
-                          DateTime.now().millisecondsSinceEpoch.toString()
-                    : DateTime.now().millisecondsSinceEpoch.toString(),
-              ),
-            )
-            .toList() ??
-        []);
+                ?.map(
+                  (e) => MChapter(
+                    name: e.name,
+                    url: e.path,
+                    dateUpload: e.releaseTime != null
+                        ? DateTime.tryParse(
+                              e.releaseTime!,
+                            )?.millisecondsSinceEpoch.toString() ??
+                            int.tryParse(e.releaseTime!)?.toString() ??
+                            DateTime.now().millisecondsSinceEpoch.toString()
+                        : DateTime.now().millisecondsSinceEpoch.toString(),
+                  ),
+                )
+                .toList() ??
+            []);
     return MManga(
       name: item.name,
       imageUrl: item.cover,
@@ -218,7 +218,8 @@ const extension = exports.default;
       await runtime.evaluateAsync(
         'jsonStringify(() => extension.parseChapter(`$url`))',
       ),
-    )).stringResult;
+    ))
+        .stringResult;
     return res;
   }
 
@@ -245,7 +246,10 @@ const extension = exports.default;
     return _extensionCall(
       'pluginSettings',
       [],
-    ).map((e) => SourcePreference.fromJson(e)..sourceId = source.id).toList();
+    )
+        .map((e) => SourcePreference.fromJson(e)
+          ..sourceId = extractSourceId(source.id!))
+        .toList();
   }
 
   T _extensionCall<T>(String call, T def) {

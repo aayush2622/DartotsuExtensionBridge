@@ -1,9 +1,9 @@
 import 'dart:math';
 
-import '../string_extensions.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../Eval/dart/model/video.dart';
+import '../Util/string_extensions.dart';
 import '../http/m_client.dart';
 
 class DoodExtractor {

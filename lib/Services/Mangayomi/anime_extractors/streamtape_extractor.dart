@@ -1,8 +1,8 @@
-import '../string_extensions.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../Eval/dart/model/video.dart';
+import '../Util/string_extensions.dart';
 import '../http/m_client.dart';
 
 class StreamTapeExtractor {
@@ -15,9 +15,8 @@ class StreamTapeExtractor {
     );
     try {
       const baseUrl = "https://streamtape.com/e/";
-      final newUrl = !url.startsWith(baseUrl)
-          ? "$baseUrl${url.split("/")[4]}"
-          : url;
+      final newUrl =
+          !url.startsWith(baseUrl) ? "$baseUrl${url.split("/")[4]}" : url;
 
       final response = await client.get(Uri.parse(newUrl));
       final document = parse(response.body);

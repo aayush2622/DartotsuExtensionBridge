@@ -3,9 +3,7 @@ import 'package:flutter/services.dart';
 import 'dartotsu_extension_bridge.dart';
 
 class Logger {
-  static void init() {
-    initKotlinLogging();
-  }
+  static void init() => initKotlinLogging();
 
   static void log(String message, {bool show = false}) {
     DartotsuExtensionBridge.onLog(message, show);

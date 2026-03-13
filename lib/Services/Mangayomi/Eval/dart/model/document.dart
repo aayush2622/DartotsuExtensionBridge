@@ -1,6 +1,6 @@
-import '../../../dom_extensions.dart';
 import 'package:html/dom.dart';
 
+import '../../../Util/dom_extensions.dart';
 import 'element.dart';
 
 class MDocument {

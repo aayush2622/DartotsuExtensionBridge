@@ -2,27 +2,16 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:fjs/fjs.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
 
-import '../../../dartotsu_extension_bridge.dart';
-import '../../Mangayomi/http/m_client.dart';
+import '../../JsEngine.dart';
 import 'FetchV2.dart';
-
-final _client = MClient.init();
-Future<void> run() async {
-  var manager = Get.find<ExtensionManager>().current.value;
-}
 
 class JsExtensionEngine {
   JsExtensionEngine._internal();
   static final JsExtensionEngine instance = JsExtensionEngine._internal();
 
   late final JsEngine _engine;
-  late final FetchV2 _fetch;
-
   Completer<void>? _initCompleter;
-  final Set<String> _loadedModules = {};
 
   Future<void> init() {
     if (_initCompleter?.isCompleted ?? false) {
@@ -40,31 +29,18 @@ class JsExtensionEngine {
 
   Future<void> _doInit() async {
     try {
-      await LibFjs.init();
-
-      final runtime = await JsAsyncRuntime.withOptions(
-        builtin: JsBuiltinOptions.all(),
-      );
-
-      await runtime.setMemoryLimit(
-        limit: BigInt.from(32 * 1024 * 1024),
-      );
-
-      await runtime.setGcThreshold(
-        threshold: BigInt.from(8 * 1024 * 1024),
-      );
-
-      final context = await JsAsyncContext.from(runtime: runtime);
+      var context = await JsEngineEnv.instance.init();
 
       _engine = JsEngine(context: context);
-      _fetch = FetchV2(_engine);
+
+      var fetch = FetchV2(_engine);
 
       await _engine.init(
         bridge: (JsValue value) async {
           final data = value.value;
 
           if (data is Map && data['type'] == 'fetchv2') {
-            return _fetch.handle(data);
+            return fetch.handle(data);
           }
 
           return const JsResult.err(
@@ -72,13 +48,12 @@ class JsExtensionEngine {
           );
         },
       );
-
-      await _fetch.inject();
+      await fetch.inject();
 
       _initCompleter?.complete();
     } catch (e, stack) {
       _initCompleter?.completeError(e, stack);
-      _initCompleter = null; // allow retry
+      _initCompleter = null;
     }
   }
 
@@ -122,8 +97,6 @@ export default __exports;
         source: JsCode.code(wrapped),
       ),
     );
-
-    _loadedModules.add(moduleName);
   }
 
   Future<JsValue> call({
@@ -156,9 +129,9 @@ export default __exports;
     return await _engine.eval(source: JsCode.code(js));
   }
 
-  void dispose() {
-    _engine.dispose();
-    _loadedModules.clear();
+  Future<void> dispose() async {
+    await _engine.dispose();
+
     _initCompleter = null;
   }
 }

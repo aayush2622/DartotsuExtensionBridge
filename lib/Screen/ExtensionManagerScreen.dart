@@ -45,6 +45,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     BuildContext context,
     TabController tabController,
     String currentLanguage,
+    Future<void> Function(String repoUrl, ItemType type) onRepoSaved,
     void Function(String currentLanguage) onLanguageChanged,
   );
 
@@ -81,6 +82,9 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
               context,
               _tabBarController,
               _selectedLanguage.value,
+              (repoUrl, type) async {
+                await manager.addRepo(repoUrl, type);
+              },
               (lang) => _selectedLanguage.value = lang,
             ),
             const SizedBox(width: 8),

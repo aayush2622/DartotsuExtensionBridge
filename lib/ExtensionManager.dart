@@ -19,8 +19,7 @@ class ExtensionManager extends GetxController {
   void onInit() {
     super.onInit();
     managers.assignAll(_extensionManagers);
-    current = get<SoraExtensions>()
-        .obs; //Rx(_findById(getVal(key)) ?? managers.first);
+    current = Rx(_findById(getVal(key)) ?? managers.first);
     current.value.initialize();
   }
 
@@ -48,14 +47,14 @@ class ExtensionManager extends GetxController {
     return result;
   }
 
-  Extension? _findById(String? id) =>
-      managers.firstWhereOrNull((m) => m.id == id);
-
+  Extension? _findById(String? id) => managers.firstWhereOrNull(
+        (m) => m.id == id,
+      );
   List<Extension> get _extensionManagers {
     return [
+      SoraExtensions(),
       MangayomiExtensions(),
       if (Platform.isAndroid) AniyomiExtensions(),
-      SoraExtensions(),
     ];
   }
 }

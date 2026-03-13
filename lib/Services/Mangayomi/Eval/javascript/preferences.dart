@@ -1,7 +1,7 @@
 import 'package:flutter_qjs/flutter_qjs.dart';
 
 import '../../Models/Source.dart';
-import '../../extension_preferences_providers.dart';
+import '../../Util/extension_preferences_providers.dart';
 
 class JsPreferences {
   late JavascriptRuntime runtime;

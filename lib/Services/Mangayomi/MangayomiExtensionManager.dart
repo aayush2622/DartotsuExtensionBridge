@@ -1,12 +1,13 @@
+/*
 import 'dart:convert';
 
-import 'package:get/get.dart';
-import 'package:isar_community/isar.dart';
+import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
 import '../../Logger.dart';
-import '../../dartotsu_extension_bridge.dart';
+import '../../Models/Source.dart';
+import 'Models/Source.dart';
+import 'Util/lib.dart';
 import 'http/m_client.dart';
-import 'lib.dart';
 
 class MangayomiExtensionManager {
   final installedAnimeExtensions = Rx<List<MSource>>([]);
@@ -57,34 +58,17 @@ class MangayomiExtensionManager {
                 e['url'] != null &&
                 e['iconUrl'] != null) {
               final src = MSource.fromJson(e)
-                ..sourceId = e['id'].toString()
-                ..apiUrl = ''
-                ..appMinVerReq = ''
-                ..dateFormat = ''
-                ..dateFormatLocale = ''
-                ..hasCloudflare = false
                 ..headers = ''
-                ..isActive = true
-                ..isAdded = false
-                ..isFullData = false
                 ..isNsfw = false
-                ..isPinned = false
-                ..lastUsed = false
                 ..sourceCode = ''
-                ..typeSource = ''
                 ..versionLast = '0.0.1'
-                ..isObsolete = false
-                ..isLocal = false
                 ..lang = _convertLang(e)
                 ..baseUrl = e['site']
                 ..sourceCodeUrl = e['url']
-                ..sourceCodeLanguage = SourceCodeLanguage.lnreader
                 ..itemType = ItemType.novel;
               return src;
             } else {
-              return MSource.fromJson(e)
-                ..repo = repo
-                ..sourceId = e['id'].toString();
+              return MSource.fromJson(e)..repo = repo;
             }
           })
           .where((source) => source.itemType == itemType)
@@ -256,3 +240,4 @@ class MangayomiExtensionManager {
     }
   }
 }
+*/

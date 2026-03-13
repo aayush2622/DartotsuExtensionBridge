@@ -1,8 +1,8 @@
 import 'package:d4rt/d4rt.dart';
-import '../javascript/http.dart';
 
 import '../../Models/Source.dart';
-import '../../interface.dart';
+import '../../Util/interface.dart';
+import '../javascript/http.dart';
 import 'bridge/registrer.dart';
 import 'model/filter.dart';
 import 'model/m_manga.dart';
@@ -35,9 +35,8 @@ class DartExtensionService implements ExtensionService {
       headers = _executeLib().invoke('headers', []) as Map<String, String>;
     } catch (_) {
       try {
-        headers =
-            _executeLib().invoke('getHeader', [source.baseUrl!])
-                as Map<String, String>;
+        headers = _executeLib().invoke('getHeader', [source.baseUrl!])
+            as Map<String, String>;
       } catch (_) {}
     }
     return headers;

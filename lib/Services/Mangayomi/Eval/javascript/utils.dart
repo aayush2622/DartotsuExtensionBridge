@@ -58,8 +58,9 @@ class JsUtils {
       final bytes = await _toBytesResponse(client(), "GET", args);
       final book = await EpubReader.readBook(bytes);
       final List<String> chapters = [];
-      for (var chapter in book.Chapters ?? []) {
+      for (var chapter in (book.Chapters ?? <EpubChapter>[])) {
         final chapterTitle = chapter.Title;
+        if (chapterTitle == null) continue;
         chapters.add(chapterTitle);
       }
       return jsonEncode({

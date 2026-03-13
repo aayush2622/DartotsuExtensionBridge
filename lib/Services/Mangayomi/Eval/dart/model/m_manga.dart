@@ -1,4 +1,4 @@
-import '../../../string_extensions.dart';
+import '../../../Util/string_extensions.dart';
 import 'm_chapter.dart';
 
 class MManga {
@@ -52,8 +52,10 @@ class MManga {
       chapters: json['chapters'] != null
           ? (json['chapters'] as List).map((e) => MChapter.fromJson(e)).toList()
           : json['episodes'] != null
-          ? (json['episodes'] as List).map((e) => MChapter.fromJson(e)).toList()
-          : [],
+              ? (json['episodes'] as List)
+                  .map((e) => MChapter.fromJson(e))
+                  .toList()
+              : [],
     );
   }
 

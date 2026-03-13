@@ -6,33 +6,6 @@ import 'package:get/get.dart';
 import '../Models/Source.dart';
 import 'SourceMethods.dart';
 
-class Repo {
-  final String url;
-
-  final String? name;
-  final String? iconUrl;
-
-  Repo({
-    required this.url,
-    this.name,
-    this.iconUrl,
-  });
-
-  factory Repo.fromJson(Map<String, dynamic> json) {
-    return Repo(
-      url: json['url'],
-      name: json['name'],
-      iconUrl: json['iconUrl'],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'url': url,
-        'name': name,
-        'iconUrl': iconUrl,
-      };
-}
-
 abstract class Extension {
   String get id;
   String get name;
@@ -54,7 +27,11 @@ abstract class Extension {
     ItemType.manga: Rx<List<Source>>([]),
     ItemType.novel: Rx<List<Source>>([]),
   };
-
+  final Map<ItemType, Rx<List<Source>>> _availableRaw = {
+    ItemType.anime: Rx<List<Source>>([]),
+    ItemType.manga: Rx<List<Source>>([]),
+    ItemType.novel: Rx<List<Source>>([]),
+  };
   final Map<ItemType, Rx<List<Repo>>> _repos = {
     ItemType.anime: Rx<List<Repo>>([]),
     ItemType.manga: Rx<List<Repo>>([]),
@@ -105,10 +82,15 @@ abstract class Extension {
 
   Future<void> fetchInstalledNovelExtensions();
 
+  Set<String> get schemes => {};
+
+  void handleSchemes(Uri uri) {}
+
   /// Helpers
   Rx<List<Source>> getInstalledRx(ItemType type) => _installed[type]!;
 
   Rx<List<Source>> getAvailableRx(ItemType type) => _available[type]!;
+  Rx<List<Source>> getRawAvailableRx(ItemType type) => _availableRaw[type]!;
 
   Rx<List<Repo>> getReposRx(ItemType type) => _repos[type]!;
 
@@ -129,4 +111,34 @@ abstract class Extension {
 
     return 0;
   }
+}
+
+class Repo {
+  final String url;
+
+  final String? name;
+  final String? iconUrl;
+  final String? extensions;
+  Repo({
+    required this.url,
+    this.name,
+    this.iconUrl,
+    this.extensions,
+  });
+
+  factory Repo.fromJson(Map<String, dynamic> json) {
+    return Repo(
+      url: json['url'],
+      name: json['name'],
+      iconUrl: json['iconUrl'],
+      extensions: json['extensions'],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'url': url,
+        'name': name,
+        'iconUrl': iconUrl,
+        'extensions': extensions,
+      };
 }
