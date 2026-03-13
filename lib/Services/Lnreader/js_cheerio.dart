@@ -4,7 +4,7 @@ import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 
-import '../Mangayomi/dom_extensions.dart';
+import '../Mangayomi/Util/dom_extensions.dart';
 
 class JsCheerio {
   late JavascriptRuntime runtime;

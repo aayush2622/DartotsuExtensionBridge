@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import '../string_extensions.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../Eval/dart/model/m_bridge.dart';
 import '../Eval/dart/model/video.dart';
+import '../Util/string_extensions.dart';
 import '../http/m_client.dart';
 
 class GogoCdnExtractor {
@@ -97,9 +97,9 @@ class GogoCdnExtractor {
       } else if (array != null && array is List) {
         for (var it in array) {
           final label = it["label"].toString().toLowerCase().trim().replaceAll(
-            " ",
-            "",
-          );
+                " ",
+                "",
+              );
           final fileURL = it["file"].toString().trim();
           final videoHeaders = {"Referer": serverUrl};
           if (label == "auto") {

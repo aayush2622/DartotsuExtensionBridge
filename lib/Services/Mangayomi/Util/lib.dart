@@ -1,7 +1,7 @@
-import '../Lnreader/service.dart';
-import 'Eval/dart/service.dart';
-import 'Eval/javascript/service.dart';
-import 'Models/Source.dart';
+import '../../Lnreader/service.dart';
+import '../Eval/dart/service.dart';
+import '../Eval/javascript/service.dart';
+import '../Models/Source.dart';
 import 'interface.dart';
 
 ExtensionService getExtensionService(MSource source) {

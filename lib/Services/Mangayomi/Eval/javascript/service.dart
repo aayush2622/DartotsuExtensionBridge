@@ -1,11 +1,10 @@
 import 'dart:convert';
 
-import 'preferences.dart';
-import 'utils.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 
 import '../../Models/Source.dart';
-import '../../interface.dart';
+import '../../Util/extension_preferences_providers.dart';
+import '../../Util/interface.dart';
 import '../dart/model/filter.dart';
 import '../dart/model/m_manga.dart';
 import '../dart/model/m_pages.dart';
@@ -15,6 +14,8 @@ import '../dart/model/video.dart';
 import 'dom_selector.dart';
 import 'extractors.dart';
 import 'http.dart';
+import 'preferences.dart';
+import 'utils.dart';
 
 class JsExtensionService implements ExtensionService {
   late JavascriptRuntime runtime;
@@ -159,7 +160,8 @@ var extention = new DefaultExtension();
       await runtime.evaluateAsync(
         'jsonStringify(() => extention.getHtmlContent(`$name`, `$url`))',
       ),
-    )).stringResult;
+    ))
+        .stringResult;
     return res;
   }
 
@@ -170,7 +172,8 @@ var extention = new DefaultExtension();
       await runtime.evaluateAsync(
         'jsonStringify(() => extention.cleanHtmlContent(`$html`))',
       ),
-    )).stringResult;
+    ))
+        .stringResult;
     return res;
   }
 
@@ -192,7 +195,10 @@ var extention = new DefaultExtension();
     return _extensionCall(
       'getSourcePreferences()',
       [],
-    ).map((e) => SourcePreference.fromJson(e)..sourceId = source.id).toList();
+    )
+        .map((e) => SourcePreference.fromJson(e)
+          ..sourceId = extractSourceId(source.id!))
+        .toList();
   }
 
   T _extensionCall<T>(String call, T def) {

@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
 
 import '../../Extensions/SourceMethods.dart';
 import '../../Models/DEpisode.dart';
@@ -9,58 +8,23 @@ import '../../Models/Pages.dart';
 import '../../Models/Source.dart';
 import '../../Models/SourcePreference.dart' as s;
 import '../../Models/Video.dart';
-import 'ChapterRecognition.dart';
 import 'Eval/dart/model/m_manga.dart';
 import 'Eval/dart/model/source_preference.dart';
-import 'MangayomiExtensionManager.dart';
 import 'Models/Source.dart';
-import 'extension_preferences_providers.dart';
-import 'get_source_preference.dart';
-import 'lib.dart';
-import 'string_extensions.dart';
+import 'Util/ChapterRecognition.dart';
+import 'Util/extension_preferences_providers.dart';
+import 'Util/get_source_preference.dart';
+import 'Util/lib.dart';
 
 class MangayomiSourceMethods implements SourceMethods {
   @override
-  Source source;
+  final MSource source;
 
-  final MangayomiExtensionManager manager;
-
-  MangayomiSourceMethods(this.source, this.manager);
-
-  T _ensureSource<T>(T Function(MSource mSource) fn) {
-    final sources = source.itemType?.index == 0
-        ? manager.installedMangaExtensions
-        : source.itemType?.index == 1
-            ? manager.installedAnimeExtensions
-            : manager.installedNovelExtensions;
-
-    final mSource = sources.value.firstWhereOrNull(
-      (s) => s.sourceId == source.id,
-    );
-
-    if (mSource == null) throw Exception('Source is not initialized');
-    return fn(mSource);
-  }
-
-  List<DMedia> _mapMediaList(List<dynamic> list) {
-    return list
-        .map(
-          (e) => DMedia(
-            title: e.name,
-            url: e.link,
-            cover: e.imageUrl,
-            description: e.description,
-            artist: e.artist,
-          ),
-        )
-        .toList();
-  }
+  MangayomiSourceMethods(Source source) : source = source as MSource;
 
   @override
   Future<DMedia> getDetail(DMedia media) async {
-    final data = await _ensureSource(
-      (mSource) => getExtensionService(mSource).getDetail(media.url!),
-    );
+    final data = await getExtensionService(source).getDetail(media.url!);
 
     DMedia createMediaData(Map<String, dynamic> args) {
       final media = args['media'] as DMedia;
@@ -102,45 +66,35 @@ class MangayomiSourceMethods implements SourceMethods {
 
   @override
   Future<Pages> getLatestUpdates(int page) async {
-    final data = await _ensureSource(
-      (mSource) => getExtensionService(mSource).getLatestUpdates(page),
-    );
+    final data = await getExtensionService(source).getLatestUpdates(page);
 
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
   }
 
   @override
   Future<Pages> getPopular(int page) async {
-    final data = await _ensureSource(
-      (mSource) => getExtensionService(mSource).getPopular(page),
-    );
+    final data = await getExtensionService(source).getPopular(page);
 
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
   }
 
   @override
   Future<Pages> search(String query, int page, List filters) async {
-    final data = await _ensureSource(
-      (mSource) => getExtensionService(mSource).search(query, page, filters),
-    );
+    final data = await getExtensionService(source).search(query, page, filters);
 
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
   }
 
   @override
   Future<List<PageUrl>> getPageList(DEpisode episode) async {
-    final data = await _ensureSource(
-      (mSource) => getExtensionService(mSource).getPageList(episode.url!),
-    );
+    final data = await getExtensionService(source).getPageList(episode.url!);
 
     return data.map((e) => PageUrl(e.url, headers: e.headers)).toList();
   }
 
   @override
   Future<List<Video>> getVideoList(DEpisode episode) async {
-    final data = await _ensureSource(
-      (mSource) => getExtensionService(mSource).getVideoList(episode.url!),
-    );
+    final data = await getExtensionService(source).getVideoList(episode.url!);
 
     return data.map((e) {
       return Video(
@@ -160,11 +114,8 @@ class MangayomiSourceMethods implements SourceMethods {
   @override
   Future<String?> getNovelContent(String chapterTitle, String chapterId) async {
     try {
-      final data = await _ensureSource(
-        (mSource) => getExtensionService(
-          mSource,
-        ).getHtmlContent(chapterTitle, chapterId),
-      );
+      final data = await getExtensionService(source)
+          .getHtmlContent(chapterTitle, chapterId);
 
       return data;
     } catch (e) {
@@ -191,11 +142,9 @@ class MangayomiSourceMethods implements SourceMethods {
     }
 
     try {
-      final data = _ensureSource(
-        (mSource) => getSourcePreference(
-          source: mSource,
-        ).map((e) => getSourcePreferenceEntry(e.key!, mSource.id!)).toList(),
-      );
+      final data = getSourcePreference(source: source)
+          .map((e) => getSourcePreferenceEntry(e.key!, source.id!))
+          .toList();
       return data
           .map(
             (p) => s.SourcePreference.fromJson(p.toJson())..type = getType(p),
@@ -209,7 +158,7 @@ class MangayomiSourceMethods implements SourceMethods {
   @override
   Future<bool> setPreference(s.SourcePreference pref, value) async {
     var data = SourcePreference.fromJson(pref.toJson())
-      ..sourceId = source.id?.toInt();
+      ..sourceId = extractSourceId(source.id!);
     if (data.listPreference != null) {
       data.listPreference?.valueIndex =
           data.listPreference?.entryValues?.indexOf(value ?? '');
@@ -222,7 +171,21 @@ class MangayomiSourceMethods implements SourceMethods {
     } else if (data.multiSelectListPreference != null) {
       data.multiSelectListPreference?.values = value;
     }
-    _ensureSource((mSource) => setPreferenceSetting(data, mSource));
+    setPreferenceSetting(data, source);
     return true;
+  }
+
+  List<DMedia> _mapMediaList(List<dynamic> list) {
+    return list
+        .map(
+          (e) => DMedia(
+            title: e.name,
+            url: e.link,
+            cover: e.imageUrl,
+            description: e.description,
+            artist: e.artist,
+          ),
+        )
+        .toList();
   }
 }

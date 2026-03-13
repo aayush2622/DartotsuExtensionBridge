@@ -1,10 +1,10 @@
-import 'Eval/dart/model/filter.dart';
-import 'Eval/dart/model/m_manga.dart';
-import 'Eval/dart/model/m_pages.dart';
-import 'Eval/dart/model/page.dart';
-import 'Eval/dart/model/source_preference.dart';
-import 'Eval/dart/model/video.dart';
-import 'Models/Source.dart';
+import '../Eval/dart/model/filter.dart';
+import '../Eval/dart/model/m_manga.dart';
+import '../Eval/dart/model/m_pages.dart';
+import '../Eval/dart/model/page.dart';
+import '../Eval/dart/model/source_preference.dart';
+import '../Eval/dart/model/video.dart';
+import '../Models/Source.dart';
 
 abstract interface class ExtensionService {
   late MSource source;

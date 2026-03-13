@@ -9,6 +9,8 @@ import 'package:js_packer/js_packer.dart';
 import 'package:xpath_selector_html_parser/xpath_selector_html_parser.dart';
 
 import '../../../../../ExtensionBridge.dart';
+import '../../../Util/reg_exp_matcher.dart';
+import '../../../Util/string_extensions.dart';
 import '../../../anime_extractors/dood_extractor.dart';
 import '../../../anime_extractors/filemoon.dart';
 import '../../../anime_extractors/gogocdn_extractor.dart';
@@ -27,8 +29,6 @@ import '../../../anime_extractors/your_upload_extractor.dart';
 import '../../../cryptoaes/crypto_aes.dart';
 import '../../../cryptoaes/deobfuscator.dart';
 import '../../../cryptoaes/js_unpacker.dart';
-import '../../../reg_exp_matcher.dart';
-import '../../../string_extensions.dart';
 import '../../javascript/http.dart';
 import 'document.dart';
 import 'm_manga.dart';

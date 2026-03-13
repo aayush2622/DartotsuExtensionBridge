@@ -3,8 +3,9 @@ import 'dart:convert';
 
 import 'package:fjs/fjs.dart';
 
-import '../../JsEngine.dart';
-import 'FetchV2.dart';
+import '../../../JsEngine.dart';
+import 'BridgeRegister.dart';
+import 'Utils.dart';
 
 class JsExtensionEngine {
   JsExtensionEngine._internal();
@@ -29,27 +30,26 @@ class JsExtensionEngine {
 
   Future<void> _doInit() async {
     try {
+      await LibFjs.init();
+
       var context = await JsEngineEnv.instance.init();
 
       _engine = JsEngine(context: context);
-
-      var fetch = FetchV2(_engine);
 
       await _engine.init(
         bridge: (JsValue value) async {
           final data = value.value;
 
-          if (data is Map && data['type'] == 'fetchv2') {
-            return fetch.handle(data);
+          if (data is Map && data['type'] != null) {
+            return BridgeReg.call(data['type'], data);
           }
 
           return const JsResult.err(
-            JsError.cancelled('Unknown bridge call'),
+            JsError.cancelled("Unknown bridge call"),
           );
         },
       );
-      await fetch.inject();
-
+      await JsUtils(_engine).init();
       _initCompleter?.complete();
     } catch (e, stack) {
       _initCompleter?.completeError(e, stack);

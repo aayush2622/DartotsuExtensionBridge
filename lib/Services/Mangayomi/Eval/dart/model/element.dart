@@ -1,5 +1,6 @@
-import '../../../dom_extensions.dart';
 import 'package:html/dom.dart';
+
+import '../../../Util/dom_extensions.dart';
 
 class MElement {
   MElement(this._element);

@@ -1,10 +1,10 @@
-import '../dom_extensions.dart';
-import '../string_extensions.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:http_interceptor/http_interceptor.dart';
 import 'package:path/path.dart' as path;
 
 import '../Eval/dart/model/video.dart';
+import '../Util/dom_extensions.dart';
+import '../Util/string_extensions.dart';
 import '../http/m_client.dart';
 
 class OkruExtractor {
@@ -19,9 +19,8 @@ class OkruExtractor {
   }) async {
     final response = await client.get(Uri.parse(url));
     final document = parse(response.body);
-    final videoString = document
-        .selectFirst('div[data-options]')
-        ?.attr("data-options");
+    final videoString =
+        document.selectFirst('div[data-options]')?.attr("data-options");
 
     if (videoString == null) {
       return [];

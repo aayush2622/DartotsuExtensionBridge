@@ -4,7 +4,6 @@ import 'package:d4rt/d4rt.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../../../http/m_client.dart';
-import '../model/m_source.dart';
 
 class HttpBridge {
   final clientBridgedClass = BridgedClass(
@@ -13,12 +12,9 @@ class HttpBridge {
     constructors: {
       '': (visitor, positionalArgs, namedArgs) {
         return MClient.init(
-          source: positionalArgs.isNotEmpty
-              ? positionalArgs[0] as MSource
-              : null,
           reqcopyWith: positionalArgs.length > 1
               ? (jsonDecode(positionalArgs[1] as String) as Map)
-                    .cast<String, dynamic>()
+                  .cast<String, dynamic>()
               : null,
         );
       },

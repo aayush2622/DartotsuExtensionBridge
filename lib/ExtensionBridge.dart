@@ -8,8 +8,7 @@ import 'package:isar_community/isar.dart';
 
 import 'ExtensionManager.dart';
 import 'Logger.dart';
-import 'Services/Mangayomi/Eval/dart/model/source_preference.dart';
-import 'Services/Mangayomi/Models/Source.dart';
+import 'Services/LnReader/JsEngine/JsEngine.dart';
 import 'Settings/KvStore.dart';
 
 Isar isar = DartotsuExtensionBridge.isar;
@@ -106,15 +105,19 @@ class DartotsuExtensionBridge {
   }
 
   static const isarSchema = [
-    MSourceSchema,
-    SourcePreferenceSchema,
-    SourcePreferenceStringValueSchema,
     KvEntrySchema,
   ];
 
   static void Function(String log, bool show) onLog = (log, _) {
     debugPrint('DartotsuExtensionBridge: $log');
   };
+
+  static void dispose() {
+    if (_initialized) {
+      _initialized = false;
+      JsExtensionEngine.instance.dispose();
+    }
+  }
 }
 
 /// {@macro get_directory_contract}

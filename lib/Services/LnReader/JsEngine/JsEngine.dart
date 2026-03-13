@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:fjs/fjs.dart';
 
 import '../../JsEngine.dart';
-import 'FetchV2.dart';
 
 class JsExtensionEngine {
   JsExtensionEngine._internal();
@@ -29,26 +28,25 @@ class JsExtensionEngine {
 
   Future<void> _doInit() async {
     try {
+      await LibFjs.init();
+
       var context = await JsEngineEnv.instance.init();
 
       _engine = JsEngine(context: context);
-
-      var fetch = FetchV2(_engine);
 
       await _engine.init(
         bridge: (JsValue value) async {
           final data = value.value;
 
-          if (data is Map && data['type'] == 'fetchv2') {
+          /* if (data is Map && data['type'] == 'fetchv2') {
             return fetch.handle(data);
-          }
+          }*/
 
           return const JsResult.err(
             JsError.cancelled('Unknown bridge call'),
           );
         },
       );
-      await fetch.inject();
 
       _initCompleter?.complete();
     } catch (e, stack) {
@@ -65,30 +63,7 @@ class JsExtensionEngine {
 
     final wrapped = '''
 $sourceCode
-const __exports = {};
 
-// Common
-if (typeof searchResults === 'function')
-  __exports.searchResults = searchResults;
-
-if (typeof extractDetails === 'function')
-  __exports.extractDetails = extractDetails;
-
-// Anime
-if (typeof extractEpisodes === 'function')
-  __exports.extractEpisodes = extractEpisodes;
-
-if (typeof extractStreamUrl === 'function')
-  __exports.extractStreamUrl = extractStreamUrl;
-
-// Manga
-if (typeof extractChapters === 'function')
-  __exports.extractChapters = extractChapters;
-
-if (typeof extractImages === 'function')
-  __exports.extractImages = extractImages;
-
-export default __exports;
 ''';
 
     await _engine.declareNewModule(

@@ -1,8 +1,8 @@
-import '../string_extensions.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../Eval/dart/model/video.dart';
+import '../Util/string_extensions.dart';
 import '../http/m_client.dart';
 
 class SendvidExtractor {
@@ -18,9 +18,8 @@ class SendvidExtractor {
       final videoList = <Video>[];
       final response = await client.get(Uri.parse(url));
       final document = parser.parse(response.body);
-      final masterUrl = document
-          .querySelector("source#video_source")
-          ?.attributes["src"];
+      final masterUrl =
+          document.querySelector("source#video_source")?.attributes["src"];
 
       if (masterUrl == null) return videoList;
 
@@ -45,27 +44,27 @@ class SendvidExtractor {
           .substringAfter("#EXT-X-STREAM-INF:")
           .split("#EXT-X-STREAM-INF:")
           .forEach((it) {
-            final quality =
-                "Sendvid:${it.substringAfter("RESOLUTION=").substringAfter("x").substringBefore(",")}p ";
-            final videoUrl =
-                masterBase + it.substringAfter("\n").substringBefore("\n");
+        final quality =
+            "Sendvid:${it.substringAfter("RESOLUTION=").substringAfter("x").substringBefore(",")}p ";
+        final videoUrl =
+            masterBase + it.substringAfter("\n").substringBefore("\n");
 
-            final videoHeaders = Map<String, String>.from(headers)
-              ..addAll({
-                "Accept": "*/*",
-                "Host": Uri.parse(videoUrl).host,
-                "Origin": "https://${Uri.parse(url).host}",
-                "Referer": "https://${Uri.parse(url).host}/",
-              });
-            videoList.add(
-              Video(
-                videoUrl,
-                "$prefix - $quality",
-                videoUrl,
-                headers: videoHeaders,
-              ),
-            );
+        final videoHeaders = Map<String, String>.from(headers)
+          ..addAll({
+            "Accept": "*/*",
+            "Host": Uri.parse(videoUrl).host,
+            "Origin": "https://${Uri.parse(url).host}",
+            "Referer": "https://${Uri.parse(url).host}/",
           });
+        videoList.add(
+          Video(
+            videoUrl,
+            "$prefix - $quality",
+            videoUrl,
+            headers: videoHeaders,
+          ),
+        );
+      });
 
       return videoList;
     } catch (_) {

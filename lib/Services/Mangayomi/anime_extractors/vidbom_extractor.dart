@@ -1,9 +1,9 @@
-import '../string_extensions.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../Eval/dart/model/video.dart';
+import '../Util/string_extensions.dart';
+import '../Util/xpath_selector.dart';
 import '../http/m_client.dart';
-import '../xpath_selector.dart';
 
 class VidBomExtractor {
   final InterceptedClient client = MClient.init(
@@ -17,9 +17,8 @@ class VidBomExtractor {
         response.body,
       ).queryXPath('//script[contains(text(), "sources")]/text()').attrs;
 
-      final data = script.first!
-          .substringAfter('sources: [')
-          .substringBefore('],');
+      final data =
+          script.first!.substringAfter('sources: [').substringBefore('],');
 
       return data.split('file:"').skip(1).map((source) {
         final src = source.substringBefore('"');

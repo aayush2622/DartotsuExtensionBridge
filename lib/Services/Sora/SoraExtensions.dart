@@ -77,6 +77,11 @@ class SoraExtensions extends Extension {
 
       final decoded = jsonDecode(res.body);
 
+      final parsed = await compute(
+        _parseExtensions,
+        (res.body, repoUrl, type),
+      );
+
       String? repoName;
       String? repoIcon;
       Map<String, dynamic>? firstExtension;
@@ -103,20 +108,14 @@ class SoraExtensions extends Extension {
       }
 
       final repo = Repo(
-        url: repoUrl,
-        name: repoName,
-        iconUrl: repoIcon,
-      );
+          url: repoUrl,
+          name: repoName,
+          iconUrl: repoIcon,
+          extensions: parsed.length.toString());
 
       final updatedRepos = List<Repo>.from(repos)..add(repo);
 
       _saveRepos(updatedRepos, type);
-
-      final parsed = await compute(
-        _parseExtensions,
-        (res.body, repoUrl, type),
-      );
-
       final rx = getAvailableRx(type);
       final existing = rx.value;
 
@@ -157,28 +156,21 @@ class SoraExtensions extends Extension {
 
     getReposRx(type).value = repos;
 
-    final futures = <Future<List<Source>>>[];
+    final results = await Future.wait(
+      repos.map((r) => _fetchRepo(r, type)),
+    );
 
-    for (final repo in repos) {
-      futures.add(_fetchRepo(repo, type));
-    }
-
-    final results = await Future.wait(futures);
-
-    final allSources = <Source>[];
-    for (final r in results) {
-      allSources.addAll(r);
-    }
+    final allSources = results.expand((e) => e).toList(growable: false);
 
     final installed = getInstalledRx(type).value;
     final installedIds = installed.map((e) => e.id).toSet();
 
     _detectUpdates(allSources, type);
+    getRawAvailableRx(type).value = List.unmodifiable(allSources);
 
-    final filtered =
-        allSources.where((s) => !installedIds.contains(s.id)).toList();
-
-    return List.unmodifiable(filtered);
+    return List.unmodifiable(
+      allSources.where((s) => !installedIds.contains(s.id)),
+    );
   }
 
   Future<List<Source>> _fetchRepo(Repo repo, ItemType type) async {
@@ -211,7 +203,7 @@ class SoraExtensions extends Extension {
         if (decoded.containsKey('sourceName')) {
           extensions = [decoded];
         } else {
-          extensions = decoded.values.whereType<Map<String, dynamic>>();
+          extensions = decoded.values.cast<Map<String, dynamic>>();
         }
       } else {
         return const [];
@@ -232,7 +224,7 @@ class SoraExtensions extends Extension {
 
         sources.add(
           SSource(
-            id: ext['sourceName'],
+            id: '${ext['sourceName']}@$repoUrl',
             name: ext['sourceName'],
             itemType: itemType,
             lang: ext['language'],
@@ -265,11 +257,7 @@ class SoraExtensions extends Extension {
         throw Exception("Failed to download extension");
       }
 
-      final installed = SSource.fromSource(
-        s,
-        sourceCode: res.body,
-        sourceCodeUrl: s.sourceCodeUrl,
-      );
+      final installed = s..sourceCode = res.body;
 
       final installedList = _loadInstalled(s.itemType!);
 
@@ -299,23 +287,14 @@ class SoraExtensions extends Extension {
       installed.removeWhere((e) => e.id == s.id);
 
       _saveInstalled(installed, type);
-
       getInstalledRx(type).value = List.unmodifiable(installed);
 
-      final availRx = getAvailableRx(type);
-      final avail = List<Source>.from(availRx.value);
+      final raw = getRawAvailableRx(type).value;
+      final installedIds = installed.map((e) => e.id).toSet();
 
-      avail.removeWhere((e) => e.id == s.id);
-
-      avail.add(
-        SSource.fromSource(
-          s,
-          sourceCodeUrl: s.sourceCodeUrl,
-          sourceCode: null,
-        ),
+      getAvailableRx(type).value = List.unmodifiable(
+        raw.where((e) => !installedIds.contains(e.id)),
       );
-
-      availRx.value = List.unmodifiable(avail);
     } catch (e) {
       Logger.log("Uninstall failed ${s.id}: $e");
     }
@@ -340,14 +319,10 @@ class SoraExtensions extends Extension {
       final index = installed.indexWhere((e) => e.id == s.id);
       if (index == -1) return;
 
-      final updated = installed[index].copyWith(
-        sourceCode: res.body,
-        version: s.version,
-        versionLast: s.version,
-        hasUpdate: false,
-      );
-
-      installed[index] = updated;
+      installed[index] = installed[index]
+        ..sourceCode = res.body
+        ..version = s.version
+        ..hasUpdate = false;
 
       _saveInstalled(installed, s.itemType!);
 
@@ -360,11 +335,9 @@ class SoraExtensions extends Extension {
 
   void _detectUpdates(List<Source> available, ItemType type) {
     final installed = _loadInstalled(type);
-    if (installed.isEmpty) return;
+    if (installed.isEmpty || available.isEmpty) return;
 
-    final repoMap = {
-      for (final s in available) s.id: s,
-    };
+    final repoMap = {for (final s in available) s.id: s};
 
     bool changed = false;
 
@@ -374,10 +347,9 @@ class SoraExtensions extends Extension {
       if (repo == null) continue;
 
       if (compareVersions(repo.version ?? "0", inst.version ?? "0") > 0) {
-        installed[i] = inst.copyWith(
-          hasUpdate: true,
-          versionLast: repo.version,
-        );
+        installed[i] = inst
+          ..hasUpdate = true
+          ..versionLast = repo.version;
         changed = true;
       }
     }
@@ -389,7 +361,7 @@ class SoraExtensions extends Extension {
   }
 
   List<Repo> _loadRepos(ItemType type) {
-    final encoded = getVal<List<String>>('sora${type.name}Repos');
+    final encoded = getVal<List<String>>('$id${type.name}Repos');
     if (encoded == null || encoded.isEmpty) return const [];
 
     return encoded
@@ -398,7 +370,7 @@ class SoraExtensions extends Extension {
   }
 
   void _saveRepos(List<Repo> repos, ItemType type) {
-    final key = 'sora${type.name}Repos';
+    final key = '$id${type.name}Repos';
 
     setVal(
       key,
@@ -407,23 +379,22 @@ class SoraExtensions extends Extension {
   }
 
   List<SSource> _loadInstalled(ItemType type) {
-    final encoded = getVal<List<String>>('soraInstalled${type.name}');
+    final encoded = getVal<List<String>>('$id-Installed-${type.name}');
     if (encoded == null || encoded.isEmpty) return [];
 
-    return encoded
-        .map((e) {
-          try {
-            return SSource.fromJson(jsonDecode(e));
-          } catch (_) {
-            return null;
-          }
-        })
-        .whereType<SSource>()
-        .toList();
+    final list = <SSource>[];
+
+    for (final e in encoded) {
+      try {
+        list.add(SSource.fromJson(jsonDecode(e)));
+      } catch (_) {}
+    }
+
+    return list;
   }
 
   void _saveInstalled(List<SSource> list, ItemType type) {
-    final key = 'soraInstalled${type.name}';
+    final key = '$id-Installed-${type.name}';
 
     setVal(
       key,

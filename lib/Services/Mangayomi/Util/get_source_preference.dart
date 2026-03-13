@@ -1,7 +1,7 @@
-import 'Eval/dart/model/source_preference.dart';
-import 'Eval/dart/service.dart';
-import 'Eval/javascript/service.dart';
-import 'Models/Source.dart';
+import '../Eval/dart/model/source_preference.dart';
+import '../Eval/dart/service.dart';
+import '../Eval/javascript/service.dart';
+import '../Models/Source.dart';
 
 List<SourcePreference> getSourcePreference({required MSource source}) {
   List<SourcePreference> sourcePreference = [];

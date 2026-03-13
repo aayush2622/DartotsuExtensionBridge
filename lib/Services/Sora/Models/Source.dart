@@ -1,8 +1,8 @@
 import '../../../Models/Source.dart';
 
 class SSource extends Source {
-  final String? sourceCode;
-  final String? sourceCodeUrl;
+  String? sourceCode;
+  String? sourceCodeUrl;
 
   SSource({
     super.id,
@@ -48,51 +48,5 @@ class SSource extends Source {
     json['sourceCodeUrl'] = sourceCodeUrl;
 
     return json;
-  }
-
-  SSource copyWith({
-    String? sourceCode,
-    String? sourceCodeUrl,
-    String? version,
-    String? versionLast,
-    bool? hasUpdate,
-  }) {
-    return SSource(
-      id: id,
-      name: name,
-      baseUrl: baseUrl,
-      lang: lang,
-      isNsfw: isNsfw,
-      iconUrl: iconUrl,
-      version: version ?? this.version,
-      versionLast: versionLast ?? this.versionLast,
-      itemType: itemType,
-      repo: repo,
-      hasUpdate: hasUpdate ?? this.hasUpdate,
-      sourceCode: sourceCode ?? this.sourceCode,
-      sourceCodeUrl: sourceCodeUrl ?? this.sourceCodeUrl,
-    );
-  }
-
-  factory SSource.fromSource(
-    Source source, {
-    String? sourceCode,
-    String? sourceCodeUrl,
-  }) {
-    return SSource(
-      id: source.id,
-      name: source.name,
-      baseUrl: source.baseUrl,
-      lang: source.lang,
-      isNsfw: source.isNsfw,
-      iconUrl: source.iconUrl,
-      version: source.version,
-      versionLast: source.versionLast,
-      itemType: source.itemType,
-      repo: source.repo,
-      hasUpdate: source.hasUpdate,
-      sourceCode: sourceCode,
-      sourceCodeUrl: sourceCodeUrl,
-    );
   }
 }

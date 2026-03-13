@@ -1,9 +1,9 @@
-import '../string_extensions.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../Eval/dart/model/video.dart';
+import '../Util/string_extensions.dart';
+import '../Util/xpath_selector.dart';
 import '../http/m_client.dart';
-import '../xpath_selector.dart';
 
 class YourUploadExtractor {
   final InterceptedClient client = MClient.init(
@@ -25,9 +25,8 @@ class YourUploadExtractor {
           .queryXPath('//script[contains(text(), "jwplayerOptions")]/text()')
           .attrs;
       if (baseData.isNotEmpty) {
-        final basicUrl = baseData.first!
-            .substringAfter("file: '")
-            .substringBefore("',");
+        final basicUrl =
+            baseData.first!.substringAfter("file: '").substringBefore("',");
         final quality = prefix + name;
         return [Video(basicUrl, quality, basicUrl, headers: newHeaders)];
       } else {

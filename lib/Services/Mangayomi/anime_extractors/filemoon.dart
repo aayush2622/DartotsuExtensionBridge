@@ -1,11 +1,12 @@
 import 'dart:convert';
 
-import '../string_extensions.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 import 'package:js_packer/js_packer.dart';
+
 import '../Eval/dart/model/video.dart';
+import '../Util/string_extensions.dart';
+import '../Util/xpath_selector.dart';
 import '../http/m_client.dart';
-import '../xpath_selector.dart';
 
 class FilemoonExtractor {
   final InterceptedClient client = MClient.init(
@@ -39,8 +40,7 @@ class FilemoonExtractor {
         return [];
       }
       List<Track> subtitleTracks = [];
-      final subUrl =
-          Uri.parse(url).queryParameters["sub.info"] ??
+      final subUrl = Uri.parse(url).queryParameters["sub.info"] ??
           unpacked.substringAfter("""fetch('", """).substringBefore("""').""");
       if (subUrl.isNotEmpty) {
         try {

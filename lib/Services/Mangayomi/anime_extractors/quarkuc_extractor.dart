@@ -47,19 +47,17 @@ class QuarkUcExtractor {
       _lastCookie = "https://uccookie.last";
     }
     if (cookie.isNotEmpty && getLastCookie() != cookie) {
-      MClient.setCookie(host, ua, null, cookie: cookie);
-      MClient.setCookie(_lastCookie, ua, null, cookie: cookie);
+      //MClient.setCookie(host, ua, null, cookie: cookie);
+      //MClient.setCookie(_lastCookie, ua, null, cookie: cookie);
     }
   }
 
   String getLastCookie() {
-    var cookie = MClient.getCookiesPref(_lastCookie);
-    return cookie.isNotEmpty ? cookie.values.first : "";
+    return "";
   }
 
   String getCurrentCookie() {
-    var cookie = MClient.getCookiesPref(host);
-    return cookie.isNotEmpty ? cookie.values.first : "";
+    return "";
   }
 
   Map<String, String> getHeaders() {
@@ -124,7 +122,7 @@ class QuarkUcExtractor {
             } else {
               currentCookie = '$currentCookie; $newPuus';
             }
-            MClient.setCookie(host, ua, null, cookie: currentCookie);
+            //MClient.setCookie(host, ua, null, cookie: currentCookie);
           }
           break;
         }
@@ -150,10 +148,13 @@ class QuarkUcExtractor {
   Future<void> getShareToken(Map<String, String> shareData) async {
     if (!shareTokenCache.containsKey(shareData['shareId'])) {
       shareTokenCache.remove(shareData['shareId']);
-      final shareToken = await api('share/sharepage/token?$pr', {
-        'pwd_id': shareData['shareId'],
-        'passcode': shareData['sharePwd'] ?? '',
-      }, 'post');
+      final shareToken = await api(
+          'share/sharepage/token?$pr',
+          {
+            'pwd_id': shareData['shareId'],
+            'passcode': shareData['sharePwd'] ?? '',
+          },
+          'post');
       if (shareToken['data'] != null && shareToken['data']['stoken'] != null) {
         shareTokenCache[shareData['shareId']!] = shareToken['data'];
       }
@@ -290,11 +291,14 @@ class QuarkUcExtractor {
     if (listData['data'] != null &&
         listData['data']['list'] != null &&
         listData['data']['list'].isNotEmpty) {
-      await api('file/delete?$pr', {
-        'action_type': 2,
-        'filelist': listData['data']['list'].map((v) => v['fid']).toList(),
-        'exclude_fids': [],
-      }, 'post');
+      await api(
+          'file/delete?$pr',
+          {
+            'action_type': 2,
+            'filelist': listData['data']['list'].map((v) => v['fid']).toList(),
+            'exclude_fids': [],
+          },
+          'post');
     }
   }
 
@@ -318,12 +322,15 @@ class QuarkUcExtractor {
       }
     }
     if (saveDirId == null) {
-      final create = await api('file?$pr', {
-        'pdir_fid': '0',
-        'file_name': saveDirName,
-        'dir_path': '',
-        'dir_init_lock': false,
-      }, 'post');
+      final create = await api(
+          'file?$pr',
+          {
+            'pdir_fid': '0',
+            'file_name': saveDirName,
+            'dir_path': '',
+            'dir_init_lock': false,
+          },
+          'post');
       if (create['data'] != null && create['data']['fid'] != null) {
         saveDirId = create['data']['fid'];
       }
@@ -346,15 +353,19 @@ class QuarkUcExtractor {
       await getShareToken({'shareId': shareId});
       if (!shareTokenCache.containsKey(shareId)) return null;
     }
-    final saveResult = await api('share/sharepage/save?$pr', {
-      'fid_list': [fileId],
-      'fid_token_list': [fileToken],
-      'to_pdir_fid': saveDirId,
-      'pwd_id': shareId,
-      'stoken': stoken.isNotEmpty ? stoken : shareTokenCache[shareId]['stoken'],
-      'pdir_fid': '0',
-      'scene': 'link',
-    }, 'post');
+    final saveResult = await api(
+        'share/sharepage/save?$pr',
+        {
+          'fid_list': [fileId],
+          'fid_token_list': [fileToken],
+          'to_pdir_fid': saveDirId,
+          'pwd_id': shareId,
+          'stoken':
+              stoken.isNotEmpty ? stoken : shareTokenCache[shareId]['stoken'],
+          'pdir_fid': '0',
+          'scene': 'link',
+        },
+        'post');
     if (saveResult['data'] != null && saveResult['data']['task_id'] != null) {
       var retry = 0;
       while (true) {
@@ -388,11 +399,14 @@ class QuarkUcExtractor {
       if (saveFileId == null) return null;
       saveFileIdCaches[fileId] = saveFileId;
     }
-    final transcoding = await api('file/v2/play?$pr', {
-      'fid': saveFileIdCaches[fileId],
-      'resolutions': 'normal,low,high,super,2k,4k',
-      'supports': 'fmp4',
-    }, 'post');
+    final transcoding = await api(
+        'file/v2/play?$pr',
+        {
+          'fid': saveFileIdCaches[fileId],
+          'resolutions': 'normal,low,high,super,2k,4k',
+          'supports': 'fmp4',
+        },
+        'post');
     if (transcoding['data'] != null &&
         transcoding['data']['video_list'] != null) {
       List<Map<String, String>> qualityOptions = [];
@@ -419,9 +433,12 @@ class QuarkUcExtractor {
       if (saveFileId == null) return null;
       saveFileIdCaches[fileId] = saveFileId;
     }
-    final down = await api('file/download?$pr&uc_param_str=', {
-      'fids': [saveFileIdCaches[fileId]],
-    }, 'post');
+    final down = await api(
+        'file/download?$pr&uc_param_str=',
+        {
+          'fids': [saveFileIdCaches[fileId]],
+        },
+        'post');
     if (down['data'] != null) {
       return down['data'][0];
     }
@@ -660,9 +677,8 @@ class Item {
   }
 
   String getDisplayName(String typeName) {
-    String drivePrefix = cloudDriveType == CloudDriveType.quark
-        ? '[quark]'
-        : '[uc]';
+    String drivePrefix =
+        cloudDriveType == CloudDriveType.quark ? '[quark]' : '[uc]';
     String displayName = getName();
     if (typeName == "电视剧") {
       List<String> replaceNameList = ["4k", "4K"];
@@ -673,7 +689,7 @@ class Item {
       }
       displayName =
           RegExp(r'\.S01E(.*?)\.').firstMatch(displayName)?.group(1) ??
-          displayName;
+              displayName;
       final numbers = RegExp(
         r'\d+',
       ).allMatches(displayName).map((m) => m.group(0)).toList();
