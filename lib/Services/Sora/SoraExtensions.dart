@@ -24,7 +24,9 @@ class SoraExtensions extends Extension {
   bool get supportsNovel => false;
 
   @override
-  SourceMethods createSourceMethods(Source source) => SoraSourceMethods(source);
+  Map<Type, SourceMethods Function(Source)> get sourceMethodFactories => {
+        SSource: (source) => SoraSourceMethods(source as SSource),
+      };
 
   @override
   Future<void> fetchAnimeExtensions() async {

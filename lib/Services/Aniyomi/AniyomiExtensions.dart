@@ -1,11 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:http/http.dart' as http;
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -13,13 +12,12 @@ import 'package:path_provider/path_provider.dart';
 import '../../Logger.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
+import '../Mangayomi/http/m_client.dart';
 import 'AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
 
 class AniyomiExtensions extends Extension {
-  AniyomiExtensions() {
-    initialize();
-  }
+  final _client = MClient.init();
   @override
   String get id => 'aniyomi';
 
@@ -27,107 +25,39 @@ class AniyomiExtensions extends Extension {
   String get name => 'Aniyomi';
 
   @override
-  SourceMethods createSourceMethods(Source source) =>
-      AniyomiSourceMethods(source);
-
+  Map<Type, SourceMethods Function(Source)> get sourceMethodFactories => {
+        ASource: (source) => AniyomiSourceMethods(source as ASource),
+      };
   static const platform = MethodChannel('aniyomiExtensionBridge');
-  final Rx<List<Source>> availableAnimeExtensionsUnmodified = Rx([]);
-  final Rx<List<Source>> availableMangaExtensionsUnmodified = Rx([]);
-  final Rx<List<Source>> availableNovelExtensionsUnmodified = Rx([]);
 
   @override
   bool get supportsNovel => false;
-
   @override
-  Future<List<Source>> fetchAvailableAnimeExtensions(List<String>? repos) =>
-      _fetchAvailable('fetchAnimeExtensions', ItemType.anime, repos);
-
-  @override
-  Future<List<Source>> fetchAvailableMangaExtensions(List<String>? repos) =>
-      _fetchAvailable('fetchMangaExtensions', ItemType.manga, repos);
-
-  Future<List<Source>> _fetchAvailable(
-    String method,
-    ItemType type,
-    List<String>? repos,
-  ) async {
-    switch (type) {
-      case ItemType.anime:
-        setVal('aniyomiAnimeRepos', repos);
-        break;
-      case ItemType.manga:
-        setVal('aniyomiMangaRepos', repos);
-        break;
-      case ItemType.novel:
-        break;
-    }
-
-    final sources = await _loadExtensions(method, repos: repos);
-    final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();
-
-    final unmodifiedList = sources.map((e) {
-      final src = e as ASource;
-      src.extensionType = 1;
-      return src;
-    }).toList();
-    final list =
-        unmodifiedList.where((s) => !installedIds.contains(s.id)).toList();
-    getAvailableRx(type).value = list;
-    getAvailableUnmodified(type).value = unmodifiedList;
-    checkForUpdates(type);
-    return list;
+  Future<void> fetchInstalledAnimeExtensions() async {
+    getInstalledRx(ItemType.anime).value =
+        await _loadInstalled('getInstalledAnimeExtensions', ItemType.anime);
   }
 
   @override
-  Future<List<Source>> getInstalledAnimeExtensions() {
-    return _getInstalled(
-      'getInstalledAnimeExtensions',
-      ItemType.anime,
-    );
+  Future<void> fetchInstalledMangaExtensions() async {
+    getInstalledRx(ItemType.manga).value =
+        await _loadInstalled('getInstalledMangaExtensions', ItemType.manga);
   }
 
-  @override
-  Future<List<Source>> getInstalledMangaExtensions() {
-    return _getInstalled(
-      'getInstalledMangaExtensions',
-      ItemType.manga,
-    );
-  }
-
-  Future<List<Source>> _getInstalled(
+  Future<List<Source>> _loadInstalled(
     String method,
     ItemType type,
   ) async {
-    final sources = await _loadExtensions(method);
-    getInstalledRx(type).value = sources;
-    checkForUpdates(type);
-    return sources;
-  }
-
-  Future<List<Source>> _loadExtensions(
-    String method, {
-    List<String>? repos,
-  }) async {
     try {
-      final List<dynamic> result = await platform.invokeMethod(method, repos);
-      final parsed = await compute(_parseSources, result);
+      final List<dynamic> result = await platform.invokeMethod(method, "");
+      final parsed = result
+          .map((e) => ASource.fromJson(Map<String, dynamic>.from(e)))
+          .where((s) => s.itemType == type)
+          .toList(growable: false);
       return parsed;
     } catch (e) {
       return [];
     }
-  }
-
-  static List<Source> _parseSources(List<dynamic> data) {
-    return data.map((e) {
-      final map = Map<String, dynamic>.from(e);
-
-      map['apkUrl'] = getAnimeApkUrl(
-        map['iconUrl'] ?? '',
-        map['apkName'] ?? '',
-      );
-
-      return ASource.fromJson(map);
-    }).toList();
   }
 
   @override
@@ -141,17 +71,17 @@ class AniyomiExtensions extends Extension {
       final packageName =
           aSource.apkUrl!.split('/').last.replaceAll('.apk', '');
 
-      final response = await http.get(Uri.parse(aSource.apkUrl!));
+      final res = await _client.get(Uri.parse(aSource.apkUrl!));
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to download APK: HTTP ${response.statusCode}');
+      if (res.statusCode != 200) {
+        throw Exception("Extension download failed");
       }
 
       final tempDir = await getTemporaryDirectory();
       final apkFileName = '$packageName.apk';
       final apkFile = File(path.join(tempDir.path, apkFileName));
 
-      await apkFile.writeAsBytes(response.bodyBytes);
+      await apkFile.writeAsBytes(res.bodyBytes);
 
       final result = await InstallPlugin.installApk(
         apkFile.path,
@@ -167,14 +97,14 @@ class AniyomiExtensions extends Extension {
           'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
         );
       }
-      final rx = getAvailableRx(aSource.itemType!);
-      rx.value = rx.value.where((s) => s.id != aSource.id).toList();
+      final avail = getAvailableRx(aSource.itemType!);
+      avail.value = avail.value.where((e) => e.id != aSource.id).toList();
       switch (aSource.itemType) {
         case ItemType.anime:
-          getInstalledAnimeExtensions(); // because it also update extension on kotlin side
+          await fetchInstalledAnimeExtensions(); // because it also update extension on kotlin side
           break;
         case ItemType.manga:
-          getInstalledMangaExtensions();
+          await fetchInstalledMangaExtensions();
           break;
         case ItemType.novel:
           break;
@@ -190,15 +120,17 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<void> uninstallSource(Source source) async {
-    final packageName = source.id;
+    final s = source as ASource;
+    final packageName = s.pkgName;
     if (packageName == null || packageName.isEmpty) {
       throw Exception('Source ID is required for uninstallation.');
     }
-
+    final type = source.itemType!;
     try {
       final isInstalled = await DeviceApps.isAppInstalled(packageName);
       if (!isInstalled) {
-        _removeFromInstalledList(source);
+        getInstalledRx(type).value =
+            getInstalledRx(type).value.where((e) => e.id != s.id).toList();
         return;
       }
 
@@ -221,16 +153,25 @@ class AniyomiExtensions extends Extension {
         throw Exception('Uninstallation timed out or was cancelled by user.');
       }
 
-      _removeFromInstalledList(source);
+      final raw = getRawAvailableRx(type).value;
+      final installed = getInstalledRx(type).value;
+      final installedIds = installed.map((e) => e.id).toSet();
 
-      final itemType = source.itemType;
-      if (itemType != null) {
-        final availableList = getAvailableUnmodified(itemType).value;
-        if (availableList.any((s) => s.id == packageName)) {
-          getAvailableRx(itemType).update((list) => list?..add(source));
-        }
+      getAvailableRx(type).value = List.unmodifiable(
+        raw.where((e) => !installedIds.contains(e.id)),
+      );
+      switch (s.itemType) {
+        case ItemType.anime:
+          await fetchInstalledAnimeExtensions(); // because it also update extension on kotlin side
+          break;
+        case ItemType.manga:
+          await fetchInstalledMangaExtensions();
+          break;
+        case ItemType.novel:
+          break;
+        default:
+          throw Exception('Unsupported item type: ${source.itemType}');
       }
-
       Logger.log('Successfully uninstalled package: $packageName');
     } catch (e) {
       Logger.log('Error uninstalling $packageName: $e');
@@ -243,119 +184,224 @@ class AniyomiExtensions extends Extension {
     await installSource(source);
   }
 
-  void _removeFromInstalledList(Source source) {
-    /* switch (source.itemType) {
-      case ItemType.anime:
-        installedAnimeExtensions.value = installedAnimeExtensions.value
-            .where((e) => e.id != source.id)
-            .toList();
-        break;
-      case ItemType.manga:
-        installedMangaExtensions.value = installedMangaExtensions.value
-            .where((e) => e.id != source.id)
-            .toList();
-        break;
-      case ItemType.novel:
-        installedNovelExtensions.value = installedNovelExtensions.value
-            .where((e) => e.id != source.id)
-            .toList();
-        break;
-      case null:
-        break;
-    }*/
-  }
+  @override
+  Future<void> addRepo(String repoUrl, ItemType type) async {
+    try {
+      final uri = Uri.tryParse(repoUrl);
+      if (uri == null || !uri.hasScheme) {
+        throw Exception("Invalid repo URL");
+      }
 
-  Rx<List<Source>> getAvailableUnmodified(ItemType type) {
-    switch (type) {
-      case ItemType.anime:
-        return availableAnimeExtensionsUnmodified;
-      case ItemType.manga:
-        return availableMangaExtensionsUnmodified;
-      case ItemType.novel:
-        return availableNovelExtensionsUnmodified;
+      final repos = _loadRepos(type);
+
+      if (repos.any((r) => r.url == repoUrl)) {
+        return;
+      }
+
+      final res = await _client.get(uri);
+      if (res.statusCode != 200) {
+        throw Exception("Failed to fetch repo");
+      }
+      final repo = Repo(url: repoUrl);
+      final updatedRepos = List<Repo>.from(repos)..add(repo);
+
+      _saveRepos(updatedRepos, type);
+      final parsed = await compute(
+        _parseExtensions,
+        (res.body, repoUrl, type),
+      );
+
+      final rx = getAvailableRx(type);
+      final existing = rx.value;
+
+      final merged = {
+        for (final s in existing) s.id: s,
+        for (final s in parsed) s.id: s,
+      }.values.toList(growable: false);
+
+      rx.value = List.unmodifiable(merged);
+      getReposRx(type).value = updatedRepos;
+    } catch (e) {
+      Logger.log("Failed to add repo $repoUrl: $e");
+      rethrow;
     }
   }
 
-  Future<void> checkForUpdates(ItemType type) async {
-    final availableMap = {
-      for (var s in getAvailableUnmodified(type).value) s.id: s,
-    };
+  static List<Source> _parseExtensions(
+    (String body, String repoUrl, ItemType itemType) args,
+  ) {
+    final (body, repoUrl, targetType) = args;
 
-    final updated = getInstalledRx(type).value.map((i) {
-      var installed = i as ASource;
-      final avail = availableMap[installed.id ?? ''] as ASource?;
-      if (avail != null &&
-          installed.version != null &&
-          avail.version != null &&
-          compareVersions(installed.version!, avail.version!) < 0) {
-        return installed
-          ..hasUpdate = true
-          ..apkUrl = avail.apkUrl
-          ..versionLast = avail.version;
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! List) return const [];
+
+      final baseIconUrl = repoUrl.replaceAll('/index.min.json', '');
+
+      final sources = <Source>[];
+
+      for (final item in decoded) {
+        final map = item as Map<String, dynamic>;
+        final name = map['name'] as String? ?? '';
+
+        final detectedType = name.startsWith('Aniyomi: ')
+            ? ItemType.anime
+            : name.startsWith('Tachiyomi: ')
+                ? ItemType.manga
+                : null;
+
+        if (detectedType != targetType) continue;
+
+        sources.add(
+          ASource(
+            id: map["sources"] != null &&
+                    map["sources"] is List &&
+                    (map["sources"] as List).isNotEmpty
+                ? (map["sources"] as List).first['id']?.toString() ?? ''
+                : '',
+            name: detectedType == ItemType.anime
+                ? name.substring(9) // "Aniyomi: "
+                : name.substring(10), // "Tachiyomi: "
+            pkgName: map['pkg'],
+            apkName: map['apk'],
+            lang: map['lang'],
+            version: map['version'],
+            isNsfw: map['isNsfw'] ?? false,
+            itemType: detectedType,
+            repo: repoUrl,
+            iconUrl: "$baseIconUrl/icon/${map['pkg']}.png",
+          ),
+        );
       }
-      return installed;
-    }).toList();
 
-    getInstalledRx(type).value = updated;
+      return List.unmodifiable(sources);
+    } catch (e) {
+      Logger.log("Failed to parse extensions from $repoUrl: $e");
+      return const [];
+    }
   }
 
-  static String getAnimeApkUrl(String iconUrl, String apkName) {
-    if (iconUrl.isEmpty || apkName.isEmpty) return "";
+  Future<List<Source>> _fetchExtensions(ItemType type) async {
+    final repos = _loadRepos(type);
+    if (repos.isEmpty) return const [];
 
-    final baseUrl = iconUrl.replaceFirst('icon/', 'apk/');
-    final lastSlash = baseUrl.lastIndexOf('/');
-    if (lastSlash == -1) return "";
+    getReposRx(type).value = repos;
 
-    final cleanedUrl = baseUrl.substring(0, lastSlash);
-    return '$cleanedUrl/$apkName';
+    final results = await Future.wait(
+      repos.map((r) => _fetchRepo(r, type)),
+    );
+
+    final all = results.expand((e) => e).toList(growable: false);
+
+    final installed = getInstalledRx(type).value;
+    final installedIds = installed.map((e) => e.id).toSet();
+
+    _detectUpdates(all.cast<ASource>(), type);
+
+    getRawAvailableRx(type).value = List.unmodifiable(all);
+
+    return List.unmodifiable(
+      all.where((s) => !installedIds.contains(s.id)),
+    );
+  }
+
+  void _detectUpdates(List<ASource> available, ItemType type) {
+    final installed = getInstalledRx(type).value as List<ASource>;
+
+    final repoMap = {for (var s in available) s.id: s};
+
+    bool changed = false;
+
+    for (var i = 0; i < installed.length; i++) {
+      final inst = installed[i];
+      final repo = repoMap[inst.id];
+
+      if (repo == null) continue;
+
+      if (compareVersions(repo.version ?? "0", inst.version ?? "0") > 0) {
+        installed[i] = inst
+          ..hasUpdate = true
+          ..apkName = repo.apkName
+          ..iconUrl = repo.iconUrl
+          ..versionLast = repo.version;
+
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      getInstalledRx(type).value = List.unmodifiable(installed);
+    }
+  }
+
+  Future<List<Source>> _fetchRepo(Repo repo, ItemType type) async {
+    try {
+      final res = await _client.get(Uri.parse(repo.url));
+      if (res.statusCode != 200) return const [];
+
+      return compute(
+        _parseExtensions,
+        (res.body, repo.url, type),
+      );
+    } catch (e) {
+      Logger.log("Repo failed ${repo.url}: $e");
+      return const [];
+    }
   }
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) {
-    // TODO: implement addRepo
-    throw UnimplementedError();
+  Future<void> fetchAnimeExtensions() async {
+    final res = await _fetchExtensions(ItemType.anime);
+    getAvailableRx(ItemType.anime).value = res;
   }
 
   @override
-  Future<void> fetchAnimeExtensions() {
-    // TODO: implement fetchAnimeExtensions
-    throw UnimplementedError();
+  Future<void> fetchMangaExtensions() async {
+    final res = await _fetchExtensions(ItemType.manga);
+    getAvailableRx(ItemType.manga).value = res;
   }
 
   @override
-  Future<void> fetchInstalledAnimeExtensions() {
-    // TODO: implement fetchInstalledAnimeExtensions
-    throw UnimplementedError();
-  }
+  Future<void> fetchNovelExtensions() async {}
 
   @override
-  Future<void> fetchInstalledMangaExtensions() {
-    // TODO: implement fetchInstalledMangaExtensions
-    throw UnimplementedError();
-  }
+  Future<void> fetchInstalledNovelExtensions() async {}
 
   @override
-  Future<void> fetchInstalledNovelExtensions() {
-    // TODO: implement fetchInstalledNovelExtensions
-    throw UnimplementedError();
+  Future<void> removeRepo(String repoUrl, ItemType type) async {
+    try {
+      final repos = _loadRepos(type)
+          .where((r) => r.url != repoUrl)
+          .toList(growable: false);
+
+      _saveRepos(repos, type);
+
+      final rx = getAvailableRx(type);
+      rx.value = rx.value.where((s) => s.repo != repoUrl).toList();
+
+      getReposRx(type).value = repos;
+    } catch (e) {
+      Logger.log("Failed to remove repo $repoUrl: $e");
+    }
   }
 
-  @override
-  Future<void> fetchMangaExtensions() {
-    // TODO: implement fetchMangaExtensions
-    throw UnimplementedError();
+  List<Repo> _loadRepos(ItemType type) {
+    final encoded = getVal<List<String>>('$id${type.name}Repos');
+    if (encoded == null || encoded.isEmpty) return const [];
+
+    return encoded
+        .map((e) => Repo.fromJson(jsonDecode(e)))
+        .toSet()
+        .toList(growable: false);
   }
 
-  @override
-  Future<void> fetchNovelExtensions() {
-    // TODO: implement fetchNovelExtensions
-    throw UnimplementedError();
-  }
+  void _saveRepos(List<Repo> repos, ItemType type) {
+    final key = '$id${type.name}Repos';
 
-  @override
-  Future<void> removeRepo(String repoUrl, ItemType type) {
-    // TODO: implement removeRepo
-    throw UnimplementedError();
+    setVal(
+      key,
+      repos.toSet().map((e) => jsonEncode(e.toJson())).toList(growable: false),
+    );
   }
 
   @override

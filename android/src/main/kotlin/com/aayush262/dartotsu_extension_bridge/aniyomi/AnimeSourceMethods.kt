@@ -19,15 +19,20 @@ class AnimeSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
     private val source: AnimeCatalogueSource
     init {
         val manager = Injekt.get<AniyomiExtensionManager>()
-        val extension = manager.installedAnimeExtensions
-            .find { it.sources.first().id.toString() == sourceID }
+
+        val src = manager.installedAnimeExtensions
+            .asSequence()
+            .flatMap { it.sources.asSequence() }
+            .firstOrNull { it.id.toString() == sourceID }
             ?: throw IllegalArgumentException("Anime source with ID '$sourceID' not found.")
 
-        val src = extension.sources.getOrNull(langIndex) ?: extension.sources.firstOrNull()
-
-        source = src as? AnimeHttpSource ?: src as? AnimeCatalogueSource
-                ?: throw IllegalArgumentException("Source with ID '$sourceID' is not an AnimeHttpSource or AnimeCatalogueSource")
+        source = src as? AnimeHttpSource
+            ?: src as? AnimeCatalogueSource
+                    ?: throw IllegalArgumentException(
+                "Source with ID '$sourceID' is not an AnimeHttpSource or AnimeCatalogueSource"
+            )
     }
+
 
     override var baseUrl = (source as? AnimeHttpSource)?.baseUrl
 

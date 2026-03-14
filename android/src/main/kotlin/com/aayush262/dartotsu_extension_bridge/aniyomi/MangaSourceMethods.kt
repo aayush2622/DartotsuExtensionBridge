@@ -29,13 +29,18 @@ class MangaSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
 
     init {
         val manager = Injekt.get<AniyomiExtensionManager>()
-        val extension = manager.installedMangaExtensions
-            .find { it.sources.first().id.toString() == sourceID }
+
+        val src = manager.installedMangaExtensions
+            .asSequence()
+            .flatMap { it.sources.asSequence() }
+            .firstOrNull { it.id.toString() == sourceID }
             ?: throw IllegalArgumentException("Manga source with ID '$sourceID' not found.")
 
-        val src = extension.sources.getOrNull(langIndex) ?: extension.sources.firstOrNull()
-        source = src as? HttpSource ?: src as? CatalogueSource
-                ?: throw IllegalArgumentException("Source with ID '$sourceID' is not an HttpSource or CatalogueSource")
+        source = src as? HttpSource
+            ?: src as? CatalogueSource
+                    ?: throw IllegalArgumentException(
+                "Source with ID '$sourceID' is not an HttpSource or CatalogueSource"
+            )
     }
 
     override var baseUrl = (source as? HttpSource)?.baseUrl

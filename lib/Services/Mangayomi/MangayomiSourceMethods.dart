@@ -5,7 +5,6 @@ import '../../Models/DEpisode.dart';
 import '../../Models/DMedia.dart';
 import '../../Models/Page.dart';
 import '../../Models/Pages.dart';
-import '../../Models/Source.dart';
 import '../../Models/SourcePreference.dart' as s;
 import '../../Models/Video.dart';
 import 'Eval/dart/model/m_manga.dart';
@@ -20,7 +19,7 @@ class MangayomiSourceMethods implements SourceMethods {
   @override
   final MSource source;
 
-  MangayomiSourceMethods(Source source) : source = source as MSource;
+  MangayomiSourceMethods(this.source);
 
   @override
   Future<DMedia> getDetail(DMedia media) async {

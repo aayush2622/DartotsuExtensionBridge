@@ -13,8 +13,8 @@ abstract class Extension {
   bool get supportsAnime => true;
   bool get supportsManga => true;
   bool get supportsNovel => true;
-
-  SourceMethods createSourceMethods(Source source);
+  bool _isInitialized = false;
+  Map<Type, SourceMethods Function(Source source)> get sourceMethodFactories;
 
   final Map<ItemType, Rx<List<Source>>> _installed = {
     ItemType.anime: Rx<List<Source>>([]),
@@ -40,6 +40,8 @@ abstract class Extension {
 
   @mustCallSuper
   Future<void> initialize() async {
+    if (_isInitialized) return;
+    _isInitialized = true;
     try {
       if (supportsAnime) {
         unawaited(fetchInstalledAnimeExtensions());
