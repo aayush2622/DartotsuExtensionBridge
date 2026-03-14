@@ -1,8 +1,8 @@
 import '../../../Models/Source.dart';
 
 class ASource extends Source {
-  String? apkUrl;
-  int? extensionType;
+  String? pkgName;
+  String? apkName;
 
   ASource({
     super.id,
@@ -16,8 +16,8 @@ class ASource extends Source {
     super.itemType,
     super.repo,
     super.hasUpdate,
-    this.apkUrl,
-    this.extensionType,
+    this.pkgName,
+    this.apkName,
   });
   factory ASource.fromJson(Map<String, dynamic> json) {
     return ASource(
@@ -32,16 +32,28 @@ class ASource extends Source {
       repo: json['repo'],
       hasUpdate: json['hasUpdate'] ?? false,
       itemType: ItemType.values[json['itemType'] ?? 0],
-      apkUrl: json['apkUrl'],
-      extensionType: json['extensionType'],
+      pkgName: json['pkgName'],
+      apkName: json['apkName'],
     );
   }
 
   @override
   Map<String, dynamic> toJson() {
     final map = super.toJson();
-    map['apkUrl'] = apkUrl;
-    map['extensionType'] = extensionType;
+    map['apkUrl'] = apkName;
+    map['pkgName'] = pkgName;
     return map;
+  }
+
+  String? get apkUrl {
+    if (apkName == null || apkName!.isEmpty) return null;
+    if (iconUrl == null || iconUrl!.isEmpty) return null;
+
+    final baseUrl = iconUrl!.replaceFirst('icon/', 'apk/');
+    final lastSlash = baseUrl.lastIndexOf('/');
+    if (lastSlash == -1) return "";
+
+    final cleanedUrl = baseUrl.substring(0, lastSlash);
+    return '$cleanedUrl/$apkName';
   }
 }

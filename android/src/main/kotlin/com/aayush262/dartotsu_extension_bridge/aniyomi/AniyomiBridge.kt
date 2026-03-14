@@ -55,8 +55,6 @@ class AniyomiBridge(private val context: Context) {
         private val handlers = mapOf(
             "getInstalledAnimeExtensions" to ::getInstalledAnimeExtensions,
             "getInstalledMangaExtensions" to ::getInstalledMangaExtensions,
-            "fetchAnimeExtensions" to ::fetchAnimeExtensions,
-            "fetchMangaExtensions" to ::fetchMangaExtensions,
             "getLatestUpdates" to ::getLatestUpdates,
             "getPopular" to ::getPopular,
             "getDetail" to ::getDetail,
@@ -92,98 +90,55 @@ class AniyomiBridge(private val context: Context) {
 
 
         private fun getInstalledAnimeExtensions(call: MethodCall, result: MethodChannel.Result) =
-            launch(call,result) {
+            launch(call, result) {
                 val path = call.arguments as? String?
-                Injekt.get<AniyomiExtensionManager>().fetchInstalledAnimeExtensions(path).map { ext ->
-                    val baseUrl = (ext.sources.firstOrNull() as? AnimeHttpSource)?.baseUrl.orEmpty()
-                    mapOf(
-                        "id" to ext.sources.first().id,
-                        "name" to ext.name,
-                        "baseUrl" to baseUrl,
-                        "lang" to ext.lang,
-                        "isNsfw" to ext.isNsfw,
-                        "iconUrl" to ext.iconUrl,
-                        "version" to ext.versionName,
-                        "libVersion" to ext.libVersion,
-                        "supportedLanguages" to ext.sources.map { it.lang },
-                        "itemType" to 1,
-                        "hasUpdate" to ext.hasUpdate,
-                        "isObsolete" to ext.isObsolete,
-                        "isShared" to ext.isShared,
-                    )
-                }
-            }
 
+                Injekt.get<AniyomiExtensionManager>()
+                    .fetchInstalledAnimeExtensions(path)
+                    .flatMap { ext ->
+                        ext.sources.map { source ->
+                            val baseUrl = (source as? AnimeHttpSource)?.baseUrl.orEmpty()
+
+                            mapOf(
+                                "id" to source.id.toString(),
+                                "name" to ext.name,
+                                "baseUrl" to baseUrl,
+                                "lang" to source.lang,
+                                "isNsfw" to ext.isNsfw,
+                                "iconUrl" to ext.iconUrl,
+                                "version" to ext.versionName,
+                                "pkgName" to ext.pkgName,
+                                "itemType" to 1,
+                                "hasUpdate" to ext.hasUpdate,
+                                "isObsolete" to ext.isObsolete,
+                                "isShared" to ext.isShared,
+                            )
+                        }
+                    }
+            }
         private fun getInstalledMangaExtensions(call: MethodCall, result: MethodChannel.Result) =
-            launch(call,result) {
-                val path = call.arguments as? String?
-                Injekt.get<AniyomiExtensionManager>().fetchInstalledMangaExtensions().map { ext ->
-                    val baseUrl = (ext.sources.firstOrNull() as? HttpSource)?.baseUrl.orEmpty()
-                    mapOf(
-                        "id" to ext.sources.first().id,
-                        "name" to ext.name,
-                        "baseUrl" to baseUrl,
-                        "lang" to ext.lang,
-                        "isNsfw" to ext.isNsfw,
-                        "iconUrl" to ext.iconUrl,
-                        "version" to ext.versionName,
-                        "libVersion" to ext.libVersion,
-                        "supportedLanguages" to ext.sources.map { it.lang },
-                        "itemType" to 0,
-                        "hasUpdate" to ext.hasUpdate,
-                        "isObsolete" to ext.isObsolete,
-                        "isUnofficial" to ext.isUnofficial,
-                        //"isShared" to ext.isShared,
-                    )
-                }
-            }
-
-
-        private fun fetchAnimeExtensions(call: MethodCall, result: MethodChannel.Result) =
-            launch(call,result) {
-                val args = call.arguments as? List<*>
-                val repos = args?.filterIsInstance<String>() ?: emptyList()
+            launch(call, result) {
                 Injekt.get<AniyomiExtensionManager>()
-                    .findAvailableAnimeExtensions(repos)
-                    .map { ext ->
-
-                        mapOf(
-                            "name" to ext.name,
-                            "id" to ext.sources.first().id,
-                            "version" to ext.versionName,
-                            "libVersion" to ext.libVersion,
-                            "supportedLanguages" to ext.sources.map { it.lang },
-                            "lang" to ext.lang,
-                            "isNsfw" to ext.isNsfw,
-                            "apkName" to ext.apkName,
-                            "iconUrl" to ext.iconUrl,
-                            "itemType" to 1,
-                        )
+                    .fetchInstalledMangaExtensions()
+                    .flatMap { ext ->
+                        ext.sources.map { source ->
+                            val baseUrl = (source as? HttpSource)?.baseUrl.orEmpty()
+                            mapOf(
+                                "id" to source.id,
+                                "name" to ext.name,
+                                "baseUrl" to baseUrl,
+                                "lang" to source.lang,
+                                "isNsfw" to ext.isNsfw,
+                                "iconUrl" to ext.iconUrl,
+                                "version" to ext.versionName,
+                                "pkgName" to ext.pkgName,
+                                "itemType" to 0,
+                                "hasUpdate" to ext.hasUpdate,
+                                "isObsolete" to ext.isObsolete,
+                            )
+                        }
                     }
             }
-
-        private fun fetchMangaExtensions(call: MethodCall, result: MethodChannel.Result) =
-            launch(call,result) {
-                val args = call.arguments as? List<*>
-                val repos = args?.filterIsInstance<String>() ?: emptyList()
-                Injekt.get<AniyomiExtensionManager>()
-                    .findAvailableMangaExtensions(repos)
-                    .map { ext ->
-                        mapOf(
-                            "name" to ext.name,
-                            "id" to ext.sources.first().id,
-                            "version" to ext.versionName,
-                            "libVersion" to ext.libVersion,
-                            "supportedLanguages" to ext.sources.map { it.lang },
-                            "lang" to ext.lang,
-                            "apkName" to ext.apkName,
-                            "isNsfw" to ext.isNsfw,
-                            "iconUrl" to ext.iconUrl,
-                            "itemType" to 0,
-                        )
-                    }
-            }
-
 
         private fun getPopular(call: MethodCall, result: MethodChannel.Result) =
             paged(call, result) { media, page -> media.getPopular(page) }

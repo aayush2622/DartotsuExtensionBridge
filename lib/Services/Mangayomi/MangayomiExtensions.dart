@@ -22,9 +22,9 @@ class MangayomiExtensions extends Extension {
   String get name => 'Mangayomi';
 
   @override
-  SourceMethods createSourceMethods(Source source) =>
-      MangayomiSourceMethods(source);
-
+  Map<Type, SourceMethods Function(Source)> get sourceMethodFactories => {
+        MSource: (source) => MangayomiSourceMethods(source as MSource),
+      };
   @override
   Future<void> fetchAnimeExtensions() async {
     final res = await _fetchExtensions(ItemType.anime);

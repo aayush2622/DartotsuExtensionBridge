@@ -18,10 +18,9 @@ class SoraSourceMethods extends SourceMethods {
   @override
   final SSource source;
 
+  SoraSourceMethods(this.source);
+
   late final String module = source.name ?? source.id ?? "";
-
-  SoraSourceMethods(Source source) : source = source as SSource;
-
   Completer<void>? _initCompleter;
 
   Future<void> initialize() {

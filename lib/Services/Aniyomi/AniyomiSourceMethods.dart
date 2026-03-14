@@ -6,7 +6,6 @@ import '../../Models/DEpisode.dart';
 import '../../Models/DMedia.dart';
 import '../../Models/Page.dart';
 import '../../Models/Pages.dart';
-import '../../Models/Source.dart';
 import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
 import 'Models/Source.dart';
@@ -15,7 +14,7 @@ class AniyomiSourceMethods extends SourceMethods {
   @override
   final ASource source;
 
-  AniyomiSourceMethods(Source source) : source = source as ASource;
+  AniyomiSourceMethods(this.source);
 
   static const platform = MethodChannel('aniyomiExtensionBridge');
 

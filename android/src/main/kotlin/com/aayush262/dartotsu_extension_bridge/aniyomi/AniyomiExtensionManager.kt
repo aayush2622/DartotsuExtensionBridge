@@ -22,9 +22,7 @@ import uy.kohesive.injekt.injectLazy
 
 class AniyomiExtensionManager(var context: Context) {
     lateinit var installedAnimeExtensions: List<AnimeExtension.Installed>
-    lateinit var availableAnimeExtensions: List<AnimeExtension.Available>
     lateinit var installedMangaExtensions: List<MangaExtension.Installed>
-    lateinit var availableMangaExtensions: List<MangaExtension.Available>
     private val json: Json by injectLazy()
 
     fun fetchInstalledAnimeExtensions(path: String?): List<AnimeExtension.Installed> {
@@ -38,6 +36,14 @@ class AniyomiExtensionManager(var context: Context) {
         installedMangaExtensions =
             sources.filterIsInstance<MangaLoadResult.Success>().map { it.extension }
         return installedMangaExtensions
+    }
+
+    suspend fun findAvailableAnimeExtensions(repo: String): List<AnimeExtension.Available> {
+        return findAvailableAnimeExtensions(listOf(repo))
+    }
+
+    suspend fun findAvailableMangaExtensions(repo: String): List<MangaExtension.Available> {
+        return findAvailableMangaExtensions(listOf(repo))
     }
 
     suspend fun findAvailableAnimeExtensions(repos: List<String>): List<AnimeExtension.Available> {
@@ -86,7 +92,6 @@ class AniyomiExtensionManager(var context: Context) {
         }.flatten()
 
         return extensions.filter { it.pkgName.isNotEmpty() }
-            .also { availableAnimeExtensions = it }
     }
 
     suspend fun findAvailableMangaExtensions(repos: List<String>): List<MangaExtension.Available> {
@@ -134,7 +139,6 @@ class AniyomiExtensionManager(var context: Context) {
         }.flatten()
 
         return extensions.filter { it.pkgName.isNotEmpty() }
-            .also { availableMangaExtensions = it }
     }
 
     private fun fallbackRepoUrl(repoUrl: String): String? {
