@@ -14,7 +14,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class AnimeSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMethods {
+class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
 
     private val source: AnimeCatalogueSource
     init {
