@@ -1,17 +1,20 @@
 package com.aayush262.dartotsu_extension_bridge
 
+import com.ryan.cloudstream_bridge.cloudstream.CloudStreamPluginBridge
 import android.app.Application
 import com.aayush262.dartotsu_extension_bridge.aniyomi.AniyomiBridge
 import com.aayush262.dartotsu_extension_bridge.aniyomi.AniyomiExtensionManager
 import eu.kanade.tachiyomi.network.NetworkHelper
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import kotlinx.serialization.json.Json
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
 
 /** DartotsuExtensionBridgePlugin */
-class DartotsuExtensionBridgePlugin : FlutterPlugin {
+class DartotsuExtensionBridgePlugin : FlutterPlugin, ActivityAware {
 
     private lateinit var aniyomiBridge: AniyomiBridge
     private val flutterBridge = FlutterKotlinBridge()
@@ -22,6 +25,8 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
             ?: error("Application context is not an Application")
 
         initInjekt(application)
+        
+        CloudStreamPluginBridge.onAttachedToEngine(binding)
         
         flutterBridge.attach(binding)
 
@@ -35,6 +40,23 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         flutterBridge.detach()
         aniyomiBridge.detach()
+        CloudStreamPluginBridge.onDetachedFromEngine(binding)
+    }
+
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        CloudStreamPluginBridge.onAttachedToActivity(binding)
+    }
+
+    override fun onDetachedFromActivityForConfigChanges() {
+        CloudStreamPluginBridge.onDetachedFromActivityForConfigChanges()
+    }
+
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+        CloudStreamPluginBridge.onReattachedToActivityForConfigChanges(binding)
+    }
+
+    override fun onDetachedFromActivity() {
+        CloudStreamPluginBridge.onDetachedFromActivity()
     }
 
     private fun initInjekt(application: Application) {
