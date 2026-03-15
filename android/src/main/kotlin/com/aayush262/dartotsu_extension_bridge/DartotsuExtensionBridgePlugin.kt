@@ -3,6 +3,8 @@ package com.aayush262.dartotsu_extension_bridge
 import android.app.Application
 import com.aayush262.dartotsu_extension_bridge.aniyomi.AniyomiBridge
 import com.aayush262.dartotsu_extension_bridge.aniyomi.AniyomiExtensionManager
+import com.aayush262.dartotsu_extension_bridge.aniyomi.PrintTest
+import dalvik.system.DexClassLoader
 import eu.kanade.tachiyomi.network.NetworkHelper
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import kotlinx.serialization.json.Json
@@ -30,6 +32,25 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
         }
         Logger.log("Plugin attached to engine", LogLevel.INFO)
         println("Plugin attached to engine")
+
+
+        val pluginPackage = "com.aayush262.dartotsu.aniyomi_plugin"
+
+        val appInfo = application.packageManager.getApplicationInfo(pluginPackage, 0)
+        val apkPath = appInfo.sourceDir
+        val loader = DexClassLoader(
+            apkPath,
+            application.codeCacheDir.absolutePath,
+            null,
+            application.classLoader
+        )
+        val clazz = loader.loadClass(
+            "com.aayush262.dartotsu_extension_bridge.aniyomi.Tes"
+        )
+        print("Class loaded: ${clazz.name}")
+        val instance = clazz.getDeclaredConstructor().newInstance()
+        val plugin = instance as PrintTest
+        plugin.printTest()
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
