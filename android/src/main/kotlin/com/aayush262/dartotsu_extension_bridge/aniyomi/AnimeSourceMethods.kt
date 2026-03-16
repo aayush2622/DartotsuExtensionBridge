@@ -80,4 +80,3 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
     }
 }
 class NoPreferenceScreenException(message: String) : Exception(message)
-

@@ -403,4 +403,35 @@ class SoraExtensions extends Extension {
       list.map((e) => jsonEncode(e.toJson())).toList(growable: false),
     );
   }
+
+  @override
+  Set<String> get schemes => {"sora"};
+
+  @override
+  void handleSchemes(Uri uri) {
+    final url = uri.queryParameters["url"];
+    if (url != null && url.isNotEmpty) {
+      _fetchAndAddRepo(url);
+    }
+  }
+
+  Future<void> _fetchAndAddRepo(String url) async {
+    try {
+      final response = await _client.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final type = json["type"] as String?;
+
+        final itemType = switch (type?.toLowerCase()) {
+          "anime" => ItemType.anime,
+          "manga" => ItemType.manga,
+          _ => ItemType.anime,
+        };
+
+        await addRepo(url, itemType);
+      }
+    } catch (e) {
+      debugPrint("Failed to fetch repo JSON: $e");
+    }
+  }
 }
