@@ -187,4 +187,10 @@ class MangayomiSourceMethods implements SourceMethods {
         )
         .toList();
   }
+
+  @override
+  Stream<Video>? getVideoListStream(DEpisode episode) {
+    // TODO: implement getVideoListStream
+    throw UnimplementedError();
+  }
 }
