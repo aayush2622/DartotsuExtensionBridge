@@ -341,4 +341,27 @@ class MangayomiExtensions extends Extension {
 
   @override
   Set<String> get schemes => {"dar", "anymex", "sugoireads", "mangayomi"};
+
+  @override
+  void handleSchemes(Uri uri) {
+    final qp = uri.queryParameters;
+
+    if (uri.host == "add-repo") {
+      final repoUrl = qp["repo_url"] ?? qp['url'] ?? qp['anime_url'];
+      final mangaUrl = qp["manga_url"];
+      final novelUrl = qp["novel_url"];
+
+      if (mangaUrl != null && mangaUrl.isNotEmpty) {
+        addRepo(mangaUrl, ItemType.manga);
+      }
+
+      if (novelUrl != null && novelUrl.isNotEmpty) {
+        addRepo(novelUrl, ItemType.novel);
+      }
+
+      if (repoUrl != null && repoUrl.isNotEmpty) {
+        addRepo(repoUrl, ItemType.anime);
+      }
+    }
+  }
 }
