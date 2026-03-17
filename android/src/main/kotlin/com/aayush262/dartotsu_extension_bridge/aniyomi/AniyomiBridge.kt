@@ -1,6 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import android.content.Context
+import com.aayush262.dartotsu_extension_bridge.ExtensionApi
 import dalvik.system.DexClassLoader
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
@@ -9,11 +10,11 @@ import kotlinx.coroutines.*
 import com.aayush262.dartotsu_extension_bridge.LogLevel
 import com.aayush262.dartotsu_extension_bridge.Logger
 
-class AniyomiBridge(private val context: Context) {
-
+class AniyomiBridge {
+    private lateinit var loggerChannel: MethodChannel
+    private lateinit var networkChannel: MethodChannel
     private lateinit var channel: MethodChannel
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     private var api: ExtensionApi? = null
 
     fun attach(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -23,12 +24,26 @@ class AniyomiBridge(private val context: Context) {
         ).apply {
             setMethodCallHandler(Handler())
         }
+        networkChannel = MethodChannel(
+            binding.binaryMessenger,
+            "flutterKotlinBridge.network"
+        ).apply {
+            setMethodCallHandler(NetworkHandler())
+        }
 
+        loggerChannel = MethodChannel(
+            binding.binaryMessenger,
+            "flutterKotlinBridge.logger"
+        )
+
+        Logger.init(loggerChannel)
         loadApi(binding.applicationContext)
     }
 
     fun detach() {
         channel.setMethodCallHandler(null)
+        networkChannel.setMethodCallHandler(null)
+        loggerChannel.setMethodCallHandler(null)
     }
 
     /**
@@ -60,7 +75,11 @@ class AniyomiBridge(private val context: Context) {
             api = instance as ExtensionApi
 
             Logger.log("Extension API loaded successfully", LogLevel.INFO)
+            api?.initialize(context)
 
+            if (instance is AniyomiCustomMethods) {
+                instance.initialize(CustomAniyomiMethods(networkChannel))
+            }
         } catch (e: Throwable) {
             Logger.log(
                 "Failed to load Extension API: ${e.stackTraceToString()}",
@@ -70,7 +89,7 @@ class AniyomiBridge(private val context: Context) {
     }
 
     private inner class Handler : MethodChannel.MethodCallHandler {
-
+        @Suppress("UNCHECKED_CAST")
         override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
 
             val api = api
@@ -194,7 +213,25 @@ class AniyomiBridge(private val context: Context) {
             }
         }
     }
+    private inner class NetworkHandler : MethodChannel.MethodCallHandler {
+        override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
+            when (call.method) {
+                "initClient" -> {
+                    val args = call.arguments as? Map<*, *>
+                        ?: return result.error(
+                            "INVALID_ARGUMENTS",
+                            "Expected a map",
+                            null
+                        )
 
+                    (api as AniyomiCustomMethods).initClient(args)
+                    result.success(null)
+                }
+
+                else -> result.notImplemented()
+            }
+        }
+    }
     private fun launch(
         call: MethodCall,
         result: MethodChannel.Result,

@@ -1,5 +1,6 @@
 package com.ryan.cloudstream_bridge.cloudstream
 
+import android.annotation.SuppressLint
 import androidx.preference.PreferenceManager
 import android.content.Context
 import android.util.Log
@@ -20,6 +21,7 @@ import com.lagradost.cloudstream3.utils.PREFERENCES_NAME
 import kotlinx.coroutines.*
 import java.io.File
 
+@SuppressLint("StaticFieldLeak")
 object CloudStreamPluginBridge : FlutterPlugin, ActivityAware {
     private const val TAG = "CloudStreamBridge"
     private lateinit var channel: MethodChannel

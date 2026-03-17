@@ -389,18 +389,19 @@ class AniyomiExtensions extends Extension {
     final encoded = getVal<List<String>>('$id${type.name}Repos');
     if (encoded == null || encoded.isEmpty) return const [];
 
-    return encoded
-        .map((e) => Repo.fromJson(jsonDecode(e)))
-        .toSet()
-        .toList(growable: false);
+    final repos = encoded.map((e) => Repo.fromJson(jsonDecode(e)));
+
+    return {for (final r in repos) r.url: r}.values.toList(growable: false);
   }
 
   void _saveRepos(List<Repo> repos, ItemType type) {
     final key = '$id${type.name}Repos';
 
+    final unique = {for (final r in repos) r.url: r}.values;
+
     setVal(
       key,
-      repos.toSet().map((e) => jsonEncode(e.toJson())).toList(growable: false),
+      unique.map((e) => jsonEncode(e.toJson())).toList(growable: false),
     );
   }
 

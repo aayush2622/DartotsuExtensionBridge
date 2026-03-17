@@ -1,44 +1,76 @@
 package com.aayush262.dartotsu_extension_bridge
 
-
 import android.annotation.SuppressLint
 import android.app.Application
+import android.content.Context
 import androidx.core.net.toUri
 import androidx.preference.*
 import com.aayush262.dartotsu_extension_bridge.aniyomi.*
+import com.aayush262.dartotsu_extension_bridge.network.Network.enableNetworking
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
+import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
+import androidx.core.content.edit
 
-class AniyomiExtensionApi(
-) : ExtensionApi {
+var customAniyomiMethods: CustomMethods? = null
+class AniyomiExtensionApi : ExtensionApi , AniyomiCustomMethods {
 
-    private val sourcePreferences =
-        mutableMapOf<String, MutableMap<String, PrefHandlers>>()
+    private val sourcePreferences = mutableMapOf<String, MutableMap<String, Preference>>()
 
-    private fun media(sourceId: String, isAnime: Boolean) =
-        if (isAnime) AnimeSourceMethods(sourceId)
-        else MangaSourceMethods(sourceId)
+    private fun media(sourceId: String, isAnime: Boolean) = if (isAnime) AnimeSourceMethods(sourceId)
+    else MangaSourceMethods(sourceId)
+
+    override fun initialize(customMethods: CustomMethods) {
+        customAniyomiMethods = customMethods
+    }
+
+    override fun initClient(data: Map<*, *>) {
+        enableNetworking(data)
+    }
+
+    override fun initialize(context: Context) {
+
+        Injekt.addSingletonFactory<Application> { context as Application }
+
+        Injekt.addSingletonFactory { NetworkHelper(context) }
+        Injekt.addSingletonFactory { Injekt.get<NetworkHelper>().client }
+
+        Injekt.addSingletonFactory {
+            Json {
+                ignoreUnknownKeys = true
+                explicitNulls = false
+            }
+        }
+
+        Injekt.addSingletonFactory { AniyomiExtensionManager(context) }
+
+    }
 
     override suspend fun getInstalledAnimeExtensions(path: String?): List<Map<String, Any?>> {
-        return Injekt.get<AniyomiExtensionManager>()
-            .fetchInstalledAnimeExtensions(path)
-            .flatMap { ext ->
+
+        return withContext(Dispatchers.IO) {
+
+            val list = Injekt.get<AniyomiExtensionManager>().fetchInstalledAnimeExtensions(path).flatMap { ext ->
                 ext.sources.map { source ->
 
                     val baseUrl = (source as? AnimeHttpSource)?.baseUrl.orEmpty()
 
                     mapOf(
                         "id" to source.id.toString(),
-                        "name" to ext.name,
+                        "name" to source.name,
                         "baseUrl" to baseUrl,
-                        "lang" to source.lang,
+                        "lang" to ext.lang,
                         "isNsfw" to ext.isNsfw,
                         "iconUrl" to ext.iconUrl,
                         "version" to ext.versionName,
@@ -46,23 +78,38 @@ class AniyomiExtensionApi(
                         "itemType" to 1,
                         "hasUpdate" to ext.hasUpdate,
                         "isObsolete" to ext.isObsolete,
-                        "isShared" to ext.isShared,
+                        "isShared" to ext.isShared
                     )
                 }
             }
+
+            val nameCounts = list.groupingBy { it["name"] }.eachCount()
+
+            list.map { item ->
+                val name = item["name"] as String
+                val lang = item["lang"] as String
+
+                if (nameCounts[name]!! > 1) {
+                    item + ("name" to "$name ($lang)")
+                } else {
+                    item
+                }
+            }
+        }
     }
 
     override suspend fun getInstalledMangaExtensions(): List<Map<String, Any?>> {
-        return Injekt.get<AniyomiExtensionManager>()
-            .fetchInstalledMangaExtensions()
-            .flatMap { ext ->
+
+        return withContext(Dispatchers.IO) {
+
+            val list = Injekt.get<AniyomiExtensionManager>().fetchInstalledMangaExtensions().flatMap { ext ->
                 ext.sources.map { source ->
 
                     val baseUrl = (source as? HttpSource)?.baseUrl.orEmpty()
 
                     mapOf(
                         "id" to source.id,
-                        "name" to ext.name,
+                        "name" to source.name,
                         "baseUrl" to baseUrl,
                         "lang" to source.lang,
                         "isNsfw" to ext.isNsfw,
@@ -71,68 +118,61 @@ class AniyomiExtensionApi(
                         "pkgName" to ext.pkgName,
                         "itemType" to 0,
                         "hasUpdate" to ext.hasUpdate,
-                        "isObsolete" to ext.isObsolete,
+                        "isObsolete" to ext.isObsolete
                     )
                 }
             }
+
+            val nameCounts = list.groupingBy { it["name"] }.eachCount()
+
+            list.map { item ->
+                val name = item["name"] as String
+                val lang = item["lang"] as String
+                if (nameCounts[name]!! > 1) {
+                    item + ("name" to "$name ($lang)")
+                } else {
+                    item
+                }
+            }
+        }
     }
 
-    // -------------------------
-    // Popular / Latest / Search
-    // -------------------------
-
     override suspend fun getPopular(
-        sourceId: String,
-        isAnime: Boolean,
-        page: Int
-    ): Map<String, Any?> {
+        sourceId: String, isAnime: Boolean, page: Int
+    ): Map<String, Any?> = withContext(Dispatchers.IO) {
 
         val res = media(sourceId, isAnime).getPopular(page)
 
-        return mapOf(
-            "list" to res.animes.map { it.toMap() },
-            "hasNextPage" to res.hasNextPage
+        mapOf(
+            "list" to res.animes.map { it.toMap() }, "hasNextPage" to res.hasNextPage
         )
     }
 
     override suspend fun getLatestUpdates(
-        sourceId: String,
-        isAnime: Boolean,
-        page: Int
-    ): Map<String, Any?> {
+        sourceId: String, isAnime: Boolean, page: Int
+    ): Map<String, Any?> = withContext(Dispatchers.IO) {
 
         val res = media(sourceId, isAnime).getLatestUpdates(page)
 
-        return mapOf(
-            "list" to res.animes.map { it.toMap() },
-            "hasNextPage" to res.hasNextPage
+        mapOf(
+            "list" to res.animes.map { it.toMap() }, "hasNextPage" to res.hasNextPage
         )
     }
 
     override suspend fun search(
-        sourceId: String,
-        isAnime: Boolean,
-        query: String,
-        page: Int
-    ): Map<String, Any?> {
+        sourceId: String, isAnime: Boolean, query: String, page: Int
+    ): Map<String, Any?> = withContext(Dispatchers.IO) {
 
         val res = media(sourceId, isAnime).getSearchResults(query, page)
 
-        return mapOf(
-            "list" to res.animes.map { it.toMap() },
-            "hasNextPage" to res.hasNextPage
+        mapOf(
+            "list" to res.animes.map { it.toMap() }, "hasNextPage" to res.hasNextPage
         )
     }
 
-    // -------------------------
-    // Details
-    // -------------------------
-
     override suspend fun getDetail(
-        sourceId: String,
-        isAnime: Boolean,
-        media: Map<String, Any?>
-    ): Map<String, Any?> {
+        sourceId: String, isAnime: Boolean, media: Map<String, Any?>
+    ): Map<String, Any?> = withContext(Dispatchers.IO) {
 
         val anime = SAnime.create().apply {
             title = media["title"] as String
@@ -144,15 +184,14 @@ class AniyomiExtensionApi(
             genre = media["genre"] as? String
         }
 
-        val media = media(sourceId, isAnime)
+        val mediaSource = media(sourceId, isAnime)
 
-        val details = media.getDetails(anime)
+        val details = mediaSource.getDetails(anime)
 
-        val episodes =
-            if (isAnime) media.getEpisodeList(anime)
-            else media.getChapterList(anime)
+        val episodes = if (isAnime) mediaSource.getEpisodeList(anime)
+        else mediaSource.getChapterList(anime)
 
-        return mapOf(
+        mapOf(
             "title" to anime.title,
             "url" to anime.url,
             "cover" to anime.thumbnail_url,
@@ -163,75 +202,45 @@ class AniyomiExtensionApi(
             "status" to details.status,
             "episodes" to episodes.map {
                 mapOf(
-                    "name" to it.name,
-                    "url" to it.url,
-                    "date_upload" to it.date_upload,
-                    "episode_number" to it.episode_number,
-                    "scanlator" to it.scanlator
+                    "name" to it.name, "url" to it.url, "date_upload" to it.date_upload, "episode_number" to it.episode_number, "scanlator" to it.scanlator
                 )
-            }
-        )
+            })
     }
-
-    // -------------------------
-    // Videos
-    // -------------------------
 
     override suspend fun getVideoList(
-        sourceId: String,
-        isAnime: Boolean,
-        episodeMap: Map<String, Any?>
-    ): List<Map<String, Any?>> {
+        sourceId: String, isAnime: Boolean, episode: Map<String, Any?>
+    ): List<Map<String, Any?>> = withContext(Dispatchers.IO) {
 
         val ep = SEpisode.create().apply {
-            name = episodeMap["name"] as String
-            url = episodeMap["url"] as String
-            episode_number =
-                (episodeMap["episode_number"] as? Double)?.toFloat() ?: 0f
-            scanlator = episodeMap["scanlator"] as? String
+            name = episode["name"] as String
+            url = episode["url"] as String
+            episode_number = (episode["episode_number"] as? Double)?.toFloat() ?: 0f
+            scanlator = episode["scanlator"] as? String
         }
 
-        return media(sourceId, isAnime).getVideoList(ep).map {
+        media(sourceId, isAnime).getVideoList(ep).map {
 
-            mapOf(
-                "title" to it.videoTitle,
-                "url" to it.videoUrl,
-                "quality" to it.resolution,
-                "headers" to it.headers?.toMap(),
-                "subtitles" to it.subtitleTracks.map { t ->
-                    mapOf("file" to t.url, "label" to t.lang)
-                },
-                "audios" to it.audioTracks.map { t ->
-                    mapOf("file" to t.url, "label" to t.lang)
-                }
-            )
+            mapOf("title" to it.videoTitle, "url" to it.videoUrl, "quality" to it.resolution, "headers" to it.headers?.toMap(), "subtitles" to it.subtitleTracks.map { t ->
+                mapOf("file" to t.url, "label" to t.lang)
+            }, "audios" to it.audioTracks.map { t ->
+                mapOf("file" to t.url, "label" to t.lang)
+            })
         }
     }
 
-    // -------------------------
-    // Pages
-    // -------------------------
-
     override suspend fun getPageList(
-        sourceId: String,
-        isAnime: Boolean,
-        episodeMap: Map<String, Any?>
-    ): List<Map<String, Any?>> {
+        sourceId: String, isAnime: Boolean, episode: Map<String, Any?>
+    ): List<Map<String, Any?>> = withContext(Dispatchers.IO) {
 
         val chapter = SChapter.create().apply {
-            name = episodeMap["name"] as String
-            url = episodeMap["url"] as String
+            name = episode["name"] as String
+            url = episode["url"] as String
         }
 
         val media = media(sourceId, isAnime)
 
-        return media.getPageList(chapter)
-            .map { it.toPayload(media.baseUrl ?: "") }
+        media.getPageList(chapter).map { it.toPayload(media.baseUrl ?: "") }
     }
-
-    // -------------------------
-    // Preferences
-    // -------------------------
 
     @SuppressLint("RestrictedApi")
     override suspend fun getPreference(
@@ -240,12 +249,17 @@ class AniyomiExtensionApi(
     ): List<Map<String, Any?>> {
 
         sourcePreferences.remove(sourceId)
-        val context: Application = Injekt.get()
-        val screen = PreferenceManager(context)
-            .createPreferenceScreen(context)
 
-        media(sourceId, isAnime)
-            .setupPreferenceScreen(screen)
+        val context: Application = Injekt.get()
+
+        val prefManager = PreferenceManager(context)
+
+        prefManager.sharedPreferencesName = "source_$sourceId"
+        prefManager.sharedPreferencesMode = Context.MODE_PRIVATE
+
+        val screen = prefManager.createPreferenceScreen(context)
+
+        media(sourceId, isAnime).setupPreferenceScreen(screen)
 
         return screen.toDynamicMap(sourceId)
     }
@@ -257,43 +271,48 @@ class AniyomiExtensionApi(
         value: Any?
     ): Boolean {
 
-        val handler = sourcePreferences[sourceId]?.get(key) ?: return false
-        val pref = handler.pref
+        val pref = sourcePreferences[sourceId]?.get(key) ?: return false
 
-        if (action == "click") handler.click?.onPreferenceClick(pref)
-        else handler.change?.onPreferenceChange(pref, value)
+        withContext(Dispatchers.Main) {
 
-        when (pref) {
+            val prefs = pref.sharedPreferences ?: return@withContext
 
-            is SwitchPreferenceCompat ->
-                pref.isChecked = value as Boolean
-
-            is ListPreference ->
-                pref.value = value as String
-
-            is EditTextPreference ->
-                pref.text = value as String
-
-            is MultiSelectListPreference -> {
-                val newSet = when (value) {
-                    is List<*> -> value.filterIsInstance<String>().toSet()
-                    is Set<*> -> value.filterIsInstance<String>()
-                    else -> emptySet()
-                }
-                pref.values = newSet.toMutableSet()
+            val convertedValue = when (value) {
+                is List<*> -> value.filterIsInstance<String>().toMutableSet()
+                is Set<*> -> value.filterIsInstance<String>().toMutableSet()
+                else -> value
             }
 
-            is CheckBoxPreference ->
-                pref.isChecked = value as Boolean
+            prefs.edit(commit = true) {
+
+                when (convertedValue) {
+
+                    is Boolean -> putBoolean(key, convertedValue)
+
+                    is String -> putString(key, convertedValue)
+
+                    is Int -> putInt(key, convertedValue)
+
+                    is Long -> putLong(key, convertedValue)
+
+                    is Float -> putFloat(key, convertedValue)
+
+                    is Set<*> -> putStringSet(
+                        key,
+                        convertedValue.filterIsInstance<String>().toMutableSet()
+                    )
+
+                    null -> remove(key)
+
+                    else -> error("Unsupported preference type: ${convertedValue::class}")
+                }
+            }
+
+            pref.onPreferenceChangeListener?.onPreferenceChange(pref, convertedValue)
         }
 
         return true
     }
-
-    // -------------------------
-    // Helpers
-    // -------------------------
-
 
     private fun Page.toPayload(baseUrl: String): Map<String, Any> {
 
@@ -302,81 +321,77 @@ class AniyomiExtensionApi(
         val headers = uri.queryParameterNames.associateWith {
             uri.getQueryParameter(it).orEmpty()
         } + mapOf(
-            "Referer" to "$baseUrl/",
-            "Origin" to baseUrl
+            "Referer" to "$baseUrl/", "Origin" to baseUrl
         )
 
         return mapOf(
-            "url" to imageUrl!!,
-            "headers" to headers
+            "url" to imageUrl!!, "headers" to headers
         )
     }
 
-    private fun PreferenceScreen.toDynamicMap(sourceId: String): List<Map<String, Any?>> {
-
+    fun PreferenceScreen.toDynamicMap(sourceID: String): List<Map<String, Any?>> {
         val list = mutableListOf<Map<String, Any?>>()
+        val clickMap = sourcePreferences.getOrPut(sourceID) { mutableMapOf() }
+        fun traverse(prefGroup: PreferenceGroup) {
+            for (i in 0 until prefGroup.preferenceCount) {
+                val pref = prefGroup.getPreference(i)
 
-        val store = sourcePreferences
-            .getOrPut(sourceId) { mutableMapOf() }
-
-        fun walk(group: PreferenceGroup) {
-
-            for (i in 0 until group.preferenceCount) {
-
-                val p = group.getPreference(i)
-
-                store[p.key] =
-                    PrefHandlers(p, p.onPreferenceClickListener, p.onPreferenceChangeListener)
-
-                val map = mutableMapOf<String, Any?>(
-                    "key" to p.key,
-                    "title" to p.title?.toString(),
-                    "summary" to p.summary?.toString(),
-                    "enabled" to p.isEnabled,
-                    "type" to when (p) {
+                clickMap[pref.key] =  pref
+                val prefMap = mutableMapOf<String, Any?>(
+                    "key" to pref.key, "title" to pref.title.toString(), "summary" to pref.summary?.toString(), "enabled" to pref.isEnabled, "type" to when (pref) {
                         is ListPreference -> "list"
                         is MultiSelectListPreference -> "multi_select"
                         is SwitchPreferenceCompat -> "switch"
                         is EditTextPreference -> "text"
                         is CheckBoxPreference -> "checkbox"
                         else -> "other"
-                    },
-                    "value" to when (p) {
-                        is ListPreference -> p.value
-                        is MultiSelectListPreference -> p.values.toList()
-                        is SwitchPreferenceCompat -> p.isChecked
-                        is EditTextPreference -> p.text
-                        is CheckBoxPreference -> p.isChecked
-                        else -> null
                     }
                 )
+                when (pref) {
+                    is ListPreference -> {
+                        prefMap["entries"] = pref.entries.map { it.toString() }
+                        prefMap["entryValues"] = pref.entryValues.map { it.toString() }
+                        prefMap["value"] = pref.value
+                    }
 
-                list += map
+                    is MultiSelectListPreference -> {
+                        prefMap["entries"] = pref.entries.map { it.toString() }
+                        prefMap["entryValues"] = pref.entryValues.map { it.toString() }
+                        prefMap["value"] = pref.values.toList()
+                    }
 
-                if (p is PreferenceCategory) walk(p)
+                    is SwitchPreferenceCompat -> {
+                        prefMap["value"] = pref.isChecked
+                    }
+
+                    is EditTextPreference -> {
+                        prefMap["value"] = pref.text
+                    }
+
+                    is CheckBoxPreference -> {
+                        prefMap["value"] = pref.isChecked
+                    }
+
+                    else -> {
+                        prefMap["value"] = pref.sharedPreferences?.all?.get(pref.key)
+                    }
+                }
+                list.add(prefMap)
+
+                if (pref is PreferenceCategory) {
+                    traverse(pref)
+                }
             }
         }
 
-        walk(this)
-
+        traverse(this)
         return list
     }
 
-    private data class PrefHandlers(
-        val pref: Preference,
-        val click: Preference.OnPreferenceClickListener?,
-        val change: Preference.OnPreferenceChangeListener?
-    )
+
+
 }
 
-
 private fun SAnime.toMap() = mapOf(
-    "title" to title,
-    "url" to url,
-    "cover" to thumbnail_url,
-    "artist" to artist,
-    "author" to author,
-    "description" to description,
-    "genre" to getGenres(),
-    "status" to status,
+    "title" to title, "url" to url, "cover" to thumbnail_url, "artist" to artist, "author" to author, "description" to description, "genre" to getGenres(), "status" to status
 )

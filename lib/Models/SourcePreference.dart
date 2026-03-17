@@ -20,19 +20,19 @@ class SourcePreference {
   });
 
   Map<String, dynamic> toJson() => {
-    'type': type,
-    'key': key,
-    'id': id,
-    if (checkBoxPreference != null)
-      'checkBoxPreference': checkBoxPreference!.toJson(),
-    if (switchPreferenceCompat != null)
-      'switchPreferenceCompat': switchPreferenceCompat!.toJson(),
-    if (listPreference != null) 'listPreference': listPreference!.toJson(),
-    if (multiSelectListPreference != null)
-      'multiSelectListPreference': multiSelectListPreference!.toJson(),
-    if (editTextPreference != null)
-      'editTextPreference': editTextPreference!.toJson(),
-  };
+        'type': type,
+        'key': key,
+        'id': id,
+        if (checkBoxPreference != null)
+          'checkBoxPreference': checkBoxPreference!.toJson(),
+        if (switchPreferenceCompat != null)
+          'switchPreferenceCompat': switchPreferenceCompat!.toJson(),
+        if (listPreference != null) 'listPreference': listPreference!.toJson(),
+        if (multiSelectListPreference != null)
+          'multiSelectListPreference': multiSelectListPreference!.toJson(),
+        if (editTextPreference != null)
+          'editTextPreference': editTextPreference!.toJson(),
+      };
 
   factory SourcePreference.fromJson(Map<String, dynamic> json) {
     return SourcePreference(
@@ -68,10 +68,10 @@ class CheckBoxPreference {
   CheckBoxPreference({this.title, this.summary, this.value});
 
   Map<String, dynamic> toJson() => {
-    'title': title,
-    'summary': summary,
-    'value': value,
-  };
+        'title': title,
+        'summary': summary,
+        'value': value,
+      };
 
   factory CheckBoxPreference.fromJson(Map<String, dynamic> json) {
     return CheckBoxPreference(
@@ -90,10 +90,10 @@ class SwitchPreferenceCompat {
   SwitchPreferenceCompat({this.title, this.summary, this.value});
 
   Map<String, dynamic> toJson() => {
-    'title': title,
-    'summary': summary,
-    'value': value,
-  };
+        'title': title,
+        'summary': summary,
+        'value': value,
+      };
 
   factory SwitchPreferenceCompat.fromJson(Map<String, dynamic> json) {
     return SwitchPreferenceCompat(
@@ -107,6 +107,7 @@ class SwitchPreferenceCompat {
 class ListPreference {
   String? title;
   String? summary;
+  String? value;
   int? valueIndex;
   List<String>? entries;
   List<String>? entryValues;
@@ -114,23 +115,26 @@ class ListPreference {
   ListPreference({
     this.title,
     this.summary,
+    this.value,
     this.valueIndex,
     this.entries,
     this.entryValues,
   });
 
   Map<String, dynamic> toJson() => {
-    'title': title,
-    'summary': summary,
-    'valueIndex': valueIndex,
-    'entries': entries,
-    'entryValues': entryValues,
-  };
+        'title': title,
+        'summary': summary,
+        'value': value,
+        'valueIndex': valueIndex,
+        'entries': entries,
+        'entryValues': entryValues,
+      };
 
   factory ListPreference.fromJson(Map<String, dynamic> json) {
     return ListPreference(
       title: json['title'],
       summary: json['summary'],
+      value: json['value'],
       valueIndex: json['valueIndex'],
       entries: json['entries']?.cast<String>(),
       entryValues: json['entryValues']?.cast<String>(),
@@ -154,12 +158,12 @@ class MultiSelectListPreference {
   });
 
   Map<String, dynamic> toJson() => {
-    'title': title,
-    'summary': summary,
-    'entries': entries?.cast<String>(),
-    'entryValues': entryValues?.cast<String>(),
-    'values': values?.cast<String>(),
-  };
+        'title': title,
+        'summary': summary,
+        'entries': entries?.cast<String>(),
+        'entryValues': entryValues?.cast<String>(),
+        'values': values?.cast<String>(),
+      };
 
   factory MultiSelectListPreference.fromJson(Map<String, dynamic> json) {
     return MultiSelectListPreference(
@@ -190,13 +194,13 @@ class EditTextPreference {
   });
 
   Map<String, dynamic> toJson() => {
-    'title': title,
-    'summary': summary,
-    'value': value,
-    'dialogTitle': dialogTitle,
-    'dialogMessage': dialogMessage,
-    'text': text,
-  };
+        'title': title,
+        'summary': summary,
+        'value': value,
+        'dialogTitle': dialogTitle,
+        'dialogMessage': dialogMessage,
+        'text': text,
+      };
 
   factory EditTextPreference.fromJson(Map<String, dynamic> json) {
     return EditTextPreference(

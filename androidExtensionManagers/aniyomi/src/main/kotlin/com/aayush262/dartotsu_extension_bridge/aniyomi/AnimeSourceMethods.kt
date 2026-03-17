@@ -61,7 +61,7 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
             }
             return allVideos
         } else {
-            return source.getVideoList(episode)
+            return emptyList()
         }
     }
 

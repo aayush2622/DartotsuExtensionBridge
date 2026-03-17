@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 rootProject.name = "dartotsu_aniyomi_plugin"
 
 pluginManagement {
@@ -18,8 +20,11 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://jitpack.io")
+
     }
 }
-
-include(":aniyomi")
 include(":common")
+include(":aniyomi")
+include(":cloudStream")
+
+include(":bridgetest")

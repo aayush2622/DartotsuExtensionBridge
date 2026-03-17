@@ -1,5 +1,6 @@
 plugins {
     id("com.android.application")
+
     kotlin("android")
     kotlin("plugin.serialization")
 }
@@ -21,12 +22,44 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = null
+        }
+        debug {
+            isMinifyEnabled = false
+        }
+    }
+
+
+
 }
+tasks.register("buildAndInstall") {
+    dependsOn(":aniyomi:assembleDebug")
+    finalizedBy(":aniyomi:installDebug")
+}
+
+tasks.register<Copy>("buildRun") {
+    dependsOn("assembleRelease")
+    from(layout.projectDirectory.dir("build/outputs/apk/release"))
+    include("*.apk")
+    into(rootProject.layout.projectDirectory.dir("builds"))
+    rename { "aniyomi-plugin.apk" }
+}
+
 
 kotlin {
     jvmToolchain(17)
     compilerOptions {
         freeCompilerArgs.add("-Xcontext-receivers")
+
     }
 }
 
@@ -57,4 +90,6 @@ dependencies {
     implementation("app.cash.quickjs:quickjs-android:0.9.2")
 
     compileOnly(project(":common"))
+
+    implementation("org.apache.commons:commons-text:1.11.0")
 }

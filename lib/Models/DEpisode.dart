@@ -35,7 +35,7 @@ class DEpisode {
     return DEpisode(
       url: json['url'],
       name: json['name'],
-      dateUpload: json['dateUpload'] ?? json['date_upload'],
+      dateUpload: json['dateUpload'].toString() ?? json['date_upload'].toString(),
       scanlator: json['scanlator'],
       thumbnail: json['thumbnail'],
       description: json['description'],

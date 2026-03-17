@@ -96,7 +96,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * Headers builder for requests. Implementations can override this method for custom headers.
      */
     protected open fun headersBuilder() = Headers.Builder().apply {
-        add("User-Agent", defaultUserAgentProvider())
+        add("User-Agent",defaultUserAgentProvider())
     }
 
     /**
