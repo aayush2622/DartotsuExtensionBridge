@@ -159,6 +159,7 @@ class AniyomiSourceMethods extends SourceMethods {
     final result = await platform.invokeMethod('saveSourcePreference', {
       'sourceId': source.id,
       'key': pref.key,
+      'action': 'change',
       'value': value,
     });
     return result;
@@ -202,6 +203,7 @@ SourcePreference mapToSourcePreference(Map<String, dynamic> json) {
         listPreference: ListPreference(
           title: json['title'],
           summary: json['summary'],
+          value: json['value']?.toString(),
           entries: entries,
           entryValues: entryValues,
           valueIndex: valueIndex != -1 ? valueIndex : 0,

@@ -134,9 +134,9 @@ internal object AnimeExtensionLoader {
         val hasReadme = appInfo.metaData.getInt(METADATA_HAS_README, 0) == 1
         val hasChangelog = appInfo.metaData.getInt(METADATA_HAS_CHANGELOG, 0) == 1
 
-
+        val parent = AnimeExtensionLoader::class.java.classLoader!!
         val classLoader = try {
-            ChildFirstPathClassLoader(appInfo.sourceDir, null, context.classLoader)
+            ChildFirstPathClassLoader(appInfo.sourceDir, null, parent)
         } catch (e: Throwable) {
             Logger.log(
                 "Failed to create class loader for extension ${appInfo.packageName}: ${e.message}\n${e.stackTraceToString()}", LogLevel.ERROR
@@ -160,7 +160,7 @@ internal object AnimeExtensionLoader {
                 }
             } catch (_: LinkageError) {
                 try {
-                    val fallBackClassLoader = PathClassLoader(appInfo.sourceDir, null, context.classLoader)
+                    val fallBackClassLoader = PathClassLoader(appInfo.sourceDir, null, parent)
                     when (val obj = Class.forName(
                         it,
                         false,

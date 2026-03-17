@@ -104,16 +104,17 @@ class ListPreference {
   String? title;
   String? summary;
   int? valueIndex;
+  String? value;
   List<String>? entries;
   List<String>? entryValues;
 
-  ListPreference({
-    this.title,
-    this.summary,
-    this.valueIndex,
-    this.entries,
-    this.entryValues,
-  });
+  ListPreference(
+      {this.title,
+      this.summary,
+      this.valueIndex,
+      this.entries,
+      this.entryValues,
+      this.value});
 
   Map<String, dynamic> toJson() => {
         'title': title,
@@ -121,15 +122,19 @@ class ListPreference {
         'valueIndex': valueIndex,
         'entries': entries,
         'entryValues': entryValues,
+        'value': value,
       };
 
   factory ListPreference.fromJson(Map<String, dynamic> json) {
+    var value = json['value']?.toString() ??
+        json['entryValues']?[json['valueIndex'] ?? 0]?.toString();
     return ListPreference(
       title: json['title'],
       summary: json['summary'],
       valueIndex: json['valueIndex'],
       entries: json['entries']?.cast<String>(),
       entryValues: json['entryValues']?.cast<String>(),
+      value: value,
     );
   }
 }

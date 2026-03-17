@@ -70,4 +70,10 @@ class TestSource extends Source implements SourceMethods {
   Future<bool> setPreference(SourcePreference pref, value) async {
     return true;
   }
+
+  @override
+  Stream<Video>? getVideoListStream(DEpisode episode) {
+    // TODO: implement getVideoListStream
+    throw UnimplementedError();
+  }
 }
