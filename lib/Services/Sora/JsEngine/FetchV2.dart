@@ -1,13 +1,13 @@
 import 'dart:convert';
 
-import 'package:fjs/fjs.dart';
+import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:http/http.dart' as http;
 
 import '../../Mangayomi/http/m_client.dart';
 
 class FetchV2 {
-  final JsEngine engine;
-  FetchV2(this.engine);
+  final JavascriptRuntime runtime;
+  FetchV2(this.runtime);
 
   final http.Client _client = MClient.init();
 
@@ -21,16 +21,16 @@ class FetchV2 {
   };
 
   Future<void> inject() async {
-    await engine.eval(
-      source: const JsCode.code(r'''
+    runtime.evaluate(r'''
 async function fetchv2(url, headers = {}, method = "GET", body = null) {
-  const res = await fjs.bridge_call({
+  const payload = JSON.stringify({
     type: "fetchv2",
     url,
     headers,
     method,
     body
   });
+  const res = await sendMessage("bridge", payload);
 
   return {
     status: res.status,
@@ -43,11 +43,10 @@ async function fetchv2(url, headers = {}, method = "GET", body = null) {
 
 // alias
 const fetch = fetchv2;
-'''),
-    );
+''');
   }
 
-  Future<JsResult> handle(Map data) async {
+  Future<dynamic> handle(Map data) async {
     final url = data['url'] as String;
     final method = (data['method'] as String? ?? 'GET').toUpperCase();
     final body = data['body'];
@@ -81,22 +80,18 @@ const fetch = fetchv2;
         response = await http.Response.fromStream(streamed);
       }
 
-      final headerMap = <String, JsValue>{};
+      final headerMap = <String, dynamic>{};
       response.headers.forEach((k, v) {
-        headerMap[k] = JsValue.string(v);
+        headerMap[k] = v;
       });
 
-      return JsResult.ok(
-        JsValue.object({
-          'status': JsValue.integer(response.statusCode),
-          'headers': JsValue.object(headerMap),
-          'body': JsValue.string(response.body),
-        }),
-      );
+      return {
+        'status': response.statusCode,
+        'headers': headerMap,
+        'body': response.body,
+      };
     } catch (e) {
-      return JsResult.err(
-        JsError.cancelled('fetchv2 failed: $e'),
-      );
+      throw Exception('fetchv2 failed: $e');
     }
   }
 }

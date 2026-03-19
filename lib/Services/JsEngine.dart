@@ -1,70 +1,48 @@
 import 'dart:async';
 
-import 'package:fjs/fjs.dart';
+import 'package:flutter_qjs/flutter_qjs.dart';
 
 class JsEngineEnv {
   JsEngineEnv._internal();
   static final JsEngineEnv instance = JsEngineEnv._internal();
 
-  late final JsAsyncRuntime _runtime;
-  late final JsAsyncContext _context;
+  late final JavascriptRuntime _runtime;
 
-  Completer<JsAsyncContext>? _contextCompleter;
+  Completer<JavascriptRuntime>? _runtimeCompleter;
 
-  Future<JsAsyncContext> init() {
-    if (_contextCompleter != null) {
-      return _contextCompleter!.future;
+  Future<JavascriptRuntime> init() {
+    if (_runtimeCompleter != null) {
+      return _runtimeCompleter!.future;
     }
 
-    _contextCompleter = Completer<JsAsyncContext>();
+    _runtimeCompleter = Completer<JavascriptRuntime>();
     _doInit();
-    return _contextCompleter!.future;
+    return _runtimeCompleter!.future;
   }
 
   Future<void> _doInit() async {
     try {
-      await LibFjs.init();
+      _runtime = QuickJsRuntime2(stackSize: 1024 * 1024 * 4);
+      _runtime.enableHandlePromises();
 
-      _runtime = await JsAsyncRuntime.withOptions(
-        builtin: JsBuiltinOptions.all(),
-      );
-
-      await _runtime.setMemoryLimit(
-        limit: BigInt.from(64 * 1024 * 1024),
-      );
-
-      await _runtime.setGcThreshold(
-        threshold: BigInt.from(16 * 1024 * 1024),
-      );
-
-      _context = await JsAsyncContext.from(runtime: _runtime);
-
-      _contextCompleter?.complete(_context);
+      _runtimeCompleter?.complete(_runtime);
     } catch (e, stack) {
-      _contextCompleter?.completeError(e, stack);
-      _contextCompleter = null;
+      _runtimeCompleter?.completeError(e, stack);
+      _runtimeCompleter = null;
     }
   }
 
-  JsAsyncContext get context {
-    if (_contextCompleter == null || !_contextCompleter!.isCompleted) {
+  JavascriptRuntime get runtime {
+    if (_runtimeCompleter == null || !_runtimeCompleter!.isCompleted) {
       throw StateError('JsExtensionEngine not initialized. Call init() first.');
     }
-    return _context;
+    return _runtime;
   }
 
   Future<void> dispose() async {
-    if (_contextCompleter == null) return;
+    if (_runtimeCompleter == null) return;
 
-    try {
-      while (await _runtime.executePendingJob()) {}
-
-      await _runtime.runGc();
-    } catch (_) {}
-
-    _context.dispose();
     _runtime.dispose();
-
-    _contextCompleter = null;
+    _runtimeCompleter = null;
   }
 }

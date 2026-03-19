@@ -50,6 +50,7 @@ class AniyomiExtensionApi : ExtensionApi , AniyomiCustomMethods {
             Json {
                 ignoreUnknownKeys = true
                 explicitNulls = false
+
             }
         }
 

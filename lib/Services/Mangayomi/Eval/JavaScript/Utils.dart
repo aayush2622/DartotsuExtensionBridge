@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:epubx/epubx.dart';
-import 'package:fjs/fjs.dart';
+import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:js_packer/js_packer.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -13,20 +13,19 @@ import '../dart/model/m_bridge.dart';
 import 'BridgeRegister.dart';
 
 class JsUtils {
-  final JsEngine engine;
+  final JavascriptRuntime runtime;
 
-  JsUtils(this.engine);
+  JsUtils(this.runtime);
 
   final _client = MClient.init();
 
   Future<void> init() async {
-    await engine.eval(
-      source: const JsCode.code(r'''
+    runtime.evaluate('''
 console.log = function(message) {
   if (typeof message === "object") {
     message = JSON.stringify(message);
   }
-  fjs.bridge_call({
+  sendMessage("bridge", {
     type: "log",
     message: message.toString()
   });
@@ -66,7 +65,7 @@ String.prototype.substringBetween = function(left, right) {
 };
 
 async function cryptoHandler(text, iv, key, encrypt) {
-  return await fjs.bridge_call({
+  return await sendMessage("bridge", {
     type: "cryptoHandler",
     text,
     iv,
@@ -76,7 +75,7 @@ async function cryptoHandler(text, iv, key, encrypt) {
 }
 
 async function encryptAESCryptoJS(text, passphrase) {
-  return await fjs.bridge_call({
+  return await sendMessage("bridge", {
     type: "encryptAESCryptoJS",
     text,
     passphrase
@@ -84,7 +83,7 @@ async function encryptAESCryptoJS(text, passphrase) {
 }
 
 async function decryptAESCryptoJS(text, passphrase) {
-  return await fjs.bridge_call({
+  return await sendMessage("bridge", {
     type: "decryptAESCryptoJS",
     text,
     passphrase
@@ -92,28 +91,28 @@ async function decryptAESCryptoJS(text, passphrase) {
 }
 
 async function deobfuscateJsPassword(input) {
-  return await fjs.bridge_call({
+  return await sendMessage("bridge", {
     type: "deobfuscateJsPassword",
     input
   });
 }
 
 async function unpackJsAndCombine(script) {
-  return await fjs.bridge_call({
+  return await sendMessage("bridge", {
     type: "unpackJsAndCombine",
     script
   });
 }
 
 async function unpackJs(script) {
-  return await fjs.bridge_call({
+  return await sendMessage("bridge", {
     type: "unpackJs",
     script
   });
 }
 
 async function parseEpub(bookName, url, headers) {
-  return await fjs.bridge_call({
+  return await sendMessage("bridge", {
     type: "parseEpub",
     bookName,
     url,
@@ -122,7 +121,7 @@ async function parseEpub(bookName, url, headers) {
 }
 
 async function parseEpubChapter(bookName, url, headers, chapterTitle) {
-  return await fjs.bridge_call({
+  return await sendMessage("bridge", {
     type: "parseEpubChapter",
     bookName,
     url,
@@ -130,8 +129,7 @@ async function parseEpubChapter(bookName, url, headers, chapterTitle) {
     chapterTitle
   });
 }
-'''),
-    );
+''');
     register();
   }
 
@@ -140,7 +138,7 @@ async function parseEpubChapter(bookName, url, headers, chapterTitle) {
       "log",
       (Map data) async {
         Logger.log(data['message'].toString());
-        return const JsResult.ok(JsValue.none());
+        return null;
       },
     );
     BridgeReg.register(
@@ -153,7 +151,7 @@ async function parseEpubChapter(bookName, url, headers, chapterTitle) {
           data['encrypt'],
         );
 
-        return JsResult.ok(JsValue.string(result));
+        return result;
       },
     );
     BridgeReg.register(
@@ -162,7 +160,7 @@ async function parseEpubChapter(bookName, url, headers, chapterTitle) {
         final result =
             MBridge.encryptAESCryptoJS(data['text'], data['passphrase']);
 
-        return JsResult.ok(JsValue.string(result));
+        return result;
       },
     );
     BridgeReg.register(
@@ -171,28 +169,28 @@ async function parseEpubChapter(bookName, url, headers, chapterTitle) {
         final result =
             MBridge.decryptAESCryptoJS(data['text'], data['passphrase']);
 
-        return JsResult.ok(JsValue.string(result));
+        return result;
       },
     );
     BridgeReg.register(
       "deobfuscateJsPassword",
       (Map data) async {
         final result = MBridge.deobfuscateJsPassword(data['input']);
-        return JsResult.ok(JsValue.string(result));
+        return result;
       },
     );
     BridgeReg.register(
       "unpackJsAndCombine",
       (Map data) async {
         final result = JsUnpacker.unpackAndCombine(data['script']) ?? "";
-        return JsResult.ok(JsValue.string(result));
+        return result;
       },
     );
     BridgeReg.register(
       "unpackJs",
       (Map data) async {
         final result = JSPacker(data['script']).unpack() ?? "";
-        return JsResult.ok(JsValue.string(result));
+        return result;
       },
     );
     BridgeReg.register(
@@ -213,15 +211,11 @@ async function parseEpubChapter(bookName, url, headers, chapterTitle) {
           if (title != null) chapters.add(title);
         }
 
-        return JsResult.ok(
-          JsValue.object({
-            'title': JsValue.string(book.Title ?? ''),
-            'author': JsValue.string(book.Author ?? ''),
-            'chapters': JsValue.array(
-              chapters.map(JsValue.string).toList(),
-            ),
-          }),
-        );
+        return {
+          'title': book.Title ?? '',
+          'author': book.Author ?? '',
+          'chapters': chapters,
+        };
       },
     );
     BridgeReg.register(
@@ -239,9 +233,7 @@ async function parseEpubChapter(bookName, url, headers, chapterTitle) {
             book.Chapters?.where((c) => c.Title == data['chapterTitle'])
                 .firstOrNull;
 
-        return JsResult.ok(
-          JsValue.string(chapter?.HtmlContent ?? ""),
-        );
+        return chapter?.HtmlContent ?? "";
       },
     );
   }

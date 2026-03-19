@@ -1,12 +1,10 @@
 package com.example.bridgetest
 
-import android.app.Application
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,11 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aayush262.dartotsu_extension_bridge.ExtensionApi
 import dalvik.system.DexClassLoader
+import dalvik.system.PathClassLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.addSingletonFactory
+
+
 
 class MainActivity : ComponentActivity() {
 
@@ -29,9 +28,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val application = application as Application
-        Injekt.addSingletonFactory<Application> { application }
 
         setContent {
 
@@ -49,7 +45,7 @@ class MainActivity : ComponentActivity() {
                     extensions = extensions,
                     onLoadExtensions = {
                         loadApi(this)
-                        api?.initialize()
+                        api?.initialize(application)
 
                         val res =
                             api?.getInstalledAnimeExtensions(null)
@@ -93,7 +89,7 @@ class MainActivity : ComponentActivity() {
 
             val classLoader = DexClassLoader(
                 apkPath,
-                context.codeCacheDir.absolutePath,
+                null,
                 null,
                 context.classLoader
             )
@@ -217,7 +213,7 @@ fun ExtensionMethodScreen(
     var selectedMedia by remember { mutableStateOf<Map<String, Any?>?>(null) }
     var episodes by remember { mutableStateOf<List<Map<String, Any?>>>(emptyList()) }
     var videos by remember { mutableStateOf<List<Map<String, Any?>>>(emptyList()) }
-
+    var preferences by remember { mutableStateOf<List<Map<String, Any?>>>(emptyList()) }
     val sourceId = extension["id"].toString()
 
     Scaffold(
@@ -267,7 +263,21 @@ fun ExtensionMethodScreen(
             ) { Text("Popular") }
 
             Spacer(Modifier.height(8.dp))
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    scope.launch(Dispatchers.IO) {
+                        val res = api?.getPreference(sourceId, true)
 
+                        withContext(Dispatchers.Main) {
+                            preferences = res ?: emptyList()
+                        }
+                    }
+                }
+            ) {
+                Text("Load Settings")
+            }
+            Spacer(Modifier.height(8.dp))
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
@@ -409,6 +419,134 @@ fun ExtensionMethodScreen(
                             modifier = Modifier.padding(8.dp)
                         )
                     }
+                }
+                if (preferences.isNotEmpty()) {
+
+                    item {
+                        Spacer(Modifier.height(16.dp))
+                        Text("Settings", style = MaterialTheme.typography.titleMedium)
+                    }
+
+                    items(preferences) { pref ->
+
+                        val key = pref["key"].toString()
+                        val title = pref["title"].toString()
+                        val type = pref["type"].toString()
+
+                        var value by remember(pref) {
+                            mutableStateOf(pref["value"])
+                        }
+
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+
+                            Text(title)
+
+                            when (type) {
+
+                                "text" -> {
+                                    TextField(
+                                        value = value?.toString() ?: "",
+                                        onValueChange = {
+                                            value = it
+
+                                            scope.launch(Dispatchers.IO) {
+                                                api?.saveSourcePreference(
+                                                    sourceId,
+                                                    key,
+                                                    "change",
+                                                    it
+                                                )
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+
+                                "switch", "checkbox" -> {
+                                    val checked = value as? Boolean ?: false
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                val newValue = !checked
+                                                value = newValue
+
+                                                scope.launch(Dispatchers.IO) {
+                                                    api?.saveSourcePreference(
+                                                        sourceId,
+                                                        key,
+                                                        "change",
+                                                        newValue
+                                                    )
+                                                }
+                                            }
+                                    ) {
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = {
+                                                value = it
+
+                                                scope.launch(Dispatchers.IO) {
+                                                    api?.saveSourcePreference(
+                                                        sourceId,
+                                                        key,
+                                                        "change",
+                                                        it
+                                                    )
+                                                }
+                                            }
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Enabled")
+                                    }
+                                }
+
+                                "list" -> {
+                                    val entries = pref["entries"] as? List<String> ?: emptyList()
+                                    val entryValues = pref["entryValues"] as? List<String> ?: emptyList()
+
+                                    var expanded by remember { mutableStateOf(false) }
+
+                                    Box {
+                                        Button(onClick = { expanded = true }) {
+                                            Text(value?.toString() ?: "Select")
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = expanded,
+                                            onDismissRequest = { expanded = false }
+                                        ) {
+                                            entries.forEachIndexed { index, entry ->
+                                                DropdownMenuItem(
+                                                    text = { Text(entry) },
+                                                    onClick = {
+                                                        val newValue = entryValues.getOrNull(index) ?: entry
+                                                        value = newValue
+                                                        expanded = false
+
+                                                        scope.launch(Dispatchers.IO) {
+                                                            api?.saveSourcePreference(
+                                                                sourceId,
+                                                                key,
+                                                                "change",
+                                                                newValue
+                                                            )
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                 }
             }
         }

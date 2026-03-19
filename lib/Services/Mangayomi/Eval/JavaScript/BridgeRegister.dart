@@ -1,6 +1,4 @@
-import 'package:fjs/fjs.dart';
-
-typedef JsMethod = Future<JsResult> Function(Map data);
+typedef JsMethod = Future<dynamic> Function(Map data);
 
 class BridgeReg {
   static final Map<String, JsMethod> methods = {};
@@ -9,15 +7,13 @@ class BridgeReg {
     methods[name] = method;
   }
 
-  static Future<JsResult> call(String name, Map data) async {
+  static Future<dynamic> call(String name, Map data) async {
     final method = methods[name];
 
     if (method != null) {
       return await method(data);
     }
 
-    return const JsResult.err(
-      JsError.cancelled("Unknown bridge call"),
-    );
+    throw Exception("Unknown bridge call: $name");
   }
 }

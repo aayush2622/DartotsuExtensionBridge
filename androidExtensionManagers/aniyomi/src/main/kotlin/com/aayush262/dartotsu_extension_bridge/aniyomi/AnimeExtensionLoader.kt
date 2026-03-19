@@ -1,5 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
@@ -42,6 +43,7 @@ internal object AnimeExtensionLoader {
     private val PACKAGE_FLAGS =
         PackageManager.GET_CONFIGURATIONS or PackageManager.GET_META_DATA or PackageManager.GET_SIGNATURES or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else 0)
 
+    @SuppressLint("QueryPermissionsNeeded")
     fun loadExtensions(context: Context, path: String?): List<AnimeExtension.Installed> {
         val pkgManager = context.packageManager
         val installedPkgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -134,7 +136,7 @@ internal object AnimeExtensionLoader {
         val hasReadme = appInfo.metaData.getInt(METADATA_HAS_README, 0) == 1
         val hasChangelog = appInfo.metaData.getInt(METADATA_HAS_CHANGELOG, 0) == 1
 
-        val parent = AnimeExtensionLoader::class.java.classLoader!!
+        val parent = this::class.java.classLoader!!
         val classLoader = try {
             ChildFirstPathClassLoader(appInfo.sourceDir, null, parent)
         } catch (e: Throwable) {

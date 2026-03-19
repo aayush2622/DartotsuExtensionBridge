@@ -43,11 +43,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17
-        freeCompilerArgs += "-Xcontext-receivers"
-    }
-
     sourceSets {
         main.java.srcDirs += "src/main/kotlin"
         test.java.srcDirs += "src/test/kotlin"
@@ -58,16 +53,6 @@ android {
         consumerProguardFiles 'proguard-rules.pro'
     }
 
-    testOptions {
-        unitTests.all {
-            useJUnitPlatform()
-            testLogging {
-                events "passed", "skipped", "failed", "standardOut", "standardError"
-                outputs.upToDateWhen { false }
-                showStandardStreams = true
-            }
-        }
-    }
 }
 
 dependencies {
@@ -77,8 +62,6 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:2.13.1"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
     implementation "me.xdrop:fuzzywuzzy:1.4.0"
-
-
 
     implementation "androidx.preference:preference-ktx:1.2.1"
 
@@ -92,12 +75,9 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:2.11.0"
     implementation "com.squareup.retrofit2:converter-jackson:2.11.0"
     implementation project(":common")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     compileOnly "io.flutter:flutter_embedding_debug:1.0.0-ef0cd000916d64fa0c5d09cc809fa7ad244a5767"
 }
 
 configurations.configureEach {
     exclude group: 'org.json', module: 'json'
-    exclude group: "org.jetbrains.kotlinx", module: "kotlinx-serialization-json"
-    exclude group: "org.jetbrains.kotlinx", module: "kotlinx-serialization-core"
 }
