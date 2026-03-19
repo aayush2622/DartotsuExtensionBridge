@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:fjs/fjs.dart';
+import 'package:flutter_qjs/flutter_qjs.dart';
 
 import '../../../JsEngine.dart';
 import 'BridgeRegister.dart';
@@ -11,7 +11,7 @@ class JsExtensionEngine {
   JsExtensionEngine._internal();
   static final JsExtensionEngine instance = JsExtensionEngine._internal();
 
-  late final JsEngine _engine;
+  late final JavascriptRuntime _runtime;
   Completer<void>? _initCompleter;
 
   Future<void> init() {
@@ -30,26 +30,27 @@ class JsExtensionEngine {
 
   Future<void> _doInit() async {
     try {
-      await LibFjs.init();
+      _runtime = await JsEngineEnv.instance.init();
 
-      var context = await JsEngineEnv.instance.init();
+      _runtime.onMessage('bridge', (dynamic args) async {
+        final data = args;
 
-      _engine = JsEngine(context: context);
+        if (data is Map && data['type'] != null) {
+          return await BridgeReg.call(data['type'], data);
+        }
+        throw Exception("Unknown bridge call");
+      });
 
-      await _engine.init(
-        bridge: (JsValue value) async {
-          final data = value.value;
-
-          if (data is Map && data['type'] != null) {
-            return BridgeReg.call(data['type'], data);
+      // Shimming fjs.bridge_call for compatibility
+      _runtime.evaluate('''
+        var fjs = {
+          bridge_call: function(data) {
+            return sendMessage('bridge', data);
           }
+        };
+      ''');
 
-          return const JsResult.err(
-            JsError.cancelled("Unknown bridge call"),
-          );
-        },
-      );
-      await JsUtils(_engine).init();
+      await JsUtils(_runtime).init();
       _initCompleter?.complete();
     } catch (e, stack) {
       _initCompleter?.completeError(e, stack);
@@ -88,18 +89,13 @@ if (typeof extractChapters === 'function')
 if (typeof extractImages === 'function')
   __exports.extractImages = extractImages;
 
-export default __exports;
+globalThis['$moduleName'] = __exports;
 ''';
 
-    await _engine.declareNewModule(
-      module: JsModule(
-        name: moduleName,
-        source: JsCode.code(wrapped),
-      ),
-    );
+    _runtime.evaluate(wrapped);
   }
 
-  Future<JsValue> call({
+  Future<dynamic> call({
     required String moduleName,
     required String method,
     List<dynamic> params = const [],
@@ -110,11 +106,10 @@ export default __exports;
 
     final js = '''
     (async () => {
-      const module = await import('$moduleName');
-      const target = module.default ?? module;
+      const target = globalThis['$moduleName'];
 
       if (!target)
-        throw new Error("Module has no exports");
+        throw new Error("Module '$moduleName' not found");
 
       const fn = target["$method"];
 
@@ -126,12 +121,12 @@ export default __exports;
     })()
     ''';
 
-    return await _engine.eval(source: JsCode.code(js));
+    final result =
+        await _runtime.handlePromise(await _runtime.evaluateAsync(js));
+    return result;
   }
 
   Future<void> dispose() async {
-    await _engine.dispose();
-
     _initCompleter = null;
   }
 }

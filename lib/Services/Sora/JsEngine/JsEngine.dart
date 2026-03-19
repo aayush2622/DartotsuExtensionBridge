@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:fjs/fjs.dart';
+import 'package:flutter_qjs/flutter_qjs.dart';
 
 import '../../JsEngine.dart';
 import 'FetchV2.dart';
@@ -10,7 +10,7 @@ class JsExtensionEngine {
   JsExtensionEngine._internal();
   static final JsExtensionEngine instance = JsExtensionEngine._internal();
 
-  late final JsEngine _engine;
+  late final JavascriptRuntime _runtime;
   Completer<void>? _initCompleter;
 
   Future<void> init() {
@@ -29,25 +29,54 @@ class JsExtensionEngine {
 
   Future<void> _doInit() async {
     try {
-      var context = await JsEngineEnv.instance.init();
+      _runtime = await JsEngineEnv.instance.init();
 
-      _engine = JsEngine(context: context);
+      final setToGlobalObject = _runtime
+          .evaluate("(key, val) => { globalThis[key] = val; }")
+          .rawResult;
+      (setToGlobalObject as JSInvokable).invoke([
+        'sendMessage',
+        (String channelName, dynamic message) {
+          final channelFunctions = JavascriptRuntime
+              .channelFunctionsRegistered[_runtime.getEngineInstanceId()]!;
 
-      var fetch = FetchV2(_engine);
-
-      await _engine.init(
-        bridge: (JsValue value) async {
-          final data = value.value;
-
-          if (data is Map && data['type'] == 'fetchv2') {
-            return fetch.handle(data);
+          if (channelFunctions.containsKey(channelName)) {
+            dynamic parsed;
+            if (message is String) {
+              try {
+                parsed = jsonDecode(message);
+              } catch (_) {
+                parsed = message;
+              }
+            } else {
+              parsed = message;
+            }
+            return channelFunctions[channelName]!.call(parsed);
           }
+        }
+      ]);
 
-          return const JsResult.err(
-            JsError.cancelled('Unknown bridge call'),
-          );
-        },
-      );
+      var fetch = FetchV2(_runtime);
+
+      _runtime.onMessage('bridge', (dynamic args) async {
+        final data = args;
+
+        if (data is Map && data['type'] == 'fetchv2') {
+          return await fetch.handle(data);
+        }
+
+        throw Exception('Unknown bridge call');
+      });
+
+      _runtime.evaluate('''
+        var fjs = {
+          bridge_call: function(data) {
+            const payload = (typeof data === 'object') ? JSON.stringify(data) : data;
+            return sendMessage('bridge', payload);
+          }
+        };
+      ''');
+
       await fetch.inject();
 
       _initCompleter?.complete();
@@ -64,42 +93,40 @@ class JsExtensionEngine {
     await init();
 
     final wrapped = '''
+globalThis['$moduleName'] = (() => {
 $sourceCode
-const __exports = {};
 
-// Common
-if (typeof searchResults === 'function')
-  __exports.searchResults = searchResults;
+  const __exports = {};
 
-if (typeof extractDetails === 'function')
-  __exports.extractDetails = extractDetails;
+  // Common
+  if (typeof searchResults === 'function')
+    __exports.searchResults = searchResults;
 
-// Anime
-if (typeof extractEpisodes === 'function')
-  __exports.extractEpisodes = extractEpisodes;
+  if (typeof extractDetails === 'function')
+    __exports.extractDetails = extractDetails;
 
-if (typeof extractStreamUrl === 'function')
-  __exports.extractStreamUrl = extractStreamUrl;
+  // Anime
+  if (typeof extractEpisodes === 'function')
+    __exports.extractEpisodes = extractEpisodes;
 
-// Manga
-if (typeof extractChapters === 'function')
-  __exports.extractChapters = extractChapters;
+  if (typeof extractStreamUrl === 'function')
+    __exports.extractStreamUrl = extractStreamUrl;
 
-if (typeof extractImages === 'function')
-  __exports.extractImages = extractImages;
+  // Manga
+  if (typeof extractChapters === 'function')
+    __exports.extractChapters = extractChapters;
 
-export default __exports;
+  if (typeof extractImages === 'function')
+    __exports.extractImages = extractImages;
+
+  return __exports;
+})();
 ''';
 
-    await _engine.declareNewModule(
-      module: JsModule(
-        name: moduleName,
-        source: JsCode.code(wrapped),
-      ),
-    );
+    _runtime.evaluate(wrapped);
   }
 
-  Future<JsValue> call({
+  Future<JsEvalResult> call({
     required String moduleName,
     required String method,
     List<dynamic> params = const [],
@@ -110,11 +137,10 @@ export default __exports;
 
     final js = '''
     (async () => {
-      const module = await import('$moduleName');
-      const target = module.default ?? module;
+      const target = globalThis['$moduleName'];
 
       if (!target)
-        throw new Error("Module has no exports");
+        throw new Error("Module '$moduleName' not found");
 
       const fn = target["$method"];
 
@@ -126,12 +152,19 @@ export default __exports;
     })()
     ''';
 
-    return await _engine.eval(source: JsCode.code(js));
+    try {
+      final result =
+          await _runtime.handlePromise(await _runtime.evaluateAsync(js));
+      return result;
+    } catch (e) {
+      if (e.toString().contains('_Map')) {
+        throw Exception("JS Error in $method (returned Map)");
+      }
+      rethrow;
+    }
   }
 
   Future<void> dispose() async {
-    await _engine.dispose();
-
     _initCompleter = null;
   }
 }
