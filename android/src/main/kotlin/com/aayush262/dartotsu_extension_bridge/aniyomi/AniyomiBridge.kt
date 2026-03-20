@@ -51,7 +51,6 @@ class AniyomiBridge(var context: Context) {
     @SuppressLint("SetWorldReadable")
     private fun loadApiFromPath(path: String, hasUpdate: Boolean) {
 
-        // 🔥 Prevent reloading
         if (api != null) {
             Logger.log("API already initialized, skipping load", LogLevel.INFO)
             return
@@ -72,7 +71,6 @@ class AniyomiBridge(var context: Context) {
 
             val dst = File(privateDir, externalFile.name)
 
-            // ✅ FLAG-BASED COPY
             if (!hasUpdate && dst.exists()) {
                 Logger.log("Plugin already exists, skipping copy", LogLevel.INFO)
             } else {
@@ -99,8 +97,6 @@ class AniyomiBridge(var context: Context) {
             dst.setExecutable(false)
 
             Logger.log("Internal plugin ready: ${dst.absolutePath}", LogLevel.INFO)
-
-            // ⚡ OPTIMIZED DIR (no delete)
             val optimizedDir = File(context.codeCacheDir, "plugin_opt")
             if (!optimizedDir.exists()) optimizedDir.mkdirs()
 
