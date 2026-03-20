@@ -49,7 +49,7 @@ class DartotsuExtensionBridge {
       getDirectory: getDirectory,
     );
 
-    Get.lazyPut<ExtensionManager>(() => ExtensionManager());
+    Get.put(ExtensionManager());
     _initialized = true;
   }
 

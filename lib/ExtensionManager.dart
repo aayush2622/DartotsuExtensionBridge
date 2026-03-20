@@ -36,13 +36,13 @@ class ExtensionManager extends GetxController {
     );
     current = Rx(_findById(getVal(key)) ?? managers.first);
 
-    current.value.initialize();
+    current.value.initializeInstalled();
   }
 
   void switchManager(String id) {
     final next = _findById(id);
     if (next == null || next == current.value) return;
-    next.initialize();
+    next.initializeInstalled();
     current.value = next;
     setVal(key, id);
   }

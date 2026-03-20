@@ -315,7 +315,7 @@ fun ExtensionMethodScreen(
 
                     scope.launch(Dispatchers.IO) {
 
-                        val res = api?.search(sourceId, true, "naruto", 1)
+                        val res = api?.search(sourceId, true, "jujutsu kaisen", 1)
 
                         withContext(Dispatchers.Main) {
 
@@ -330,7 +330,7 @@ fun ExtensionMethodScreen(
                         }
                     }
                 }
-            ) { Text("Search Naruto") }
+            ) { Text("Search jujutsu kaisen") }
 
             Spacer(Modifier.height(16.dp))
 

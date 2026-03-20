@@ -13,7 +13,7 @@ abstract class Extension {
   bool get supportsAnime => true;
   bool get supportsManga => true;
   bool get supportsNovel => true;
-  bool _isInitialized = false;
+
   Map<Type, SourceMethods Function(Source source)> get sourceMethodFactories;
 
   final Map<ItemType, Rx<List<Source>>> _installed = {
@@ -38,23 +38,43 @@ abstract class Extension {
     ItemType.novel: Rx<List<Repo>>([]),
   };
 
+  bool _isInstalledInitialized = false;
   @mustCallSuper
-  Future<void> initialize() async {
-    if (_isInitialized) return;
-    _isInitialized = true;
+  Future<void> initializeInstalled() async {
+    if (_isInstalledInitialized) return;
+    _isInstalledInitialized = true;
     try {
       if (supportsAnime) {
         unawaited(fetchInstalledAnimeExtensions());
-        unawaited(fetchAnimeExtensions());
       }
 
       if (supportsManga) {
         unawaited(fetchInstalledMangaExtensions());
-        unawaited(fetchMangaExtensions());
       }
 
       if (supportsNovel) {
         unawaited(fetchInstalledNovelExtensions());
+      }
+    } catch (e, s) {
+      debugPrint('Error initializing extension $id: $e\n$s');
+    }
+  }
+
+  bool _isAvailableInitialized = false;
+  @mustCallSuper
+  Future<void> initializeAvailable() async {
+    if (_isAvailableInitialized) return;
+    _isAvailableInitialized = true;
+    try {
+      if (supportsAnime) {
+        unawaited(fetchAnimeExtensions());
+      }
+
+      if (supportsManga) {
+        unawaited(fetchMangaExtensions());
+      }
+
+      if (supportsNovel) {
         unawaited(fetchNovelExtensions());
       }
     } catch (e, s) {

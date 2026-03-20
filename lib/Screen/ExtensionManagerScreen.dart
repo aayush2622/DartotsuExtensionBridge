@@ -13,6 +13,8 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
   final managerController = Get.find<ExtensionManager>();
 
   final _selectedLanguage = 'All'.obs;
+  final _searchQuery = ''.obs;
+
   final _textEditingController = TextEditingController();
 
   Extension get manager => managerController.current.value;
@@ -26,6 +28,8 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     if (manager.supportsManga) totalTabs += 2;
     if (manager.supportsNovel) totalTabs += 2;
 
+    manager.initializeAvailable();
+
     _tabBarController = TabController(length: totalTabs, vsync: this);
   }
 
@@ -34,6 +38,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     _tabBarController.dispose();
     _textEditingController.dispose();
     _selectedLanguage.close();
+    _searchQuery.close();
     super.dispose();
   }
 
@@ -78,16 +83,22 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
           title: title,
           iconTheme: IconThemeData(color: theme.primary),
           actions: [
-            ...extensionActions(
-              context,
-              _tabBarController,
-              _selectedLanguage.value,
-              (repoUrl, type) async {
-                await manager.addRepo(repoUrl, type);
-              },
-              (lang) => _selectedLanguage.value = lang,
+            Obx(
+              () => Row(
+                children: [
+                  ...extensionActions(
+                    context,
+                    _tabBarController,
+                    _selectedLanguage.value,
+                    (repoUrl, type) async {
+                      await manager.addRepo(repoUrl, type);
+                    },
+                    (lang) => _selectedLanguage.value = lang,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
             ),
-            const SizedBox(width: 8),
           ],
         ),
         body: Column(
@@ -105,16 +116,26 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
             searchBar(
               context,
               _textEditingController,
-              () => setState(() {}),
+              () => _searchQuery.value = _textEditingController.text,
             ),
             const SizedBox(height: 8),
             Obx(
-              () => Expanded(
-                child: TabBarView(
-                  controller: _tabBarController,
-                  children: _buildTabViews(theme, extensionScreenBuilder),
-                ),
-              ),
+              () {
+                final query = _searchQuery.value;
+                final lang = _selectedLanguage.value;
+
+                return Expanded(
+                  child: TabBarView(
+                    controller: _tabBarController,
+                    children: _buildTabViews(
+                      theme,
+                      extensionScreenBuilder,
+                      query,
+                      lang,
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -145,10 +166,10 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
   List<Widget> _buildTabViews(
     ColorScheme theme,
     ExtensionScreenBuilder builder,
+    String query,
+    String lang,
   ) {
     final ext = manager;
-    final query = _textEditingController.text;
-    final lang = _selectedLanguage.value;
 
     List<Widget> views = [];
 

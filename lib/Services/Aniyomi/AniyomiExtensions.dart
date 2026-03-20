@@ -29,8 +29,12 @@ class AniyomiExtensions extends Extension {
         ASource: (source) => AniyomiSourceMethods(source as ASource),
       };
   static const platform = MethodChannel('aniyomiExtensionBridge');
+
+  final _pluginHasUpdateKey = "aniyomiPluginHasUpdate";
+  final _pluginVersionKey = "aniyomiPluginVersion";
+
   @override
-  Future<void> initialize() async {
+  Future<void> initializeInstalled() async {
     final (filePath, hasUpdate) = await ensurePlugin();
 
     await platform.invokeMethod('loadPlugin', {
@@ -38,7 +42,7 @@ class AniyomiExtensions extends Extension {
       "hasUpdate": hasUpdate,
     });
 
-    await super.initialize();
+    await super.initializeInstalled();
   }
 
   Future<(String path, bool hasUpdate)> ensurePlugin() async {
@@ -56,7 +60,7 @@ class AniyomiExtensions extends Extension {
 
     final exists = await file.exists();
 
-    final hasUpdate = getVal<bool>("aniyomi_plugin_has_update") ?? false;
+    final hasUpdate = getVal<bool>(_pluginHasUpdateKey) ?? false;
 
     if (exists) {
       unawaited(_checkForUpdateInBackground(file));
@@ -80,7 +84,7 @@ class AniyomiExtensions extends Extension {
       final remoteVersion = remote["versionCode"] ?? 0;
       final apkUrl = remote["apk"];
 
-      final localVersion = getVal<int>("aniyomi_plugin_version") ?? 0;
+      final localVersion = getVal<int>(_pluginVersionKey) ?? 0;
 
       Logger.log("Local: $localVersion | Remote: $remoteVersion");
 
@@ -98,16 +102,14 @@ class AniyomiExtensions extends Extension {
 
         await tempFile.rename(file.path);
 
-        setVal("aniyomi_plugin_version", remoteVersion);
-
-        setVal("aniyomi_plugin_has_update", true);
+        setVal(_pluginVersionKey, remoteVersion);
+        setVal(_pluginHasUpdateKey, true);
 
         Logger.log("Plugin updated (will apply on restart) → v$remoteVersion",
             show: true);
       } else {
         Logger.log("Plugin up-to-date");
-
-        setVal("aniyomi_plugin_has_update", false);
+        setVal(_pluginHasUpdateKey, false);
       }
     } catch (e) {
       Logger.log("Background update failed: $e");
@@ -128,11 +130,7 @@ class AniyomiExtensions extends Extension {
     final tempFile = File("${file.path}.tmp");
     await tempFile.writeAsBytes(res.bodyBytes);
     await tempFile.rename(file.path);
-
-    setVal("aniyomi_plugin_version", version);
-
-    // first install = no pending update
-    setVal("aniyomi_plugin_has_update", false);
+    setVal(_pluginVersionKey, version);
 
     Logger.log("Plugin downloaded → v$version");
   }

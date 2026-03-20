@@ -27,16 +27,31 @@ abstract class ExtensionList<T extends StatefulWidget> extends State<T> {
 
   Future<void> _refreshData() async {
     final ext = manager.current.value;
-    switch (itemType) {
-      case ItemType.anime:
-        await ext.fetchAnimeExtensions();
-        break;
-      case ItemType.manga:
-        await ext.fetchMangaExtensions();
-        break;
-      case ItemType.novel:
-        await ext.fetchNovelExtensions();
-        break;
+
+    if (isInstalled) {
+      switch (itemType) {
+        case ItemType.anime:
+          await ext.fetchInstalledAnimeExtensions();
+          break;
+        case ItemType.manga:
+          await ext.fetchInstalledMangaExtensions();
+          break;
+        case ItemType.novel:
+          await ext.fetchInstalledNovelExtensions();
+          break;
+      }
+    } else {
+      switch (itemType) {
+        case ItemType.anime:
+          await ext.fetchAnimeExtensions();
+          break;
+        case ItemType.manga:
+          await ext.fetchMangaExtensions();
+          break;
+        case ItemType.novel:
+          await ext.fetchNovelExtensions();
+          break;
+      }
     }
   }
 
