@@ -29,6 +29,79 @@ class AniyomiExtensions extends Extension {
         ASource: (source) => AniyomiSourceMethods(source as ASource),
       };
   static const platform = MethodChannel('aniyomiExtensionBridge');
+  @override
+  Future<void> initialize() async {
+    final filePath = await ensurePlugin();
+
+    final file = File(filePath);
+
+    final hasUpdate = !(await file.exists());
+
+    await platform.invokeMethod('loadPlugin', {
+      "path": filePath,
+      "hasUpdate": hasUpdate,
+    });
+
+    await super.initialize();
+  }
+
+  Future<String> ensurePlugin() async {
+    Logger.log("🔍 Resolving plugin directory...");
+
+    var path = await DartotsuExtensionBridge.context.getDirectory(
+      subPath: 'plugins',
+      useSystemPath: true,
+      useCustomPath: false,
+    );
+
+    if (path == null) {
+      Logger.log("❌ Failed to get plugin directory");
+      throw Exception("Failed to get directory for Aniyomi plugin");
+    }
+
+    Logger.log("📁 Plugin directory: ${path.path}");
+
+    if (!await path.exists()) {
+      Logger.log("📁 Directory does not exist, creating...");
+      await path.create(recursive: true);
+    }
+
+    final file = File("${path.path}/aniyomi_plugin.apk");
+
+    if (await file.exists()) {
+      Logger.log("✅ Plugin already exists at ${file.path}");
+      return file.path;
+    }
+
+    final url =
+        "https://github.com/aayush2622/DartotsuExtensionBridge/raw/refs/heads/master/androidExtensionManagers/builds/aniyomi-plugin.apk";
+
+    Logger.log("⬇️ Downloading plugin from: $url");
+
+    try {
+      final response = await _client.get(Uri.parse(url));
+
+      if (response.statusCode != 200) {
+        Logger.log(
+          "❌ Failed to download plugin. Status: ${response.statusCode}",
+        );
+        throw Exception("Download failed with status ${response.statusCode}");
+      }
+
+      Logger.log(
+        "⬇️ Download complete (${response.bodyBytes.length} bytes), saving...",
+      );
+
+      await file.writeAsBytes(response.bodyBytes);
+
+      Logger.log("✅ Plugin saved at ${file.path}");
+
+      return file.path;
+    } catch (e) {
+      Logger.log("❌ Error downloading plugin: $e");
+      rethrow;
+    }
+  }
 
   @override
   bool get supportsNovel => false;

@@ -1,5 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
+import android.annotation.SuppressLint
+import android.content.Context
 import com.aayush262.dartotsu_extension_bridge.ExtensionApi
 import dalvik.system.DexClassLoader
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -11,7 +13,7 @@ import com.aayush262.dartotsu_extension_bridge.Logger
 import dalvik.system.BaseDexClassLoader
 import java.io.File
 
-class AniyomiBridge {
+class AniyomiBridge(var context: Context) {
     private lateinit var loggerChannel: MethodChannel
     private lateinit var networkChannel: MethodChannel
     private lateinit var channel: MethodChannel
@@ -38,7 +40,7 @@ class AniyomiBridge {
         )
 
         Logger.init(loggerChannel)
-        loadApi(binding.applicationContext)
+        //loadApi(binding.applicationContext)
     }
 
     fun detach() {
@@ -46,53 +48,104 @@ class AniyomiBridge {
         networkChannel.setMethodCallHandler(null)
         loggerChannel.setMethodCallHandler(null)
     }
+    @SuppressLint("SetWorldReadable")
+    private fun loadApiFromPath(path: String, hasUpdate: Boolean) {
 
-    /**
-     * Loads the Extension API implementation from the plugin APK.
-     */
-    private fun loadApi(context: Context) {
+        // 🔥 Prevent reloading
+        if (api != null) {
+            Logger.log("API already initialized, skipping load", LogLevel.INFO)
+            return
+        }
+
         try {
+            val externalFile = File(path)
 
-            val pluginPackage =
-                "com.aayush262.dartotsu.aniyomi_plugin"
+            if (!externalFile.exists()) {
+                Logger.log("Plugin not found at $path", LogLevel.ERROR)
+                return
+            }
 
-            val appInfo =
-                context.packageManager.getApplicationInfo(
-                    pluginPackage,
-                    0
-                )
+            Logger.log("External plugin: ${externalFile.absolutePath}", LogLevel.INFO)
 
-            val apkPath = appInfo.sourceDir
-            val apkFile = File(apkPath)
+            val privateDir = File(context.filesDir, "plugins")
+            if (!privateDir.exists()) privateDir.mkdirs()
+
+            val dst = File(privateDir, externalFile.name)
+
+            // ✅ FLAG-BASED COPY
+            if (!hasUpdate && dst.exists()) {
+                Logger.log("Plugin already exists, skipping copy", LogLevel.INFO)
+            } else {
+                Logger.log("Copying plugin to internal storage...", LogLevel.INFO)
+
+                val tmp = File(privateDir, "${externalFile.name}.tmp")
+
+                tmp.outputStream().use { out ->
+                    externalFile.inputStream().use { input ->
+                        input.copyTo(out)
+                    }
+                }
+
+                if (!tmp.renameTo(dst)) {
+                    tmp.delete()
+                    throw RuntimeException("Failed to finalize ${dst.name}")
+                }
+
+                Logger.log("Plugin copied/updated", LogLevel.INFO)
+            }
+
+            dst.setReadable(true, false)
+            dst.setWritable(false, false)
+            dst.setExecutable(false)
+
+            Logger.log("Internal plugin ready: ${dst.absolutePath}", LogLevel.INFO)
+
+            // ⚡ OPTIMIZED DIR (no delete)
+            val optimizedDir = File(context.codeCacheDir, "plugin_opt")
+            if (!optimizedDir.exists()) optimizedDir.mkdirs()
 
             val classLoader = context.classLoader
 
-            val pathListField = BaseDexClassLoader::class.java.getDeclaredField("pathList")
+            val pathListField = BaseDexClassLoader::class.java
+                .getDeclaredField("pathList")
                 .apply { isAccessible = true }
-            val pathList = pathListField[classLoader]!!
-            val addDexPath =
-                pathList.javaClass.getDeclaredMethod(
+
+            val pathList = pathListField[classLoader]
+
+            val addDexPath = pathList.javaClass
+                .getDeclaredMethod(
                     "addDexPath",
                     String::class.java,
                     File::class.java
                 )
-                    .apply { isAccessible = true }
-            addDexPath.invoke(pathList, apkFile.absolutePath, null)
+                .apply { isAccessible = true }
+
+            Logger.log("Injecting dex...", LogLevel.INFO)
+
+            addDexPath.invoke(
+                pathList,
+                dst.absolutePath,
+                optimizedDir
+            )
+
+            Logger.log("Dex injected successfully", LogLevel.INFO)
 
             val clazz = classLoader.loadClass(
                 "com.aayush262.dartotsu_extension_bridge.AniyomiExtensionApi"
             )
 
-            val instance =
-                clazz.getDeclaredConstructor().newInstance()
+            val instance = clazz.getDeclaredConstructor().newInstance()
 
             api = instance as ExtensionApi
+
             Logger.log("Extension API loaded successfully", LogLevel.INFO)
+
             api?.initialize(context)
 
             if (instance is AniyomiCustomMethods) {
                 instance.initialize(CustomAniyomiMethods(networkChannel))
             }
+
         } catch (e: Throwable) {
             Logger.log(
                 "Failed to load Extension API: ${e.stackTraceToString()}",
@@ -100,9 +153,25 @@ class AniyomiBridge {
             )
         }
     }
+
     private inner class Handler : MethodChannel.MethodCallHandler {
         @Suppress("UNCHECKED_CAST")
         override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
+            if (call.method == "loadPlugin") {
+                runCatching {
+                    val args = call.arguments as Map<*, *>
+
+                    val path = args["path"] as String
+                    val hasUpdate = args["hasUpdate"] as? Boolean ?: false
+
+                    loadApiFromPath(path, hasUpdate)
+
+                    result.success(null)
+                }.onFailure {
+                    result.error("LOAD_FAILED", it.message, null)
+                }
+                return
+            }
 
             val api = api
                 ?: return result.error(
@@ -114,7 +183,6 @@ class AniyomiBridge {
             runCatching {
 
                 when (call.method) {
-
                     "getInstalledAnimeExtensions" ->
                         launch(call, result) {
                             api.getInstalledAnimeExtensions(call.arguments as String?)
