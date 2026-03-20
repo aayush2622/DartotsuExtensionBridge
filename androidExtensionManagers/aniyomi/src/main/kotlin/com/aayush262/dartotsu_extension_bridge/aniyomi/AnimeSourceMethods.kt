@@ -80,18 +80,33 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
             .sortedByDescending { it.episode_number }
     }
     override suspend fun getVideoList(episode: SEpisode): List<Video> {
-        if ((source as AnimeHttpSource).javaClass.declaredMethods.any { it.name == "getHosterList" }) {
-            val hosters = source.getHosterList(episode)
-            val allVideos = hosters.flatMap { hoster ->
-                val videos = source.getVideoList(hoster)
-                videos.map { it.copy(videoTitle = "${hoster.hosterName} - ${it.videoTitle}") }
-            }
-            return allVideos
-        } else {
-            return emptyList()
-        }
-    }
+        val source = source as AnimeHttpSource
 
+        val directVideos = runCatching {
+            source.getVideoList(episode)
+        }.getOrElse { emptyList() }
+
+        val hasHosterList = source.javaClass.declaredMethods.any { it.name == "getHosterList" }
+        if (!hasHosterList) return directVideos
+
+        val hosters = runCatching {
+            source.getHosterList(episode)
+        }.getOrElse { emptyList() }
+
+        val hosterVideos = hosters.flatMap { hoster ->
+            hoster.videoList ?: hosters.flatMap { hoster ->
+                runCatching {
+                    source.getVideoList(hoster).map {
+                        it.copy(videoTitle = "${hoster.hosterName} - ${it.videoTitle}")
+                    }
+                }.getOrElse { emptyList() }
+            }
+        }
+
+        return (directVideos  + hosterVideos)
+            .distinctBy { it.videoUrl }
+            .sortedBy { it.videoTitle }
+    }
     override suspend fun getChapterList(media: SAnime): List<SEpisode> =
         throw UnsupportedOperationException("Chapters are not supported in anime sources.")
 
