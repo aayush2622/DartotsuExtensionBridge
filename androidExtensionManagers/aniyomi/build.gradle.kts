@@ -1,9 +1,10 @@
 plugins {
     id("com.android.application")
-
     kotlin("android")
     kotlin("plugin.serialization")
 }
+
+apply(from = "$rootDir/plugin-build.gradle.kts")
 
 android {
     namespace = "com.aayush262.plugin"
@@ -25,35 +26,20 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            signingConfig = null
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
         debug {
             isMinifyEnabled = false
         }
     }
 
-
-
 }
+
 tasks.register("buildAndInstall") {
     dependsOn(":aniyomi:assembleDebug")
     finalizedBy(":aniyomi:installDebug")
 }
-
-tasks.register<Copy>("buildRun") {
-    dependsOn("assembleRelease")
-    from(layout.projectDirectory.dir("build/outputs/apk/release"))
-    include("*.apk")
-    into(rootProject.layout.projectDirectory.dir("builds"))
-    rename { "aniyomi-plugin.apk" }
-}
-
 
 kotlin {
     jvmToolchain(17)

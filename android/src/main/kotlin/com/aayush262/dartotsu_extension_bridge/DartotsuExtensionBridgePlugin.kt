@@ -15,7 +15,7 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin, ActivityAware {
 
         CloudStreamPluginBridge.onAttachedToEngine(binding)
 
-        AniyomiBridge().apply {
+        AniyomiBridge(binding.applicationContext).apply {
             aniyomiBridge = this
             attach(binding)
         }

@@ -23,8 +23,8 @@ dependencyResolutionManagement {
 
     }
 }
+
 include(":common")
 include(":aniyomi")
 include(":cloudStream")
-
 include(":bridgetest")

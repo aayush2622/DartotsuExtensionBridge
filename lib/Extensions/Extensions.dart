@@ -144,3 +144,7 @@ class Repo {
         'extensions': extensions,
       };
 }
+
+abstract interface class DownloadableService {
+  Future<void> downloadService();
+}

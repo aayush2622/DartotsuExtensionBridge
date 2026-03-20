@@ -1,9 +1,10 @@
 plugins {
     id("com.android.application")
-
     kotlin("android")
     kotlin("plugin.serialization")
 }
+
+apply(from = "$rootDir/plugin-build.gradle.kts")
 
 android {
     namespace = "com.ryan.cloudStrean_plugin"
@@ -25,29 +26,16 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            signingConfig = null
         }
         debug {
             isMinifyEnabled = false
         }
     }
-
 }
-tasks.register<Copy>("buildRun") {
-    dependsOn("assembleRelease")
 
-    from(layout.projectDirectory.dir("build/outputs/apk/release"))
-    include("*.apk")
-
-    into(rootProject.layout.projectDirectory.dir("builds"))
-
-    rename { "cloudStream-plugin.apk" }
+tasks.register("buildAndInstall") {
+    dependsOn(":aniyomi:assembleDebug")
+    finalizedBy(":aniyomi:installDebug")
 }
 
 kotlin {
@@ -56,7 +44,6 @@ kotlin {
         freeCompilerArgs.add("-Xcontext-receivers")
     }
 }
-
 dependencies {
     implementation("uy.kohesive.injekt:injekt-core:1.16.1")
     implementation("org.jsoup:jsoup:1.21.1")
