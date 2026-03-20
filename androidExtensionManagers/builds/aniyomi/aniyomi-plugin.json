@@ -1,6 +1,6 @@
 {
   "name": "aniyomi",
-  "versionCode": 7,
-  "versionName": "1.0.6",
+  "versionCode": 8,
+  "versionName": "1.0.7",
   "apk": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/androidExtensionManagers/builds/aniyomi/aniyomi-plugin.apk"
 }

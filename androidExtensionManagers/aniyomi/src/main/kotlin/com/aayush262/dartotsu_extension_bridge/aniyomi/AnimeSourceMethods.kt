@@ -11,8 +11,6 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
-import me.xdrop.fuzzywuzzy.FuzzySearch
-import org.jsoup.internal.Normalizer.normalize
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -51,14 +49,11 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
         )
 
     override suspend fun getDetails(media: SAnime): SAnime = source.getAnimeDetails(media)
-
     override suspend fun getEpisodeList(media: SAnime): List<SEpisode> {
-        // Try normal method first
         runCatching {
             return source.getEpisodeList(media)
         }
 
-        // Fallback: use seasons
         val seasons = runCatching { source.getSeasonList(media) }
             .getOrElse {
                 throw UnsupportedOperationException(
@@ -66,22 +61,23 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
                 )
             }
 
-        if (seasons.isEmpty()) return emptyList()
+        val episodes = mutableListOf<SEpisode>()
 
-        val query = normalize(media.title)
+        seasons.forEachIndexed { _, season ->
+            val seasonEpisodes = runCatching {
+                source.getEpisodeList(season)
+            }.getOrNull() ?: emptyList()
 
-        val targetSeason = seasons.maxByOrNull { season ->
-            FuzzySearch.tokenSetRatio(
-                query,
-                normalize(season.title)
-            )
-        } ?: return emptyList()
+            seasonEpisodes.forEach { ep ->
+                ep.name = "${season.title}: ${ep.name}"
+            }
 
-        return runCatching {
-            source.getEpisodeList(targetSeason)
-        }.getOrElse {
-            emptyList()
+            episodes += seasonEpisodes
         }
+
+        return episodes
+            .distinctBy { it.url }
+            .sortedByDescending { it.episode_number }
     }
     override suspend fun getVideoList(episode: SEpisode): List<Video> {
         if ((source as AnimeHttpSource).javaClass.declaredMethods.any { it.name == "getHosterList" }) {
