@@ -90,7 +90,7 @@ class AniyomiExtensions extends Extension {
 
       if (remoteVersion > localVersion) {
         Logger.log(
-            "${remote['name']}  update found: v$remoteVersion\n Updating in background",
+            "${remote['name'].toString().toUpperCase()}  Update found: v$remoteVersion\n Updating in background",
             show: true);
 
         final tempFile = File("${file.path}.tmp");
@@ -105,8 +105,7 @@ class AniyomiExtensions extends Extension {
         setVal(_pluginVersionKey, remoteVersion);
         setVal(_pluginHasUpdateKey, true);
 
-        Logger.log("Plugin updated (will apply on restart) → v$remoteVersion",
-            show: true);
+        Logger.log("Plugin updated (will apply on restart)", show: true);
       } else {
         Logger.log("Plugin up-to-date");
         setVal(_pluginHasUpdateKey, false);
