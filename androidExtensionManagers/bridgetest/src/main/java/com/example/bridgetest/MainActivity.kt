@@ -14,12 +14,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aayush262.dartotsu_extension_bridge.ExtensionApi
+import dalvik.system.BaseDexClassLoader
 import dalvik.system.DexClassLoader
 import dalvik.system.PathClassLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
+import java.io.File
 
 
 class MainActivity : ComponentActivity() {
@@ -86,14 +87,13 @@ class MainActivity : ComponentActivity() {
                 )
 
             val apkPath = appInfo.sourceDir
+            val apkFile = File(apkPath)
 
-            val classLoader = DexClassLoader(
-                apkPath,
-                null,
-                null,
-                context.classLoader
-            )
+            val classLoader = context.classLoader
 
+            addDexToClasspath(apkFile, classLoader)
+
+            // 🔥 Now load normally from same classloader
             val clazz = classLoader.loadClass(
                 "com.aayush262.dartotsu_extension_bridge.AniyomiExtensionApi"
             )
@@ -110,7 +110,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
+private fun addDexToClasspath(dex: File, classLoader: ClassLoader) {
+    val pathListField = BaseDexClassLoader::class.java.getDeclaredField("pathList")
+        .apply { isAccessible = true }
+    val pathList = pathListField[classLoader]!!
+    val addDexPath =
+        pathList.javaClass.getDeclaredMethod(
+            "addDexPath",
+            String::class.java,
+            File::class.java
+        )
+            .apply { isAccessible = true }
+    addDexPath.invoke(pathList, dex.absolutePath, null)
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExtensionListScreen(

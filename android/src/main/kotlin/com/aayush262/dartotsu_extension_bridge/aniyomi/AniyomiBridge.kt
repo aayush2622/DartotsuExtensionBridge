@@ -1,6 +1,5 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
-import android.content.Context
 import com.aayush262.dartotsu_extension_bridge.ExtensionApi
 import dalvik.system.DexClassLoader
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -9,6 +8,8 @@ import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.*
 import com.aayush262.dartotsu_extension_bridge.LogLevel
 import com.aayush262.dartotsu_extension_bridge.Logger
+import dalvik.system.BaseDexClassLoader
+import java.io.File
 
 class AniyomiBridge {
     private lateinit var loggerChannel: MethodChannel
@@ -52,28 +53,40 @@ class AniyomiBridge {
     private fun loadApi(context: Context) {
         try {
 
-            val pluginPackage = "com.aayush262.dartotsu.aniyomi_plugin"
+            val pluginPackage =
+                "com.aayush262.dartotsu.aniyomi_plugin"
 
-            val appInfo = context.packageManager
-                .getApplicationInfo(pluginPackage, 0)
+            val appInfo =
+                context.packageManager.getApplicationInfo(
+                    pluginPackage,
+                    0
+                )
 
             val apkPath = appInfo.sourceDir
+            val apkFile = File(apkPath)
 
-            val classLoader = DexClassLoader(
-                apkPath,
-                context.codeCacheDir.absolutePath,
-                null,
-                context.classLoader
-            )
+            val classLoader = context.classLoader
+
+            val pathListField = BaseDexClassLoader::class.java.getDeclaredField("pathList")
+                .apply { isAccessible = true }
+            val pathList = pathListField[classLoader]!!
+            val addDexPath =
+                pathList.javaClass.getDeclaredMethod(
+                    "addDexPath",
+                    String::class.java,
+                    File::class.java
+                )
+                    .apply { isAccessible = true }
+            addDexPath.invoke(pathList, apkFile.absolutePath, null)
 
             val clazz = classLoader.loadClass(
                 "com.aayush262.dartotsu_extension_bridge.AniyomiExtensionApi"
             )
 
-            val instance = clazz.getDeclaredConstructor().newInstance()
+            val instance =
+                clazz.getDeclaredConstructor().newInstance()
 
             api = instance as ExtensionApi
-
             Logger.log("Extension API loaded successfully", LogLevel.INFO)
             api?.initialize(context)
 
@@ -87,7 +100,6 @@ class AniyomiBridge {
             )
         }
     }
-
     private inner class Handler : MethodChannel.MethodCallHandler {
         @Suppress("UNCHECKED_CAST")
         override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
