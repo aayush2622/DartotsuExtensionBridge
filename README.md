@@ -41,7 +41,7 @@ Add the package to your app:
 dependencies:
   dartotsu_extension_bridge:
     git:
-      url: https://github.com/<your-user-or-org>/DartotsuExtensionBridge.git
+      url: https://github.com/aayush2622/DartotsuExtensionBridge.git
       ref: main
 ```
 
@@ -286,15 +286,6 @@ Useful exported types include:
 - `SourcePreference`
 - `ExtensionManagerScreen`
 - `ExtensionList`
-
-## Development
-
-For local development inside this repository:
-
-```bash
-flutter pub get
-flutter analyze
-```
 
 ## License
 
