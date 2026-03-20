@@ -4,6 +4,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    kotlin("plugin.serialization")
 }
 android {
     namespace = "com.example.bridgetest"
@@ -27,6 +28,10 @@ android {
 }
 kotlin {
     jvmToolchain(17)
+    compilerOptions {
+        freeCompilerArgs.add("-Xcontext-receivers")
+
+    }
 }
 dependencies {
     implementation("androidx.core:core-ktx:1.18.0")
@@ -47,4 +52,10 @@ dependencies {
     implementation("uy.kohesive.injekt:injekt-core:1.16.1")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
     implementation(project(":common"))
+
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-okio:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+
 }
