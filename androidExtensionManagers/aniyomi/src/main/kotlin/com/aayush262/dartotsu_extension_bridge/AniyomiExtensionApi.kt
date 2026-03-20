@@ -24,7 +24,8 @@ import uy.kohesive.injekt.api.get
 import androidx.core.content.edit
 
 var customAniyomiMethods: CustomMethods? = null
-class AniyomiExtensionApi : ExtensionApi , AniyomiCustomMethods {
+
+class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
 
     private val sourcePreferences = mutableMapOf<String, MutableMap<String, Preference>>()
 
@@ -221,11 +222,21 @@ class AniyomiExtensionApi : ExtensionApi , AniyomiCustomMethods {
 
         media(sourceId, isAnime).getVideoList(ep).map {
 
-            mapOf("title" to it.videoTitle, "url" to it.videoUrl, "quality" to it.resolution, "headers" to it.headers?.toMap(), "subtitles" to it.subtitleTracks.map { t ->
-                mapOf("file" to t.url, "label" to t.lang)
-            }, "audios" to it.audioTracks.map { t ->
-                mapOf("file" to t.url, "label" to t.lang)
-            })
+            mapOf(
+                "title" to it.videoTitle,
+                "url" to it.videoUrl,
+                "quality" to it.resolution,
+                "headers" to it.headers?.toMap(),
+                "subtitles" to it.subtitleTracks.map { t ->
+                    mapOf("file" to t.url, "label" to t.lang)
+                },
+                "audios" to it.audioTracks.map { t ->
+                    mapOf("file" to t.url, "label" to t.lang)
+                },
+                "timestamps" to it.timestamps.map { t ->
+                    mapOf("name" to t.name, "startTime" to t.start, "endTime" to t.end)
+                },
+            )
         }
     }
 
@@ -245,8 +256,7 @@ class AniyomiExtensionApi : ExtensionApi , AniyomiCustomMethods {
 
     @SuppressLint("RestrictedApi")
     override suspend fun getPreference(
-        sourceId: String,
-        isAnime: Boolean
+        sourceId: String, isAnime: Boolean
     ): List<Map<String, Any?>> {
 
         sourcePreferences.remove(sourceId)
@@ -266,10 +276,7 @@ class AniyomiExtensionApi : ExtensionApi , AniyomiCustomMethods {
     }
 
     override suspend fun saveSourcePreference(
-        sourceId: String,
-        key: String,
-        action: String,
-        value: Any?
+        sourceId: String, key: String, action: String, value: Any?
     ): Boolean {
 
         val pref = sourcePreferences[sourceId]?.get(key) ?: return false
@@ -299,8 +306,7 @@ class AniyomiExtensionApi : ExtensionApi , AniyomiCustomMethods {
                     is Float -> putFloat(key, convertedValue)
 
                     is Set<*> -> putStringSet(
-                        key,
-                        convertedValue.filterIsInstance<String>().toMutableSet()
+                        key, convertedValue.filterIsInstance<String>().toMutableSet()
                     )
 
                     null -> remove(key)
@@ -337,7 +343,7 @@ class AniyomiExtensionApi : ExtensionApi , AniyomiCustomMethods {
             for (i in 0 until prefGroup.preferenceCount) {
                 val pref = prefGroup.getPreference(i)
 
-                clickMap[pref.key] =  pref
+                clickMap[pref.key] = pref
                 val prefMap = mutableMapOf<String, Any?>(
                     "key" to pref.key, "title" to pref.title.toString(), "summary" to pref.summary?.toString(), "enabled" to pref.isEnabled, "type" to when (pref) {
                         is ListPreference -> "list"
@@ -388,7 +394,6 @@ class AniyomiExtensionApi : ExtensionApi , AniyomiCustomMethods {
         traverse(this)
         return list
     }
-
 
 
 }
