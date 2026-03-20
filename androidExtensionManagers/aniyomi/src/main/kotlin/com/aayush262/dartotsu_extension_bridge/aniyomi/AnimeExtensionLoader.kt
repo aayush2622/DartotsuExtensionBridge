@@ -67,7 +67,9 @@ internal object AnimeExtensionLoader {
             } else {
                 privateDir.mkdirs()
             }
-
+            Logger.log(
+                "Looking for private extensions in ${externalDir.absolutePath}", LogLevel.INFO
+            )
             externalDir.listFiles()?.asSequence()?.filter { it.isFile && it.extension == "apk" }?.forEach { src ->
                 val dst = File(privateDir, src.name)
                 val tmp = File(privateDir, "${src.name}.tmp")

@@ -31,11 +31,7 @@ class AniyomiExtensions extends Extension {
   static const platform = MethodChannel('aniyomiExtensionBridge');
   @override
   Future<void> initialize() async {
-    final filePath = await ensurePlugin();
-
-    final file = File(filePath);
-
-    final hasUpdate = !(await file.exists());
+    final (filePath, hasUpdate) = await ensurePlugin();
 
     await platform.invokeMethod('loadPlugin', {
       "path": filePath,
@@ -45,62 +41,113 @@ class AniyomiExtensions extends Extension {
     await super.initialize();
   }
 
-  Future<String> ensurePlugin() async {
-    Logger.log("🔍 Resolving plugin directory...");
-
-    var path = await DartotsuExtensionBridge.context.getDirectory(
+  Future<(String path, bool hasUpdate)> ensurePlugin() async {
+    final dir = await DartotsuExtensionBridge.context.getDirectory(
       subPath: 'plugins',
       useSystemPath: true,
       useCustomPath: false,
     );
 
-    if (path == null) {
-      Logger.log("❌ Failed to get plugin directory");
-      throw Exception("Failed to get directory for Aniyomi plugin");
+    if (dir == null) throw Exception("Failed to get plugin dir");
+
+    await dir.create(recursive: true);
+
+    final file = File("${dir.path}/aniyomi_plugin.apk");
+
+    final exists = await file.exists();
+
+    final hasUpdate = getVal<bool>("aniyomi_plugin_has_update") ?? false;
+
+    if (exists) {
+      unawaited(_checkForUpdateInBackground(file));
+
+      return (file.path, hasUpdate);
     }
+    Logger.log("Downloading Aniyomi plugin...", show: true);
+    final remote = await _fetchRemoteInfo();
+    final apkUrl = remote["apk"];
+    final version = remote["versionCode"] ?? 0;
 
-    Logger.log("📁 Plugin directory: ${path.path}");
+    await _downloadAndReplace(file, apkUrl, version);
 
-    if (!await path.exists()) {
-      Logger.log("📁 Directory does not exist, creating...");
-      await path.create(recursive: true);
-    }
+    return (file.path, true);
+  }
 
-    final file = File("${path.path}/aniyomi_plugin.apk");
-
-    if (await file.exists()) {
-      Logger.log("✅ Plugin already exists at ${file.path}");
-      return file.path;
-    }
-
-    final url =
-        "https://github.com/aayush2622/DartotsuExtensionBridge/raw/refs/heads/master/androidExtensionManagers/builds/aniyomi-plugin.apk";
-
-    Logger.log("⬇️ Downloading plugin from: $url");
-
+  Future<void> _checkForUpdateInBackground(File file) async {
     try {
-      final response = await _client.get(Uri.parse(url));
+      final remote = await _fetchRemoteInfo();
 
-      if (response.statusCode != 200) {
+      final remoteVersion = remote["versionCode"] ?? 0;
+      final apkUrl = remote["apk"];
+
+      final localVersion = getVal<int>("aniyomi_plugin_version") ?? 0;
+
+      Logger.log("Local: $localVersion | Remote: $remoteVersion");
+
+      if (remoteVersion > localVersion) {
         Logger.log(
-          "❌ Failed to download plugin. Status: ${response.statusCode}",
-        );
-        throw Exception("Download failed with status ${response.statusCode}");
+            "${remote['name']}  update found: v$remoteVersion\n Updating in background",
+            show: true);
+
+        final tempFile = File("${file.path}.tmp");
+
+        final res = await _client.get(Uri.parse(apkUrl));
+        if (res.statusCode != 200) return;
+
+        await tempFile.writeAsBytes(res.bodyBytes);
+
+        await tempFile.rename(file.path);
+
+        setVal("aniyomi_plugin_version", remoteVersion);
+
+        setVal("aniyomi_plugin_has_update", true);
+
+        Logger.log("Plugin updated (will apply on restart) → v$remoteVersion",
+            show: true);
+      } else {
+        Logger.log("Plugin up-to-date");
+
+        setVal("aniyomi_plugin_has_update", false);
       }
-
-      Logger.log(
-        "⬇️ Download complete (${response.bodyBytes.length} bytes), saving...",
-      );
-
-      await file.writeAsBytes(response.bodyBytes);
-
-      Logger.log("✅ Plugin saved at ${file.path}");
-
-      return file.path;
     } catch (e) {
-      Logger.log("❌ Error downloading plugin: $e");
-      rethrow;
+      Logger.log("Background update failed: $e");
     }
+  }
+
+  Future<void> _downloadAndReplace(
+    File file,
+    String url,
+    int version,
+  ) async {
+    final res = await _client.get(Uri.parse(url));
+
+    if (res.statusCode != 200) {
+      throw Exception("Download failed");
+    }
+
+    final tempFile = File("${file.path}.tmp");
+    await tempFile.writeAsBytes(res.bodyBytes);
+    await tempFile.rename(file.path);
+
+    setVal("aniyomi_plugin_version", version);
+
+    // first install = no pending update
+    setVal("aniyomi_plugin_has_update", false);
+
+    Logger.log("Plugin downloaded → v$version");
+  }
+
+  Future<Map<String, dynamic>> _fetchRemoteInfo() async {
+    const url =
+        "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/androidExtensionManagers/builds/aniyomi/aniyomi-plugin.json";
+
+    final res = await _client.get(Uri.parse(url));
+
+    if (res.statusCode != 200) {
+      throw Exception("Failed to fetch plugin metadata");
+    }
+
+    return jsonDecode(res.body);
   }
 
   @override
