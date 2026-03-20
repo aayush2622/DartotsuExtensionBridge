@@ -52,16 +52,20 @@ class Video {
 
 class TimeStamp {
   String? name;
-  String startTime;
-  String endTime;
+  double startTime;
+  double endTime;
 
-  TimeStamp(this.startTime, this.endTime, {this.name});
+  TimeStamp({
+    this.name,
+    required this.startTime,
+    required this.endTime,
+  });
 
   factory TimeStamp.fromJson(Map<String, dynamic> json) {
     return TimeStamp(
-      (json['startTime'] ?? '').toString(),
-      (json['endTime'] ?? '').toString(),
       name: json['name']?.toString(),
+      startTime: (json['startTime'] as num).toDouble(),
+      endTime: (json['endTime'] as num).toDouble(),
     );
   }
 
