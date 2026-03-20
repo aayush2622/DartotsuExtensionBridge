@@ -63,7 +63,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp-brotli:5.0.0-alpha.14")
 
     implementation("com.squareup.okio:okio:3.8.0")
-
+    implementation("me.xdrop:fuzzywuzzy:1.4.0")
     implementation("io.reactivex:rxjava:1.3.8")
     implementation("io.reactivex:rxandroid:1.2.1")
 

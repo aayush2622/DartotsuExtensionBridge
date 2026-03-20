@@ -11,6 +11,8 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
+import me.xdrop.fuzzywuzzy.FuzzySearch
+import org.jsoup.internal.Normalizer.normalize
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -50,8 +52,37 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
 
     override suspend fun getDetails(media: SAnime): SAnime = source.getAnimeDetails(media)
 
-    override suspend fun getEpisodeList(media: SAnime): List<SEpisode> = source.getEpisodeList(media)
+    override suspend fun getEpisodeList(media: SAnime): List<SEpisode> {
+        // Try normal method first
+        runCatching {
+            return source.getEpisodeList(media)
+        }
 
+        // Fallback: use seasons
+        val seasons = runCatching { source.getSeasonList(media) }
+            .getOrElse {
+                throw UnsupportedOperationException(
+                    "This source does not support fetching episodes."
+                )
+            }
+
+        if (seasons.isEmpty()) return emptyList()
+
+        val query = normalize(media.title)
+
+        val targetSeason = seasons.maxByOrNull { season ->
+            FuzzySearch.tokenSetRatio(
+                query,
+                normalize(season.title)
+            )
+        } ?: return emptyList()
+
+        return runCatching {
+            source.getEpisodeList(targetSeason)
+        }.getOrElse {
+            emptyList()
+        }
+    }
     override suspend fun getVideoList(episode: SEpisode): List<Video> {
         if ((source as AnimeHttpSource).javaClass.declaredMethods.any { it.name == "getHosterList" }) {
             val hosters = source.getHosterList(episode)

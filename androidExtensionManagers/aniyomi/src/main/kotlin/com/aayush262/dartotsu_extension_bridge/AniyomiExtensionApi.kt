@@ -71,7 +71,7 @@ class AniyomiExtensionApi : ExtensionApi , AniyomiCustomMethods {
                         "id" to source.id.toString(),
                         "name" to source.name,
                         "baseUrl" to baseUrl,
-                        "lang" to ext.lang,
+                        "lang" to source.lang,
                         "isNsfw" to ext.isNsfw,
                         "iconUrl" to ext.iconUrl,
                         "version" to ext.versionName,
