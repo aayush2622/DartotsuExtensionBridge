@@ -31,18 +31,9 @@ class AniyomiExtensionManager(var context: Context) {
     }
 
     fun fetchInstalledMangaExtensions(): List<MangaExtension.Installed> {
-        val sources = ExtensionLoader.loadMangaExtensions(context)
-        installedMangaExtensions =
-            sources.filterIsInstance<MangaLoadResult.Success>().map { it.extension }
+        installedMangaExtensions = MangaExtensionLoader.loadExtensions(context, null)
+
         return installedMangaExtensions
-    }
-
-    suspend fun findAvailableAnimeExtensions(repo: String): List<AnimeExtension.Available> {
-        return findAvailableAnimeExtensions(listOf(repo))
-    }
-
-    suspend fun findAvailableMangaExtensions(repo: String): List<MangaExtension.Available> {
-        return findAvailableMangaExtensions(listOf(repo))
     }
 
     suspend fun findAvailableAnimeExtensions(repos: List<String>): List<AnimeExtension.Available> {
