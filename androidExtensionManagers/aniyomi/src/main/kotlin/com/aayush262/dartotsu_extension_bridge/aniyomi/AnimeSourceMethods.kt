@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.Hoster
+import eu.kanade.tachiyomi.animesource.model.Hoster.Companion.NO_HOSTER_LIST
 import eu.kanade.tachiyomi.animesource.model.Hoster.Companion.toHosterList
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
@@ -108,8 +109,17 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
                         videos.map { video ->
                             val resolved = resolveVideo(httpSource, video)
 
+                            val title = if (
+                                hoster.hosterName.isBlank() ||
+                                hoster.hosterName == NO_HOSTER_LIST
+                            ) {
+                                resolved.videoTitle
+                            } else {
+                                "${hoster.hosterName} - ${resolved.videoTitle}"
+                            }
+
                             resolved.copy(
-                                videoTitle = "${hoster.hosterName} - ${resolved.videoTitle}",
+                                videoTitle = title,
                                 initialized = true
                             )
                         }

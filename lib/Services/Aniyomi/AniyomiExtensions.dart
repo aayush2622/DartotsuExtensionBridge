@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -309,24 +310,63 @@ class AniyomiExtensions extends Extension {
         throw Exception("Invalid repo URL");
       }
 
-      final repos = _loadRepos(type);
+      final normalizedUrl = repoUrl.replaceAll(RegExp(r'/+$'), '');
 
-      if (repos.any((r) => r.url == repoUrl)) {
+      final repos = _loadRepos(type);
+      if (repos.any((r) => r.url == normalizedUrl)) {
         return;
       }
 
-      final res = await _client.get(uri);
-      if (res.statusCode != 200) {
-        throw Exception("Failed to fetch repo");
-      }
-      final repo = Repo(url: repoUrl);
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
+      final indexUrl = normalizedUrl.endsWith("index.min.json")
+          ? normalizedUrl
+          : "$normalizedUrl/index.min.json";
 
-      _saveRepos(updatedRepos, type);
+      http.Response? res;
+      String usedUrl = indexUrl;
+
+      try {
+        res = await _client
+            .get(Uri.parse(indexUrl))
+            .timeout(const Duration(seconds: 10));
+
+        if (res.statusCode != 200) {
+          throw Exception("Primary failed");
+        }
+      } catch (e) {
+        Logger.log("Primary repo failed: $indexUrl → $e");
+
+        final fallback = fallbackRepoUrl(normalizedUrl);
+        if (fallback == null) {
+          throw Exception("Invalid repo & no fallback available");
+        }
+
+        final fallbackUrl = "$fallback/index.min.json";
+
+        try {
+          res = await _client
+              .get(Uri.parse(fallbackUrl))
+              .timeout(const Duration(seconds: 10));
+
+          if (res.statusCode != 200) {
+            throw Exception("Fallback failed");
+          }
+
+          usedUrl = fallbackUrl;
+        } catch (e2) {
+          Logger.log("Fallback failed: $fallbackUrl → $e2");
+          throw Exception("Failed to fetch repo (primary + fallback)");
+        }
+      }
+
       final parsed = await compute(
         _parseExtensions,
-        (res.body, repoUrl, type),
+        (res.body, usedUrl, type),
       );
+
+      final repo =
+          Repo(url: normalizedUrl, extensions: parsed.length.toString());
+      final updatedRepos = List<Repo>.from(repos)..add(repo);
+      _saveRepos(updatedRepos, type);
 
       final rx = getAvailableRx(type);
       final existing = rx.value;
@@ -337,6 +377,7 @@ class AniyomiExtensions extends Extension {
       }.values.toList(growable: false);
 
       rx.value = List.unmodifiable(merged);
+
       getReposRx(type).value = updatedRepos;
     } catch (e) {
       Logger.log("Failed to add repo $repoUrl: $e");
@@ -353,7 +394,9 @@ class AniyomiExtensions extends Extension {
       final decoded = jsonDecode(body);
       if (decoded is! List) return const [];
 
-      final baseIconUrl = repoUrl.replaceAll('/index.min.json', '');
+      final baseIconUrl = repoUrl.endsWith('/index.min.json')
+          ? repoUrl.substring(0, repoUrl.length - '/index.min.json'.length)
+          : repoUrl;
 
       final sources = <Source>[];
 
@@ -377,8 +420,8 @@ class AniyomiExtensions extends Extension {
                 ? (map["sources"] as List).first['id']?.toString() ?? ''
                 : '',
             name: detectedType == ItemType.anime
-                ? name.substring(9) // "Aniyomi: "
-                : name.substring(10), // "Tachiyomi: "
+                ? name.substring(9)
+                : name.substring(10),
             pkgName: map['pkg'],
             apkName: map['apk'],
             lang: map['lang'],
@@ -422,6 +465,27 @@ class AniyomiExtensions extends Extension {
     );
   }
 
+  String? fallbackRepoUrl(String repoUrl) {
+    try {
+      var stripped = repoUrl
+          .replaceFirst(RegExp(r'^https?://'), '')
+          .replaceAll(RegExp(r'/+$'), '')
+          .replaceAll('/index.min.json', '');
+
+      final parts = stripped.split('/');
+
+      if (parts.length < 3) return null;
+
+      final owner = parts[1];
+      final repo = parts[2];
+      final branch = parts.length > 3 ? parts[3] : 'main';
+
+      return "https://gcore.jsdelivr.net/gh/$owner/$repo@$branch";
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _detectUpdates(List<ASource> available, ItemType type) {
     final installed = getInstalledRx(type).value as List<ASource>;
 
@@ -452,16 +516,40 @@ class AniyomiExtensions extends Extension {
   }
 
   Future<List<Source>> _fetchRepo(Repo repo, ItemType type) async {
-    try {
-      final res = await _client.get(Uri.parse(repo.url));
-      if (res.statusCode != 200) return const [];
+    final indexUrl = repo.url.endsWith("index.min.json")
+        ? repo.url
+        : "${repo.url.replaceAll(RegExp(r'/+$'), '')}/index.min.json";
 
-      return compute(
-        _parseExtensions,
-        (res.body, repo.url, type),
-      );
+    try {
+      final res = await _client
+          .get(Uri.parse(indexUrl))
+          .timeout(const Duration(seconds: 10));
+
+      if (res.statusCode == 200) {
+        return compute(_parseExtensions, (res.body, indexUrl, type));
+      }
+
+      throw Exception("Primary fetch failed");
     } catch (e) {
-      Logger.log("Repo failed ${repo.url}: $e");
+      Logger.log("Primary repo failed: $indexUrl → $e");
+
+      final fallback = fallbackRepoUrl(repo.url);
+      if (fallback == null) return const [];
+
+      final fallbackUrl = "$fallback/index.min.json";
+
+      try {
+        final res = await _client
+            .get(Uri.parse(fallbackUrl))
+            .timeout(const Duration(seconds: 10));
+
+        if (res.statusCode == 200) {
+          return compute(_parseExtensions, (res.body, fallbackUrl, type));
+        }
+      } catch (e2) {
+        Logger.log("Fallback failed: $fallbackUrl → $e2");
+      }
+
       return const [];
     }
   }
