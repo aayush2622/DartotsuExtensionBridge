@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:http/http.dart' as http;
 
-import '../../Mangayomi/http/m_client.dart';
+import '../../../NetworkClient.dart';
 
 class FetchV2 {
   final JavascriptRuntime runtime;

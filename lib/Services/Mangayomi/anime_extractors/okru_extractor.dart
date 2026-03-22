@@ -2,10 +2,10 @@ import 'package:html/parser.dart' show parse;
 import 'package:http_interceptor/http_interceptor.dart';
 import 'package:path/path.dart' as path;
 
+import '../../../NetworkClient.dart';
 import '../Eval/dart/model/video.dart';
 import '../Util/dom_extensions.dart';
 import '../Util/string_extensions.dart';
-import '../http/m_client.dart';
 
 class OkruExtractor {
   final InterceptedClient client = MClient.init(

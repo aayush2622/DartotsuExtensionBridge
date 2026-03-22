@@ -1,9 +1,9 @@
 import 'package:html/parser.dart' as parser;
 import 'package:http_interceptor/http_interceptor.dart';
 
+import '../../../NetworkClient.dart';
 import '../Eval/dart/model/video.dart';
 import '../Util/string_extensions.dart';
-import '../http/m_client.dart';
 
 class SendvidExtractor {
   final InterceptedClient client = MClient.init(

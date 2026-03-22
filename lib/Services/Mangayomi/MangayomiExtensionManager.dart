@@ -7,7 +7,7 @@ import '../../Logger.dart';
 import '../../Models/Source.dart';
 import 'Models/Source.dart';
 import 'Util/lib.dart';
-import 'http/m_client.dart';
+import 'http/NetworkClient.dart';
 
 class MangayomiExtensionManager {
   final installedAnimeExtensions = Rx<List<MSource>>([]);

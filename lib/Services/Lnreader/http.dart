@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:d4rt/d4rt.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
-import 'package:http_interceptor/http_interceptor.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_interceptor/http_interceptor.dart';
 
-import '../Mangayomi/http/m_client.dart';
+import '../../NetworkClient.dart';
 
 class JsHttpClient {
   late JavascriptRuntime runtime;
@@ -89,10 +90,10 @@ Future<String> _toHttpResponse(Client client, String method, List args) async {
   final headers = (args[1] as Map?)?.toMapStringString ?? {};
   final body = args.length >= 3
       ? args[2] is List
-            ? args[2] as List
-            : args[2] is String
-            ? args[2] as String
-            : (args[2] as Map?)?.toMapStringDynamic
+          ? args[2] as List
+          : args[2] is String
+              ? args[2] as String
+              : (args[2] as Map?)?.toMapStringDynamic
       : null;
   var request = http.Request(method, Uri.parse(url));
   request.headers.addAll(headers);
@@ -120,8 +121,7 @@ Future<String> _toHttpResponse(Client client, String method, List args) async {
   if (body is Map && body.containsKey("_data")) {
     formData = (body.get("_data") as List<dynamic>)
         .map(
-          (e) =>
-              "${Uri.encodeQueryComponent(e[0])}"
+          (e) => "${Uri.encodeQueryComponent(e[0])}"
               "=${Uri.encodeQueryComponent(e[1])}",
         )
         .join("&");
@@ -132,20 +132,20 @@ Future<String> _toHttpResponse(Client client, String method, List args) async {
     "HEAD" => client.head(Uri.parse(url), headers: headers),
     "GET" => client.get(Uri.parse(url), headers: headers),
     "POST" => client.post(
-      Uri.parse(url),
-      headers: headers,
-      body: formData ?? body,
-    ),
+        Uri.parse(url),
+        headers: headers,
+        body: formData ?? body,
+      ),
     "PUT" => client.put(
-      Uri.parse(url),
-      headers: headers,
-      body: formData ?? body,
-    ),
+        Uri.parse(url),
+        headers: headers,
+        body: formData ?? body,
+      ),
     "DELETE" => client.delete(
-      Uri.parse(url),
-      headers: headers,
-      body: formData ?? body,
-    ),
+        Uri.parse(url),
+        headers: headers,
+        body: formData ?? body,
+      ),
     _ => client.patch(Uri.parse(url), headers: headers, body: formData ?? body),
   };
   return jsonEncode((await future).toJson());
@@ -153,23 +153,23 @@ Future<String> _toHttpResponse(Client client, String method, List args) async {
 
 extension ResponseExtexsion on Response {
   Map<String, dynamic> toJson() => {
-    'body': body,
-    'headers': headers,
-    'isRedirect': isRedirect,
-    'persistentConnection': persistentConnection,
-    'reasonPhrase': reasonPhrase,
-    'statusCode': statusCode,
-    'request': {
-      'contentLength': request?.contentLength,
-      'finalized': request?.finalized,
-      'followRedirects': request?.followRedirects,
-      'headers': request?.headers,
-      'maxRedirects': request?.maxRedirects,
-      'method': request?.method,
-      'persistentConnection': request?.persistentConnection,
-      'url': request?.url.toString(),
-    },
-  };
+        'body': body,
+        'headers': headers,
+        'isRedirect': isRedirect,
+        'persistentConnection': persistentConnection,
+        'reasonPhrase': reasonPhrase,
+        'statusCode': statusCode,
+        'request': {
+          'contentLength': request?.contentLength,
+          'finalized': request?.finalized,
+          'followRedirects': request?.followRedirects,
+          'headers': request?.headers,
+          'maxRedirects': request?.maxRedirects,
+          'method': request?.method,
+          'persistentConnection': request?.persistentConnection,
+          'url': request?.url.toString(),
+        },
+      };
 }
 
 extension ToMapExtension on Map? {

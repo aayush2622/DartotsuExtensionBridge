@@ -6,8 +6,8 @@ import '../../Extensions/Extensions.dart';
 import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
+import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
-import '../Mangayomi/http/m_client.dart';
 import 'Models/Source.dart';
 import 'SoraSourceMethods.dart';
 
@@ -24,9 +24,8 @@ class SoraExtensions extends Extension {
   bool get supportsNovel => false;
 
   @override
-  Map<Type, SourceMethods Function(Source)> get sourceMethodFactories => {
-        SSource: (source) => SoraSourceMethods(source as SSource),
-      };
+  (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
+      (SSource, (source) => SoraSourceMethods(source as SSource));
 
   @override
   Future<void> fetchAnimeExtensions() async {

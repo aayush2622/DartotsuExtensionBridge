@@ -61,30 +61,52 @@ internal object MangaExtensionLoader {
             Logger.log(
                 "Path for private extensions: ${path ?: "default internal storage"}", LogLevel.INFO
             )
-            val externalDir = File((path ?: context.filesDir.absolutePath), "exts")
-            val privateDir = File(context.filesDir, "exts")
-            if (privateDir.exists()) {
-                privateDir.listFiles()?.forEach { it.delete() }
-            } else {
+            val defaultDir = File(context.filesDir, "aniyomi-extensions/Manga")
+            val externalDir = path?.let { File(it) } ?: defaultDir
+            val privateDir = File(context.filesDir, "aniyomi-extensions/Manga")
+
+            if (!privateDir.exists()) {
                 privateDir.mkdirs()
             }
+
             Logger.log(
-                "Looking for private extensions in ${externalDir.absolutePath}", LogLevel.INFO
+                "Looking for private extensions in ${externalDir.absolutePath}",
+                LogLevel.INFO
             )
-            externalDir.listFiles()?.asSequence()?.filter { it.isFile && it.extension == "apk" }?.forEach { src ->
+
+            val externalFiles = externalDir.listFiles()
+                ?.filter { it.isFile && it.extension == "apk" }
+                ?: emptyList()
+
+            val privateFiles = privateDir.listFiles()
+                ?.associateBy { it.name }
+                ?: emptyMap()
+
+            externalFiles.forEach { src ->
                 val dst = File(privateDir, src.name)
-                val tmp = File(privateDir, "${src.name}.tmp")
 
-                tmp.outputStream().use { out ->
-                    src.inputStream().use { it.copyTo(out) }
+                val shouldCopy = !dst.exists() || src.length() != dst.length()
+
+                if (shouldCopy) {
+                    val tmp = File(privateDir, "${src.name}.tmp")
+
+                    tmp.outputStream().use { out ->
+                        src.inputStream().use { it.copyTo(out) }
+                    }
+
+                    if (!tmp.renameTo(dst)) {
+                        tmp.delete()
+                        throw IOException("Failed to finalize ${dst.name}")
+                    }
+
+                    dst.setReadOnly()
                 }
-
-                if (!tmp.renameTo(dst)) {
-                    tmp.delete()
-                    throw IOException("Failed to finalize ${dst.name}")
+            }
+            privateFiles.forEach { (name, file) ->
+                val stillExists = externalFiles.any { it.name == name }
+                if (!stillExists) {
+                    file.delete()
                 }
-
-                dst.setReadOnly()
             }
 
             val privateExtPkgs = privateDir.listFiles()?.asSequence()?.filter { it.isFile && it.extension == "apk" }?.mapNotNull { apk ->

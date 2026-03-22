@@ -11,8 +11,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../Logger.dart';
+import '../../../../NetworkClient.dart';
 import '../../cryptoaes/js_unpacker.dart';
-import '../../http/m_client.dart';
 import '../dart/model/m_bridge.dart';
 import 'http.dart';
 
