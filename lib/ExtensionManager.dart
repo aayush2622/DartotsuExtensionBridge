@@ -32,7 +32,8 @@ class ExtensionManager extends GetxController {
     managers.addAll(_extensionManagers);
 
     managers.forEach(
-      (ext) => _factories.addAll(ext.sourceMethodFactories),
+      (ext) => _factories[ext.sourceMethodFactories.$1] =
+          ext.sourceMethodFactories.$2,
     );
     current = Rx(_findById(getVal(key)) ?? managers.first);
 

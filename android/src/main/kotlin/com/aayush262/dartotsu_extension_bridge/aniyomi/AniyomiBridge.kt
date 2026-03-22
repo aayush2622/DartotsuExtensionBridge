@@ -186,7 +186,7 @@ class AniyomiBridge(var context: Context) {
 
                     "getInstalledMangaExtensions" ->
                         launch(call, result) {
-                            api.getInstalledMangaExtensions()
+                            api.getInstalledMangaExtensions( call.arguments as String?)
                         }
 
                     "getPopular" ->

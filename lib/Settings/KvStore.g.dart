@@ -53,7 +53,7 @@ const KvEntrySchema = CollectionSchema(
   getId: _kvEntryGetId,
   getLinks: _kvEntryGetLinks,
   attach: _kvEntryAttach,
-  version: '3.3.0',
+  version: '3.3.1',
 );
 
 int _kvEntryEstimateSize(

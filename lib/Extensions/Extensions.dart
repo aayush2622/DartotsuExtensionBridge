@@ -1,9 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
 import '../Models/Source.dart';
+import 'ExtensionSettings.dart';
 import 'SourceMethods.dart';
 
 abstract class Extension {
@@ -14,8 +15,7 @@ abstract class Extension {
   bool get supportsManga => true;
   bool get supportsNovel => true;
 
-  Map<Type, SourceMethods Function(Source source)> get sourceMethodFactories;
-
+  (Type, SourceMethods Function(Source)) get sourceMethodFactories;
   final Map<ItemType, Rx<List<Source>>> _installed = {
     ItemType.anime: Rx<List<Source>>([]),
     ItemType.manga: Rx<List<Source>>([]),
@@ -38,9 +38,33 @@ abstract class Extension {
     ItemType.novel: Rx<List<Repo>>([]),
   };
 
+  @protected
+  Future<void> onInitialize() async {}
+
+  Completer<void>? initCompleter;
+  Future<void> initialize() async {
+    if (initCompleter != null) {
+      return initCompleter!.future;
+    }
+
+    initCompleter = Completer<void>();
+
+    try {
+      await onInitialize();
+
+      initCompleter!.complete();
+    } catch (e, s) {
+      initCompleter!.completeError(e, s);
+      rethrow;
+    }
+
+    return initCompleter!.future;
+  }
+
   bool _isInstalledInitialized = false;
   @mustCallSuper
   Future<void> initializeInstalled() async {
+    await initialize();
     if (_isInstalledInitialized) return;
     _isInstalledInitialized = true;
     try {
@@ -61,8 +85,17 @@ abstract class Extension {
   }
 
   bool _isAvailableInitialized = false;
+
   @mustCallSuper
   Future<void> initializeAvailable() async {
+    // Ensure installed initialization has at least started (and completed its setup phase).
+    // This allows subclasses to override initializeInstalled() and perform required setup
+    // before available extensions are fetched.
+    //
+    // Example: an arbitrary plugin installer might download/install extensions in
+    // initializeInstalled(), and available extensions should only be fetched after
+    // that setup has been triggered.
+    await initialize();
     if (_isAvailableInitialized) return;
     _isAvailableInitialized = true;
     try {
@@ -115,6 +148,8 @@ abstract class Extension {
   Rx<List<Source>> getRawAvailableRx(ItemType type) => _availableRaw[type]!;
 
   Rx<List<Repo>> getReposRx(ItemType type) => _repos[type]!;
+
+  List<ExtensionSetting> settings(BuildContext context) => [];
 
   Future<void> setInstalled(ItemType type, List<Source> sources) async {
     getInstalledRx(type).value = sources;

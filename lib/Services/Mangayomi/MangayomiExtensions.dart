@@ -6,8 +6,8 @@ import '../../Extensions/Extensions.dart';
 import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
+import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
-import '../Mangayomi/http/m_client.dart';
 import 'MangayomiSourceMethods.dart';
 import 'Models/Source.dart';
 import 'Util/lib.dart';
@@ -22,9 +22,9 @@ class MangayomiExtensions extends Extension {
   String get name => 'Mangayomi';
 
   @override
-  Map<Type, SourceMethods Function(Source)> get sourceMethodFactories => {
-        MSource: (source) => MangayomiSourceMethods(source as MSource),
-      };
+  (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
+      (MSource, (source) => MangayomiSourceMethods(source as MSource));
+
   @override
   Future<void> fetchAnimeExtensions() async {
     final res = await _fetchExtensions(ItemType.anime);

@@ -12,8 +12,8 @@ dependencies:
     sdk: flutter
   plugin_platform_interface: ^2.1.8
   http: ^1.6.0
-  isar_community: ^3.3.0
-  isar_community_flutter_libs: ^3.3.0
+  isar_community: ^3.3.1
+  isar_community_flutter_libs: ^3.3.1
   d4rt: ^0.2.2
   get: ^4.7.3
   path_provider: ^2.1.5
@@ -42,10 +42,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  isar_community_generator:
-    git:
-      url: https://github.com/kodjodevf/isar-community-generator.git
-      ref: v3
+  isar_community_generator: ^3.3.1
   build_runner: ^2.11.1
 
 flutter:

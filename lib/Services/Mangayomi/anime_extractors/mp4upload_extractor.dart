@@ -1,10 +1,10 @@
 import 'package:http_interceptor/http_interceptor.dart';
 import 'package:js_packer/js_packer.dart';
 
+import '../../../NetworkClient.dart';
 import '../Eval/dart/model/video.dart';
 import '../Util/string_extensions.dart';
 import '../Util/xpath_selector.dart';
-import '../http/m_client.dart';
 
 class Mp4uploadExtractor {
   static final RegExp qualityRegex = RegExp(r'\WHEIGHT=(\d+)');

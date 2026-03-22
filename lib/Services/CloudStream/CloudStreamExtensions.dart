@@ -266,7 +266,6 @@ class CloudStreamExtensions extends Extension {
   }
 
   @override
-  Map<Type, SourceMethods Function(Source)> get sourceMethodFactories => {
-        CSource: (source) => CloudStreamSourceMethods(source as CSource),
-      };
+  (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
+      (CSource, (source) => CloudStreamSourceMethods(source as CSource));
 }

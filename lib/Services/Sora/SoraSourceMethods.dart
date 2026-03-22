@@ -12,7 +12,7 @@ import '../../Models/Pages.dart';
 import '../../Models/Source.dart';
 import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
-import '../Mangayomi/http/m_client.dart';
+import '../../NetworkClient.dart';
 import 'JsEngine/JsEngine.dart';
 import 'Models/Source.dart';
 
