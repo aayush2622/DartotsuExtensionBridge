@@ -9,7 +9,7 @@ interface ExtensionApi {
 
     suspend fun getInstalledAnimeExtensions(path: String?): List<Map<String, Any?>>
 
-    suspend fun getInstalledMangaExtensions(): List<Map<String, Any?>>
+    suspend fun getInstalledMangaExtensions(path: String?): List<Map<String, Any?>>
 
     suspend fun getPopular(
         sourceId: String, isAnime: Boolean, page: Int

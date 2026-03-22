@@ -22,135 +22,18 @@ import uy.kohesive.injekt.injectLazy
 class AniyomiExtensionManager(var context: Context) {
     lateinit var installedAnimeExtensions: List<AnimeExtension.Installed>
     lateinit var installedMangaExtensions: List<MangaExtension.Installed>
-    private val json: Json by injectLazy()
 
-    fun fetchInstalledAnimeExtensions(path: String?): List<AnimeExtension.Installed> {
-        installedAnimeExtensions = AnimeExtensionLoader.loadExtensions(context, path)
-
-        return installedAnimeExtensions
+    fun fetchInstalledAnimeExtensions(path: String?): List<AnimeExtension.Installed> = runCatching {
+        AnimeExtensionLoader.loadExtensions(context,path).apply { installedAnimeExtensions = this }
+    }.getOrElse { e ->
+        Logger.log( "Failed to load anime extensions: ${e.message}",LogLevel.ERROR)
+        emptyList()
+    }
+    fun fetchInstalledMangaExtensions(path: String?): List<MangaExtension.Installed> = runCatching {
+        MangaExtensionLoader.loadExtensions(context,path).apply { installedMangaExtensions = this }
+    }.getOrElse { e ->
+        Logger.log( "Failed to load manga extensions: ${e.message}",LogLevel.ERROR)
+        emptyList()
     }
 
-    fun fetchInstalledMangaExtensions(): List<MangaExtension.Installed> {
-        installedMangaExtensions = MangaExtensionLoader.loadExtensions(context, null)
-
-        return installedMangaExtensions
-    }
-
-    suspend fun findAvailableAnimeExtensions(repos: List<String>): List<AnimeExtension.Available> {
-        if (repos.isEmpty()) return emptyList()
-
-        val client = Injekt.get<OkHttpClient>()
-
-        val extensions = repos.mapNotNull { repo ->
-            val indexUrl = if (repo.contains("index.min.json")) repo
-            else "${repo.trimEnd('/')}/index.min.json"
-
-            val response = try {
-                client.newCall(GET(indexUrl)).awaitSuccess()
-            } catch (e: Throwable) {
-                Logger.log(
-                    "Failed to fetch from $indexUrl: ${e.message}\n${e.stackTraceToString()} ",
-                    LogLevel.ERROR
-                )
-                try {
-                    val fallbackUrl = "${fallbackRepoUrl(repo)?.trimEnd('/')}/index.min.json"
-                    client.newCall(GET(fallbackUrl)).awaitSuccess()
-                } catch (e2: Throwable) {
-                    Logger.log(
-                        "Failed to fetch from fallback URL for $repo: ${e2.message}\n${e.stackTraceToString()}",
-                        LogLevel.ERROR
-                    )
-                    null
-
-                }
-            }
-
-            response?.let {
-                try {
-                    with(json) {
-                        it.parseAs<List<ExtensionJsonObject>>()
-                            .toAnimeExtensions(repo)
-                    }
-                } catch (e: Exception) {
-                    Logger.log(
-                        "Failed to fetch from $indexUrl: ${e.message}\n${e.stackTraceToString()} ",
-                        LogLevel.ERROR
-                    )
-                    null
-                }
-            }
-        }.flatten()
-
-        return extensions.filter { it.pkgName.isNotEmpty() }
-    }
-
-    suspend fun findAvailableMangaExtensions(repos: List<String>): List<MangaExtension.Available> {
-        if (repos.isEmpty()) return emptyList()
-
-        val client = Injekt.get<OkHttpClient>()
-
-        val extensions = repos.mapNotNull { repo ->
-            val indexUrl = if (repo.contains("index.min.json")) repo
-            else "${repo.trimEnd('/')}/index.min.json"
-
-            val response = try {
-                client.newCall(GET(indexUrl)).awaitSuccess()
-            } catch (e: Throwable) {
-                Logger.log(
-                    "Failed to fetch from $indexUrl: ${e.message}\n${e.stackTraceToString()} ",
-                    LogLevel.ERROR
-                )
-                try {
-                    val fallbackUrl = "${fallbackRepoUrl(repo)?.trimEnd('/')}/index.min.json"
-                    client.newCall(GET(fallbackUrl)).awaitSuccess()
-                } catch (e2: Throwable) {
-                    Logger.log(
-                        "Failed to fetch from fallback URL for $repo: ${e2.message}\n${e.stackTraceToString()}",
-                        LogLevel.ERROR
-                    )
-                    null
-                }
-            }
-
-            response?.let {
-                try {
-                    with(json) {
-                        it.parseAs<List<ExtensionJsonObject>>()
-                            .toMangaExtensions(repo)
-                    }
-                } catch (e: Exception) {
-                    Logger.log(
-                        "Failed to fetch from $indexUrl: ${e.message}\n${e.stackTraceToString()} ",
-                        LogLevel.ERROR
-                    )
-                    null
-                }
-            }
-        }.flatten()
-
-        return extensions.filter { it.pkgName.isNotEmpty() }
-    }
-
-    private fun fallbackRepoUrl(repoUrl: String): String? {
-        var fallbackRepoUrl = "https://gcore.jsdelivr.net/gh/"
-        val strippedRepoUrl = repoUrl
-            .removePrefix("https://")
-            .removePrefix("http://")
-            .removeSuffix("/")
-            .removeSuffix("/index.min.json")
-        val repoUrlParts = strippedRepoUrl.split("/")
-        if (repoUrlParts.size < 3) {
-            return null
-        }
-        val repoOwner = repoUrlParts[1]
-        val repoName = repoUrlParts[2]
-        fallbackRepoUrl += "$repoOwner/$repoName"
-        val repoBranch = if (repoUrlParts.size > 3) {
-            repoUrlParts[3]
-        } else {
-            "main"
-        }
-        fallbackRepoUrl += "@$repoBranch"
-        return fallbackRepoUrl
-    }
 }

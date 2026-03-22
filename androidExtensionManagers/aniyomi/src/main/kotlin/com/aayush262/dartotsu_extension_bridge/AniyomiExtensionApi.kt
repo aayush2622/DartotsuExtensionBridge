@@ -100,11 +100,11 @@ class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
         }
     }
 
-    override suspend fun getInstalledMangaExtensions(): List<Map<String, Any?>> {
+    override suspend fun getInstalledMangaExtensions(path: String?): List<Map<String, Any?>> {
 
         return withContext(Dispatchers.IO) {
 
-            val list = Injekt.get<AniyomiExtensionManager>().fetchInstalledMangaExtensions().flatMap { ext ->
+            val list = Injekt.get<AniyomiExtensionManager>().fetchInstalledMangaExtensions(path).flatMap { ext ->
                 ext.sources.map { source ->
 
                     val baseUrl = (source as? HttpSource)?.baseUrl.orEmpty()
