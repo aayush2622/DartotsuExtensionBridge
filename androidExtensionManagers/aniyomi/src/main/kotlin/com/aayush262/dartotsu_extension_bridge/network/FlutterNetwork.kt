@@ -30,13 +30,15 @@ object Network {
 
             client.client = client.client.newBuilder()
                 .dns(doh ?: client.client.dns)
+                .cookieJar(FlutterCookieJar())
                 .addInterceptor(CookieInterceptor())
                 .addInterceptor(LogInterceptor())
                 .build()
+
             Logger.log("Flutter networking enabled")
             return true
         } catch (e: Throwable) {
-            Logger.log("Failed to enable Flutter networking: ${e.message}", LogLevel.WARNING)
+            Logger.log("Failed to enable Flutter networking: ${e.message}\n${e.stackTrace} ", LogLevel.WARNING)
             return false
         }
     }

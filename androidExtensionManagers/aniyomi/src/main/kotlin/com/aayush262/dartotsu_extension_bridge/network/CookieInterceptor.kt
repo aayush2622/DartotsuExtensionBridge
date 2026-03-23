@@ -1,6 +1,9 @@
 package com.aayush262.dartotsu_extension_bridge.network
 
 import com.aayush262.dartotsu_extension_bridge.customAniyomiMethods
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.Response
 import kotlin.collections.List
@@ -48,4 +51,44 @@ class CookieInterceptor : Interceptor {
         customAniyomiMethods?.setCookies(url, cookies)
     }
 
+}
+
+class FlutterCookieJar : CookieJar {
+
+    override fun loadForRequest(url: HttpUrl): List<Cookie> {
+        val cookieHeader = customAniyomiMethods?.getCookies(url.toString())
+            ?: return emptyList()
+
+        println("🍪 Raw cookie header: $cookieHeader")
+
+        return cookieHeader.split(";")
+            .mapNotNull { parseCookie(it.trim(), url) }
+    }
+
+    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+        val cookieStrings = cookies.map { "${it.name}=${it.value}" }
+        customAniyomiMethods?.setCookies(url.toString(), cookieStrings)
+    }
+
+    private fun parseCookie(cookie: String, url: HttpUrl): Cookie? {
+        val index = cookie.indexOf("=")
+        if (index <= 0) return null
+
+        val name = cookie.substring(0, index).trim()
+        val value = cookie.substring(index + 1).trim()
+
+        return Cookie.Builder()
+            .name(name)
+            .value(value)
+            .domain(getValidDomain(url.host))
+            .path("/")
+            .build()
+    }
+
+    private fun getValidDomain(host: String): String {
+        return when {
+            host.endsWith("google.com") -> ".google.com"
+            else -> host
+        }
+    }
 }
