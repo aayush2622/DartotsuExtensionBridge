@@ -88,13 +88,6 @@ abstract class Extension {
 
   @mustCallSuper
   Future<void> initializeAvailable() async {
-    // Ensure installed initialization has at least started (and completed its setup phase).
-    // This allows subclasses to override initializeInstalled() and perform required setup
-    // before available extensions are fetched.
-    //
-    // Example: an arbitrary plugin installer might download/install extensions in
-    // initializeInstalled(), and available extensions should only be fetched after
-    // that setup has been triggered.
     await initialize();
     if (_isAvailableInitialized) return;
     _isAvailableInitialized = true;

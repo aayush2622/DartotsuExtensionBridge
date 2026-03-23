@@ -19,7 +19,7 @@ class AniyomiBridge(var context: Context) {
     private lateinit var channel: MethodChannel
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var api: ExtensionApi? = null
-
+    private val apiReady = CompletableDeferred<ExtensionApi>()
     fun attach(binding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(
             binding.binaryMessenger,
@@ -138,10 +138,11 @@ class AniyomiBridge(var context: Context) {
 
             api?.initialize(context)
 
-            if (instance is AniyomiCustomMethods) {
-                instance.initialize(CustomAniyomiMethods(networkChannel))
+            (instance as AniyomiCustomMethods).initialize(CustomAniyomiMethods(networkChannel)).apply {
+                Logger.log("Custom methods initialized", LogLevel.INFO)
             }
 
+            apiReady.complete(api!!)
         } catch (e: Throwable) {
             Logger.log(
                 "Failed to load Extension API: ${e.stackTraceToString()}",
@@ -293,15 +294,38 @@ class AniyomiBridge(var context: Context) {
         override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
             when (call.method) {
                 "initClient" -> {
-                    val args = call.arguments as? Map<*, *>
-                        ?: return result.error(
-                            "INVALID_ARGUMENTS",
-                            "Expected a map",
-                            null
-                        )
+                    scope.launch {
+                        val args = call.arguments as? Map<*, *>
+                            ?: return@launch result.error(
+                                "INVALID_ARGUMENTS",
+                                "Expected a map",
+                                null
+                            )
 
-                    (api as AniyomiCustomMethods).initClient(args)
-                    result.success(null)
+                        try {
+                            apiReady.await()
+                        } catch (e: Throwable) {
+                            withContext(Dispatchers.Main) {
+                                result.error("API_ERROR", e.message, null)
+                            }
+                            return@launch
+                        }
+
+                        runCatching {
+                            (api as AniyomiCustomMethods).initClient(args)
+                            Logger.log("Network client initialized successfully", LogLevel.INFO)
+                        }.onFailure {
+                            Logger.log("initClient failed: ${it.stackTraceToString()}", LogLevel.ERROR)
+                            withContext(Dispatchers.Main) {
+                                result.error("INIT_FAILED", it.message, null)
+                            }
+                            return@launch
+                        }
+
+                        withContext(Dispatchers.Main) {
+                            result.success(null)
+                        }
+                    }
                 }
 
                 else -> result.notImplemented()
@@ -326,7 +350,7 @@ class AniyomiBridge(var context: Context) {
                 .onFailure {
 
                     Logger.log(
-                        "Error for [${call.method}]: $it",
+                        "Error for [${call.method}]: ${it.message}\n${it.stackTraceToString()}",
                         LogLevel.ERROR
                     )
 
