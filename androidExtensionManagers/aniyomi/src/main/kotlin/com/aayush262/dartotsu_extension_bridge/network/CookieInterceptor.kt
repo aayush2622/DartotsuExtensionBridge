@@ -59,7 +59,6 @@ class FlutterCookieJar : CookieJar {
         val cookieHeader = customAniyomiMethods?.getCookies(url.toString())
             ?: return emptyList()
 
-        println("🍪 Raw cookie header: $cookieHeader")
 
         return cookieHeader.split(";")
             .mapNotNull { parseCookie(it.trim(), url) }
@@ -71,24 +70,18 @@ class FlutterCookieJar : CookieJar {
     }
 
     private fun parseCookie(cookie: String, url: HttpUrl): Cookie? {
-        val index = cookie.indexOf("=")
+        val mainPart = cookie.substringBefore(";").trim()
+        val index = mainPart.indexOf("=")
         if (index <= 0) return null
 
-        val name = cookie.substring(0, index).trim()
-        val value = cookie.substring(index + 1).trim()
+        val name = mainPart.substring(0, index).trim()
+        val value = mainPart.substring(index + 1).trim()
 
         return Cookie.Builder()
             .name(name)
             .value(value)
-            .domain(getValidDomain(url.host))
+            .domain(url.host)
             .path("/")
             .build()
-    }
-
-    private fun getValidDomain(host: String): String {
-        return when {
-            host.endsWith("google.com") -> ".google.com"
-            else -> host
-        }
     }
 }
