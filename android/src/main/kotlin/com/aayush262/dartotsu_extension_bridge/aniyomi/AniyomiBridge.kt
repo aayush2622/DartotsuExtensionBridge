@@ -40,7 +40,6 @@ class AniyomiBridge(var context: Context) {
         )
 
         Logger.init(loggerChannel)
-        //loadApi(binding.applicationContext)
     }
 
     fun detach() {
@@ -151,6 +150,62 @@ class AniyomiBridge(var context: Context) {
         }
     }
 
+    @Suppress("UNUSED")
+    private fun loadApi(context: Context) {
+        // for local test
+        try {
+
+            val pluginPackage =
+                "com.aayush262.dartotsu.aniyomi_plugin"
+
+            val appInfo =
+                context.packageManager.getApplicationInfo(
+                    pluginPackage,
+                    0
+                )
+
+            val apkPath = appInfo.sourceDir
+            val apkFile = File(apkPath)
+
+            val classLoader = context.classLoader
+
+            val pathListField = BaseDexClassLoader::class.java.getDeclaredField("pathList")
+                .apply { isAccessible = true }
+            val pathList = pathListField[classLoader]!!
+            val addDexPath =
+                pathList.javaClass.getDeclaredMethod(
+                    "addDexPath",
+                    String::class.java,
+                    File::class.java
+                )
+                    .apply { isAccessible = true }
+            addDexPath.invoke(pathList, apkFile.absolutePath, null)
+
+            val clazz = classLoader.loadClass(
+                "com.aayush262.dartotsu_extension_bridge.AniyomiExtensionApi"
+            )
+
+            val instance =
+                clazz.getDeclaredConstructor().newInstance()
+
+            api = instance as ExtensionApi
+
+            Logger.log("Extension API loaded successfully", LogLevel.INFO)
+
+            api?.initialize(context)
+
+            (instance as AniyomiCustomMethods).initialize(CustomAniyomiMethods(networkChannel)).apply {
+                Logger.log("Custom methods initialized", LogLevel.INFO)
+            }
+
+            apiReady.complete(api!!)
+        } catch (e: Throwable) {
+            Logger.log(
+                "Failed to load Extension API: ${e.stackTraceToString()}",
+                LogLevel.ERROR
+            )
+        }
+    }
     private inner class Handler : MethodChannel.MethodCallHandler {
         @Suppress("UNCHECKED_CAST")
         override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -162,7 +217,7 @@ class AniyomiBridge(var context: Context) {
                     val hasUpdate = args["hasUpdate"] as? Boolean ?: false
 
                     loadApiFromPath(path, hasUpdate)
-
+                    //loadApi(context)
                     result.success(null)
                 }.onFailure {
                     result.error("LOAD_FAILED", it.message, null)

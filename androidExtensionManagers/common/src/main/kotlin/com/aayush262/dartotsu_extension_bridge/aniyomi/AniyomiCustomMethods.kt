@@ -1,5 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
+
+/// This is a custom optional interface for flutter apps
 interface AniyomiCustomMethods{
     fun initialize(customMethods: CustomMethods)
 
