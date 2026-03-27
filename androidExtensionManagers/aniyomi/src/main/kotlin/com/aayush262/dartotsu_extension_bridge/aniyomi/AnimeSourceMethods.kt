@@ -83,31 +83,35 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
     }
 
     override suspend fun getVideoList(episode: SEpisode): List<Video> {
-        val httpSource = source as? AnimeHttpSource ?: return emptyList()
+        if (source !is AnimeHttpSource) return emptyList()
+        val hasHosters = checkHasHosters(source)
 
-        val directVideos = runCatching {
-            httpSource.getVideoList(episode)
-        }.getOrElse { emptyList() }
-
-        val hasHosters = checkHasHosters(httpSource)
+        val directVideos = if (!hasHosters) {
+            runCatching {
+                source.getVideoList(episode)
+            }.getOrElse { emptyList() }
+        } else {
+            emptyList()
+        }
 
         val hosterVideos = if (hasHosters) {
             val hosters = runCatching {
-                httpSource.getHosterList(episode)
+                source.getHosterList(episode)
             }.getOrElse { emptyList() }
+
             coroutineScope {
                 hosters.map { hoster ->
                     async(Dispatchers.IO) {
-                        val videos = when {
-                            hoster.videoList != null -> hoster.videoList
 
+                        val videos = when {
+                            !hoster.videoList.isNullOrEmpty() -> hoster.videoList
                             else -> runCatching {
-                                httpSource.getVideoList(hoster)
+                                source.getVideoList(hoster)
                             }.getOrElse { emptyList() }
                         }
 
                         videos.map { video ->
-                            val resolved = resolveVideo(httpSource, video)
+                            val resolved = resolveVideo(source, video)
 
                             val title = if (
                                 hoster.hosterName.isBlank() ||
@@ -130,13 +134,22 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
             emptyList()
         }
 
-        return httpSource.run {
-            (directVideos.map { resolveVideo(httpSource, it) } + hosterVideos)
+        val resolvedDirect = coroutineScope {
+            directVideos.map {
+                async(Dispatchers.IO) {
+                    resolveVideo(source, it)
+                }
+            }.awaitAll()
+        }
+
+        return source.run {
+            (resolvedDirect + hosterVideos)
                 .distinctBy { it.videoUrl }
                 .filter { it.videoUrl.isNotEmpty() && it.videoUrl != "null" }
                 .sortVideos()
         }
     }
+
 
     override suspend fun getChapterList(media: SAnime): List<SEpisode> = throw UnsupportedOperationException("Chapters are not supported in anime sources.")
 

@@ -9,20 +9,18 @@ import okhttp3.Response
 import kotlin.collections.List
 import kotlin.collections.isNotEmpty
 import kotlin.text.isNullOrEmpty
+import android.webkit.CookieManager
 
+/// [WebviewCookieJar] is technique used to sync cookies between okhttp and webview now
+/// but now am too lazy to remove it
 class CookieInterceptor : Interceptor {
-
-
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val url = request.url.toString()
 
         val cookieHeader = getCookiesBlocking(url)
         val newRequest = if (!cookieHeader.isNullOrEmpty()) {
-            request.newBuilder()
-                .removeHeader("Cookie")
-                .addHeader("Cookie", cookieHeader)
-                .build()
+            request.newBuilder().removeHeader("Cookie").addHeader("Cookie", cookieHeader).build()
         } else {
             request
         }
@@ -39,49 +37,58 @@ class CookieInterceptor : Interceptor {
 
     private fun getCookiesBlocking(
         url: String
-    ): String? {
-        return customAniyomiMethods?.getCookies(url)
+    ): String? = customAniyomiMethods?.getCookies(url)
 
-    }
 
     private fun setCookies(
-        url: String,
-        cookies: List<String>
-    ) {
-        customAniyomiMethods?.setCookies(url, cookies)
-    }
+        url: String, cookies: List<String>
+    ) = customAniyomiMethods?.setCookies(url, cookies)
+
 
 }
 
-class FlutterCookieJar : CookieJar {
+
+class WebviewCookieJar : CookieJar {
+
+    private val cookieManager = CookieManager.getInstance()
 
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
-        val cookieHeader = customAniyomiMethods?.getCookies(url.toString())
-            ?: return emptyList()
+        val cookieString = cookieManager.getCookie(url.toString()) ?: return emptyList()
 
-
-        return cookieHeader.split(";")
-            .mapNotNull { parseCookie(it.trim(), url) }
+        return cookieString.split(";").mapNotNull { parseCookie(it.trim(), url) }.also { it ->
+                if (it.isNotEmpty()) {
+                    println("Loaded cookies for ${url.host}: ${it.joinToString { "${it.name}=${it.value}" }}")
+                }
+            }
     }
 
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-        val cookieStrings = cookies.map { "${it.name}=${it.value}" }
-        customAniyomiMethods?.setCookies(url.toString(), cookieStrings)
+        for (cookie in cookies) {
+            val cookieString = buildCookieString(cookie)
+            cookieManager.setCookie(url.toString(), cookieString)
+        }
+
+        cookieManager.flush()
     }
 
     private fun parseCookie(cookie: String, url: HttpUrl): Cookie? {
-        val mainPart = cookie.substringBefore(";").trim()
-        val index = mainPart.indexOf("=")
+        val index = cookie.indexOf("=")
         if (index <= 0) return null
 
-        val name = mainPart.substring(0, index).trim()
-        val value = mainPart.substring(index + 1).trim()
+        val name = cookie.substring(0, index).trim()
+        val value = cookie.substring(index + 1).trim()
 
-        return Cookie.Builder()
-            .name(name)
-            .value(value)
-            .domain(url.host)
-            .path("/")
-            .build()
+        return Cookie.Builder().name(name).value(value).domain(url.host).path("/").build()
+    }
+
+    private fun buildCookieString(cookie: Cookie): String {
+        return buildString {
+            append("${cookie.name}=${cookie.value}; Path=${cookie.path};")
+
+            if (cookie.secure) append(" Secure;")
+            if (cookie.httpOnly) append(" HttpOnly;")
+
+            append(" Domain=${cookie.domain};")
+        }
     }
 }

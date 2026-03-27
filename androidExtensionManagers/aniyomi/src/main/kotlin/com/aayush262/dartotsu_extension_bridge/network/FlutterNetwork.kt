@@ -30,7 +30,7 @@ object Network {
 
             client.client = client.client.newBuilder()
                 .dns(doh ?: client.client.dns)
-                .cookieJar(FlutterCookieJar())
+                .cookieJar(WebviewCookieJar())
                 .addInterceptor(CookieInterceptor())
                 .addInterceptor(LogInterceptor())
                 .build()

@@ -10,11 +10,11 @@ object Logger {
 
     private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    fun log(message: String, level: LogLevel = LogLevel.INFO) {
+    fun log(message: String, level: LogLevel = LogLevel.INFO) =
         mainScope.launch {
             customAniyomiMethods?.log(level.name, message) ?: Log.d("ExtensionLogger", "[${level.name}] $message")
         }
-    }
+
 }
 
 enum class LogLevel {

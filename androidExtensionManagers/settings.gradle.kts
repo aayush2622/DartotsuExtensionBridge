@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "dartotsu_aniyomi_plugin"
+rootProject.name = "dartotsu_extension_plugins"
 
 pluginManagement {
     repositories {
