@@ -1,0 +1,12 @@
+output:
+  dart:
+    path: lib/jni/
+
+classes:
+  - com.aayush262.dartotsu_extension_bridge.AniyomiExtensionApi
+
+class_path:
+  - /home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/runtimeManager/aniyomiDesktop/build/libs/aniyomiDesktop-all.jar
+
+summarizer:
+  backend: asm

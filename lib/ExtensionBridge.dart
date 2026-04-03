@@ -8,6 +8,7 @@ import 'package:isar_community/isar.dart';
 
 import 'ExtensionManager.dart';
 import 'Logger.dart';
+import 'Services/AniyomiDesktop/JniEngine.dart';
 import 'Services/LnReader/JsEngine/JsEngine.dart';
 import 'Settings/KvStore.dart';
 
@@ -116,6 +117,7 @@ class DartotsuExtensionBridge {
     if (_initialized) {
       _initialized = false;
       JsExtensionEngine.instance.dispose();
+      JniChannel.instance.dispose();
     }
   }
 }

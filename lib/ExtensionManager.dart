@@ -6,6 +6,7 @@ import 'Extensions/Extensions.dart';
 import 'Extensions/SourceMethods.dart';
 import 'Models/Source.dart';
 import 'Services/Aniyomi/AniyomiExtensions.dart';
+import 'Services/AniyomiDesktop/AniyomiDesktopExtensions.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
 import 'Services/Sora/SoraExtensions.dart';
 import 'Settings/KvStore.dart';
@@ -23,6 +24,8 @@ class ExtensionManager extends GetxController {
         SoraExtensions(),
         MangayomiExtensions(),
         if (Platform.isAndroid) AniyomiExtensions(),
+        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+          AniyomiDesktopExtensions(),
       ];
 
   @override
