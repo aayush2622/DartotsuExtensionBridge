@@ -1,0 +1,148 @@
+[versions]
+kotlin = "2.1.0"
+coroutines = "1.10.2"
+serialization = "1.9.0"
+xmlserialization = "0.91.3"
+okhttp = "5.3.2"
+shadow = "9.4.1"
+koin = "4.1.1"
+settings = "1.3.0"
+javalin = "6.7.0"
+jte = "3.2.3"
+dex2jar = "2.4.34"
+polyglot = "24.2.2"
+jackson = "2.18.3"# jackson version locked by javalin, ref: `io.javalin.core.util.OptionalDependency`
+[libraries]
+# Kotlin
+kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlin-metadata = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
+# Coroutines
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-jdk8 = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8", version.ref = "coroutines" }
+
+# Serialization
+serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+serialization-json-okio = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json-okio", version.ref = "serialization" }
+serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "serialization" }
+serialization-xml-core = { module = "io.github.pdvrieze.xmlutil:core", version.ref = "xmlserialization" }
+serialization-xml = { module = "io.github.pdvrieze.xmlutil:serialization-jvm", version.ref = "xmlserialization" }
+
+# OkHttp
+okhttp-core = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
+okhttp-dnsoverhttps = { module = "com.squareup.okhttp3:okhttp-dnsoverhttps", version.ref = "okhttp" }
+okhttp-brotli = { module = "com.squareup.okhttp3:okhttp-brotli", version.ref = "okhttp" }
+okio = "com.squareup.okio:okio:3.16.4"
+
+javalin-core = { module = "io.javalin:javalin", version.ref = "javalin" }
+javalin-openapi = { module = "io.javalin:javalin-openapi", version.ref = "javalin" }
+javalin-rendering = { module = "io.javalin:javalin-rendering", version.ref = "javalin" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
+jte = { module = "gg.jte:jte", version.ref = "jte" }
+kte = { module = "gg.jte:jte-kotlin", version.ref = "jte" }
+
+# Dependency Injection
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+
+# dependencies of aniyomi
+injekt = "com.github.null2264:injekt-koin:ee267b2e27"
+rxjava = "io.reactivex:rxjava:1.3.8"
+jsoup = "org.jsoup:jsoup:1.22.1"
+
+# Logging
+slf4japi = "org.slf4j:slf4j-api:2.0.17"
+logback = "ch.qos.logback:logback-classic:1.5.32"
+kotlinlogging = "io.github.oshai:kotlin-logging-jvm:8.0.01"
+
+# Webview
+kcef = "dev.datlag:kcef:2024.04.20.4"
+
+# ICU4J
+icu4j = "com.ibm.icu:icu4j:78.2"
+
+# AndroidX annotations
+android-annotations = "androidx.annotation:annotation:1.9.1"
+
+# Xml
+xmlpull = "xmlpull:xmlpull:1.1.3.4a"
+
+appdirs = "ca.gosyer:kotlin-multiplatform-appdirs:2.0.0"
+
+# Asm modificiation
+asm = "org.ow2.asm:asm:9.9.1" # version locked by Dex2Jar
+dex2jar-translator = { module = "de.femtopedia.dex2jar:dex-translator", version.ref = "dex2jar" }
+dex2jar-tools = { module = "de.femtopedia.dex2jar:dex-tools", version.ref = "dex2jar" }
+
+# Substitute for duktape-android
+polyglot-core = { module = "org.graalvm.polyglot:polyglot", version.ref = "polyglot" }
+polyglot-graaljs = { module = "org.graalvm.polyglot:js-community", version.ref = "polyglot" }
+
+# APK
+apk-parser = "net.dongliu:apk-parser:2.6.10"
+apksig = "com.android.tools.build:apksig:9.0.1"
+
+# Settings
+settings-core = { module = "com.russhwolf:multiplatform-settings-jvm", version.ref = "settings" }
+settings-serialization = { module = "com.russhwolf:multiplatform-settings-serialization-jvm", version.ref = "settings" }
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin"}
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin"}
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin"}
+
+
+[bundles]
+common = [
+    "kotlin-stdlib-jdk8",
+    "kotlin-reflect",
+    "coroutines-core",
+    "coroutines-jdk8",
+    "serialization-json",
+    "serialization-json-okio",
+    "serialization-protobuf",
+    "koin-core",
+    "slf4japi",
+    "logback",
+    "kotlinlogging",
+    "appdirs",
+    "rxjava",
+    "jsoup",
+    "dex2jar-translator",
+    "dex2jar-tools",
+    "apk-parser",
+    "jackson-annotations",
+    "kcef",
+    "icu4j",
+]
+
+settings = [
+    "settings-core",
+    "settings-serialization",
+]
+okhttp = [
+    "okhttp-core",
+    "okhttp-logging",
+    "okhttp-dnsoverhttps",
+    "okhttp-brotli",
+]
+javalin = [
+    "javalin-core",
+    #"javalin-openapi",
+    "javalin-rendering",
+    "jte",
+]
+
+jackson = [
+    "jackson-databind",
+    "jackson-kotlin",
+    "jackson-annotations",
+]
+
+polyglot = [
+    "polyglot-core",
+]
