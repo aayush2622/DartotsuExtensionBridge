@@ -20,8 +20,7 @@
 }
 
 -keepattributes Signature, *Annotation*, EnclosingMethod, InnerClasses, RuntimeVisibleAnnotations, AnnotationDefault
--keepnames class ** { *; }
--keepclassmembernames class ** { *; }
+
 -keepclassmembers class * {
     @com.google.gson.annotations.SerializedName <fields>;
     @com.fasterxml.jackson.annotation.JsonProperty <fields>;
