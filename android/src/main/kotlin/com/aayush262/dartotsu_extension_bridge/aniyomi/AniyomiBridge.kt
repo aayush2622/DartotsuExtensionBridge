@@ -135,7 +135,7 @@ class AniyomiBridge(var context: Context) {
 
             Logger.log("Extension API loaded successfully", LogLevel.INFO)
 
-            api?.initialize(context)
+            api?.initialize(mapOf("context" to context))
 
             (instance as AniyomiCustomMethods).initialize(CustomAniyomiMethods(networkChannel)).apply {
                 Logger.log("Custom methods initialized", LogLevel.INFO)
@@ -192,7 +192,7 @@ class AniyomiBridge(var context: Context) {
 
             Logger.log("Extension API loaded successfully", LogLevel.INFO)
 
-            api?.initialize(context)
+            api?.initialize(mapOf("context" to context))
 
             (instance as AniyomiCustomMethods).initialize(CustomAniyomiMethods(networkChannel)).apply {
                 Logger.log("Custom methods initialized", LogLevel.INFO)
@@ -286,7 +286,7 @@ class AniyomiBridge(var context: Context) {
                             api.getDetail(
                                 args["sourceId"] as String,
                                 args["isAnime"] as Boolean,
-                                args["media"] as Map<String, Any?>
+                                args["media"] as String
                             )
                         }
 
@@ -297,7 +297,7 @@ class AniyomiBridge(var context: Context) {
                             api.getVideoList(
                                 args["sourceId"] as String,
                                 args["isAnime"] as Boolean,
-                                args["episode"] as Map<String, Any?>
+                                args["episode"] as String
                             )
                         }
 
@@ -308,7 +308,7 @@ class AniyomiBridge(var context: Context) {
                             api.getPageList(
                                 args["sourceId"] as String,
                                 args["isAnime"] as Boolean,
-                                args["episode"] as Map<String, Any?>
+                                args["episode"] as String
                             )
                         }
 
@@ -329,8 +329,7 @@ class AniyomiBridge(var context: Context) {
                             api.saveSourcePreference(
                                 args["sourceId"] as String,
                                 args["key"] as String,
-                                args["action"] as? String ?: "change",
-                                args["value"]
+                                args["value"] as String?
                             )
                         }
 
