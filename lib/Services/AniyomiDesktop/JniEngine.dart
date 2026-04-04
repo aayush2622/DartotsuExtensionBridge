@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:isolate';
 
 import 'package:jni/jni.dart';
@@ -230,18 +229,11 @@ class _JniRuntime {
 
   static void init() {
     if (_started) return;
-    const jarDir =
-        '/home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/mvn_jar/';
-    List<String> jars = Directory(jarDir)
-        .listSync()
-        .map((e) => e.path)
-        .where((path) => path.endsWith('.jar'))
-        .toList();
+
     Jni.spawnIfNotExists(
       classPath: [
-        ...jars,
         "/home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/build/jni_libs/jni.jar",
-        "/home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/runtimeManager/aniyomiDesktop/build/libs/aniyomiDesktop-all.jar",
+        "/home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/runtimeManager/builds/aniyomiDesktop/aniyomiDesktop.jar",
       ],
       dylibDir:
           "/home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/build/jni_libs",

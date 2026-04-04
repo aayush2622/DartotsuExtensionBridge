@@ -1,0 +1,6 @@
+{
+  "name": "aniyomiDesktop",
+  "versionCode": 3,
+  "versionName": "1.0.2",
+  "jar": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/androidExtensionManagers/builds/aniyomiDesktop/aniyomiDesktop-plugin.jar"
+}

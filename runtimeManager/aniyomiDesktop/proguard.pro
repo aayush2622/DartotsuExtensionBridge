@@ -42,15 +42,14 @@
 -keep class androidx.fragment.** { *; }
 -keep class androidx.core.** { *; }
 
--keep,allowoptimization class kotlin.** { public protected *; }
--keep,allowoptimization class kotlinx.coroutines.** { public protected *; }
--keep,allowoptimization class kotlinx.serialization.** { public protected *; }
-
--keep,allowoptimization class uy.kohesive.injekt.** { public protected *; }
+-keep class kotlin.** { *; }
+-keep class kotlinx.coroutines.** { *; }
+-keep class kotlinx.serialization.** { *; }
+-keep class uy.kohesive.injekt.** { *; }
+-keep class eu.kanade.tachiyomi.** { *; }
 
 -keep class com.lagradost.** { *; }
 -keep class com.aayush262.dartotsu_extension_bridge.** { *; }
--keep,allowoptimization class eu.kanade.tachiyomi.** { *; }
 
 -keep class okhttp3.** { *; }
 -keep class okio.** { *; }

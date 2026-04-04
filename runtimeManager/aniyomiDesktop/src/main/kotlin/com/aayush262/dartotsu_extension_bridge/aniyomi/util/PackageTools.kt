@@ -119,11 +119,9 @@ object PackageTools {
     ): Any {
         try {
             logger.debug { "loading jar with path: $jarPath" }
-            val parent = Thread.currentThread().contextClassLoader
 
             val classLoader = jarLoaderMap[jarPath] ?: ChildFirstURLClassLoader(
                 arrayOf(Path(jarPath).toUri().toURL()),
-                parent
             )
             val classToLoad = Class.forName(className, false, classLoader)
 

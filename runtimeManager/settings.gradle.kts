@@ -12,6 +12,7 @@ pluginManagement {
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+
 }
 
 dependencyResolutionManagement {
@@ -32,12 +33,14 @@ dependencyResolutionManagement {
         create("aniyomiAndroid") {
             from(files("gradle/aniyomiAndroid-lib.toml"))
         }
+        create("libs") {
+            from(files("gradle/libs.version.toml"))
+        }
     }
 }
 
 
 include(":common")
-include(":aniyomiCommon")
-include(":aniyomiAndorid")
+include(":aniyomiAndroid")
 include(":aniyomiDesktop")
 include(":cloudStream")
