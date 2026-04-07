@@ -1,6 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi.util
 
-import io.github.oshai.kotlinlogging.KotlinLogging
+import com.aayush262.dartotsu_extension_bridge.LogLevel
+import com.aayush262.dartotsu_extension_bridge.Logger
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
@@ -16,7 +17,6 @@ import kotlin.io.path.Path
 import kotlin.streams.asSequence
 
 object BytecodeEditor {
-    private val logger = KotlinLogging.logger {}
 
     /**
      * Replace some java class references inside a jar with new ones that behave like Androids
@@ -69,7 +69,7 @@ object BytecodeEditor {
                 null
             }
         } catch (e: Exception) {
-            logger.error(e) { "Error loading class from Path: $path" }
+            Logger.log ("Error loading class from Path: $path: ${e.message}", LogLevel.ERROR)
             null
         }
     }
@@ -157,7 +157,7 @@ object BytecodeEditor {
                     signature: String?,
                     cst: Any?,
                 ): FieldVisitor? {
-                    logger.trace { "CLass Field" to "${desc.replaceIndirectly()}: ${cst?.let { it::class.java.simpleName }}: $cst" }
+                    Logger.log("Visiting field $name: ${desc.replaceIndirectly()}: $signature: ${cst?.let { "${it::class.java.simpleName}: $it" }}", LogLevel.DEBUG)
                     return super.visitField(access, name, desc.replaceIndirectly(), signature, cst)
                 }
 
@@ -169,7 +169,7 @@ object BytecodeEditor {
                     superName: String?,
                     interfaces: Array<out String>?,
                 ) {
-                    logger.trace { "Visiting $name: $signature: $superName" }
+                    Logger.log("Visiting class $name: $signature: $superName", LogLevel.DEBUG)
                     super.visit(version, access, name, signature, superName, interfaces)
                 }
 
@@ -186,7 +186,8 @@ object BytecodeEditor {
                     signature: String?,
                     exceptions: Array<String?>?,
                 ): MethodVisitor {
-                    logger.trace { "Processing method $name: ${desc.replaceIndirectly()}: $signature" }
+                    Logger.log("Visiting method $name: ${desc.replaceIndirectly()}: $signature", LogLevel.DEBUG)
+
                     val mv: MethodVisitor? =
                         super.visitMethod(
                             access,
@@ -197,7 +198,7 @@ object BytecodeEditor {
                         )
                     return object : MethodVisitor(Opcodes.ASM9, mv) {
                         override fun visitLdcInsn(cst: Any?) {
-                            logger.trace { "Ldc" to "${cst?.let { "${it::class.java.simpleName}: $it" }}" }
+                            Logger.log("Visiting Ldc: ${cst?.let { "${it::class.java.simpleName}: $it" }}", LogLevel.DEBUG)
                             super.visitLdcInsn(cst)
                         }
 
@@ -210,9 +211,8 @@ object BytecodeEditor {
                             opcode: Int,
                             type: String?,
                         ) {
-                            logger.trace {
-                                "Type" to "$opcode: ${type.replaceDirectly()}"
-                            }
+                            Logger.log("Visiting Type: $opcode: ${type.replaceDirectly()}", LogLevel.DEBUG)
+
                             super.visitTypeInsn(
                                 opcode,
                                 type.replaceDirectly(),
@@ -230,15 +230,33 @@ object BytecodeEditor {
                             desc: String?,
                             itf: Boolean,
                         ) {
-                            logger.trace {
-                                "Method" to "$opcode: ${owner.replaceDirectly()}: $name: ${desc.replaceIndirectly()}"
+                            val newOwner = owner.replaceDirectly()
+                            val newDesc = desc.replaceIndirectly()
+
+                            val loader = Thread.currentThread().contextClassLoader
+
+                            val isInterface = try {
+                                val clazz = Class.forName(
+                                    newOwner!!.replace('/', '.'),
+                                    false,
+                                    loader
+                                )
+                                clazz.isInterface
+                            } catch (_: Throwable) {
+                                itf
                             }
+
+                            Logger.log(
+                                "FIXED Method: $opcode: $newOwner: $name: $newDesc | itf=$isInterface",
+                                LogLevel.DEBUG
+                            )
+
                             super.visitMethodInsn(
                                 opcode,
-                                owner.replaceDirectly(),
+                                newOwner,
                                 name,
-                                desc.replaceIndirectly(),
-                                itf,
+                                newDesc,
+                                isInterface
                             )
                         }
 
@@ -253,7 +271,7 @@ object BytecodeEditor {
                             name: String?,
                             desc: String?,
                         ) {
-                            logger.trace { "Field" to "$opcode: $owner: $name: ${desc.replaceIndirectly()}" }
+                            Logger.log("Visiting Field: $opcode: ${owner.replaceDirectly()}: $name: ${desc.replaceIndirectly()}", LogLevel.DEBUG)
                             super.visitFieldInsn(opcode, owner, name, desc.replaceIndirectly())
                         }
 
@@ -263,7 +281,7 @@ object BytecodeEditor {
                             bsm: Handle?,
                             vararg bsmArgs: Any?,
                         ) {
-                            logger.trace { "InvokeDynamic" to "$name: $desc" }
+                                Logger.log("Visiting InvokeDynamic: ${name.replaceIndirectly()}: ${desc.replaceIndirectly()}", LogLevel.DEBUG)
                             super.visitInvokeDynamicInsn(name, desc, bsm, *bsmArgs)
                         }
                     }

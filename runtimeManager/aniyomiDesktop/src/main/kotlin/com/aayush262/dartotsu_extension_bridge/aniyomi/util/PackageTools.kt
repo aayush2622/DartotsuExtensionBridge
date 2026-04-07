@@ -3,11 +3,12 @@ package com.aayush262.dartotsu_extension_bridge.aniyomi.util
 import android.content.pm.PackageInfo
 import android.content.pm.Signature
 import android.os.Bundle
+import com.aayush262.dartotsu_extension_bridge.LogLevel
+import com.aayush262.dartotsu_extension_bridge.Logger
 import com.googlecode.d2j.dex.Dex2jar
 import com.googlecode.d2j.reader.MultiDexFileReader
 import com.googlecode.dex2jar.tools.BaksmaliBaseDexExceptionHandler
 import eu.kanade.tachiyomi.util.system.ChildFirstURLClassLoader
-import io.github.oshai.kotlinlogging.KotlinLogging
 import net.dongliu.apk.parser.ApkFile
 import net.dongliu.apk.parser.ApkParsers
 import net.dongliu.apk.parser.bean.IconFace
@@ -28,7 +29,6 @@ import kotlin.collections.orEmpty
 import kotlin.io.path.Path
 
 object PackageTools {
-    private val logger = KotlinLogging.logger {}
 
 
     /**
@@ -73,8 +73,7 @@ object PackageTools {
                 parsed.manifestXml.byteInputStream().use {
                     dBuilder.parse(it)
                 }
-
-            logger.trace { parsed.manifestXml }
+            Logger.log(parsed.manifestXml, LogLevel.DEBUG)
 
             applicationInfo.metaData =
                 Bundle().apply {
@@ -118,10 +117,11 @@ object PackageTools {
         className: String,
     ): Any {
         try {
-            logger.debug { "loading jar with path: $jarPath" }
-
+            Logger.log("Loading jar with path: $jarPath", LogLevel.DEBUG)
+            val parent = this.javaClass.classLoader
             val classLoader = jarLoaderMap[jarPath] ?: ChildFirstURLClassLoader(
                 arrayOf(Path(jarPath).toUri().toURL()),
+                parent
             )
             val classToLoad = Class.forName(className, false, classLoader)
 
@@ -129,7 +129,7 @@ object PackageTools {
 
             return classToLoad.getDeclaredConstructor().newInstance()
         } catch (e: Exception) {
-            logger.error(e) { "Failed to load jar with path: $jarPath" }
+            Logger.log("Failed to load jar with path: $jarPath, error: ${e.message}", LogLevel.ERROR)
             throw e
         }
     }

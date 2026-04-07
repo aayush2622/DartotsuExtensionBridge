@@ -45,10 +45,11 @@ import android.os.UserHandle;
 import android.view.Display;
 import android.view.DisplayAdjustments;
 
+import com.aayush262.dartotsu_extension_bridge.LogLevel;
+import com.aayush262.dartotsu_extension_bridge.Logger;
+
 import org.jetbrains.annotations.NotNull;
 import org.koin.core.Koin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -95,8 +96,6 @@ public class CustomContext extends Context {
     private ApplicationInfoImpl applicationInfo;
     private ServiceSupport serviceSupport;
     private FakePackageManager fakePackageManager;
-
-    private Logger logger = LoggerFactory.getLogger(CustomContext.class);
 
     private Map<String, Object> serviceMap = new HashMap<>();
     {
@@ -548,13 +547,13 @@ public class CustomContext extends Context {
 
     @Override
     public ComponentName startServiceAsUser(Intent service, UserHandle user) {
-        logger.warn("An attempt was made to start the service: '{}' as another user! Since multiple user services are currently not supported, the service will be started as the current user!", service.getComponent().getClassName());
+        Logger.log("An attempt was made to start the service): '{}' as another user! Since multiple user services are currently not supported, the service will be started as the current user!"+ service.getComponent().getClassName(), LogLevel.WARNING);
         return startService(service);
     }
 
     @Override
     public boolean stopServiceAsUser(Intent service, UserHandle user) {
-        logger.warn("An attempt was made to stop the service: '{}' as another user! Since multiple user services are currently not supported, the service will be stopped as the current user!", service.getComponent().getClassName());
+        Logger.log("An attempt was made to stop the service: '{}' as another user! Since multiple user services are currently not supported, the service will be stopped as the current user!"+ service.getComponent().getClassName(), LogLevel.WARNING);
         return stopService(service);
     }
 

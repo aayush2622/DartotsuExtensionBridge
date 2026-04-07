@@ -226,7 +226,7 @@ class SoraSourceMethods extends SourceMethods {
 
       return resultMedia;
     } catch (e, s) {
-      debugPrint("getDetails returned with $e - $s");
+      Logger.log("getDetails returned with $e - $s");
       return media;
     }
   }

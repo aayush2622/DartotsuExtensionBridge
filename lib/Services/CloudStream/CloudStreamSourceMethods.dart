@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as Logger;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -71,11 +72,11 @@ class CloudStreamSourceMethods extends SourceMethods {
             controller.add(video);
           }
         } catch (e) {
-          debugPrint("Error parsing video stream event: $e");
+          Logger.log("Error parsing video stream event: $e");
         }
       },
       onError: (error) {
-        debugPrint("Video stream error: $error");
+        Logger.log("Video stream error: $error");
         if (!controller.isClosed) {
           controller.addError(error);
         }

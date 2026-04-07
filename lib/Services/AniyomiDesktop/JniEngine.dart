@@ -4,7 +4,8 @@ import 'dart:isolate';
 
 import 'package:jni/jni.dart';
 
-import '../../jni/com/aayush262/dartotsu_extension_bridge/AniyomiExtensionApi.dart';
+import '../../Logger.dart';
+import 'Generated/com/aayush262/dartotsu_extension_bridge/AniyomiExtensionApi.dart';
 
 class JniChannel {
   static final JniChannel instance = JniChannel._();
@@ -58,12 +59,12 @@ class JniChannel {
     final result = await responsePort.first as Map;
 
     if (result["error"] != null) {
-      print("JNI Error: ${result["error"]}");
-      print(result["stack"]);
+      Logger.log("JNI Error: ${result["error"]}", show: true);
+      Logger.log(result["stack"]);
       return _emptyForType<T>();
     }
 
-    final data = _toDart(result["data"]);
+    final data = result["data"];
 
     if (data is String) {
       final decoded = jsonDecode(data);
@@ -81,146 +82,170 @@ class JniChannel {
 
     return data as T;
   }
-}
 
-T _emptyForType<T>() {
-  if (T == List<Map<String, dynamic>>) {
-    return <Map<String, dynamic>>[] as T;
+  T _emptyForType<T>() {
+    if (T == bool) return false as T;
+    if (T == List<Map<String, dynamic>>) {
+      return <Map<String, dynamic>>[] as T;
+    }
+    if (T == Map<String, dynamic>) {
+      return <String, dynamic>{} as T;
+    }
+    return null as T;
   }
-  if (T == Map<String, dynamic>) {
-    return <String, dynamic>{} as T;
-  }
-  return null as T;
-}
 
-void _jniIsolateEntry(SendPort mainSendPort) async {
-  final port = ReceivePort();
-  mainSendPort.send(port.sendPort);
+  void _jniIsolateEntry(SendPort mainSendPort) async {
+    final port = ReceivePort();
+    mainSendPort.send(port.sendPort);
 
-  _JniRuntime.init();
+    _JniRuntime.init();
 
-  final bridge = AniyomiExtensionApi();
+    final bridge = AniyomiExtensionApi();
 
-  await for (final msg in port) {
-    if (msg is Map<String, dynamic>) {
-      final replyTo = msg["replyTo"] as SendPort;
-      final method = msg["method"] as String;
-      final args = msg["args"] as Map<String, dynamic>;
+    await for (final msg in port) {
+      if (msg is Map<String, dynamic>) {
+        final replyTo = msg["replyTo"] as SendPort;
+        final method = msg["method"] as String;
+        final args = msg["args"] as Map<String, dynamic>;
 
-      try {
-        final result = await _handleMethod(bridge, method, args);
+        try {
+          final result = await _handleMethod(bridge, method, args);
 
-        replyTo.send({
-          "ok": true,
-          "data": _toDart(result),
-        });
-      } catch (e, st) {
-        replyTo.send({
-          "ok": false,
-          "error": e.toString(),
-          "stack": st.toString(),
-        });
+          replyTo.send({
+            "ok": true,
+            "data": _toDart(result),
+          });
+        } catch (e, st) {
+          replyTo.send({
+            "ok": false,
+            "error": e.toString(),
+            "stack": st.toString(),
+          });
+        }
       }
     }
   }
-}
 
-dynamic _toDart(dynamic value) {
-  if (value == null) return null;
+  dynamic _toDart(dynamic value) {
+    if (value == null) return null;
+    if (value is JObject) {
+      try {
+        return value.toString();
+      } catch (_) {
+        return null;
+      }
+    }
+    if (value is JString) {
+      try {
+        final str = value.toDartString(releaseOriginal: true);
+        return str;
+      } catch (e) {
+        Logger.log("Invalid JString detected: $e");
+        return null;
+      }
+    }
+    if (value is JBoolean) return value.toDartBool(releaseOriginal: true);
+    if (value is JInteger) return value.toDartInt(releaseOriginal: true);
+    if (value is JDouble) return value.toDartDouble(releaseOriginal: true);
+    if (value is JFloat) return value.toDartDouble(releaseOriginal: true);
+    if (value is JLong) return value.toDartInt(releaseOriginal: true);
 
-  if (value is JString) return value.toDartString();
-  if (value is JBoolean) return value.booleanValue();
-  if (value is JInteger) return value.intValue();
-  if (value is JDouble) return value.doubleValue();
-  if (value is JFloat) return value.floatValue();
-  if (value is JLong) return value.longValue();
+    if (value is JList) {
+      final dartList = value.asDart().map(_toDart).toList();
 
-  if (value is JList) {
-    return value.toList().map(_toDart).toList();
+      value.release();
+      return dartList;
+    }
+    if (value is JMap) {
+      final dartMap = value.asDart();
+
+      final result = <String, dynamic>{};
+
+      dartMap.forEach((k, v) {
+        final key = _toDart(k);
+        result[key is String ? key : key.toString()] = _toDart(v);
+      });
+
+      value.release();
+
+      return result;
+    }
+
+    return value;
   }
 
-  if (value is JMap) {
-    final map = <String, dynamic>{};
-    value.forEach((k, v) {
-      map[_toDart(k).toString()] = _toDart(v);
-    });
-    return map;
-  }
+  Future<dynamic> _handleMethod(
+    AniyomiExtensionApi b,
+    String method,
+    Map<String, dynamic> args,
+  ) async {
+    switch (method) {
+      case "initialize":
+        b.initializeDesktop((args["path"] as String).toJString());
+        return null;
 
-  return value;
-}
+      case "getInstalledAnimeExtensions":
+        return await b.getInstalledAnimeExtensions(
+          (args["path"] as String?)?.toJString(),
+        );
 
-Future<dynamic> _handleMethod(
-  AniyomiExtensionApi b,
-  String method,
-  Map<String, dynamic> args,
-) async {
-  switch (method) {
-    case "initialize":
-      b.initializeDesktop((args["path"] as String).toJString());
-      return null;
+      case "getInstalledMangaExtensions":
+        return await b.getInstalledMangaExtensions(
+          (args["path"] as String?)?.toJString(),
+        );
 
-    case "getInstalledAnimeExtensions":
-      return await b.getInstalledAnimeExtensions(
-        (args["path"] as String?)?.toJString(),
-      );
+      case "getPopular":
+        return await b.getPopular(
+          (args["sourceId"] as String).toJString(),
+          args["isAnime"],
+          args["page"],
+        );
 
-    case "getInstalledMangaExtensions":
-      return await b.getInstalledMangaExtensions(
-        (args["path"] as String?)?.toJString(),
-      );
+      case "search":
+        return await b.search(
+          (args["sourceId"] as String).toJString(),
+          args["isAnime"],
+          (args["query"] as String).toJString(),
+          args["page"],
+        );
 
-    case "getPopular":
-      return await b.getPopular(
-        (args["sourceId"] as String).toJString(),
-        args["isAnime"],
-        args["page"],
-      );
+      case "getDetail":
+        return await b.getDetail(
+          (args["sourceId"] as String).toJString(),
+          args["isAnime"],
+          (args["media"] as String).toJString(),
+        );
 
-    case "search":
-      return await b.search(
-        (args["sourceId"] as String).toJString(),
-        args["isAnime"],
-        (args["query"] as String).toJString(),
-        args["page"],
-      );
+      case "getVideoList":
+        return await b.getVideoList(
+          (args["sourceId"] as String).toJString(),
+          args["isAnime"],
+          (args["episode"] as String).toJString(),
+        );
 
-    case "getDetail":
-      return await b.getDetail(
-        (args["sourceId"] as String).toJString(),
-        args["isAnime"],
-        (args["media"] as String).toJString(),
-      );
+      case "getPageList":
+        return await b.getPageList(
+          (args["sourceId"] as String).toJString(),
+          args["isAnime"],
+          (args["episode"] as String).toJString(),
+        );
 
-    case "getVideoList":
-      return await b.getVideoList(
-        (args["sourceId"] as String).toJString(),
-        args["isAnime"],
-        (args["episode"] as String).toJString(),
-      );
+      case "getPreference":
+        return await b.getPreference(
+          (args["sourceId"] as String).toJString(),
+          args["isAnime"],
+        );
 
-    case "getPageList":
-      return await b.getPageList(
-        (args["sourceId"] as String).toJString(),
-        args["isAnime"],
-        (args["episode"] as String).toJString(),
-      );
+      case "saveSourcePreference":
+        return await b.saveSourcePreference(
+          (args["sourceId"] as String).toJString(),
+          (args["key"] as String).toJString(),
+          (args["value"] as String?)?.toJString(),
+        );
 
-    case "getPreference":
-      return await b.getPreference(
-        (args["sourceId"] as String).toJString(),
-        args["isAnime"],
-      );
-
-    case "saveSourcePreference":
-      return await b.saveSourcePreference(
-        (args["sourceId"] as String).toJString(),
-        (args["key"] as String).toJString(),
-        (args["value"] as String?)?.toJString(),
-      );
-
-    default:
-      throw Exception("Unknown method: $method");
+      default:
+        throw Exception("Unknown method: $method");
+    }
   }
 }
 
@@ -233,7 +258,14 @@ class _JniRuntime {
     Jni.spawnIfNotExists(
       classPath: [
         "/home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/build/jni_libs/jni.jar",
-        "/home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/runtimeManager/builds/aniyomiDesktop/aniyomiDesktop.jar",
+        "/home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/runtimeManager/aniyomiDesktop/build/libs/aniyomiDesktop-all.jar",
+      ],
+      jvmOptions: [
+        "-Dfile.encoding=UTF-8",
+        "-Xms512m",
+        "-Xmx2G",
+        "-XX:+UseG1GC",
+        "-XX:MaxGCPauseMillis=200",
       ],
       dylibDir:
           "/home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/build/jni_libs",

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:d4rt/d4rt.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
@@ -80,7 +81,7 @@ abstract class Extension {
         unawaited(fetchInstalledNovelExtensions());
       }
     } catch (e, s) {
-      debugPrint('Error initializing extension $id: $e\n$s');
+      Logger.log('Error initializing extension $id: $e\n$s');
     }
   }
 
@@ -104,7 +105,7 @@ abstract class Extension {
         unawaited(fetchNovelExtensions());
       }
     } catch (e, s) {
-      debugPrint('Error initializing extension $id: $e\n$s');
+      Logger.log('Error initializing extension $id: $e\n$s');
     }
   }
 

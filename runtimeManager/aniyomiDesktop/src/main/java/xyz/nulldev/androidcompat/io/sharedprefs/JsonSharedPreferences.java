@@ -18,11 +18,12 @@ package xyz.nulldev.androidcompat.io.sharedprefs;
 
 import android.content.SharedPreferences;
 
+import com.aayush262.dartotsu_extension_bridge.LogLevel;
+import com.aayush262.dartotsu_extension_bridge.Logger;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -51,21 +52,20 @@ public class JsonSharedPreferences implements SharedPreferences {
     private List<OnSharedPreferenceChangeListener> listeners = new ArrayList<>(); //Change listeners
     private File file; //Where the values should be stored
 
-    private Logger logger = LoggerFactory.getLogger(JsonSharedPreferences.class);
-
     /**
      * Create a SharedPreference instance from a file
+     *
      * @param file The file to load the prefs from, use null to create an empty SharedPreferences instance.
      */
     public JsonSharedPreferences(File file) {
         this.file = file;
         //Load previous values if they exist
-        if(file != null) {
-            if(file.exists()) {
+        if (file != null) {
+            if (file.exists()) {
                 try {
                     loadFromString(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
                 } catch (IOException e) {
-                    logger.error("Failed to read shared prefs from String!", e);
+                    Logger.log("Failed to load shared prefs from file!", e, LogLevel.ERROR);
                 }
             }
         }
@@ -73,6 +73,7 @@ public class JsonSharedPreferences implements SharedPreferences {
 
     /**
      * Load the SharedPreferences from a String.
+     *
      * @param string The String to load the prefs from.
      */
     public synchronized void loadFromString(String string) {
@@ -129,6 +130,7 @@ public class JsonSharedPreferences implements SharedPreferences {
 
     /**
      * Serialize the JSON prefs to a String.
+     *
      * @return The serialized prefs.
      */
     public synchronized String saveToString() {
@@ -137,6 +139,7 @@ public class JsonSharedPreferences implements SharedPreferences {
 
     /**
      * Serialize the JSON prefs to a JSONObject
+     *
      * @return The serialized prefs.
      */
     public synchronized JSONObject saveToJSONObject() {
@@ -222,16 +225,14 @@ public class JsonSharedPreferences implements SharedPreferences {
     }
 
     @Override
-    public synchronized void registerOnSharedPreferenceChangeListener(
-            OnSharedPreferenceChangeListener onSharedPreferenceChangeListener) {
+    public synchronized void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener onSharedPreferenceChangeListener) {
         if (!listeners.contains(onSharedPreferenceChangeListener)) {
             listeners.add(onSharedPreferenceChangeListener);
         }
     }
 
     @Override
-    public synchronized void unregisterOnSharedPreferenceChangeListener(
-            OnSharedPreferenceChangeListener onSharedPreferenceChangeListener) {
+    public synchronized void unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener onSharedPreferenceChangeListener) {
         listeners.remove(onSharedPreferenceChangeListener);
     }
 
@@ -244,7 +245,7 @@ public class JsonSharedPreferences implements SharedPreferences {
         private JsonSharedPreferencesEditor() {
         }
 
-        private void  recordChange(String key) {
+        private void recordChange(String key) {
             if (!affectedKeys.contains(key)) {
                 affectedKeys.add(key);
             }
@@ -322,9 +323,9 @@ public class JsonSharedPreferences implements SharedPreferences {
                 //Backup prefs
                 Map<String, Object> oldPrefs = prefs;
                 prefs = prefsClone;
-                if(file != null) {
+                if (file != null) {
                     //Delete old on-disk copy of preferences
-                    if(file.exists()) {
+                    if (file.exists()) {
                         file.delete();
                     }
                     //Save new preferences to disk
@@ -332,7 +333,8 @@ public class JsonSharedPreferences implements SharedPreferences {
                     try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)))) {
                         writer.print(string);
                     } catch (IOException e) {
-                        logger.error("Failed to save shared prefs!", e);
+                        Logger.log("Failed to save shared prefs to file!", e, LogLevel.ERROR);
+
                         prefs = oldPrefs;
                         return false;
                     }
@@ -363,15 +365,11 @@ public class JsonSharedPreferences implements SharedPreferences {
         this.file = file;
     }
 
-    /** Preference types (for storing what type of object a preference is)**/
+    /**
+     * Preference types (for storing what type of object a preference is)
+     **/
     private enum PrefType {
-        String,
-        StringSet,
-        Int,
-        Long,
-        Float,
-        Boolean,
-        Null;
+        String, StringSet, Int, Long, Float, Boolean, Null;
 
         public static PrefType fromObject(Object object) {
             if (object == null) {

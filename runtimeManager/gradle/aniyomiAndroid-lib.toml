@@ -1,15 +1,10 @@
 [versions]
 injekt = "1.16.1"
-
 androidx-core = "1.16.0"
 compose-runtime = "1.8.3"
 preference = "1.2.1"
-
-
 quickjs = "0.9.2"
-
 commons-text = "1.11.0"
-
 rxandroid = "1.2.1"
 
 [libraries]
@@ -22,11 +17,8 @@ androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx
 compose-runtime-android = { module = "androidx.compose.runtime:runtime-android", version.ref = "compose-runtime" }
 androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preference" }
 
-# Android-specific libs
-
 quickjs-android = { module = "app.cash.quickjs:quickjs-android", version.ref = "quickjs" }
 
-# RxAndroid (Android only extension of RxJava)
 rxandroid = { module = "io.reactivex:rxandroid", version.ref = "rxandroid" }
 
 # Misc

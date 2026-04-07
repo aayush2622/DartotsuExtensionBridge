@@ -44,8 +44,6 @@ dependencies {
     implementation(aniyomiDesktop.asm)
     implementation(aniyomiDesktop.bundles.xml)
     implementation(aniyomiDesktop.bundles.polyglot)
-    implementation(aniyomiDesktop.bundles.javalin)
-    implementation(aniyomiDesktop.bundles.jackson)
     implementation(aniyomiDesktop.injekt)
     compileOnly(aniyomiDesktop.apksig)
     compileOnly(aniyomiDesktop.android.annotations)
