@@ -155,6 +155,7 @@ public class Preference {
         if (key == null) {
             return;
         }
+        if (sharedPreferences == null) return;
         switch (getDefaultValueType()) {
             case "String" -> sharedPreferences.edit().putString(key, (String) value).apply();
             case "Boolean" -> sharedPreferences.edit().putBoolean(key, (Boolean) value).apply();

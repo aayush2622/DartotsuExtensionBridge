@@ -7,9 +7,9 @@ android-gradle = "8.10.0"
 [plugins]
 # Android
 android-application = { id = "com.android.application", version.ref = "android-gradle" }
-
-# Kotlin
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+# Kotlin
+
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 

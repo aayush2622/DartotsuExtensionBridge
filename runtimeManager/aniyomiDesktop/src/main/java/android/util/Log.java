@@ -5,9 +5,9 @@
 
 package android.util;
 
-import org.slf4j.Logger;
-import org.slf4j.event.Level;
-import org.slf4j.LoggerFactory;
+
+import com.aayush262.dartotsu_extension_bridge.LogLevel;
+import com.aayush262.dartotsu_extension_bridge.Logger;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -20,7 +20,6 @@ public final class Log {
     public static final int VERBOSE = 2;
     public static final int WARN = 5;
 
-    private static Logger logger = LoggerFactory.getLogger(Log.class);
 
     public static int v(String tag, String msg) {
         return log(VERBOSE, tag, msg);
@@ -93,7 +92,7 @@ public final class Log {
     }
 
     private static int log(int level, String tag, String msg) {
-        logger.atLevel(intToLevel(level)).log(formatLog(tag, msg));
+        Logger.log(formatLog(tag, msg), LogLevel.WARNING);
         return tag.length() + msg.length(); //Not accurate, but never used anyways
     }
 
@@ -102,7 +101,7 @@ public final class Log {
     }
 
     private static int log(int level, String tag, String msg, Throwable t) {
-        logger.atLevel(intToLevel(level)).setCause(t).log(formatLog(tag, msg));
+        Logger.log(formatLog(tag, msg) + "\n" + getStackTraceString(t), LogLevel.WARNING);
         return tag.length() + msg.length(); //Not accurate, but never used anyways
     }
 
@@ -114,23 +113,4 @@ public final class Log {
         return first.toString();
     }
 
-    private static Level intToLevel(int level) {
-        switch(level) {
-            case ASSERT:
-                return Level.ERROR;
-            case DEBUG:
-                return Level.DEBUG;
-            case ERROR:
-                return Level.ERROR;
-            case INFO:
-                return Level.INFO;
-            case VERBOSE:
-                return Level.TRACE;
-            case WARN:
-                return Level.WARN;
-            default:
-                return Level.INFO;
-        }
-
-  }
 }

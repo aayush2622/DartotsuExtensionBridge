@@ -1,39 +1,23 @@
 [versions]
 kotlin = "2.1.0"
-
 xmlserialization = "0.91.3"
-
-shadow = "9.4.1"
-
 koin = "4.1.1"
 settings = "1.3.0"
-
 javalin = "6.7.0"
 jte = "3.2.3"
-
 dex2jar = "2.4.34"
-
 polyglot = "24.2.2"
-
 jackson = "2.18.3"
-
 slf4j = "2.0.17"
 logback = "1.5.32"
 kotlinlogging = "8.0.01"
-
 icu4j = "78.2"
-
 android-annotations = "1.9.1"
-
 asm = "9.9.1"
-
 apk-parser = "2.6.10"
 apksig = "9.0.1"
-
 appdirs = "2.0.0"
-
 kcef = "2024.04.20.4"
-
 xmlpull = "1.1.3.4a"
 
 [libraries]
@@ -47,25 +31,12 @@ kotlin-metadata = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version
 serialization-xml-core = { module = "io.github.pdvrieze.xmlutil:core", version.ref = "xmlserialization" }
 serialization-xml = { module = "io.github.pdvrieze.xmlutil:serialization-jvm", version.ref = "xmlserialization" }
 
-# Javalin
-javalin-core = { module = "io.javalin:javalin", version.ref = "javalin" }
-javalin-rendering = { module = "io.javalin:javalin-rendering", version.ref = "javalin" }
-
-# Templates
-jte = { module = "gg.jte:jte", version.ref = "jte" }
 
 # Dependency Injection
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 
 # Jackson
-jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
-jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
-
-# Logging
-slf4japi = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
-logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
-kotlinlogging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlinlogging" }
 
 # Webview
 kcef = { module = "dev.datlag:kcef", version.ref = "kcef" }
@@ -79,15 +50,12 @@ android-annotations = { module = "androidx.annotation:annotation", version.ref =
 # XML
 xmlpull = { module = "xmlpull:xmlpull", version.ref = "xmlpull" }
 
-# App dirs
-appdirs = { module = "ca.gosyer:kotlin-multiplatform-appdirs", version.ref = "appdirs" }
-
 # ASM / Dex
 asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 dex2jar-translator = { module = "de.femtopedia.dex2jar:dex-translator", version.ref = "dex2jar" }
 dex2jar-tools = { module = "de.femtopedia.dex2jar:dex-tools", version.ref = "dex2jar" }
 
-# Polyglot
+# Polyglot (QuickJS)
 polyglot-core = { module = "org.graalvm.polyglot:polyglot", version.ref = "polyglot" }
 
 # APK tools
@@ -105,10 +73,6 @@ common = [
     "kotlin-reflect",
     "kotlin-metadata",
     "koin-core",
-    "slf4japi",
-    "logback",
-    "kotlinlogging",
-    "appdirs",
     "dex2jar-translator",
     "dex2jar-tools",
     "apk-parser",
@@ -122,17 +86,7 @@ xml = [
     "serialization-xml"
 ]
 
-javalin = [
-    "javalin-core",
-    "javalin-rendering",
-    "jte"
-]
 
-jackson = [
-    "jackson-databind",
-    "jackson-kotlin",
-    "jackson-annotations"
-]
 
 polyglot = [
     "polyglot-core"

@@ -9,13 +9,14 @@ package xyz.nulldev.androidcompat.io.sharedprefs
 
 import android.content.SharedPreferences
 import com.aayush262.dartotsu_extension_bridge.DartotsuEnv
+import com.aayush262.dartotsu_extension_bridge.LogLevel
+import com.aayush262.dartotsu_extension_bridge.Logger
 import com.russhwolf.settings.ExperimentalSettingsApi
 import com.russhwolf.settings.PropertiesSettings
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.serialization.decodeValue
 import com.russhwolf.settings.serialization.decodeValueOrNull
 import com.russhwolf.settings.serialization.encodeValue
-import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.SetSerializer
@@ -33,9 +34,6 @@ import kotlin.io.path.outputStream
 class JavaSharedPreferences(
     key: String,
 ) : SharedPreferences {
-    companion object {
-        private val logger = KotlinLogging.logger {}
-    }
 
     private val file =
         Path(
@@ -51,7 +49,7 @@ class JavaSharedPreferences(
                     file.inputStream().use { properties.loadFromXML(it) }
                 }
             } catch (e: Exception) {
-                logger.error(e) { "Error loading settings from $key" }
+                Logger.log("Error loading settings in $key: ${e.message}", LogLevel.ERROR)
             }
         }
     private val preferences =
@@ -68,7 +66,7 @@ class JavaSharedPreferences(
                         }
                     }
                 } catch (e: Exception) {
-                    logger.error(e) { "Error saving settings in $key" }
+                    Logger.log("Error saving settings in $key: ${e.message}", LogLevel.ERROR)
                 }
             },
         )

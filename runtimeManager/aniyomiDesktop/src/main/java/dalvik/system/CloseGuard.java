@@ -15,8 +15,9 @@
  */
 package dalvik.system;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.aayush262.dartotsu_extension_bridge.LogLevel;
+import com.aayush262.dartotsu_extension_bridge.Logger;
 
 /**
  * CloseGuard is a mechanism for flagging implicit finalizer cleanup of
@@ -267,9 +268,8 @@ public final class CloseGuard {
      * Default Reporter which reports CloseGuard violations to the log.
      */
     private static final class DefaultReporter implements Reporter {
-        private Logger logger = LoggerFactory.getLogger(DefaultReporter.class);
         @Override public void report (String message, Throwable allocationSite) {
-            logger.warn(message, allocationSite);
+            Logger.log(message, allocationSite, LogLevel.WARNING);
         }
     }
 }

@@ -3,7 +3,8 @@ package xyz.nulldev.androidcompat.service
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import io.github.oshai.kotlinlogging.KotlinLogging
+import com.aayush262.dartotsu_extension_bridge.LogLevel
+import com.aayush262.dartotsu_extension_bridge.Logger
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
 
@@ -16,7 +17,6 @@ import kotlin.concurrent.thread
 class ServiceSupport {
     val runningServices = ConcurrentHashMap<String, Service>()
 
-    private val logger = KotlinLogging.logger {}
 
     fun startService(
         @Suppress("UNUSED_PARAMETER") context: Context,
@@ -24,7 +24,7 @@ class ServiceSupport {
     ) {
         val name = intentToClassName(intent)
 
-        logger.debug { "Starting service: $name" }
+        Logger.log("Starting service: $name", LogLevel.DEBUG)
 
         val service = serviceInstanceFromClass(name)
 
@@ -47,10 +47,10 @@ class ServiceSupport {
     }
 
     fun stopService(name: String) {
-        logger.debug { "Stopping service: $name" }
+        Logger.log("Stopping service: $name", LogLevel.DEBUG)
         val service = runningServices.remove(name)
         if (service == null) {
-            logger.warn { "An attempt was made to stop a service that is not running: $name" }
+            Logger.log("Service $name is not running!", LogLevel.WARNING)
         } else {
             thread {
                 service.onDestroy()

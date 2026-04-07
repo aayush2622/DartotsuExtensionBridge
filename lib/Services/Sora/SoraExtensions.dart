@@ -430,7 +430,7 @@ class SoraExtensions extends Extension {
         await addRepo(url, itemType);
       }
     } catch (e) {
-      debugPrint("Failed to fetch repo JSON: $e");
+      Logger.log("Failed to fetch repo JSON: $e");
     }
   }
 }
