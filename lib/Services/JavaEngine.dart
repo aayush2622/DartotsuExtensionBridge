@@ -47,6 +47,7 @@ class JavaEngine {
         "handler": handler,
         "jniJar": jniJarPath,
         "soFile": soPath,
+        "engineJar": engineJarPath,
       },
     );
 
@@ -138,8 +139,7 @@ class JavaEngine {
     final port = ReceivePort();
     mainSendPort.send(port.sendPort);
 
-    final engineJar =
-        "/home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/runtimeManager/aniyomiDesktop/build/libs/aniyomiDesktop-all.jar";
+    final engineJar = args["engineJar"] as String;
 
     Jni.spawnIfNotExists(
       classPath: [jniJar, engineJar],

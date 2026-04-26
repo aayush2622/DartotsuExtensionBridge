@@ -62,7 +62,7 @@ abstract class DownloadablePlugin {
       final remote = await fetchRemote();
 
       await _download(
-        remote["apk"],
+        remote["downloadUrl"],
         remote["versionCode"] ?? 0,
       );
 
@@ -114,7 +114,7 @@ abstract class DownloadablePlugin {
 
     Logger.log("$name updating → v$remoteVersion", show: true);
 
-    await _download(remote["apk"], remoteVersion);
+    await _download(remote["downloadUrl"], remoteVersion);
     setVal(_updateKey, true);
   }
 
@@ -185,6 +185,6 @@ abstract class DownloadablePlugin {
     setVal(_versionKey, version);
     progress.value = 1.0;
 
-    Logger.log("$name plugin ready → v$version");
+    Logger.log("$name:v$version installed", show: true);
   }
 }

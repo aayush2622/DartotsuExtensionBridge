@@ -118,8 +118,6 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
     return await compute(parsePageUrls, result);
   }
 
-  /// ================= SEARCH =================
-
   @override
   Future<Pages> search(String query, int page, List filters) async {
     final result = await jni.call<Map<String, dynamic>>(
