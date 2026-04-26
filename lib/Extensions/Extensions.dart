@@ -31,9 +31,10 @@ abstract class Extension {
   }
 
   Future<void> _isInstalled() async {
-    if (plugin == null) return;
     try {
-      plugin?.installed.value = await plugin?.isInstalled() ?? true;
+      if (plugin == null) return;
+      plugin!.installed.value = await plugin!.isInstalled();
+      print(await plugin!.isInstalled());
     } catch (e, s) {
       Logger.log('Error checking if extension $id is installed: $e\n$s');
       plugin?.installed.value = true;

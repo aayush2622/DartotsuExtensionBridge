@@ -39,7 +39,7 @@ class AniyomiDesktopExtensions extends Extension {
       );
 
   @override
-  DownloadablePlugin get plugin => AniyomiDesktopPlugin();
+  DownloadablePlugin plugin = AniyomiDesktopPlugin();
 
   final jni = JavaEngine();
 
@@ -51,7 +51,6 @@ class AniyomiDesktopExtensions extends Extension {
     unawaited(plugin.autoUpdate());
 
     final filePath = await plugin.getPath();
-    final hasUpdate = plugin.hasUpdate;
     await jni.init(
       engineJarPath: filePath,
       handler: AniyomiService.handle,
@@ -112,7 +111,7 @@ class AniyomiDesktopExtensions extends Extension {
     final s = source as ASource;
 
     final dir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'bridge/aniyomi-extensions/${s.itemType}',
+      subPath: 'bridge/aniyomi/extensions/${s.itemType.toString()}',
       useSystemPath: false,
       useCustomPath: true,
     );
@@ -149,7 +148,7 @@ class AniyomiDesktopExtensions extends Extension {
     final s = source as ASource;
 
     final dir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'bridge/aniyomi-extensions/${s.itemType}',
+      subPath: 'bridge/aniyomi/extensions/${s.itemType.toString()}',
       useSystemPath: false,
       useCustomPath: true,
     );

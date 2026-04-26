@@ -45,7 +45,7 @@ class AniyomiExtensions extends Extension {
       (ASource, (source) => AniyomiSourceMethods(source as ASource));
 
   @override
-  DownloadablePlugin get plugin => AniyomiPlugin();
+  DownloadablePlugin plugin = AniyomiPlugin();
   static const platform = MethodChannel('aniyomiExtensionBridge');
 
   @override
