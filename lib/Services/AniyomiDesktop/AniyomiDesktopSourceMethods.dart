@@ -11,21 +11,19 @@ import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
 import '../Aniyomi/AniyomiSourceMethods.dart';
 import '../Aniyomi/Models/Source.dart';
-import 'JniEngine.dart';
+import '../JavaEngine.dart';
 
 class AniyomiSourceMethodsDesktop extends SourceMethods {
   @override
   final ASource source;
-
-  AniyomiSourceMethodsDesktop(this.source);
-
-  final jni = JniChannel.instance;
+  final JavaEngine jni;
+  AniyomiSourceMethodsDesktop(this.source, this.jni);
 
   bool get isAnime => source.itemType?.index == 1;
 
   @override
   Future<DMedia> getDetail(DMedia media) async {
-    final result = await jni.invokeMethod<Map<String, dynamic>>(
+    final result = await jni.call<Map<String, dynamic>>(
       'getDetail',
       {
         'sourceId': source.id,
@@ -40,6 +38,7 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
           'genre': media.genre,
         }),
       },
+      true,
     );
 
     return await compute(DMedia.fromJson, result);
@@ -47,7 +46,7 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
 
   @override
   Future<Pages> getLatestUpdates(int page) async {
-    final result = await jni.invokeMethod<Map<String, dynamic>>(
+    final result = await jni.call<Map<String, dynamic>>(
       'getLatestUpdates',
       {
         'sourceId': source.id,
@@ -61,7 +60,7 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
 
   @override
   Future<Pages> getPopular(int page) async {
-    final result = await jni.invokeMethod<Map<String, dynamic>>(
+    final result = await jni.call<Map<String, dynamic>>(
       'getPopular',
       {
         'sourceId': source.id,
@@ -75,7 +74,7 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
 
   @override
   Future<List<Video>> getVideoList(DEpisode episode) async {
-    final result = await jni.invokeMethod<List<dynamic>>(
+    final result = await jni.call<List<dynamic>>(
       'getVideoList',
       {
         'sourceId': source.id,
@@ -98,7 +97,7 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
 
   @override
   Future<List<PageUrl>> getPageList(DEpisode episode) async {
-    final result = await jni.invokeMethod<List<dynamic>>(
+    final result = await jni.call<List<dynamic>>(
       'getPageList',
       {
         'sourceId': source.id,
@@ -123,7 +122,7 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
 
   @override
   Future<Pages> search(String query, int page, List filters) async {
-    final result = await jni.invokeMethod<Map<String, dynamic>>(
+    final result = await jni.call<Map<String, dynamic>>(
       'search',
       {
         'sourceId': source.id,
@@ -131,6 +130,7 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
         'query': query,
         'page': page,
       },
+      true,
     );
 
     return await compute(Pages.fromJson, result);
@@ -138,7 +138,7 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
 
   @override
   Future<List<SourcePreference>> getPreference() async {
-    final result = await jni.invokeMethod<List<dynamic>>(
+    final result = await jni.call<List<dynamic>>(
       'getPreference',
       {
         'sourceId': source.id,
@@ -155,7 +155,7 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
 
   @override
   Future<bool> setPreference(SourcePreference pref, dynamic value) async {
-    return await jni.invokeMethod<bool>(
+    return await jni.call<bool>(
       'saveSourcePreference',
       {
         'sourceId': source.id,

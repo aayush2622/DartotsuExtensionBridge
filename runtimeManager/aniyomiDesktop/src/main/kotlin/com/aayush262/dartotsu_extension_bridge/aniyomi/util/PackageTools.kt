@@ -73,7 +73,6 @@ object PackageTools {
                 parsed.manifestXml.byteInputStream().use {
                     dBuilder.parse(it)
                 }
-            Logger.log(parsed.manifestXml, LogLevel.DEBUG)
 
             applicationInfo.metaData =
                 Bundle().apply {

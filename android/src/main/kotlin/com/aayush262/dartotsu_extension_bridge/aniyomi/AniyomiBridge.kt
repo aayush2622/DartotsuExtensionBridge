@@ -135,7 +135,7 @@ class AniyomiBridge(var context: Context) {
 
             Logger.log("Extension API loaded successfully", LogLevel.INFO)
 
-            api?.initialize(mapOf("context" to context))
+            api?.initializeAndroid(context)
 
             (instance as AniyomiCustomMethods).initialize(CustomAniyomiMethods(networkChannel)).apply {
                 Logger.log("Custom methods initialized", LogLevel.INFO)
@@ -192,7 +192,7 @@ class AniyomiBridge(var context: Context) {
 
             Logger.log("Extension API loaded successfully", LogLevel.INFO)
 
-            api?.initialize(mapOf("context" to context))
+            api?.initializeAndroid(context)
 
             (instance as AniyomiCustomMethods).initialize(CustomAniyomiMethods(networkChannel)).apply {
                 Logger.log("Custom methods initialized", LogLevel.INFO)

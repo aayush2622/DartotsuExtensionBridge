@@ -5,18 +5,41 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
 import '../Models/Source.dart';
+import 'DownloadablePlugin.dart';
 import 'ExtensionSettings.dart';
 import 'SourceMethods.dart';
 
+enum InitState { idle, success, failed }
+
 abstract class Extension {
   String get id;
+
   String get name;
 
   bool get supportsAnime => true;
+
   bool get supportsManga => true;
+
   bool get supportsNovel => true;
 
+  DownloadablePlugin? get plugin => null;
+
   (Type, SourceMethods Function(Source)) get sourceMethodFactories;
+
+  Extension() {
+    unawaited(_isInstalled());
+  }
+
+  Future<void> _isInstalled() async {
+    if (plugin == null) return;
+    try {
+      plugin?.installed.value = await plugin?.isInstalled() ?? true;
+    } catch (e, s) {
+      Logger.log('Error checking if extension $id is installed: $e\n$s');
+      plugin?.installed.value = true;
+    }
+  }
+
   final Map<ItemType, Rx<List<Source>>> _installed = {
     ItemType.anime: Rx<List<Source>>([]),
     ItemType.manga: Rx<List<Source>>([]),
@@ -28,11 +51,13 @@ abstract class Extension {
     ItemType.manga: Rx<List<Source>>([]),
     ItemType.novel: Rx<List<Source>>([]),
   };
+
   final Map<ItemType, Rx<List<Source>>> _availableRaw = {
     ItemType.anime: Rx<List<Source>>([]),
     ItemType.manga: Rx<List<Source>>([]),
     ItemType.novel: Rx<List<Source>>([]),
   };
+
   final Map<ItemType, Rx<List<Repo>>> _repos = {
     ItemType.anime: Rx<List<Repo>>([]),
     ItemType.manga: Rx<List<Repo>>([]),
@@ -40,46 +65,60 @@ abstract class Extension {
   };
 
   @protected
-  Future<void> onInitialize() async {}
+  Future<bool> onInitialize() async => true;
 
-  Completer<void>? initCompleter;
+  Completer<void>? _initCompleter;
+  InitState _initState = InitState.idle;
+
+  bool get isReady => _initState == InitState.success;
+
+  bool get isFailed => _initState == InitState.failed;
+
   Future<void> initialize() async {
-    if (initCompleter != null) {
-      return initCompleter!.future;
-    }
+    if (_initCompleter != null) return _initCompleter!.future;
 
-    initCompleter = Completer<void>();
+    _initCompleter = Completer<void>();
 
     try {
-      await onInitialize();
+      final ok = await onInitialize();
+      _initState = ok ? InitState.success : InitState.failed;
 
-      initCompleter!.complete();
+      _initCompleter!.complete();
     } catch (e, s) {
-      initCompleter!.completeError(e, s);
+      _initState = InitState.failed;
+      _initCompleter!.completeError(e, s);
       rethrow;
     }
 
-    return initCompleter!.future;
+    return _initCompleter!.future;
+  }
+
+  Future<bool> ensureInitialized() async {
+    if (_initState == InitState.success) return true;
+    if (_initState == InitState.failed) return false;
+
+    await initialize();
+    return _initState == InitState.success;
+  }
+
+  Future<void> runIfReady(Future<void> Function() fn) async {
+    if (!isReady && !await ensureInitialized()) return;
+    return fn();
   }
 
   bool _isInstalledInitialized = false;
+
   @mustCallSuper
   Future<void> initializeInstalled() async {
-    await initialize();
+    if (!await ensureInitialized()) return;
     if (_isInstalledInitialized) return;
+
     _isInstalledInitialized = true;
+
     try {
-      if (supportsAnime) {
-        unawaited(fetchInstalledAnimeExtensions());
-      }
-
-      if (supportsManga) {
-        unawaited(fetchInstalledMangaExtensions());
-      }
-
-      if (supportsNovel) {
-        unawaited(fetchInstalledNovelExtensions());
-      }
+      if (supportsAnime) unawaited(fetchInstalledAnimeExtensions());
+      if (supportsManga) unawaited(fetchInstalledMangaExtensions());
+      if (supportsNovel) unawaited(fetchInstalledNovelExtensions());
     } catch (e, s) {
       Logger.log('Error initializing extension $id: $e\n$s');
     }
@@ -89,21 +128,15 @@ abstract class Extension {
 
   @mustCallSuper
   Future<void> initializeAvailable() async {
-    await initialize();
+    if (!await ensureInitialized()) return;
     if (_isAvailableInitialized) return;
+
     _isAvailableInitialized = true;
+
     try {
-      if (supportsAnime) {
-        unawaited(fetchAnimeExtensions());
-      }
-
-      if (supportsManga) {
-        unawaited(fetchMangaExtensions());
-      }
-
-      if (supportsNovel) {
-        unawaited(fetchNovelExtensions());
-      }
+      if (supportsAnime) unawaited(fetchAnimeExtensions());
+      if (supportsManga) unawaited(fetchMangaExtensions());
+      if (supportsNovel) unawaited(fetchNovelExtensions());
     } catch (e, s) {
       Logger.log('Error initializing extension $id: $e\n$s');
     }
@@ -119,26 +152,44 @@ abstract class Extension {
 
   Future<void> updateSource(Source source);
 
-  Future<void> fetchAnimeExtensions();
+  @mustCallSuper
+  Future<void> fetchAnimeExtensions() async {
+    if (!isReady && !await ensureInitialized()) return;
+  }
 
-  Future<void> fetchMangaExtensions();
+  @mustCallSuper
+  Future<void> fetchMangaExtensions() async {
+    if (!isReady && !await ensureInitialized()) return;
+  }
 
-  Future<void> fetchNovelExtensions();
+  @mustCallSuper
+  Future<void> fetchNovelExtensions() async {
+    if (!isReady && !await ensureInitialized()) return;
+  }
 
-  Future<void> fetchInstalledAnimeExtensions();
+  @mustCallSuper
+  Future<void> fetchInstalledAnimeExtensions() async {
+    if (!isReady && !await ensureInitialized()) return;
+  }
 
-  Future<void> fetchInstalledMangaExtensions();
+  @mustCallSuper
+  Future<void> fetchInstalledMangaExtensions() async {
+    if (!isReady && !await ensureInitialized()) return;
+  }
 
-  Future<void> fetchInstalledNovelExtensions();
+  @mustCallSuper
+  Future<void> fetchInstalledNovelExtensions() async {
+    if (!isReady && !await ensureInitialized()) return;
+  }
 
   Set<String> get schemes => {};
 
   void handleSchemes(Uri uri) {}
 
-  /// Helpers
   Rx<List<Source>> getInstalledRx(ItemType type) => _installed[type]!;
 
   Rx<List<Source>> getAvailableRx(ItemType type) => _available[type]!;
+
   Rx<List<Source>> getRawAvailableRx(ItemType type) => _availableRaw[type]!;
 
   Rx<List<Repo>> getReposRx(ItemType type) => _repos[type]!;
@@ -166,10 +217,10 @@ abstract class Extension {
 
 class Repo {
   final String url;
-
   final String? name;
   final String? iconUrl;
   final String? extensions;
+
   Repo({
     required this.url,
     this.name,
@@ -192,8 +243,4 @@ class Repo {
         'iconUrl': iconUrl,
         'extensions': extensions,
       };
-}
-
-abstract interface class DownloadableService {
-  Future<void> downloadService();
 }

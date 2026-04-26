@@ -1,11 +1,26 @@
+import 'dart:async';
 import 'dart:io';
 
+import '../../Extensions/DownloadablePlugin.dart';
 import '../../Extensions/ExtensionSettings.dart';
 import '../../Logger.dart';
 import '../../dartotsu_extension_bridge.dart';
 import '../Aniyomi/Models/Source.dart';
+import '../JavaEngine.dart';
 import 'AniyomiDesktopSourceMethods.dart';
-import 'JniEngine.dart';
+import 'AniyomiService.dart';
+
+class AniyomiDesktopPlugin extends DownloadablePlugin {
+  @override
+  String get name => "aniyomiDesktop";
+
+  @override
+  String get remoteUrl =>
+      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiDesktop/aniyomiDesktop-plugin.json";
+
+  @override
+  String get fileName => "aniyomiDesktop-plugin.jar";
+}
 
 class AniyomiDesktopExtensions extends Extension {
   @override
@@ -18,30 +33,50 @@ class AniyomiDesktopExtensions extends Extension {
   bool get supportsNovel => false;
 
   @override
-  (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
-      (ASource, (source) => AniyomiSourceMethodsDesktop(source as ASource));
-
-  final jni = JniChannel.instance;
+  (Type, SourceMethods Function(Source)) get sourceMethodFactories => (
+        ASource,
+        (source) => AniyomiSourceMethodsDesktop(source as ASource, jni)
+      );
 
   @override
-  Future<void> onInitialize() async {
-    await jni.init();
-    var file = await DartotsuExtensionBridge.context.getDirectory();
+  DownloadablePlugin get plugin => AniyomiDesktopPlugin();
 
-    await jni.invokeMethod<void>(
+  final jni = JavaEngine();
+
+  @override
+  Future<bool> onInitialize() async {
+    plugin.installed.value = await plugin.isInstalled();
+    if (!plugin.installed.value) return false;
+
+    unawaited(plugin.autoUpdate());
+
+    final filePath = await plugin.getPath();
+    final hasUpdate = plugin.hasUpdate;
+    await jni.init(
+      engineJarPath: filePath,
+      handler: AniyomiService.handle,
+    );
+
+    var file = await DartotsuExtensionBridge.context
+        .getDirectory(subPath: 'bridge/aniyomi');
+
+    await jni.call<void>(
       "initialize",
       {"path": file!.path},
     );
+    return true;
   }
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
+    await super.fetchInstalledAnimeExtensions();
     getInstalledRx(ItemType.anime).value =
         await _loadInstalled("getInstalledAnimeExtensions", ItemType.anime);
   }
 
   @override
   Future<void> fetchInstalledMangaExtensions() async {
+    await super.fetchInstalledMangaExtensions();
     getInstalledRx(ItemType.manga).value =
         await _loadInstalled("getInstalledMangaExtensions", ItemType.manga);
   }
@@ -52,12 +87,12 @@ class AniyomiDesktopExtensions extends Extension {
   ) async {
     try {
       final dir = await DartotsuExtensionBridge.context.getDirectory(
-        subPath: 'aniyomi/extensions/${type.toString()}',
+        subPath: 'bridge/aniyomi/extensions/${type.toString()}',
         useSystemPath: false,
         useCustomPath: true,
       );
 
-      final result = await jni.invokeMethod<List<Map<String, dynamic>>>(
+      final result = await jni.call<List<Map<String, dynamic>>>(
         method,
         {"path": dir!.path},
       );
@@ -77,7 +112,7 @@ class AniyomiDesktopExtensions extends Extension {
     final s = source as ASource;
 
     final dir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'aniyomi-extensions/${s.itemType}',
+      subPath: 'bridge/aniyomi-extensions/${s.itemType}',
       useSystemPath: false,
       useCustomPath: true,
     );
@@ -114,7 +149,7 @@ class AniyomiDesktopExtensions extends Extension {
     final s = source as ASource;
 
     final dir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'aniyomi-extensions/${s.itemType}',
+      subPath: 'bridge/aniyomi-extensions/${s.itemType}',
       useSystemPath: false,
       useCustomPath: true,
     );
@@ -152,10 +187,14 @@ class AniyomiDesktopExtensions extends Extension {
   Future<void> fetchMangaExtensions() async {}
 
   @override
-  Future<void> fetchNovelExtensions() async {}
+  Future<void> fetchNovelExtensions() async {
+    await super.fetchNovelExtensions();
+  }
 
   @override
-  Future<void> fetchInstalledNovelExtensions() async {}
+  Future<void> fetchInstalledNovelExtensions() async {
+    await super.fetchInstalledNovelExtensions();
+  }
 
   @override
   Future<void> addRepo(String repoUrl, ItemType type) async {}

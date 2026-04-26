@@ -1,6 +1,13 @@
 {
   "name": "cloudStream",
-  "versionCode": 4,
-  "versionName": "1.0.3",
-  "apk": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/androidExtensionManagers/builds/cloudStream/cloudStream-plugin.apk"
+  "versionCode": 2,
+  "versionName": "1.0.1",
+  "description": "A plugin that allows you to run cloudstream extensions on android",
+  "author": "aayush262/Ryan",
+  "createdAt": 1777143849282,
+  "type": "apk",
+  "fileName": "cloudStream-plugin.apk",
+  "fileSize": 7483106,
+  "downloadUrl": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/cloudStream/cloudStream-plugin.apk",
+  "platform": "android"
 }
