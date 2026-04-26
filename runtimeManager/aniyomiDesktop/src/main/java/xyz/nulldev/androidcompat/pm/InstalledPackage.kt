@@ -3,7 +3,6 @@ package xyz.nulldev.androidcompat.pm
 import android.content.pm.PackageInfo
 import android.content.pm.Signature
 import android.os.Bundle
-import com.android.apksig.ApkVerifier
 import com.googlecode.d2j.dex.Dex2jar
 import net.dongliu.apk.parser.ApkFile
 import net.dongliu.apk.parser.ApkParsers
@@ -23,7 +22,7 @@ data class InstalledPackage(
 
     val info: PackageInfo
         get() =
-            ApkParsers.getMetaInfo(apk).toPackageInfo(apk).also {
+            ApkParsers.getMetaInfo(apk).toPackageInfo(apk).also { it ->
                 val parsed = ApkFile(apk)
                 val dbFactory = DocumentBuilderFactory.newInstance()
                 val dBuilder = dbFactory.newDocumentBuilder()
@@ -45,7 +44,7 @@ data class InstalledPackage(
                                 it as Element
                             }?.filter {
                                 it.tagName == "meta-data"
-                            }?.map {
+                            }?.forEach {
                                 putString(
                                     it.attributes.getNamedItem("android:name").nodeValue,
                                     it.attributes.getNamedItem("android:value").nodeValue,
@@ -62,15 +61,6 @@ data class InstalledPackage(
                         .toTypedArray()
             }
 
-    fun verify(): Boolean {
-        val res =
-            ApkVerifier
-                .Builder(apk)
-                .build()
-                .verify()
-
-        return res.isVerified
-    }
 
     fun writeIcon() {
         try {
@@ -79,15 +69,14 @@ data class InstalledPackage(
             val read =
                 icons
                     .filter { it.isFile }
-                    .map {
+                    .map { it ->
                         it.data.inputStream().use {
                             ImageIO.read(it)
                         }
-                    }.sortedByDescending { it.width * it.height }
-                    .firstOrNull() ?: return
+                    }.maxByOrNull { it.width * it.height } ?: return
 
             ImageIO.write(read, "png", icon)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             icon.delete()
         }
     }
@@ -95,7 +84,7 @@ data class InstalledPackage(
     fun writeJar() {
         try {
             Dex2jar.from(apk).to(jar.toPath())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             jar.delete()
         }
     }

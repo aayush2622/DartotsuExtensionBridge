@@ -3,21 +3,13 @@ kotlin = "2.1.0"
 xmlserialization = "0.91.3"
 koin = "4.1.1"
 settings = "1.3.0"
-javalin = "6.7.0"
-jte = "3.2.3"
 dex2jar = "2.4.34"
 polyglot = "24.2.2"
 jackson = "2.18.3"
-slf4j = "2.0.17"
-logback = "1.5.32"
-kotlinlogging = "8.0.01"
 icu4j = "78.2"
 android-annotations = "1.9.1"
 asm = "9.9.1"
 apk-parser = "2.6.10"
-apksig = "9.0.1"
-appdirs = "2.0.0"
-kcef = "2024.04.20.4"
 xmlpull = "1.1.3.4a"
 
 [libraries]
@@ -38,8 +30,6 @@ koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 # Jackson
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
 
-# Webview
-kcef = { module = "dev.datlag:kcef", version.ref = "kcef" }
 
 # ICU
 icu4j = { module = "com.ibm.icu:icu4j", version.ref = "icu4j" }
@@ -60,14 +50,12 @@ polyglot-core = { module = "org.graalvm.polyglot:polyglot", version.ref = "polyg
 
 # APK tools
 apk-parser = { module = "net.dongliu:apk-parser", version.ref = "apk-parser" }
-apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
 injekt = "com.github.null2264:injekt-koin:ee267b2e27"
 # Settings
 settings-core = { module = "com.russhwolf:multiplatform-settings-jvm", version.ref = "settings" }
 settings-serialization = { module = "com.russhwolf:multiplatform-settings-serialization-jvm", version.ref = "settings" }
 
 [bundles]
-
 common = [
     "kotlin-stdlib-jdk8",
     "kotlin-reflect",
@@ -77,7 +65,6 @@ common = [
     "dex2jar-tools",
     "apk-parser",
     "jackson-annotations",
-    "kcef",
     "icu4j"
 ]
 
@@ -85,8 +72,6 @@ xml = [
     "serialization-xml-core",
     "serialization-xml"
 ]
-
-
 
 polyglot = [
     "polyglot-core"

@@ -54,7 +54,7 @@ class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
 
     @Suppress("DEPRECATION")
     override fun initializeDesktop(basePath: String){
-        val root = File(basePath, "aniyomi").apply { mkdirs() }
+        val root = File(basePath).apply { mkdirs() }
         DartotsuEnv.rootDir = root.absolutePath
 
         if (GlobalContext.getOrNull() != null) {
@@ -346,7 +346,7 @@ class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
     }
 
     val preferenceScreenMap = mutableMapOf<String, PreferenceScreen>()
-    private val context: CustomContext by injectLazy()
+    private val context: Application by injectLazy()
 
     @SuppressLint("RestrictedApi")
     override suspend fun getPreference(

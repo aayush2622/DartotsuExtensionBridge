@@ -48,7 +48,8 @@ dev_dependencies:
   build_runner: ^2.11.1
 
 flutter:
-
+  assets:
+    - assets/jni/
   plugin:
     platforms:
       android:

@@ -3,6 +3,10 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
 }
+extra.apply {
+    set("pluginAuthor", "aayush262")
+    set("pluginDescription", "A plugin that allows you to run Aniyomi extensions on android")
+}
 
 apply(from = "$rootDir/plugin-build.gradle.kts")
 
@@ -66,13 +70,12 @@ dependencies {
     implementation(aniyomiCommon.gson)
     implementation(aniyomiCommon.coroutines.core)
     implementation(aniyomiCommon.rxjava)
-    implementation(aniyomiAndroid.rxandroid)
 
+    implementation(aniyomiAndroid.rxandroid)
     implementation(aniyomiAndroid.injekt.core)
     implementation(aniyomiAndroid.androidx.core.ktx)
     implementation(aniyomiAndroid.compose.runtime.android)
     implementation(aniyomiAndroid.androidx.preference.ktx)
-
 
     implementation(aniyomiAndroid.quickjs.android)
 

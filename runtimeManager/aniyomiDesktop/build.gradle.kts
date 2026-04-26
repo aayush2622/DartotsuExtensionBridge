@@ -1,5 +1,10 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+extra.apply {
+    set("pluginAuthor", "aayush262")
+    set("pluginDescription", "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.")
+    set("pluginRepo", "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds")
+}
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -45,7 +50,6 @@ dependencies {
     implementation(aniyomiDesktop.bundles.xml)
     implementation(aniyomiDesktop.bundles.polyglot)
     implementation(aniyomiDesktop.injekt)
-    compileOnly(aniyomiDesktop.apksig)
     compileOnly(aniyomiDesktop.android.annotations)
     compileOnly(aniyomiDesktop.xmlpull)
 
@@ -67,11 +71,9 @@ tasks.shadowJar {
 }
 
 apply(from = "$rootDir/plugin-build.gradle.kts")
-
-tasks.build {
-    dependsOn(tasks.shadowJar)
-}
-
 tasks.jar {
     enabled = false
+}
+tasks.build {
+    dependsOn(tasks.shadowJar)
 }

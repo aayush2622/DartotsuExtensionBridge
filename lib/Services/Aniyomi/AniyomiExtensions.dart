@@ -11,8 +11,8 @@ import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../../Extensions/DownloadablePlugin.dart';
 import '../../Extensions/ExtensionSettings.dart';
-import '../../Extensions/PluginManager.dart';
 import '../../Logger.dart';
 import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
@@ -20,41 +20,61 @@ import '../../dartotsu_extension_bridge.dart';
 import 'AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
 
+class AniyomiPlugin extends DownloadablePlugin {
+  @override
+  String get name => "aniyomi";
+
+  @override
+  String get remoteUrl =>
+      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/androidExtensionManagers/builds/aniyomi/aniyomi-plugin.json";
+
+  @override
+  String get fileName => "${name}_plugin.apk";
+}
+
 class AniyomiExtensions extends Extension {
   final _client = MClient.init();
   @override
   String get id => 'aniyomi';
-
   @override
   String get name => 'Aniyomi';
-
   @override
   bool get supportsNovel => false;
   @override
   (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
       (ASource, (source) => AniyomiSourceMethods(source as ASource));
 
+  @override
+  DownloadablePlugin get plugin => AniyomiPlugin();
   static const platform = MethodChannel('aniyomiExtensionBridge');
 
   @override
-  Future<void> onInitialize() async {
-    final (filePath, hasUpdate) = await PluginManager("aniyomi").ensurePlugin();
+  Future<bool> onInitialize() async {
+    plugin.installed.value = await plugin.isInstalled();
+    if (!plugin.installed.value) return true;
+
+    unawaited(plugin.autoUpdate());
+
+    final filePath = await plugin.getPath();
+    final hasUpdate = plugin.hasUpdate;
 
     await platform.invokeMethod('loadPlugin', {
       "path": filePath,
       "hasUpdate": hasUpdate,
     });
-    return super.onInitialize();
+    return true;
   }
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
+    await super.fetchInstalledAnimeExtensions();
     getInstalledRx(ItemType.anime).value =
         await _loadInstalled('getInstalledAnimeExtensions', ItemType.anime);
   }
 
   @override
   Future<void> fetchInstalledMangaExtensions() async {
+    await super.fetchInstalledMangaExtensions();
     getInstalledRx(ItemType.manga).value =
         await _loadInstalled('getInstalledMangaExtensions', ItemType.manga);
   }
@@ -65,7 +85,7 @@ class AniyomiExtensions extends Extension {
   ) async {
     try {
       var path = await DartotsuExtensionBridge.context.getDirectory(
-        subPath: 'aniyomi-extensions/${type.toString()}',
+        subPath: 'bridge/aniyomi-extensions/${type.toString()}',
         useSystemPath: false,
         useCustomPath: true,
       );
@@ -101,7 +121,7 @@ class AniyomiExtensions extends Extension {
 
       if (isPrivate) {
         final extDir = await DartotsuExtensionBridge.context.getDirectory(
-          subPath: 'aniyomi-extensions/${aSource.itemType.toString()}',
+          subPath: 'bridge/aniyomi-extensions/${aSource.itemType.toString()}',
           useSystemPath: false,
           useCustomPath: true,
         );
@@ -171,7 +191,7 @@ class AniyomiExtensions extends Extension {
     try {
       if (s.isShared == false) {
         final baseDir = await DartotsuExtensionBridge.context.getDirectory(
-          subPath: 'aniyomi-extensions/${type.toString()}',
+          subPath: 'bridge/aniyomi-extensions/${type.toString()}',
           useSystemPath: false,
           useCustomPath: true,
         );
@@ -516,21 +536,27 @@ class AniyomiExtensions extends Extension {
 
   @override
   Future<void> fetchAnimeExtensions() async {
+    await super.fetchAnimeExtensions();
     final res = await _fetchExtensions(ItemType.anime);
     getAvailableRx(ItemType.anime).value = res;
   }
 
   @override
   Future<void> fetchMangaExtensions() async {
+    await super.fetchMangaExtensions();
     final res = await _fetchExtensions(ItemType.manga);
     getAvailableRx(ItemType.manga).value = res;
   }
 
   @override
-  Future<void> fetchNovelExtensions() async {}
+  Future<void> fetchNovelExtensions() async {
+    await super.fetchNovelExtensions();
+  }
 
   @override
-  Future<void> fetchInstalledNovelExtensions() async {}
+  Future<void> fetchInstalledNovelExtensions() async {
+    await super.fetchInstalledNovelExtensions();
+  }
 
   @override
   Future<void> removeRepo(String repoUrl, ItemType type) async {

@@ -3,6 +3,10 @@ plugins {
     kotlin("android")
     kotlin("plugin.serialization")
 }
+extra.apply {
+    set("pluginAuthor", "aayush262/Ryan")
+    set("pluginDescription", "A plugin that allows you to run cloudstream extensions on android")
+}
 
 apply(from = "$rootDir/plugin-build.gradle.kts")
 
