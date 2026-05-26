@@ -117,5 +117,5 @@ suspend fun <R> runAllAsync(
                 null
             }
         }
-    }.map { it.await() }
+    }.awaitAll()
 }

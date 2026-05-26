@@ -46,7 +46,7 @@ class AniyomiExtensions extends Extension {
 
   @override
   DownloadablePlugin plugin = AniyomiPlugin();
-  static const platform = MethodChannel('aniyomiExtensionBridge');
+  final platform = const MethodChannel('aniyomiExtensionBridge');
 
   @override
   Future<bool> onInitialize() async {
@@ -105,42 +105,68 @@ class AniyomiExtensions extends Extension {
   Future<void> installSource(Source source) async {
     final aSource = source as ASource;
     final isPrivate = getVal('aniyomiInstallPrivate') ?? false;
+    final type = source.itemType!;
     if (aSource.apkUrl == null) {
-      return Future.error('Source APK URL is required for installation.');
+      throw Exception('Source APK URL is required for installation.');
     }
 
     try {
       final packageName = aSource.pkgName ??
           aSource.apkUrl!.split('/').last.replaceAll('.apk', '');
-      final apkFileName = '$packageName.apk';
-      final res = await _client.get(Uri.parse(aSource.apkUrl!));
 
-      if (res.statusCode != 200) {
-        throw Exception("Extension download failed");
+      final apkFileName = '$packageName.apk';
+
+      final request = http.Request(
+        'GET',
+        Uri.parse(aSource.apkUrl!),
+      );
+
+      final response = await _client.send(request);
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Extension download failed (${response.statusCode})',
+        );
       }
 
       if (isPrivate) {
         final extDir = await DartotsuExtensionBridge.context.getDirectory(
-          subPath: 'bridge/aniyomi-extensions/${aSource.itemType.toString()}',
+          subPath: 'bridge/aniyomi-extensions/${aSource.itemType}',
           useSystemPath: false,
           useCustomPath: true,
         );
 
-        if (!await extDir!.exists()) {
-          await extDir.create(recursive: true);
+        if (extDir == null) {
+          throw Exception('Failed to get extension directory');
         }
 
-        final file = File(path.join(extDir.path, apkFileName));
+        await extDir.create(recursive: true);
 
-        await file.writeAsBytes(res.bodyBytes);
+        final file = File(
+          path.join(extDir.path, apkFileName),
+        );
 
-        Logger.log('Installed PRIVATE extension: ${aSource.pkgName}');
+        final sink = file.openWrite();
+
+        await response.stream.pipe(sink);
+
+        await sink.close();
+
+        Logger.log(
+          'Installed PRIVATE extension: ${aSource.pkgName}',
+        );
       } else {
         final tempDir = await getTemporaryDirectory();
 
-        final apkFile = File(path.join(tempDir.path, apkFileName));
+        final apkFile = File(
+          path.join(tempDir.path, apkFileName),
+        );
 
-        await apkFile.writeAsBytes(res.bodyBytes);
+        final sink = apkFile.openWrite();
+
+        await response.stream.pipe(sink);
+
+        await sink.close();
 
         final result = await InstallPlugin.installApk(
           apkFile.path,
@@ -153,28 +179,39 @@ class AniyomiExtensions extends Extension {
 
         if (result['isSuccess'] != true) {
           throw Exception(
-            'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
+            'Installation failed: '
+            '${result['errorMessage'] ?? 'Unknown error'}',
           );
         }
 
-        Logger.log('Installed SHARED extension: $packageName');
+        Logger.log(
+          'Installed SHARED extension: $packageName',
+        );
       }
 
       final avail = getAvailableRx(aSource.itemType!);
+
       avail.value = avail.value.where((e) => e.id != aSource.id).toList();
 
       switch (aSource.itemType) {
         case ItemType.anime:
           await fetchInstalledAnimeExtensions();
           break;
+
         case ItemType.manga:
           await fetchInstalledMangaExtensions();
           break;
+
         case ItemType.novel:
           break;
+
         default:
-          throw Exception('Unsupported item type: ${source.itemType}');
+          throw Exception(
+            'Unsupported item type: ${source.itemType}',
+          );
       }
+      final raw = getRawAvailableRx(type).value;
+      _detectUpdates(raw.map((e) => e as ASource).toList(), type);
     } catch (e) {
       Logger.log('Error installing source: $e');
       rethrow;
@@ -204,6 +241,13 @@ class AniyomiExtensions extends Extension {
         } else {
           Logger.log('Private extension file not found: ${s.pkgName}');
         }
+        final raw = getRawAvailableRx(type).value;
+        final installed = getInstalledRx(type).value;
+        final installedIds = installed.map((e) => e.id).toSet();
+
+        getAvailableRx(type).value = List.unmodifiable(
+          raw.where((e) => !installedIds.contains(e.id)),
+        );
 
         switch (type) {
           case ItemType.anime:
@@ -271,6 +315,7 @@ class AniyomiExtensions extends Extension {
         case ItemType.novel:
           break;
       }
+      _detectUpdates(raw.map((e) => e as ASource).toList(), type);
     } catch (e) {
       Logger.log('Error uninstalling source: $e');
       rethrow;
@@ -546,16 +591,6 @@ class AniyomiExtensions extends Extension {
     await super.fetchMangaExtensions();
     final res = await _fetchExtensions(ItemType.manga);
     getAvailableRx(ItemType.manga).value = res;
-  }
-
-  @override
-  Future<void> fetchNovelExtensions() async {
-    await super.fetchNovelExtensions();
-  }
-
-  @override
-  Future<void> fetchInstalledNovelExtensions() async {
-    await super.fetchInstalledNovelExtensions();
   }
 
   @override

@@ -10,12 +10,12 @@ import '../../Models/Pages.dart';
 import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
 import '../Aniyomi/AniyomiSourceMethods.dart';
-import '../Aniyomi/Models/Source.dart';
 import '../JavaEngine.dart';
+import 'Models/Source.dart';
 
 class AniyomiSourceMethodsDesktop extends SourceMethods {
   @override
-  final ASource source;
+  final AdSource source;
   final JavaEngine jni;
   AniyomiSourceMethodsDesktop(this.source, this.jni);
 
