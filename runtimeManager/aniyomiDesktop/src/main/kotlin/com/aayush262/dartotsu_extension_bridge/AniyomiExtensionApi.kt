@@ -100,14 +100,13 @@ class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
     private fun decode(json: String): Map<String, Any?> =
         gson.fromJson(json, Map::class.java) as Map<String, Any?>
 
-
     override suspend fun getInstalledAnimeExtensions(path: String?): String {
         path ?: return "[]"
 
         val result = withContext(Dispatchers.IO) {
             Injekt.get<AniyomiExtensionManager>()
                 .fetchInstalledAnimeExtensions(path)
-                .flatMap { ext ->
+                .flatMap { (ext, apkPath) ->
                     ext.sources.map { source ->
                         mapOf(
                             "id" to source.id,
@@ -118,6 +117,7 @@ class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
                             "iconUrl" to ext.iconUrl,
                             "version" to ext.versionName,
                             "pkgName" to ext.pkgName,
+                            "apkPath" to apkPath,
                             "itemType" to 1
                         )
                     }
@@ -146,7 +146,7 @@ class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
         val result = withContext(Dispatchers.IO) {
             Injekt.get<AniyomiExtensionManager>()
                 .fetchInstalledMangaExtensions(path)
-                .flatMap { ext ->
+                .flatMap { (ext, apkPath) ->
                     ext.sources.map { source ->
                         mapOf(
                             "id" to source.id,
@@ -157,6 +157,7 @@ class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
                             "iconUrl" to ext.iconUrl,
                             "version" to ext.versionName,
                             "pkgName" to ext.pkgName,
+                            "apkPath" to apkPath,
                             "itemType" to 0
                         )
                     }
@@ -178,7 +179,6 @@ class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
             },
         )
     }
-
 
     override suspend fun getPopular(sourceId: String, isAnime: Boolean, page: Int): String {
         val res = withContext(Dispatchers.IO) {

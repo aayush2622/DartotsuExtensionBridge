@@ -34,9 +34,11 @@ class MangaSourceMethods(sourceID: String) : AniyomiSourceMethods {
 
         val src = manager.installedMangaExtensions
             .asSequence()
-            .flatMap { it.sources.asSequence() }
+            .flatMap { (ext, _) -> ext.sources.asSequence() }
             .firstOrNull { it.id.toString() == sourceID }
-            ?: throw IllegalArgumentException("Manga source with ID '$sourceID' not found.")
+            ?: throw IllegalArgumentException(
+                "Manga source with ID '$sourceID' not found."
+            )
 
         source = src as? HttpSource
             ?: src as? CatalogueSource

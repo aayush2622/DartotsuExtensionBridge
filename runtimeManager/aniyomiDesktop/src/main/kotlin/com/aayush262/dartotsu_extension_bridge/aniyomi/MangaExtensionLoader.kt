@@ -20,38 +20,38 @@ object MangaExtensionLoader {
     const val LIB_VERSION_MIN = 1.3
 
     const val LIB_VERSION_MAX = 1.5
-    fun loadExtensions(path: String): List<MangaExtension.Installed> {
+    fun loadExtensions(path: String): Map<MangaExtension.Installed, String> {
         val dir = File(path)
 
         if (!dir.exists() || !dir.isDirectory) {
-            return emptyList()
+            return emptyMap()
         }
 
         val apks = dir.listFiles()
             ?.filter { it.isFile && it.extension == "apk" }
             ?: emptyList()
 
-        val byPackage = mutableMapOf<String, MangaExtension.Installed>()
+        val byPackage = mutableMapOf<String, Pair<MangaExtension.Installed, String>>()
 
         apks.forEach { apk ->
             try {
                 val ext = loadExtensionInternal(apk)
 
                 val existing = byPackage[ext.pkgName]
-                if (existing == null || ext.versionCode > existing.versionCode) {
-                    byPackage[ext.pkgName] = ext
+
+                if (existing == null || ext.versionCode > existing.first.versionCode) {
+                    byPackage[ext.pkgName] = ext to apk.absolutePath
                 }
 
-            } catch (e: Exception) {
-                println("Failed to load ${apk.name}: ${e.message}")
+            } catch (e: Throwable) {
+                println("Failed to load ${apk.name}: ${e.message}\n${e.stackTraceToString()}")
             }
         }
 
         println("Loaded ${byPackage.size} extensions")
 
-        return byPackage.values.toList()
+        return byPackage.values.associate { it.first to it.second }
     }
-
     private fun loadExtensionInternal(apkFile: File): MangaExtension.Installed {
         val apkPath = apkFile.absolutePath
         val apkInfo = PackageTools.getPackageInfo(apkPath)

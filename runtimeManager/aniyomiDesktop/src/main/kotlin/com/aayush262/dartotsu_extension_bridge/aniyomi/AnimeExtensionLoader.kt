@@ -21,24 +21,25 @@ object AnimeExtensionLoader {
     const val LIB_VERSION_MIN = 12.0
     const val LIB_VERSION_MAX = 16.0
 
-    fun loadExtensions(path: String): List<AnimeExtension.Installed> {
+    fun loadExtensions(path: String): Map<AnimeExtension.Installed, String> {
         val dir = File(path)
 
-        if (!dir.exists() || !dir.isDirectory) return emptyList()
+        if (!dir.exists() || !dir.isDirectory) return emptyMap()
 
         val apks = dir.listFiles()
             ?.filter { it.isFile && it.extension == "apk" }
             ?: emptyList()
 
-        val byPackage = mutableMapOf<String, AnimeExtension.Installed>()
+        val byPackage = mutableMapOf<String, Pair<AnimeExtension.Installed, String>>()
 
         apks.forEach { apk ->
             try {
                 val ext = loadExtensionInternal(apk)
 
                 val existing = byPackage[ext.pkgName]
-                if (existing == null || ext.versionCode > existing.versionCode) {
-                    byPackage[ext.pkgName] = ext
+
+                if (existing == null || ext.versionCode > existing.first.versionCode) {
+                    byPackage[ext.pkgName] = ext to apk.absolutePath
                 }
 
             } catch (e: Throwable) {
@@ -48,7 +49,7 @@ object AnimeExtensionLoader {
 
         println("Loaded ${byPackage.size} anime extensions")
 
-        return byPackage.values.toList()
+        return byPackage.values.associate { it.first to it.second }
     }
 
     private fun loadExtensionInternal(apkFile: File): AnimeExtension.Installed {
