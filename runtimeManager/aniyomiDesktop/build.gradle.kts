@@ -42,7 +42,7 @@ dependencies {
     implementation(aniyomiCommon.serialization.json.okio)
     implementation(aniyomiCommon.serialization.protobuf)
     implementation(aniyomiCommon.gson)
-
+    implementation(aniyomiCommon.bencode)
 
     implementation(aniyomiDesktop.bundles.common)
     implementation(aniyomiDesktop.bundles.settings)
@@ -59,7 +59,7 @@ dependencies {
 }
 
 tasks.shadowJar {
-    archiveClassifier.set("all")
+    archiveClassifier.set("plugin")
     exclude(
         "META-INF/**",
         "**/*.pom",

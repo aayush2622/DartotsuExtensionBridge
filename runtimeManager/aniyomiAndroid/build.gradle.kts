@@ -70,6 +70,7 @@ dependencies {
     implementation(aniyomiCommon.gson)
     implementation(aniyomiCommon.coroutines.core)
     implementation(aniyomiCommon.rxjava)
+    implementation(aniyomiCommon.bencode)
 
     implementation(aniyomiAndroid.rxandroid)
     implementation(aniyomiAndroid.injekt.core)
