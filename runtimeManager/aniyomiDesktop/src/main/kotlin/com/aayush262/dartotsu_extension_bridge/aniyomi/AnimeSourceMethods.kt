@@ -60,7 +60,8 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
     override suspend fun getDetails(media: SAnime): SAnime = source.getAnimeDetails(media)
     override suspend fun getEpisodeList(media: SAnime): List<SEpisode> {
         runCatching {
-            return source.getEpisodeList(media)
+            return (source as? AnimeHttpSource? ?: source).getEpisodeList(media)
+
         }
 
         val seasons = runCatching { source.getSeasonList(media) }.getOrElse {

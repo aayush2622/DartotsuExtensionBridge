@@ -8,7 +8,7 @@ import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import java.io.File
 import kotlin.collections.map
 import kotlin.io.extension
-
+import com.aayush262.dartotsu_extension_bridge.Logger
 object AnimeExtensionLoader {
 
     private const val EXTENSION_FEATURE = "tachiyomi.animeextension"
@@ -43,11 +43,11 @@ object AnimeExtensionLoader {
                 }
 
             } catch (e: Throwable) {
-                println("Failed to load ${apk.name}: ${e.message}\n${e.stackTraceToString()}")
+                Logger.log("Failed to load ${apk.name}: ${e.message}\n${e.stackTraceToString()}")
             }
         }
 
-        println("Loaded ${byPackage.size} anime extensions")
+        Logger.log("Loaded ${byPackage.size} anime extensions")
 
         return byPackage.values.associate { it.first to it.second }
     }
@@ -111,7 +111,7 @@ object AnimeExtensionLoader {
                 PackageTools.dex2jar(apkPath, jarFile.absolutePath)
                 PackageTools.extractAssetsFromApk(apkPath, jarFile.absolutePath)
             } catch (e: Exception) {
-                println("Failed to build jar for ${apkFile.name}: ${e.message}")
+                Logger.log("Failed to build jar for ${apkFile.name}: ${e.message}")
                 throw e
             }
         }

@@ -51,6 +51,12 @@ class ExtensionManager extends GetxController {
     setVal(key, id);
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    managers.forEach((m) => m.dispose());
+  }
+
   T? find<T extends Extension>() {
     for (final manager in managers) {
       if (manager is T) return manager;

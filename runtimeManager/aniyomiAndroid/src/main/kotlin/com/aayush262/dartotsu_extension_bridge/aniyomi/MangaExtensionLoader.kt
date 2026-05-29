@@ -11,8 +11,6 @@ import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.graphics.createBitmap
-import com.aayush262.dartotsu_extension_bridge.LogLevel
-import com.aayush262.dartotsu_extension_bridge.Logger
 import dalvik.system.PathClassLoader
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
@@ -23,9 +21,6 @@ import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import kotlin.collections.map
-import kotlin.io.extension
-import kotlin.sequences.map
 
 internal object MangaExtensionLoader {
     private const val METADATA_HAS_README = "tachiyomi.extension.hasReadme"

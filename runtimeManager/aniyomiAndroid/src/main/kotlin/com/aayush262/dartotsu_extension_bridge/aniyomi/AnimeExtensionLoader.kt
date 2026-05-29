@@ -11,8 +11,6 @@ import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.graphics.createBitmap
-import com.aayush262.dartotsu_extension_bridge.LogLevel
-import com.aayush262.dartotsu_extension_bridge.Logger
 import dalvik.system.PathClassLoader
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource

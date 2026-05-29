@@ -10,6 +10,7 @@ import kotlin.collections.List
 import kotlin.collections.isNotEmpty
 import kotlin.text.isNullOrEmpty
 import android.webkit.CookieManager
+import com.aayush262.dartotsu_extension_bridge.Logger
 
 /// [WebviewCookieJar] is technique used to sync cookies between okhttp and webview now
 /// but now am too lazy to remove it
@@ -57,7 +58,7 @@ class WebviewCookieJar : CookieJar {
 
         return cookieString.split(";").mapNotNull { parseCookie(it.trim(), url) }.also { it ->
                 if (it.isNotEmpty()) {
-                    println("Loaded cookies for ${url.host}: ${it.joinToString { "${it.name}=${it.value}" }}")
+                    Logger.log("Loaded cookies for ${url.host}: ${it.joinToString { "${it.name}=${it.value}" }}")
                 }
             }
     }

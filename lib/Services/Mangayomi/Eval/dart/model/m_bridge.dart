@@ -613,7 +613,7 @@ class MBridge {
       },
     );
 
-    headlessWebView.run();
+    await headlessWebView.run();
 
     await Future.doWhile(() async {
       timeOut = time == t;
@@ -625,7 +625,7 @@ class MBridge {
       return true;
     });
     try {
-      headlessWebView.dispose();
+      await headlessWebView.dispose();
     } catch (_) {}
 
     return response;

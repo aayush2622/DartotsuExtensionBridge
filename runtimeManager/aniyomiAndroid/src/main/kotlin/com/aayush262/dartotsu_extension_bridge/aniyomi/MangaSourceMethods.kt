@@ -1,6 +1,5 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
-import com.aayush262.dartotsu_extension_bridge.Logger
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
 import eu.kanade.tachiyomi.animesource.model.AnimesPage

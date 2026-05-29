@@ -26,7 +26,7 @@ class AniyomiPlugin extends DownloadablePlugin {
 
   @override
   String get remoteUrl =>
-      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/androidExtensionManagers/builds/aniyomi/aniyomi-plugin.json";
+      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiAndroid/aniyomiAndroid-plugin.json";
 
   @override
   String get fileName => "${name}_plugin.apk";
