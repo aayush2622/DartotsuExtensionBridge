@@ -115,6 +115,7 @@ class DartotsuExtensionBridge {
   static void dispose() {
     if (_initialized) {
       _initialized = false;
+      Get.find<ExtensionManager>().dispose();
       JsExtensionEngine.instance.dispose();
     }
   }

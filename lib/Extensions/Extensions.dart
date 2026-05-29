@@ -34,7 +34,6 @@ abstract class Extension {
     try {
       if (plugin == null) return;
       plugin!.installed.value = await plugin!.isInstalled();
-      print(await plugin!.isInstalled());
     } catch (e, s) {
       Logger.log('Error checking if extension $id is installed: $e\n$s');
       plugin?.installed.value = true;
@@ -93,6 +92,8 @@ abstract class Extension {
 
     return _initCompleter!.future;
   }
+
+  void dispose() async {}
 
   Future<bool> ensureInitialized() async {
     if (_initState == InitState.success) return true;

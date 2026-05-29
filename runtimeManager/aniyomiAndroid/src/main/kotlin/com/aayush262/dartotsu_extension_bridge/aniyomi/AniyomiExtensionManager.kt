@@ -1,8 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import android.content.Context
-import com.aayush262.dartotsu_extension_bridge.LogLevel
-import com.aayush262.dartotsu_extension_bridge.Logger
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 

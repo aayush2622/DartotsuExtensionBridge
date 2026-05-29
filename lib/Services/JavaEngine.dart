@@ -13,8 +13,6 @@ class JavaEngine {
   SendPort? _sendPort;
   Isolate? _isolate;
   bool _initialized = false;
-  static ByteData? _jniJarCache;
-  static ByteData? _soCache;
 
   Future<void> init({
     required String engineJarPath,
@@ -30,15 +28,15 @@ class JavaEngine {
     final jniJarPath = "${dir!.path}/jni.jar";
     final soPath = "${dir.path}/libdartjni.so";
 
-    _jniJarCache ??= await rootBundle.load(
+    final ByteData jniJarCache = await rootBundle.load(
       "packages/dartotsu_extension_bridge/assets/jni/jni.jar",
     );
-    _soCache ??= await rootBundle.load(
+    final ByteData soCache = await rootBundle.load(
       "packages/dartotsu_extension_bridge/assets/jni/libdartjni.so",
     );
 
-    await _ensureFile(jniJarPath, _jniJarCache!);
-    await _ensureFile(soPath, _soCache!);
+    await _ensureFile(jniJarPath, jniJarCache);
+    await _ensureFile(soPath, soCache);
 
     _isolate = await Isolate.spawn(
       _entry,
@@ -70,6 +68,11 @@ class JavaEngine {
     _isolate = null;
     _sendPort = null;
     _initialized = false;
+    try {
+      exit(0);
+    } catch (e) {
+      Logger.log("Error destroying JVM: $e");
+    }
   }
 
   Future<T> call<T>(String method,

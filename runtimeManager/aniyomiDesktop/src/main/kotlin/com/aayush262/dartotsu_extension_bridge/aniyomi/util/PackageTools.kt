@@ -150,7 +150,7 @@ object PackageTools {
             val icons = apkParser.allIcons
 
             if (icons.isNullOrEmpty()) {
-                println("No icons found in APK")
+                Logger.log("No icons found in APK")
                 return null
             }
 
@@ -174,14 +174,14 @@ object PackageTools {
 
             if (bestIcon != null) {
                 iconFile.outputStream().use { it.write(bestIcon.data) }
-                println("Icon extracted → ${bestIcon.path}")
+                Logger.log("Icon extracted → ${bestIcon.path}")
                 return iconFile
             }
 
             return null
 
         } catch (e: Exception) {
-            println("Icon extraction failed: ${e.message}")
+            Logger.log("Icon extraction failed: ${e.message}")
             return null
         }
     }

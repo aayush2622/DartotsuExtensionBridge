@@ -42,23 +42,19 @@ object DartotsuEnv {
     lateinit var rootDir: String
 }
 
-class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
-
-    override fun initialize(customMethods: CustomMethods) {
-        customAniyomiMethods = customMethods
-    }
-
+class AniyomiExtensionApi : ExtensionApi{
+/*
     override fun initClient(data: Map<*, *>) {
         enableNetworking(data)
-    }
+    }*/
 
     @Suppress("DEPRECATION")
     override fun initializeDesktop(basePath: String){
         val root = File(basePath).apply { mkdirs() }
         DartotsuEnv.rootDir = root.absolutePath
-
+        customAniyomiMethods = CustomAniyomiMethods()
         if (GlobalContext.getOrNull() != null) {
-            println("Koin already started")
+            Logger.log("Koin already started")
             return
         }
         val context = object : Application() {}

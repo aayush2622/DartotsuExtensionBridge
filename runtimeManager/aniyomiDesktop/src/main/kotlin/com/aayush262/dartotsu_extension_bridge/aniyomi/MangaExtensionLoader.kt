@@ -1,5 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
+import com.aayush262.dartotsu_extension_bridge.Logger
 import com.aayush262.dartotsu_extension_bridge.aniyomi.util.PackageTools
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.source.CatalogueSource
@@ -44,11 +45,11 @@ object MangaExtensionLoader {
                 }
 
             } catch (e: Throwable) {
-                println("Failed to load ${apk.name}: ${e.message}\n${e.stackTraceToString()}")
+                Logger.log("Failed to load ${apk.name}: ${e.message}\n${e.stackTraceToString()}")
             }
         }
 
-        println("Loaded ${byPackage.size} extensions")
+        Logger.log("Loaded ${byPackage.size} extensions")
 
         return byPackage.values.associate { it.first to it.second }
     }
@@ -111,7 +112,7 @@ object MangaExtensionLoader {
                 PackageTools.dex2jar(apkPath, jarFile.absolutePath)
                 PackageTools.extractAssetsFromApk(apkPath, jarFile.absolutePath)
             } catch (e: Exception) {
-                println("Failed to build jar for ${apkFile.name}: ${e.message}")
+                Logger.log("Failed to build jar for ${apkFile.name}: ${e.message}")
                 throw e
             }
         }

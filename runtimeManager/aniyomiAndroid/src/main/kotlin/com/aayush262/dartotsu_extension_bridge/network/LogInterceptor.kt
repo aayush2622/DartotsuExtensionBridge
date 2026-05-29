@@ -1,7 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.network
 
-import com.aayush262.dartotsu_extension_bridge.LogLevel
-import com.aayush262.dartotsu_extension_bridge.Logger
+import com.aayush262.dartotsu_extension_bridge.aniyomi.LogLevel
+import com.aayush262.dartotsu_extension_bridge.aniyomi.Logger
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.util.concurrent.TimeUnit

@@ -1,7 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.network
 
-import com.aayush262.dartotsu_extension_bridge.LogLevel
-import com.aayush262.dartotsu_extension_bridge.Logger
+import com.aayush262.dartotsu_extension_bridge.aniyomi.LogLevel
+import com.aayush262.dartotsu_extension_bridge.aniyomi.Logger
 import eu.kanade.tachiyomi.network.NetworkHelper
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient

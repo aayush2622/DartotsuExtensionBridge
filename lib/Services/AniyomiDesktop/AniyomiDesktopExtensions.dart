@@ -13,6 +13,7 @@ import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
 import '../JavaEngine.dart';
+import '../RpcServer.dart';
 import 'AniyomiDesktopSourceMethods.dart';
 import 'AniyomiService.dart';
 import 'Models/Source.dart';
@@ -68,7 +69,24 @@ class AniyomiDesktopExtensions extends Extension {
         .getDirectory(subPath: 'bridge/aniyomi');
 
     await jni.call<void>("initialize", {"path": file!.path});
+
+    await RpcServer(
+      (method, args) async {
+        switch (method) {
+          case "logger":
+            Logger.log(args["message"]);
+            return true;
+        }
+        throw Exception("Unknown method: $method");
+      },
+    ).start();
     return true;
+  }
+
+  @override
+  void dispose() async {
+    super.dispose();
+    jni.dispose();
   }
 
   @override
