@@ -89,13 +89,19 @@ class AniyomiExtensions extends Extension {
         useSystemPath: false,
         useCustomPath: true,
       );
-      final List<dynamic> result =
-          await platform.invokeMethod(method, path!.path);
-      final parsed = result
+      final jsonString =
+          await platform.invokeMethod<String>(method, path?.path);
+
+      if (jsonString == null || jsonString.isEmpty) {
+        return [];
+      }
+
+      final List<dynamic> result = jsonDecode(jsonString);
+
+      return result
           .map((e) => ASource.fromJson(Map<String, dynamic>.from(e)))
           .where((s) => s.itemType == type)
           .toList(growable: false);
-      return parsed;
     } catch (e) {
       return [];
     }

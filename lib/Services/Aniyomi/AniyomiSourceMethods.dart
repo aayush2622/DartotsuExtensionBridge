@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -22,23 +24,26 @@ class AniyomiSourceMethods extends SourceMethods {
 
   @override
   Future<DMedia> getDetail(DMedia media) async {
-    final result = await platform.invokeMethod('getDetail', {
-      'sourceId': source.id,
-      'isAnime': isAnime,
-      'media': {
-        'title': media.title,
-        'url': media.url,
-        'thumbnail_url': media.cover,
-        'description': media.description,
-        'author': media.author,
-        'artist': media.artist,
-        'genre': media.genre,
+    final result = await platform.invokeMethod(
+      'getDetail',
+      {
+        'sourceId': source.id,
+        'isAnime': isAnime,
+        'media': jsonEncode({
+          'title': media.title,
+          'url': media.url,
+          'thumbnail_url': media.cover,
+          'description': media.description,
+          'author': media.author,
+          'artist': media.artist,
+          'genre': media.genre,
+        }),
       },
-    });
+    );
 
     return await compute(
       DMedia.fromJson,
-      Map<String, dynamic>.from(result as Map),
+      Map<String, dynamic>.from(jsonDecode(result)),
     );
   }
 
@@ -52,7 +57,7 @@ class AniyomiSourceMethods extends SourceMethods {
 
     return await compute(
       Pages.fromJson,
-      Map<String, dynamic>.from(result as Map),
+      Map<String, dynamic>.from(jsonDecode(result)),
     );
   }
 
@@ -66,44 +71,60 @@ class AniyomiSourceMethods extends SourceMethods {
 
     return await compute(
       Pages.fromJson,
-      Map<String, dynamic>.from(result as Map),
+      Map<String, dynamic>.from(jsonDecode(result)),
     );
   }
 
   @override
   Future<List<Video>> getVideoList(DEpisode episode) async {
-    final result = await platform.invokeMethod('getVideoList', {
-      'sourceId': source.id,
-      'isAnime': isAnime,
-      'episode': {
-        'name': episode.name,
-        'url': episode.url,
-        'date_upload': episode.dateUpload,
-        'description': episode.description,
-        'episode_number': episode.episodeNumber,
-        'scanlator': episode.scanlator,
+    final result = await platform.invokeMethod(
+      'getVideoList',
+      {
+        'sourceId': source.id,
+        'isAnime': isAnime,
+        'episode': jsonEncode(
+          {
+            'name': episode.name,
+            'url': episode.url,
+            'date_upload': episode.dateUpload,
+            'description': episode.description,
+            'episode_number': episode.episodeNumber,
+            'scanlator': episode.scanlator,
+          },
+        ),
       },
-    });
+    );
 
-    return await compute(parseVideos, List<dynamic>.from(result));
+    return await compute(
+      parseVideos,
+      List<dynamic>.from(jsonDecode(result)),
+    );
   }
 
   @override
   Future<List<PageUrl>> getPageList(DEpisode episode) async {
-    final result = await platform.invokeMethod('getPageList', {
-      'sourceId': source.id,
-      'isAnime': isAnime,
-      'episode': {
-        'name': episode.name,
-        'url': episode.url,
-        'date_upload': episode.dateUpload,
-        'description': episode.description,
-        'episode_number': episode.episodeNumber,
-        'scanlator': episode.scanlator,
+    final result = await platform.invokeMethod(
+      'getPageList',
+      {
+        'sourceId': source.id,
+        'isAnime': isAnime,
+        'episode': jsonEncode(
+          {
+            'name': episode.name,
+            'url': episode.url,
+            'date_upload': episode.dateUpload,
+            'description': episode.description,
+            'episode_number': episode.episodeNumber,
+            'scanlator': episode.scanlator,
+          },
+        ),
       },
-    });
+    );
 
-    return compute(parsePageUrls, List<dynamic>.from(result));
+    return compute(
+      parsePageUrls,
+      List<dynamic>.from(jsonDecode(result)),
+    );
   }
 
   @override
@@ -117,7 +138,7 @@ class AniyomiSourceMethods extends SourceMethods {
 
     return await compute(
       Pages.fromJson,
-      Map<String, dynamic>.from(result as Map),
+      Map<String, dynamic>.from(jsonDecode(result)),
     );
   }
 
@@ -147,10 +168,8 @@ class AniyomiSourceMethods extends SourceMethods {
 
     if (result == null) return const [];
 
-    if (result is String) return const [];
-
     return List<dynamic>.from(
-      result,
+      jsonDecode(result),
     ).map((e) => mapToSourcePreference(Map<String, dynamic>.from(e))).toList();
   }
 
@@ -159,8 +178,9 @@ class AniyomiSourceMethods extends SourceMethods {
     final result = await platform.invokeMethod('saveSourcePreference', {
       'sourceId': source.id,
       'key': pref.key,
-      'action': 'change',
-      'value': value,
+      'value': jsonEncode({
+        "value": value,
+      }),
     });
     return result;
   }
