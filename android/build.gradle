@@ -1,9 +1,11 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 group = "com.aayush262.dartotsu_extension_bridge"
 version = "1.0-SNAPSHOT"
 
 
 buildscript {
-    ext.kotlin_version = "2.2.0"
+    ext.kotlin_version = "2.3.21"
     repositories {
         google()
         mavenCentral()
@@ -11,7 +13,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.12.3")
+        classpath("com.android.tools.build:gradle:9.2.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlin_version")
     }
@@ -31,13 +33,12 @@ allprojects {
 }
 
 apply plugin: "com.android.library"
-apply plugin: "kotlin-android"
 apply plugin: "org.jetbrains.kotlin.plugin.serialization"
 
 android {
     namespace = "com.aayush262.dartotsu_extension_bridge"
 
-    compileSdk = 36
+    compileSdk = 37
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -83,4 +84,9 @@ dependencies {
 
 configurations.configureEach {
     exclude group: 'org.json', module: 'json'
+}
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
 }
