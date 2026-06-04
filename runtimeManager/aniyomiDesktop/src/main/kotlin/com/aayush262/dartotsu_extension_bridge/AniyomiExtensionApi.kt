@@ -42,11 +42,14 @@ object DartotsuEnv {
     lateinit var rootDir: String
 }
 
-class AniyomiExtensionApi : ExtensionApi{
-/*
-    override fun initClient(data: Map<*, *>) {
+class AniyomiExtensionApi : ExtensionApi,  AniyomiCustomMethods{
+    override fun initialize(customMethods: CustomMethods) {
+
+    }
+
+    override fun initClient(data: String) {
         enableNetworking(data)
-    }*/
+    }
 
     @Suppress("DEPRECATION")
     override fun initializeDesktop(basePath: String){

@@ -13,20 +13,22 @@ class CustomAniyomiMethods(var networkChannel: MethodChannel) : CustomMethods {
     override fun getCookies(url: String): String? {
         val latch = CountDownLatch(1)
         var resultHeader: String? = null
+
         mainHandler.post {
             networkChannel.invokeMethod(
                 "getCookies",
                 url,
                 object : MethodChannel.Result {
                     override fun success(result: Any?) {
-                        val map = result as? Map<*, *>
-                        resultHeader = map
-                            ?.entries
-                            ?.joinToString("; ") { "${it.key}=${it.value}" }
+                        resultHeader = result as? String
                         latch.countDown()
                     }
 
-                    override fun error(code: String, message: String?, details: Any?) {
+                    override fun error(
+                        code: String,
+                        message: String?,
+                        details: Any?
+                    ) {
                         latch.countDown()
                     }
 
@@ -36,7 +38,9 @@ class CustomAniyomiMethods(var networkChannel: MethodChannel) : CustomMethods {
                 }
             )
         }
+
         latch.await(500, TimeUnit.MILLISECONDS)
+
         return resultHeader
     }
 

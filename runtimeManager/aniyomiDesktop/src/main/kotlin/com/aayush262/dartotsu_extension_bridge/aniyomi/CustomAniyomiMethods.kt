@@ -11,15 +11,7 @@ class CustomAniyomiMethods : CustomMethods {
                 "getCookies",
                 mapOf("url" to url),
             )
-
-            @Suppress("UNCHECKED_CAST")
-            val cookies =
-                response["result"] as? Map<String, String>
-                    ?: return null
-
-            cookies.entries.joinToString("; ") {
-                "${it.key}=${it.value}"
-            }
+            response["result"]?.asString
         } catch (_: Exception) {
             null
         }

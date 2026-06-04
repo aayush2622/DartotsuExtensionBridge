@@ -1,3 +1,4 @@
+import com.android.build.gradle.internal.tasks.factory.dependsOn
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 extra.apply {
@@ -59,21 +60,25 @@ dependencies {
 }
 
 tasks.shadowJar {
-    archiveClassifier.set("plugin")
+    archiveClassifier.set("all")
     exclude(
         "META-INF/**",
         "**/*.pom",
         "**/*.pom.*"
     )
-
+    manifest {
+        attributes(
+            "Main-Class" to
+                    "com.aayush262.dartotsu_extension_bridge.Main"
+        )
+    }
     mergeServiceFiles()
     isZip64 = true
 }
 
 apply(from = "$rootDir/plugin-build.gradle.kts")
-tasks.jar {
-    enabled = false
-}
-tasks.build {
-    dependsOn(tasks.shadowJar)
-}
+
+tasks.jar { enabled = false }
+
+tasks.build.dependsOn(tasks.shadowJar)
+

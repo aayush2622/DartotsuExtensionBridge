@@ -5,7 +5,7 @@ package com.aayush262.dartotsu_extension_bridge.aniyomi
 interface AniyomiCustomMethods{
     fun initialize(customMethods: CustomMethods)
 
-    fun initClient(data: Map<*, *>)
+    fun initClient(data: String)
 }
 
 interface CustomMethods {

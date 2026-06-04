@@ -6,8 +6,9 @@ import 'dart:isolate';
 import 'package:flutter/services.dart';
 import 'package:jni/jni.dart';
 
-import '../Logger.dart';
-import '../dartotsu_extension_bridge.dart';
+import '../../Logger.dart';
+import '../../dartotsu_extension_bridge.dart';
+import 'JavaHandler.dart';
 
 class JavaEngine {
   SendPort? _sendPort;
@@ -15,39 +16,46 @@ class JavaEngine {
   bool _initialized = false;
 
   Future<void> init({
-    required String engineJarPath,
-    required Future<dynamic> Function(String, Map<String, dynamic>) handler,
+    required String pluginJarPath,
+    required JavaHandler handler,
   }) async {
     if (_initialized) return;
 
     final receivePort = ReceivePort();
 
-    final dir = await DartotsuExtensionBridge.context
-        .getDirectory(subPath: 'bridge/jni');
+    final dir = await DartotsuExtensionBridge.context.getDirectory(
+      subPath: 'bridge/jni',
+    );
 
     final jniJarPath = "${dir!.path}/jni.jar";
-    final soPath = "${dir.path}/libdartjni.so";
 
-    final ByteData jniJarCache = await rootBundle.load(
+    final jniJarCache = await rootBundle.load(
       "packages/dartotsu_extension_bridge/assets/jni/jni.jar",
     );
-    final ByteData soCache = await rootBundle.load(
-      "packages/dartotsu_extension_bridge/assets/jni/libdartjni.so",
-    );
 
+    String libName;
+    String assetName;
+
+    if (Platform.isWindows) {
+      libName = "dartjni.dll";
+      assetName = "packages/dartotsu_extension_bridge/assets/jni/dartjni.dll";
+    } else {
+      libName = "libdartjni.so";
+      assetName = "packages/dartotsu_extension_bridge/assets/jni/libdartjni.so";
+    }
+
+    final libPath = "${dir.path}/$libName";
+    final libCache = await rootBundle.load(assetName);
+    await _ensureFile(libPath, libCache);
     await _ensureFile(jniJarPath, jniJarCache);
-    await _ensureFile(soPath, soCache);
 
-    _isolate = await Isolate.spawn(
-      _entry,
-      {
-        "sendPort": receivePort.sendPort,
-        "handler": handler,
-        "jniJar": jniJarPath,
-        "soFile": soPath,
-        "engineJar": engineJarPath,
-      },
-    );
+    _isolate = await Isolate.spawn(_entry, {
+      "sendPort": receivePort.sendPort,
+      "handler": handler,
+      "jniJar": jniJarPath,
+      "libPath": libPath,
+      "pluginJar": pluginJarPath,
+    });
 
     _sendPort = await receivePort.first as SendPort;
     _initialized = true;
@@ -55,12 +63,10 @@ class JavaEngine {
 
   Future<void> _ensureFile(String path, ByteData data) async {
     final file = File(path);
+
     if (await file.exists()) return;
 
-    await file.writeAsBytes(
-      data.buffer.asUint8List(),
-      flush: true,
-    );
+    await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
   }
 
   void dispose() {
@@ -68,15 +74,13 @@ class JavaEngine {
     _isolate = null;
     _sendPort = null;
     _initialized = false;
-    try {
-      exit(0);
-    } catch (e) {
-      Logger.log("Error destroying JVM: $e");
-    }
   }
 
-  Future<T> call<T>(String method,
-      [Map<String, dynamic>? args, bool throwError = false]) async {
+  Future<T> call<T>(
+    String method, [
+    Map<String, dynamic>? args,
+    bool throwError = false,
+  ]) async {
     if (!_initialized) {
       throw Exception("JavaEngine not initialized");
     }
@@ -94,80 +98,69 @@ class JavaEngine {
     if (result["ok"] != true) {
       if (throwError) {
         throw Exception(result["error"]);
-      } else {
-        Logger.log("JNI Error: ${result["error"]}", show: true);
-        Logger.log(result["stack"]);
-        return _emptyForType<T>();
       }
+
+      Logger.log("JNI Error: ${result["error"]}", show: true);
+
+      Logger.log(result["stack"]);
+
+      return _emptyForType<T>();
     }
-    var data = result["data"];
+
+    final data = result["data"];
+
     if (data is String) {
-      final decoded = jsonDecode(data);
+      try {
+        final decoded = jsonDecode(data);
 
-      if (decoded is List) {
-        return decoded.map((e) => Map<String, dynamic>.from(e)).toList() as T;
-      }
+        if (decoded is List) {
+          return decoded.map((e) => Map<String, dynamic>.from(e)).toList() as T;
+        }
 
-      if (decoded is Map) {
-        return Map<String, dynamic>.from(decoded) as T;
-      }
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded) as T;
+        }
 
-      return decoded as T;
+        return decoded as T;
+      } catch (_) {}
     }
 
     return data as T;
   }
 
-  T _emptyForType<T>() {
-    if (T == bool) return false as T;
-    if (T == List<Map<String, dynamic>>) {
-      return <Map<String, dynamic>>[] as T;
-    }
-    if (T == Map<String, dynamic>) {
-      return <String, dynamic>{} as T;
-    }
-    return null as T;
-  }
-
-  void _entry(Map args) async {
+  static void _entry(Map args) async {
     final mainSendPort = args["sendPort"] as SendPort;
-    final handler = args["handler"] as Future<dynamic> Function(
-      String,
-      Map<String, dynamic>,
-    );
+    final handler = args["handler"] as JavaHandler;
 
     final jniJar = args["jniJar"] as String;
-    final soFile = args["soFile"] as String;
+    final libPath = args["libPath"] as String;
+    final pluginJar = args["pluginJar"] as String;
 
     final port = ReceivePort();
+
     mainSendPort.send(port.sendPort);
 
-    final engineJar = args["engineJar"] as String;
-
     Jni.spawnIfNotExists(
-      classPath: [jniJar, engineJar],
+      classPath: [jniJar, pluginJar],
+      dylibDir: File(libPath).parent.path,
       jvmOptions: [
         "-Dfile.encoding=UTF-8",
         "-Xms128m",
         "-Xmx512m",
         "-XX:+UseG1GC",
-        "-XX:MaxGCPauseMillis=200",
       ],
-      dylibDir: File(soFile).parent.path,
     );
 
     await for (final msg in port) {
       final replyTo = msg["replyTo"] as SendPort;
-      final method = msg["method"] as String;
-      final args = msg["args"] as Map<String, dynamic>;
 
       try {
-        final result = await handler(method, args);
+        final result = await handler.handle(
+          msg["method"] as String,
+          Map<String, dynamic>.from(msg["args"]),
+        );
 
-        replyTo.send({
-          "ok": true,
-          "data": _toDart(result),
-        });
+        replyTo.send({"ok": true, "data": _toDart(result)});
       } catch (e, st) {
         replyTo.send({
           "ok": false,
@@ -178,7 +171,7 @@ class JavaEngine {
     }
   }
 
-  dynamic _toDart(dynamic value) {
+  static dynamic _toDart(dynamic value) {
     if (value == null) return null;
     if (value is JObject) {
       try {
@@ -224,5 +217,17 @@ class JavaEngine {
     }
 
     return value;
+  }
+
+  T _emptyForType<T>() {
+    if (T == bool) return false as T;
+    if (T == Map<String, dynamic>) {
+      return <String, dynamic>{} as T;
+    }
+    if (T == List<Map<String, dynamic>>) {
+      return <Map<String, dynamic>>[] as T;
+    }
+
+    return null as T;
   }
 }

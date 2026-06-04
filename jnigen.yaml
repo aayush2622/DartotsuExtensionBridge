@@ -6,7 +6,7 @@ classes:
   - com.aayush262.dartotsu_extension_bridge.AniyomiExtensionApi
 
 class_path:
-  - /home/aayush/AndroidStudioProjects/DartotsuExtensionBridge/runtimeManager/aniyomiDesktop/build/libs/aniyomiDesktop-all.jar
+  - runtimeManager/aniyomiDesktop/build/libs/aniyomiDesktop-plugin.jar
 
 summarizer:
   backend: asm

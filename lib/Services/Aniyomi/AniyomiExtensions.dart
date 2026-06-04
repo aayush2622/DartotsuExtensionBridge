@@ -19,6 +19,7 @@ import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
+import 'Network.dart';
 
 class AniyomiPlugin extends DownloadablePlugin {
   @override
@@ -62,35 +63,39 @@ class AniyomiExtensions extends Extension {
       "path": filePath,
       "hasUpdate": hasUpdate,
     });
+    await AniyomiNetwork.init();
     return true;
   }
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
     await super.fetchInstalledAnimeExtensions();
-    getInstalledRx(ItemType.anime).value =
-        await _loadInstalled('getInstalledAnimeExtensions', ItemType.anime);
+    getInstalledRx(ItemType.anime).value = await _loadInstalled(
+      'getInstalledAnimeExtensions',
+      ItemType.anime,
+    );
   }
 
   @override
   Future<void> fetchInstalledMangaExtensions() async {
     await super.fetchInstalledMangaExtensions();
-    getInstalledRx(ItemType.manga).value =
-        await _loadInstalled('getInstalledMangaExtensions', ItemType.manga);
+    getInstalledRx(ItemType.manga).value = await _loadInstalled(
+      'getInstalledMangaExtensions',
+      ItemType.manga,
+    );
   }
 
-  Future<List<Source>> _loadInstalled(
-    String method,
-    ItemType type,
-  ) async {
+  Future<List<Source>> _loadInstalled(String method, ItemType type) async {
     try {
       var path = await DartotsuExtensionBridge.context.getDirectory(
         subPath: 'bridge/aniyomi-extensions/${type.toString()}',
         useSystemPath: false,
         useCustomPath: true,
       );
-      final jsonString =
-          await platform.invokeMethod<String>(method, path?.path);
+      final jsonString = await platform.invokeMethod<String>(
+        method,
+        path?.path,
+      );
 
       if (jsonString == null || jsonString.isEmpty) {
         return [];
@@ -117,22 +122,18 @@ class AniyomiExtensions extends Extension {
     }
 
     try {
-      final packageName = aSource.pkgName ??
+      final packageName =
+          aSource.pkgName ??
           aSource.apkUrl!.split('/').last.replaceAll('.apk', '');
 
       final apkFileName = '$packageName.apk';
 
-      final request = http.Request(
-        'GET',
-        Uri.parse(aSource.apkUrl!),
-      );
+      final request = http.Request('GET', Uri.parse(aSource.apkUrl!));
 
       final response = await _client.send(request);
 
       if (response.statusCode != 200) {
-        throw Exception(
-          'Extension download failed (${response.statusCode})',
-        );
+        throw Exception('Extension download failed (${response.statusCode})');
       }
 
       if (isPrivate) {
@@ -148,9 +149,7 @@ class AniyomiExtensions extends Extension {
 
         await extDir.create(recursive: true);
 
-        final file = File(
-          path.join(extDir.path, apkFileName),
-        );
+        final file = File(path.join(extDir.path, apkFileName));
 
         final sink = file.openWrite();
 
@@ -158,15 +157,11 @@ class AniyomiExtensions extends Extension {
 
         await sink.close();
 
-        Logger.log(
-          'Installed PRIVATE extension: ${aSource.pkgName}',
-        );
+        Logger.log('Installed PRIVATE extension: ${aSource.pkgName}');
       } else {
         final tempDir = await getTemporaryDirectory();
 
-        final apkFile = File(
-          path.join(tempDir.path, apkFileName),
-        );
+        final apkFile = File(path.join(tempDir.path, apkFileName));
 
         final sink = apkFile.openWrite();
 
@@ -190,9 +185,7 @@ class AniyomiExtensions extends Extension {
           );
         }
 
-        Logger.log(
-          'Installed SHARED extension: $packageName',
-        );
+        Logger.log('Installed SHARED extension: $packageName');
       }
 
       final avail = getAvailableRx(aSource.itemType!);
@@ -212,9 +205,7 @@ class AniyomiExtensions extends Extension {
           break;
 
         default:
-          throw Exception(
-            'Unsupported item type: ${source.itemType}',
-          );
+          throw Exception('Unsupported item type: ${source.itemType}');
       }
       final raw = getRawAvailableRx(type).value;
       _detectUpdates(raw.map((e) => e as ASource).toList(), type);
@@ -277,8 +268,9 @@ class AniyomiExtensions extends Extension {
       final isInstalled = await DeviceApps.isAppInstalled(packageName);
 
       if (!isInstalled) {
-        getInstalledRx(type).value =
-            getInstalledRx(type).value.where((e) => e.id != s.id).toList();
+        getInstalledRx(type).value = getInstalledRx(
+          type,
+        ).value.where((e) => e.id != s.id).toList();
         return;
       }
 
@@ -389,13 +381,12 @@ class AniyomiExtensions extends Extension {
         }
       }
 
-      final parsed = await compute(
-        _parseExtensions,
-        (res.body, usedUrl, type),
-      );
+      final parsed = await compute(_parseExtensions, (res.body, usedUrl, type));
 
-      final repo =
-          Repo(url: normalizedUrl, extensions: parsed.length.toString());
+      final repo = Repo(
+        url: normalizedUrl,
+        extensions: parsed.length.toString(),
+      );
       final updatedRepos = List<Repo>.from(repos)..add(repo);
       _saveRepos(updatedRepos, type);
 
@@ -438,14 +429,15 @@ class AniyomiExtensions extends Extension {
         final detectedType = name.startsWith('Aniyomi: ')
             ? ItemType.anime
             : name.startsWith('Tachiyomi: ')
-                ? ItemType.manga
-                : null;
+            ? ItemType.manga
+            : null;
 
         if (detectedType != targetType) continue;
 
         sources.add(
           ASource(
-            id: map["sources"] != null &&
+            id:
+                map["sources"] != null &&
                     map["sources"] is List &&
                     (map["sources"] as List).isNotEmpty
                 ? (map["sources"] as List).first['id']?.toString() ?? ''
@@ -478,9 +470,7 @@ class AniyomiExtensions extends Extension {
 
     getReposRx(type).value = repos;
 
-    final results = await Future.wait(
-      repos.map((r) => _fetchRepo(r, type)),
-    );
+    final results = await Future.wait(repos.map((r) => _fetchRepo(r, type)));
 
     final all = results.expand((e) => e).toList(growable: false);
 
@@ -491,9 +481,7 @@ class AniyomiExtensions extends Extension {
 
     getRawAvailableRx(type).value = List.unmodifiable(all);
 
-    return List.unmodifiable(
-      all.where((s) => !installedIds.contains(s.id)),
-    );
+    return List.unmodifiable(all.where((s) => !installedIds.contains(s.id)));
   }
 
   String? fallbackRepoUrl(String repoUrl) {
@@ -602,9 +590,9 @@ class AniyomiExtensions extends Extension {
   @override
   Future<void> removeRepo(String repoUrl, ItemType type) async {
     try {
-      final repos = _loadRepos(type)
-          .where((r) => r.url != repoUrl)
-          .toList(growable: false);
+      final repos = _loadRepos(
+        type,
+      ).where((r) => r.url != repoUrl).toList(growable: false);
 
       _saveRepos(repos, type);
 
@@ -644,10 +632,7 @@ class AniyomiExtensions extends Extension {
   void handleSchemes(Uri uri) {
     final url = uri.queryParameters["url"];
     if (url != null && url.isNotEmpty) {
-      addRepo(
-        url,
-        uri.scheme == "aniyomi" ? ItemType.anime : ItemType.manga,
-      );
+      addRepo(url, uri.scheme == "aniyomi" ? ItemType.anime : ItemType.manga);
     }
   }
 

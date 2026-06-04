@@ -5,7 +5,7 @@ import 'package:epubx/epubx.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_interceptor/http/intercepted_client.dart';
+import 'package:http_interceptor/http_interceptor.dart';
 import 'package:js_packer/js_packer.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -206,10 +206,10 @@ async function parseEpubChapter(bookName, url, headers, chapterTitle) {
     final headers = (args[2] as Map?)?.toMapStringString;
     final body = args.length >= 4
         ? args[3] is List
-            ? args[3] as List
-            : args[3] is String
-                ? args[3] as String
-                : (args[3] as Map?)?.toMapStringDynamic
+              ? args[3] as List
+              : args[3] is String
+              ? args[3] as String
+              : (args[3] as Map?)?.toMapStringDynamic
         : null;
 
     final tmpDirectory = (await getTemporaryDirectory());

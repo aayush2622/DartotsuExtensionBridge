@@ -1,23 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
-class RpcServer {
-  final Future<dynamic> Function(
-    String,
-    Map<String, dynamic>,
-  ) handler;
+class JavaBridgeServer {
+  final Future<dynamic> Function(String, Map<String, dynamic>) handler;
 
   HttpServer? _server;
 
-  RpcServer(this.handler);
+  JavaBridgeServer(this.handler);
 
-  Future<void> start({
-    int port = 4567,
-  }) async {
-    _server = await HttpServer.bind(
-      InternetAddress.loopbackIPv4,
-      port,
-    );
+  Future<void> start({int port = 4567}) async {
+    _server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
 
     _server!.listen((request) async {
       try {
@@ -29,19 +21,11 @@ class RpcServer {
 
         final args = (json["args"] as Map?)?.cast<String, dynamic>() ?? {};
 
-        final result = await handler(
-          method,
-          args,
-        );
+        final result = await handler(method, args);
 
         request.response.headers.contentType = ContentType.json;
 
-        request.response.write(
-          jsonEncode({
-            "success": true,
-            "result": result,
-          }),
-        );
+        request.response.write(jsonEncode({"success": true, "result": result}));
       } catch (e, st) {
         request.response.statusCode = 500;
 

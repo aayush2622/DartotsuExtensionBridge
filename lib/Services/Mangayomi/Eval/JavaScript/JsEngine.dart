@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_qjs/flutter_qjs.dart';
 
-import '../../../JsEngine.dart';
+import '../../../../Engines/JavaScriptEngine/JsEngine.dart';
 import 'BridgeRegister.dart';
 import 'Utils.dart';
 
@@ -64,7 +64,8 @@ class JsExtensionEngine {
   }) async {
     await init();
 
-    final wrapped = '''
+    final wrapped =
+        '''
 $sourceCode
 const __exports = {};
 
@@ -104,7 +105,8 @@ globalThis['$moduleName'] = __exports;
 
     final encodedParams = jsonEncode(params);
 
-    final js = '''
+    final js =
+        '''
     (async () => {
       const target = globalThis['$moduleName'];
 
@@ -121,8 +123,9 @@ globalThis['$moduleName'] = __exports;
     })()
     ''';
 
-    final result =
-        await _runtime.handlePromise(await _runtime.evaluateAsync(js));
+    final result = await _runtime.handlePromise(
+      await _runtime.evaluateAsync(js),
+    );
     return result;
   }
 

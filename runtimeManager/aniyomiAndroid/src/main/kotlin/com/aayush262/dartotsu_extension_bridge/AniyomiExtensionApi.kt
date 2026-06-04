@@ -37,7 +37,7 @@ class AniyomiExtensionApi : ExtensionApi, AniyomiCustomMethods {
         customAniyomiMethods = customMethods
     }
 
-    override fun initClient(data: Map<*, *>) {
+    override fun initClient(data: String) {
         enableNetworking(data)
     }
 
