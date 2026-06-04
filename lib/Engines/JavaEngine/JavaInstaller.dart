@@ -5,6 +5,7 @@ import 'package:archive/archive_io.dart';
 import 'package:http/http.dart' as http;
 
 import '../../Logger.dart';
+import '../../NetworkClient.dart';
 import '../../dartotsu_extension_bridge.dart';
 
 class JavaRuntimeManager {
@@ -155,7 +156,7 @@ class JavaRuntimeManager {
 
     final file = File('${root.path}/jre.$extension');
 
-    final client = http.Client();
+    final client = MClient.init();
 
     try {
       final request = http.Request('GET', Uri.parse(_jreUrl));
