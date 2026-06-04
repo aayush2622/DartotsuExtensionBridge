@@ -35,7 +35,7 @@ dependencies:
       url: https://github.com/kodjodevf/epubx.dart.git
       ref: dev
   install_plugin: ^2.1.0
-  device_apps: ^2.2.0
+  installed_apps: ^2.1.1
   jnigen: ^0.16.0
   jni: ^1.0.0
 dev_dependencies:
