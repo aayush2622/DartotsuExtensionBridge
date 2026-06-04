@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_qjs/flutter_qjs.dart';
 
-import '../../JsEngine.dart';
+import '../../../Engines/JavaScriptEngine/JsEngine.dart';
 import 'FetchV2.dart';
 
 class JsExtensionEngine {
@@ -53,7 +53,7 @@ class JsExtensionEngine {
             }
             return channelFunctions[channelName]!.call(parsed);
           }
-        }
+        },
       ]);
 
       var fetch = FetchV2(_runtime);
@@ -92,7 +92,8 @@ class JsExtensionEngine {
   }) async {
     await init();
 
-    final wrapped = '''
+    final wrapped =
+        '''
 globalThis['$moduleName'] = (() => {
 $sourceCode
 
@@ -135,7 +136,8 @@ $sourceCode
 
     final encodedParams = jsonEncode(params);
 
-    final js = '''
+    final js =
+        '''
     (async () => {
       const target = globalThis['$moduleName'];
 
@@ -153,8 +155,9 @@ $sourceCode
     ''';
 
     try {
-      final result =
-          await _runtime.handlePromise(await _runtime.evaluateAsync(js));
+      final result = await _runtime.handlePromise(
+        await _runtime.evaluateAsync(js),
+      );
       return result;
     } catch (e) {
       if (e.toString().contains('_Map')) {

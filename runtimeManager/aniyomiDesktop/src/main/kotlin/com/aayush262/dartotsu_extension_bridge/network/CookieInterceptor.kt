@@ -51,45 +51,82 @@ class CookieInterceptor : Interceptor {
 
 class WebviewCookieJar : CookieJar {
 
-    private val cookieManager = CookieManager.getInstance()
-
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
-        val cookieString = cookieManager.getCookie(url.toString()) ?: return emptyList()
+        val cookieHeader = getCookiesBlocking(url.toString())
+            ?: return emptyList()
 
-        return cookieString.split(";").mapNotNull { parseCookie(it.trim(), url) }.also { it ->
-                if (it.isNotEmpty()) {
-                    Logger.log("Loaded cookies for ${url.host}: ${it.joinToString { "${it.name}=${it.value}" }}")
-                }
-            }
+        return cookieHeader
+            .split(";")
+            .mapNotNull { parseCookie(it.trim(), url) }
     }
 
-    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-        for (cookie in cookies) {
-            val cookieString = buildCookieString(cookie)
-            cookieManager.setCookie(url.toString(), cookieString)
+    override fun saveFromResponse(
+        url: HttpUrl,
+        cookies: List<Cookie>
+    ) {
+        val setCookies = cookies.map { buildCookieString(it) }
+
+        if (setCookies.isNotEmpty()) {
+            setCookies(
+                url.toString(),
+                setCookies,
+            )
         }
-
-        cookieManager.flush()
     }
 
-    private fun parseCookie(cookie: String, url: HttpUrl): Cookie? {
-        val index = cookie.indexOf("=")
-        if (index <= 0) return null
+    private fun parseCookie(
+        cookie: String,
+        url: HttpUrl,
+    ): Cookie? {
+        val index = cookie.indexOf('=')
+
+        if (index <= 0) {
+            return null
+        }
 
         val name = cookie.substring(0, index).trim()
         val value = cookie.substring(index + 1).trim()
 
-        return Cookie.Builder().name(name).value(value).domain(url.host).path("/").build()
+        return Cookie.Builder()
+            .name(name)
+            .value(value)
+            .domain(url.host)
+            .path("/")
+            .build()
     }
 
-    private fun buildCookieString(cookie: Cookie): String {
+    private fun buildCookieString(
+        cookie: Cookie,
+    ): String {
         return buildString {
-            append("${cookie.name}=${cookie.value}; Path=${cookie.path};")
+            append("${cookie.name}=${cookie.value}")
 
-            if (cookie.secure) append(" Secure;")
-            if (cookie.httpOnly) append(" HttpOnly;")
+            append("; Path=${cookie.path}")
 
-            append(" Domain=${cookie.domain};")
+            append("; Domain=${cookie.domain}")
+
+            if (cookie.secure) {
+                append("; Secure")
+            }
+
+            if (cookie.httpOnly) {
+                append("; HttpOnly")
+            }
+
+            cookie.expiresAt.takeIf {
+                it != Long.MAX_VALUE
+            }?.let {
+                append("; Max-Age=${(it - System.currentTimeMillis()) / 1000}")
+            }
         }
     }
+
+    private fun getCookiesBlocking(
+        url: String,
+    ): String? = customAniyomiMethods?.getCookies(url)
+
+    private fun setCookies(
+        url: String,
+        cookies: List<String>,
+    ) = customAniyomiMethods?.setCookies(url, cookies)
 }

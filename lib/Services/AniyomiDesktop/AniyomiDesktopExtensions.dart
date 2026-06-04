@@ -3,20 +3,22 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
+import '../../Engines/JavaEngine/Bridge/JniBridge.dart';
+import '../../Engines/JavaEngine/Bridge/SidecarBridge.dart';
 import '../../Extensions/DownloadablePlugin.dart';
 import '../../Extensions/ExtensionSettings.dart';
 import '../../Logger.dart';
 import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
-import '../JavaEngine.dart';
-import '../RpcServer.dart';
 import 'AniyomiDesktopSourceMethods.dart';
 import 'AniyomiService.dart';
 import 'Models/Source.dart';
+import 'Network.dart';
 
 class AniyomiDesktopPlugin extends DownloadablePlugin {
   @override
@@ -42,16 +44,27 @@ class AniyomiDesktopExtensions extends Extension {
 
   @override
   (Type, SourceMethods Function(Source)) get sourceMethodFactories => (
-        AdSource,
-        (source) => AniyomiSourceMethodsDesktop(source as AdSource, jni)
-      );
+    AdSource,
+    (source) => AniyomiSourceMethodsDesktop(source as AdSource, jni),
+  );
 
   @override
   DownloadablePlugin plugin = AniyomiDesktopPlugin();
 
-  final jni = JavaEngine();
+  final JavaBridge jni = (() {
+    final useSidecar = getVal("aniyomiDesktopUseSidecar") ?? false;
+
+    final bridge = Platform.isMacOS || useSidecar
+        ? SidecarBridge()
+        : JniBridge();
+
+    Logger.log("Using ${bridge.runtimeType}");
+    return bridge;
+  })();
 
   final _client = MClient.init();
+  final _context = DartotsuExtensionBridge.context;
+
   @override
   Future<bool> onInitialize() async {
     plugin.installed.value = await plugin.isInstalled();
@@ -60,26 +73,24 @@ class AniyomiDesktopExtensions extends Extension {
     unawaited(plugin.autoUpdate());
 
     final filePath = await plugin.getPath();
-    await jni.init(
-      engineJarPath: filePath,
-      handler: AniyomiService.handle,
-    );
 
-    var file = await DartotsuExtensionBridge.context
-        .getDirectory(subPath: 'bridge/aniyomi');
+    await AniyomiDesktopNetwork.init();
 
-    await jni.call<void>("initialize", {"path": file!.path});
+    await jni.init(pluginJarPath: filePath, handler: AniyomiService());
 
-    await RpcServer(
-      (method, args) async {
-        switch (method) {
-          case "logger":
-            Logger.log(args["message"]);
-            return true;
-        }
-        throw Exception("Unknown method: $method");
-      },
-    ).start();
+    var file = await _context.getDirectory(subPath: 'bridge/aniyomi');
+
+    await jni.call<void>("initializeDesktop", {"path": file!.path});
+
+    if (_context.network != null) {
+      await jni.call<void>("initClient", {
+        "data": jsonEncode({
+          "dns": _context.network?.dns,
+          "proxy": _context.network?.proxy,
+        }),
+      });
+    }
+
     return true;
   }
 
@@ -92,21 +103,22 @@ class AniyomiDesktopExtensions extends Extension {
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
     await super.fetchInstalledAnimeExtensions();
-    getInstalledRx(ItemType.anime).value =
-        await _loadInstalled("getInstalledAnimeExtensions", ItemType.anime);
+    getInstalledRx(ItemType.anime).value = await _loadInstalled(
+      "getInstalledAnimeExtensions",
+      ItemType.anime,
+    );
   }
 
   @override
   Future<void> fetchInstalledMangaExtensions() async {
     await super.fetchInstalledMangaExtensions();
-    getInstalledRx(ItemType.manga).value =
-        await _loadInstalled("getInstalledMangaExtensions", ItemType.manga);
+    getInstalledRx(ItemType.manga).value = await _loadInstalled(
+      "getInstalledMangaExtensions",
+      ItemType.manga,
+    );
   }
 
-  Future<List<Source>> _loadInstalled(
-    String method,
-    ItemType type,
-  ) async {
+  Future<List<Source>> _loadInstalled(String method, ItemType type) async {
     try {
       final dir = await DartotsuExtensionBridge.context.getDirectory(
         subPath: 'bridge/aniyomi/extensions/${type.toString()}',
@@ -114,10 +126,9 @@ class AniyomiDesktopExtensions extends Extension {
         useCustomPath: true,
       );
 
-      final result = await jni.call<List<Map<String, dynamic>>>(
-        method,
-        {"path": dir!.path},
-      );
+      final result = await jni.call<List<Map<String, dynamic>>>(method, {
+        "path": dir!.path,
+      });
 
       return result
           .map((e) => AdSource.fromJson(e))
@@ -171,9 +182,7 @@ class AniyomiDesktopExtensions extends Extension {
         break;
 
       default:
-        throw Exception(
-          'Unsupported item type: ${source.itemType}',
-        );
+        throw Exception('Unsupported item type: ${source.itemType}');
     }
     final raw = getRawAvailableRx(type).value;
     _detectUpdates(raw.map((e) => e as AdSource).toList(), type);
@@ -282,13 +291,12 @@ class AniyomiDesktopExtensions extends Extension {
         }
       }
 
-      final parsed = await compute(
-        _parseExtensions,
-        (res.body, usedUrl, type),
-      );
+      final parsed = await compute(_parseExtensions, (res.body, usedUrl, type));
 
-      final repo =
-          Repo(url: normalizedUrl, extensions: parsed.length.toString());
+      final repo = Repo(
+        url: normalizedUrl,
+        extensions: parsed.length.toString(),
+      );
       final updatedRepos = List<Repo>.from(repos)..add(repo);
       _saveRepos(updatedRepos, type);
 
@@ -331,14 +339,15 @@ class AniyomiDesktopExtensions extends Extension {
         final detectedType = name.startsWith('Aniyomi: ')
             ? ItemType.anime
             : name.startsWith('Tachiyomi: ')
-                ? ItemType.manga
-                : null;
+            ? ItemType.manga
+            : null;
 
         if (detectedType != targetType) continue;
 
         sources.add(
           AdSource(
-            id: map["sources"] != null &&
+            id:
+                map["sources"] != null &&
                     map["sources"] is List &&
                     (map["sources"] as List).isNotEmpty
                 ? (map["sources"] as List).first['id']?.toString() ?? ''
@@ -371,9 +380,7 @@ class AniyomiDesktopExtensions extends Extension {
 
     getReposRx(type).value = repos;
 
-    final results = await Future.wait(
-      repos.map((r) => _fetchRepo(r, type)),
-    );
+    final results = await Future.wait(repos.map((r) => _fetchRepo(r, type)));
 
     final all = results.expand((e) => e).toList(growable: false);
 
@@ -384,9 +391,7 @@ class AniyomiDesktopExtensions extends Extension {
 
     getRawAvailableRx(type).value = List.unmodifiable(all);
 
-    return List.unmodifiable(
-      all.where((s) => !installedIds.contains(s.id)),
-    );
+    return List.unmodifiable(all.where((s) => !installedIds.contains(s.id)));
   }
 
   String? fallbackRepoUrl(String repoUrl) {
@@ -495,9 +500,9 @@ class AniyomiDesktopExtensions extends Extension {
   @override
   Future<void> removeRepo(String repoUrl, ItemType type) async {
     try {
-      final repos = _loadRepos(type)
-          .where((r) => r.url != repoUrl)
-          .toList(growable: false);
+      final repos = _loadRepos(
+        type,
+      ).where((r) => r.url != repoUrl).toList(growable: false);
 
       _saveRepos(repos, type);
 
@@ -537,5 +542,22 @@ class AniyomiDesktopExtensions extends Extension {
   void handleSchemes(Uri uri) {}
 
   @override
-  List<ExtensionSetting> settings(context) => [];
+  List<ExtensionSetting> settings(context) => [
+    ExtensionSetting(
+      type: ExtensionSettingType.switchType,
+      name: "Use Sidecar",
+      description:
+          "Use the Sidecar bridge instead of JNI. Requires a restart and the Sidecar runtime to be installed. May improve stability but can cause issues on some systems.",
+      icon: Icons.settings_ethernet_rounded,
+      isChecked: getVal("aniyomiDesktopUseSidecar") ?? false,
+      isVisible: Platform.isWindows || Platform.isLinux,
+      onSwitchChange: (v) async {
+        setVal("aniyomiDesktopUseSidecar", v);
+        Logger.log(
+          "Set useSidecar to $v. Restart the app for changes to take effect.",
+          show: true,
+        );
+      },
+    ),
+  ];
 }

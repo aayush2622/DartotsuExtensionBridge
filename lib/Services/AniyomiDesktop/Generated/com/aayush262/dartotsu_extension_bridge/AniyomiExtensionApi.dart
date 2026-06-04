@@ -40,32 +40,37 @@ import 'package:jni/jni.dart' as jni$_;
 extension type AniyomiExtensionApi._(jni$_.JObject _$this)
     implements jni$_.JObject {
   static final _class = jni$_.JClass.forName(
-      r'com/aayush262/dartotsu_extension_bridge/AniyomiExtensionApi');
+    r'com/aayush262/dartotsu_extension_bridge/AniyomiExtensionApi',
+  );
 
   /// The type which includes information such as the signature of this class.
   static const jni$_.JType<AniyomiExtensionApi> type =
       $AniyomiExtensionApi$Type$();
-  static final _id_new$ = _class.constructorId(
-    r'()V',
-  );
+  static final _id_new$ = _class.constructorId(r'()V');
 
-  static final _new$ = jni$_.ProtectedJniExtensions.lookup<
-          jni$_.NativeFunction<
+  static final _new$ =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
                 jni$_.Pointer<jni$_.Void>,
                 jni$_.JMethodIDPtr,
-              )>>('globalEnv_NewObject')
-      .asFunction<
-          jni$_.JniResult Function(
-            jni$_.Pointer<jni$_.Void>,
-            jni$_.JMethodIDPtr,
-          )>();
+              )
+            >
+          >('globalEnv_NewObject')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+            )
+          >();
 
   /// from: `public void <init>()`
   /// The returned object must be released after use, by calling the [release] method.
   factory AniyomiExtensionApi() {
-    return _new$(_class.reference.pointer, _id_new$.pointer)
-        .object<AniyomiExtensionApi>();
+    return _new$(
+      _class.reference.pointer,
+      _id_new$.pointer,
+    ).object<AniyomiExtensionApi>();
   }
 }
 
@@ -75,102 +80,124 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     r'(Lcom/aayush262/dartotsu_extension_bridge/aniyomi/CustomMethods;)V',
   );
 
-  static final _initialize = jni$_.ProtectedJniExtensions.lookup<
-              jni$_.NativeFunction<
-                  jni$_.JThrowablePtr Function(
-                      jni$_.Pointer<jni$_.Void>,
-                      jni$_.JMethodIDPtr,
-                      jni$_.VarArgs<(jni$_.Pointer<jni$_.Void>,)>)>>(
-          'globalEnv_CallVoidMethod')
-      .asFunction<
-          jni$_.JThrowablePtr Function(jni$_.Pointer<jni$_.Void>,
-              jni$_.JMethodIDPtr, jni$_.Pointer<jni$_.Void>)>();
+  static final _initialize =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JThrowablePtr Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<(jni$_.Pointer<jni$_.Void>,)>,
+              )
+            >
+          >('globalEnv_CallVoidMethod')
+          .asFunction<
+            jni$_.JThrowablePtr Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public fun initialize(customMethods: com.aayush262.dartotsu_extension_bridge.aniyomi.CustomMethods): kotlin.Unit`
-  void initialize(
-    jni$_.JObject customMethods,
-  ) {
+  void initialize(jni$_.JObject customMethods) {
     final _$customMethods = customMethods.reference;
     _initialize(
-            reference.pointer, _id_initialize.pointer, _$customMethods.pointer)
-        .check();
+      reference.pointer,
+      _id_initialize.pointer,
+      _$customMethods.pointer,
+    ).check();
   }
 
   static final _id_initClient = AniyomiExtensionApi._class.instanceMethodId(
     r'initClient',
-    r'(Ljava/util/Map;)V',
-  );
-
-  static final _initClient = jni$_.ProtectedJniExtensions.lookup<
-              jni$_.NativeFunction<
-                  jni$_.JThrowablePtr Function(
-                      jni$_.Pointer<jni$_.Void>,
-                      jni$_.JMethodIDPtr,
-                      jni$_.VarArgs<(jni$_.Pointer<jni$_.Void>,)>)>>(
-          'globalEnv_CallVoidMethod')
-      .asFunction<
-          jni$_.JThrowablePtr Function(jni$_.Pointer<jni$_.Void>,
-              jni$_.JMethodIDPtr, jni$_.Pointer<jni$_.Void>)>();
-
-  /// from: `public fun initClient(data: kotlin.collections.Map<*, *>): kotlin.Unit`
-  void initClient(
-    jni$_.JMap<jni$_.JObject?, jni$_.JObject?> map,
-  ) {
-    final _$map = map.reference;
-    _initClient(reference.pointer, _id_initClient.pointer, _$map.pointer)
-        .check();
-  }
-
-  static final _id_initializeDesktop =
-      AniyomiExtensionApi._class.instanceMethodId(
-    r'initializeDesktop',
     r'(Ljava/lang/String;)V',
   );
 
-  static final _initializeDesktop = jni$_.ProtectedJniExtensions.lookup<
-              jni$_.NativeFunction<
-                  jni$_.JThrowablePtr Function(
-                      jni$_.Pointer<jni$_.Void>,
-                      jni$_.JMethodIDPtr,
-                      jni$_.VarArgs<(jni$_.Pointer<jni$_.Void>,)>)>>(
-          'globalEnv_CallVoidMethod')
-      .asFunction<
-          jni$_.JThrowablePtr Function(jni$_.Pointer<jni$_.Void>,
-              jni$_.JMethodIDPtr, jni$_.Pointer<jni$_.Void>)>();
+  static final _initClient =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JThrowablePtr Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<(jni$_.Pointer<jni$_.Void>,)>,
+              )
+            >
+          >('globalEnv_CallVoidMethod')
+          .asFunction<
+            jni$_.JThrowablePtr Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
-  /// from: `public fun initializeDesktop(basePath: kotlin.String): kotlin.Unit`
-  void initializeDesktop(
-    jni$_.JString string,
-  ) {
+  /// from: `public fun initClient(data: kotlin.String): kotlin.Unit`
+  void initClient(jni$_.JString string) {
     final _$string = string.reference;
-    _initializeDesktop(
-            reference.pointer, _id_initializeDesktop.pointer, _$string.pointer)
-        .check();
+    _initClient(
+      reference.pointer,
+      _id_initClient.pointer,
+      _$string.pointer,
+    ).check();
   }
 
-  static final _id_getInstalledAnimeExtensions =
-      AniyomiExtensionApi._class.instanceMethodId(
-    r'getInstalledAnimeExtensions',
-    r'(Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;',
-  );
+  static final _id_initializeDesktop = AniyomiExtensionApi._class
+      .instanceMethodId(r'initializeDesktop', r'(Ljava/lang/String;)V');
+
+  static final _initializeDesktop =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JThrowablePtr Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<(jni$_.Pointer<jni$_.Void>,)>,
+              )
+            >
+          >('globalEnv_CallVoidMethod')
+          .asFunction<
+            jni$_.JThrowablePtr Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
+
+  /// from: `public fun initializeDesktop(basePath: kotlin.String): kotlin.Unit`
+  void initializeDesktop(jni$_.JString string) {
+    final _$string = string.reference;
+    _initializeDesktop(
+      reference.pointer,
+      _id_initializeDesktop.pointer,
+      _$string.pointer,
+    ).check();
+  }
+
+  static final _id_getInstalledAnimeExtensions = AniyomiExtensionApi._class
+      .instanceMethodId(
+        r'getInstalledAnimeExtensions',
+        r'(Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;',
+      );
 
   static final _getInstalledAnimeExtensions =
       jni$_.ProtectedJniExtensions.lookup<
-              jni$_.NativeFunction<
-                  jni$_.JniResult Function(
-                      jni$_.Pointer<jni$_.Void>,
-                      jni$_.JMethodIDPtr,
-                      jni$_.VarArgs<
-                          (
-                            jni$_.Pointer<jni$_.Void>,
-                            jni$_.Pointer<jni$_.Void>
-                          )>)>>('globalEnv_CallObjectMethod')
-          .asFunction<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.JMethodIDPtr,
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.Pointer<jni$_.Void>)>();
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (jni$_.Pointer<jni$_.Void>, jni$_.Pointer<jni$_.Void>)
+                >,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public suspend fun getInstalledAnimeExtensions(path: kotlin.String?): kotlin.String`
   /// The returned object must be released after use, by calling the [release] method.
@@ -181,58 +208,61 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     final _$continuation = jni$_.ProtectedJniExtensions.newPortContinuation($p);
     final _$string = string?.reference ?? jni$_.jNullReference;
     final $r = _getInstalledAnimeExtensions(
-            reference.pointer,
-            _id_getInstalledAnimeExtensions.pointer,
-            _$string.pointer,
-            _$continuation.pointer)
-        .object<jni$_.JObject>();
+      reference.pointer,
+      _id_getInstalledAnimeExtensions.pointer,
+      _$string.pointer,
+      _$continuation.pointer,
+    ).object<jni$_.JObject>();
     _$continuation.release();
     jni$_.JObject $o;
     if ($r.isInstanceOf(jni$_.coroutineSingletonsClass)) {
       $r.release();
       final $a = await $p.first;
       $o = jni$_.JObject.fromReference(
-          jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)));
+        jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)),
+      );
       if ($o.isInstanceOf(jni$_.result$Class)) {
         $o = jni$_.resultValueField.get($o, const jni$_.$JObject$Type$());
       } else if ($o.isInstanceOf(jni$_.result$FailureClass)) {
-        final $e =
-            jni$_.failureExceptionField.get($o, const jni$_.$JObject$Type$());
+        final $e = jni$_.failureExceptionField.get(
+          $o,
+          const jni$_.$JObject$Type$(),
+        );
         $o.release();
         jni$_.Jni.throwException($e.reference.toPointer());
       }
     } else {
       $o = $r;
     }
-    return $o.as<jni$_.JString>(
-      jni$_.JString.type,
-      releaseOriginal: true,
-    );
+    return $o.as<jni$_.JString>(jni$_.JString.type, releaseOriginal: true);
   }
 
-  static final _id_getInstalledMangaExtensions =
-      AniyomiExtensionApi._class.instanceMethodId(
-    r'getInstalledMangaExtensions',
-    r'(Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;',
-  );
+  static final _id_getInstalledMangaExtensions = AniyomiExtensionApi._class
+      .instanceMethodId(
+        r'getInstalledMangaExtensions',
+        r'(Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;',
+      );
 
   static final _getInstalledMangaExtensions =
       jni$_.ProtectedJniExtensions.lookup<
-              jni$_.NativeFunction<
-                  jni$_.JniResult Function(
-                      jni$_.Pointer<jni$_.Void>,
-                      jni$_.JMethodIDPtr,
-                      jni$_.VarArgs<
-                          (
-                            jni$_.Pointer<jni$_.Void>,
-                            jni$_.Pointer<jni$_.Void>
-                          )>)>>('globalEnv_CallObjectMethod')
-          .asFunction<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.JMethodIDPtr,
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.Pointer<jni$_.Void>)>();
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (jni$_.Pointer<jni$_.Void>, jni$_.Pointer<jni$_.Void>)
+                >,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public suspend fun getInstalledMangaExtensions(path: kotlin.String?): kotlin.String`
   /// The returned object must be released after use, by calling the [release] method.
@@ -243,33 +273,33 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     final _$continuation = jni$_.ProtectedJniExtensions.newPortContinuation($p);
     final _$string = string?.reference ?? jni$_.jNullReference;
     final $r = _getInstalledMangaExtensions(
-            reference.pointer,
-            _id_getInstalledMangaExtensions.pointer,
-            _$string.pointer,
-            _$continuation.pointer)
-        .object<jni$_.JObject>();
+      reference.pointer,
+      _id_getInstalledMangaExtensions.pointer,
+      _$string.pointer,
+      _$continuation.pointer,
+    ).object<jni$_.JObject>();
     _$continuation.release();
     jni$_.JObject $o;
     if ($r.isInstanceOf(jni$_.coroutineSingletonsClass)) {
       $r.release();
       final $a = await $p.first;
       $o = jni$_.JObject.fromReference(
-          jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)));
+        jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)),
+      );
       if ($o.isInstanceOf(jni$_.result$Class)) {
         $o = jni$_.resultValueField.get($o, const jni$_.$JObject$Type$());
       } else if ($o.isInstanceOf(jni$_.result$FailureClass)) {
-        final $e =
-            jni$_.failureExceptionField.get($o, const jni$_.$JObject$Type$());
+        final $e = jni$_.failureExceptionField.get(
+          $o,
+          const jni$_.$JObject$Type$(),
+        );
         $o.release();
         jni$_.Jni.throwException($e.reference.toPointer());
       }
     } else {
       $o = $r;
     }
-    return $o.as<jni$_.JString>(
-      jni$_.JString.type,
-      releaseOriginal: true,
-    );
+    return $o.as<jni$_.JString>(jni$_.JString.type, releaseOriginal: true);
   }
 
   static final _id_getPopular = AniyomiExtensionApi._class.instanceMethodId(
@@ -277,26 +307,33 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     r'(Ljava/lang/String;ZILkotlin/coroutines/Continuation;)Ljava/lang/Object;',
   );
 
-  static final _getPopular = jni$_.ProtectedJniExtensions.lookup<
-          jni$_.NativeFunction<
+  static final _getPopular =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.JMethodIDPtr,
-                  jni$_.VarArgs<
-                      (
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Int32,
-                        jni$_.Int32,
-                        jni$_.Pointer<jni$_.Void>
-                      )>)>>('globalEnv_CallObjectMethod')
-      .asFunction<
-          jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Int32,
+                    jni$_.Int32,
+                    jni$_.Pointer<jni$_.Void>,
+                  )
+                >,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
               jni$_.Pointer<jni$_.Void>,
               jni$_.JMethodIDPtr,
               jni$_.Pointer<jni$_.Void>,
               core$_.int,
               core$_.int,
-              jni$_.Pointer<jni$_.Void>)>();
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public suspend fun getPopular(sourceId: kotlin.String, isAnime: kotlin.Boolean, page: kotlin.Int): kotlin.String`
   /// The returned object must be released after use, by calling the [release] method.
@@ -308,59 +345,70 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     final $p = jni$_.ReceivePort();
     final _$continuation = jni$_.ProtectedJniExtensions.newPortContinuation($p);
     final _$string = string.reference;
-    final $r = _getPopular(reference.pointer, _id_getPopular.pointer,
-            _$string.pointer, z ? 1 : 0, i, _$continuation.pointer)
-        .object<jni$_.JObject>();
+    final $r = _getPopular(
+      reference.pointer,
+      _id_getPopular.pointer,
+      _$string.pointer,
+      z ? 1 : 0,
+      i,
+      _$continuation.pointer,
+    ).object<jni$_.JObject>();
     _$continuation.release();
     jni$_.JObject $o;
     if ($r.isInstanceOf(jni$_.coroutineSingletonsClass)) {
       $r.release();
       final $a = await $p.first;
       $o = jni$_.JObject.fromReference(
-          jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)));
+        jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)),
+      );
       if ($o.isInstanceOf(jni$_.result$Class)) {
         $o = jni$_.resultValueField.get($o, const jni$_.$JObject$Type$());
       } else if ($o.isInstanceOf(jni$_.result$FailureClass)) {
-        final $e =
-            jni$_.failureExceptionField.get($o, const jni$_.$JObject$Type$());
+        final $e = jni$_.failureExceptionField.get(
+          $o,
+          const jni$_.$JObject$Type$(),
+        );
         $o.release();
         jni$_.Jni.throwException($e.reference.toPointer());
       }
     } else {
       $o = $r;
     }
-    return $o.as<jni$_.JString>(
-      jni$_.JString.type,
-      releaseOriginal: true,
-    );
+    return $o.as<jni$_.JString>(jni$_.JString.type, releaseOriginal: true);
   }
 
-  static final _id_getLatestUpdates =
-      AniyomiExtensionApi._class.instanceMethodId(
+  static final _id_getLatestUpdates = AniyomiExtensionApi._class.instanceMethodId(
     r'getLatestUpdates',
     r'(Ljava/lang/String;ZILkotlin/coroutines/Continuation;)Ljava/lang/Object;',
   );
 
-  static final _getLatestUpdates = jni$_.ProtectedJniExtensions.lookup<
-          jni$_.NativeFunction<
+  static final _getLatestUpdates =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.JMethodIDPtr,
-                  jni$_.VarArgs<
-                      (
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Int32,
-                        jni$_.Int32,
-                        jni$_.Pointer<jni$_.Void>
-                      )>)>>('globalEnv_CallObjectMethod')
-      .asFunction<
-          jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Int32,
+                    jni$_.Int32,
+                    jni$_.Pointer<jni$_.Void>,
+                  )
+                >,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
               jni$_.Pointer<jni$_.Void>,
               jni$_.JMethodIDPtr,
               jni$_.Pointer<jni$_.Void>,
               core$_.int,
               core$_.int,
-              jni$_.Pointer<jni$_.Void>)>();
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public suspend fun getLatestUpdates(sourceId: kotlin.String, isAnime: kotlin.Boolean, page: kotlin.Int): kotlin.String`
   /// The returned object must be released after use, by calling the [release] method.
@@ -373,35 +421,35 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     final _$continuation = jni$_.ProtectedJniExtensions.newPortContinuation($p);
     final _$string = string.reference;
     final $r = _getLatestUpdates(
-            reference.pointer,
-            _id_getLatestUpdates.pointer,
-            _$string.pointer,
-            z ? 1 : 0,
-            i,
-            _$continuation.pointer)
-        .object<jni$_.JObject>();
+      reference.pointer,
+      _id_getLatestUpdates.pointer,
+      _$string.pointer,
+      z ? 1 : 0,
+      i,
+      _$continuation.pointer,
+    ).object<jni$_.JObject>();
     _$continuation.release();
     jni$_.JObject $o;
     if ($r.isInstanceOf(jni$_.coroutineSingletonsClass)) {
       $r.release();
       final $a = await $p.first;
       $o = jni$_.JObject.fromReference(
-          jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)));
+        jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)),
+      );
       if ($o.isInstanceOf(jni$_.result$Class)) {
         $o = jni$_.resultValueField.get($o, const jni$_.$JObject$Type$());
       } else if ($o.isInstanceOf(jni$_.result$FailureClass)) {
-        final $e =
-            jni$_.failureExceptionField.get($o, const jni$_.$JObject$Type$());
+        final $e = jni$_.failureExceptionField.get(
+          $o,
+          const jni$_.$JObject$Type$(),
+        );
         $o.release();
         jni$_.Jni.throwException($e.reference.toPointer());
       }
     } else {
       $o = $r;
     }
-    return $o.as<jni$_.JString>(
-      jni$_.JString.type,
-      releaseOriginal: true,
-    );
+    return $o.as<jni$_.JString>(jni$_.JString.type, releaseOriginal: true);
   }
 
   static final _id_search = AniyomiExtensionApi._class.instanceMethodId(
@@ -409,28 +457,35 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     r'(Ljava/lang/String;ZLjava/lang/String;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;',
   );
 
-  static final _search = jni$_.ProtectedJniExtensions.lookup<
-          jni$_.NativeFunction<
+  static final _search =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.JMethodIDPtr,
-                  jni$_.VarArgs<
-                      (
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Int32,
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Int32,
-                        jni$_.Pointer<jni$_.Void>
-                      )>)>>('globalEnv_CallObjectMethod')
-      .asFunction<
-          jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Int32,
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Int32,
+                    jni$_.Pointer<jni$_.Void>,
+                  )
+                >,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
               jni$_.Pointer<jni$_.Void>,
               jni$_.JMethodIDPtr,
               jni$_.Pointer<jni$_.Void>,
               core$_.int,
               jni$_.Pointer<jni$_.Void>,
               core$_.int,
-              jni$_.Pointer<jni$_.Void>)>();
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public suspend fun search(sourceId: kotlin.String, isAnime: kotlin.Boolean, query: kotlin.String, page: kotlin.Int): kotlin.String`
   /// The returned object must be released after use, by calling the [release] method.
@@ -444,31 +499,37 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     final _$continuation = jni$_.ProtectedJniExtensions.newPortContinuation($p);
     final _$string = string.reference;
     final _$string1 = string1.reference;
-    final $r = _search(reference.pointer, _id_search.pointer, _$string.pointer,
-            z ? 1 : 0, _$string1.pointer, i, _$continuation.pointer)
-        .object<jni$_.JObject>();
+    final $r = _search(
+      reference.pointer,
+      _id_search.pointer,
+      _$string.pointer,
+      z ? 1 : 0,
+      _$string1.pointer,
+      i,
+      _$continuation.pointer,
+    ).object<jni$_.JObject>();
     _$continuation.release();
     jni$_.JObject $o;
     if ($r.isInstanceOf(jni$_.coroutineSingletonsClass)) {
       $r.release();
       final $a = await $p.first;
       $o = jni$_.JObject.fromReference(
-          jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)));
+        jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)),
+      );
       if ($o.isInstanceOf(jni$_.result$Class)) {
         $o = jni$_.resultValueField.get($o, const jni$_.$JObject$Type$());
       } else if ($o.isInstanceOf(jni$_.result$FailureClass)) {
-        final $e =
-            jni$_.failureExceptionField.get($o, const jni$_.$JObject$Type$());
+        final $e = jni$_.failureExceptionField.get(
+          $o,
+          const jni$_.$JObject$Type$(),
+        );
         $o.release();
         jni$_.Jni.throwException($e.reference.toPointer());
       }
     } else {
       $o = $r;
     }
-    return $o.as<jni$_.JString>(
-      jni$_.JString.type,
-      releaseOriginal: true,
-    );
+    return $o.as<jni$_.JString>(jni$_.JString.type, releaseOriginal: true);
   }
 
   static final _id_getDetail = AniyomiExtensionApi._class.instanceMethodId(
@@ -476,26 +537,33 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     r'(Ljava/lang/String;ZLjava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;',
   );
 
-  static final _getDetail = jni$_.ProtectedJniExtensions.lookup<
-          jni$_.NativeFunction<
+  static final _getDetail =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.JMethodIDPtr,
-                  jni$_.VarArgs<
-                      (
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Int32,
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Pointer<jni$_.Void>
-                      )>)>>('globalEnv_CallObjectMethod')
-      .asFunction<
-          jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Int32,
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Pointer<jni$_.Void>,
+                  )
+                >,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
               jni$_.Pointer<jni$_.Void>,
               jni$_.JMethodIDPtr,
               jni$_.Pointer<jni$_.Void>,
               core$_.int,
               jni$_.Pointer<jni$_.Void>,
-              jni$_.Pointer<jni$_.Void>)>();
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public suspend fun getDetail(sourceId: kotlin.String, isAnime: kotlin.Boolean, media: kotlin.String): kotlin.String`
   /// The returned object must be released after use, by calling the [release] method.
@@ -509,35 +577,35 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     final _$string = string.reference;
     final _$string1 = string1.reference;
     final $r = _getDetail(
-            reference.pointer,
-            _id_getDetail.pointer,
-            _$string.pointer,
-            z ? 1 : 0,
-            _$string1.pointer,
-            _$continuation.pointer)
-        .object<jni$_.JObject>();
+      reference.pointer,
+      _id_getDetail.pointer,
+      _$string.pointer,
+      z ? 1 : 0,
+      _$string1.pointer,
+      _$continuation.pointer,
+    ).object<jni$_.JObject>();
     _$continuation.release();
     jni$_.JObject $o;
     if ($r.isInstanceOf(jni$_.coroutineSingletonsClass)) {
       $r.release();
       final $a = await $p.first;
       $o = jni$_.JObject.fromReference(
-          jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)));
+        jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)),
+      );
       if ($o.isInstanceOf(jni$_.result$Class)) {
         $o = jni$_.resultValueField.get($o, const jni$_.$JObject$Type$());
       } else if ($o.isInstanceOf(jni$_.result$FailureClass)) {
-        final $e =
-            jni$_.failureExceptionField.get($o, const jni$_.$JObject$Type$());
+        final $e = jni$_.failureExceptionField.get(
+          $o,
+          const jni$_.$JObject$Type$(),
+        );
         $o.release();
         jni$_.Jni.throwException($e.reference.toPointer());
       }
     } else {
       $o = $r;
     }
-    return $o.as<jni$_.JString>(
-      jni$_.JString.type,
-      releaseOriginal: true,
-    );
+    return $o.as<jni$_.JString>(jni$_.JString.type, releaseOriginal: true);
   }
 
   static final _id_getVideoList = AniyomiExtensionApi._class.instanceMethodId(
@@ -545,26 +613,33 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     r'(Ljava/lang/String;ZLjava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;',
   );
 
-  static final _getVideoList = jni$_.ProtectedJniExtensions.lookup<
-          jni$_.NativeFunction<
+  static final _getVideoList =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.JMethodIDPtr,
-                  jni$_.VarArgs<
-                      (
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Int32,
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Pointer<jni$_.Void>
-                      )>)>>('globalEnv_CallObjectMethod')
-      .asFunction<
-          jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Int32,
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Pointer<jni$_.Void>,
+                  )
+                >,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
               jni$_.Pointer<jni$_.Void>,
               jni$_.JMethodIDPtr,
               jni$_.Pointer<jni$_.Void>,
               core$_.int,
               jni$_.Pointer<jni$_.Void>,
-              jni$_.Pointer<jni$_.Void>)>();
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public suspend fun getVideoList(sourceId: kotlin.String, isAnime: kotlin.Boolean, episode: kotlin.String): kotlin.String`
   /// The returned object must be released after use, by calling the [release] method.
@@ -578,35 +653,35 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     final _$string = string.reference;
     final _$string1 = string1.reference;
     final $r = _getVideoList(
-            reference.pointer,
-            _id_getVideoList.pointer,
-            _$string.pointer,
-            z ? 1 : 0,
-            _$string1.pointer,
-            _$continuation.pointer)
-        .object<jni$_.JObject>();
+      reference.pointer,
+      _id_getVideoList.pointer,
+      _$string.pointer,
+      z ? 1 : 0,
+      _$string1.pointer,
+      _$continuation.pointer,
+    ).object<jni$_.JObject>();
     _$continuation.release();
     jni$_.JObject $o;
     if ($r.isInstanceOf(jni$_.coroutineSingletonsClass)) {
       $r.release();
       final $a = await $p.first;
       $o = jni$_.JObject.fromReference(
-          jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)));
+        jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)),
+      );
       if ($o.isInstanceOf(jni$_.result$Class)) {
         $o = jni$_.resultValueField.get($o, const jni$_.$JObject$Type$());
       } else if ($o.isInstanceOf(jni$_.result$FailureClass)) {
-        final $e =
-            jni$_.failureExceptionField.get($o, const jni$_.$JObject$Type$());
+        final $e = jni$_.failureExceptionField.get(
+          $o,
+          const jni$_.$JObject$Type$(),
+        );
         $o.release();
         jni$_.Jni.throwException($e.reference.toPointer());
       }
     } else {
       $o = $r;
     }
-    return $o.as<jni$_.JString>(
-      jni$_.JString.type,
-      releaseOriginal: true,
-    );
+    return $o.as<jni$_.JString>(jni$_.JString.type, releaseOriginal: true);
   }
 
   static final _id_getPageList = AniyomiExtensionApi._class.instanceMethodId(
@@ -614,26 +689,33 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     r'(Ljava/lang/String;ZLjava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;',
   );
 
-  static final _getPageList = jni$_.ProtectedJniExtensions.lookup<
-          jni$_.NativeFunction<
+  static final _getPageList =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.JMethodIDPtr,
-                  jni$_.VarArgs<
-                      (
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Int32,
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Pointer<jni$_.Void>
-                      )>)>>('globalEnv_CallObjectMethod')
-      .asFunction<
-          jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Int32,
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Pointer<jni$_.Void>,
+                  )
+                >,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
               jni$_.Pointer<jni$_.Void>,
               jni$_.JMethodIDPtr,
               jni$_.Pointer<jni$_.Void>,
               core$_.int,
               jni$_.Pointer<jni$_.Void>,
-              jni$_.Pointer<jni$_.Void>)>();
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public suspend fun getPageList(sourceId: kotlin.String, isAnime: kotlin.Boolean, episode: kotlin.String): kotlin.String`
   /// The returned object must be released after use, by calling the [release] method.
@@ -647,61 +729,63 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     final _$string = string.reference;
     final _$string1 = string1.reference;
     final $r = _getPageList(
-            reference.pointer,
-            _id_getPageList.pointer,
-            _$string.pointer,
-            z ? 1 : 0,
-            _$string1.pointer,
-            _$continuation.pointer)
-        .object<jni$_.JObject>();
+      reference.pointer,
+      _id_getPageList.pointer,
+      _$string.pointer,
+      z ? 1 : 0,
+      _$string1.pointer,
+      _$continuation.pointer,
+    ).object<jni$_.JObject>();
     _$continuation.release();
     jni$_.JObject $o;
     if ($r.isInstanceOf(jni$_.coroutineSingletonsClass)) {
       $r.release();
       final $a = await $p.first;
       $o = jni$_.JObject.fromReference(
-          jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)));
+        jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)),
+      );
       if ($o.isInstanceOf(jni$_.result$Class)) {
         $o = jni$_.resultValueField.get($o, const jni$_.$JObject$Type$());
       } else if ($o.isInstanceOf(jni$_.result$FailureClass)) {
-        final $e =
-            jni$_.failureExceptionField.get($o, const jni$_.$JObject$Type$());
+        final $e = jni$_.failureExceptionField.get(
+          $o,
+          const jni$_.$JObject$Type$(),
+        );
         $o.release();
         jni$_.Jni.throwException($e.reference.toPointer());
       }
     } else {
       $o = $r;
     }
-    return $o.as<jni$_.JString>(
-      jni$_.JString.type,
-      releaseOriginal: true,
-    );
+    return $o.as<jni$_.JString>(jni$_.JString.type, releaseOriginal: true);
   }
 
-  static final _id_get$preferenceScreenMap =
-      AniyomiExtensionApi._class.instanceMethodId(
-    r'getPreferenceScreenMap',
-    r'()Ljava/util/Map;',
-  );
+  static final _id_get$preferenceScreenMap = AniyomiExtensionApi._class
+      .instanceMethodId(r'getPreferenceScreenMap', r'()Ljava/util/Map;');
 
-  static final _get$preferenceScreenMap = jni$_.ProtectedJniExtensions.lookup<
-          jni$_.NativeFunction<
+  static final _get$preferenceScreenMap =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
                 jni$_.Pointer<jni$_.Void>,
                 jni$_.JMethodIDPtr,
-              )>>('globalEnv_CallObjectMethod')
-      .asFunction<
-          jni$_.JniResult Function(
-            jni$_.Pointer<jni$_.Void>,
-            jni$_.JMethodIDPtr,
-          )>();
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+            )
+          >();
 
   /// from: `public final java.util.Map<java.lang.String, androidx.preference.PreferenceScreen> getPreferenceScreenMap()`
   /// The returned object must be released after use, by calling the [release] method.
   jni$_.JMap<jni$_.JString, jni$_.JObject> get preferenceScreenMap {
     return _get$preferenceScreenMap(
-            reference.pointer, _id_get$preferenceScreenMap.pointer)
-        .object<jni$_.JMap<jni$_.JString, jni$_.JObject>>();
+      reference.pointer,
+      _id_get$preferenceScreenMap.pointer,
+    ).object<jni$_.JMap<jni$_.JString, jni$_.JObject>>();
   }
 
   static final _id_getPreference = AniyomiExtensionApi._class.instanceMethodId(
@@ -709,24 +793,31 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     r'(Ljava/lang/String;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;',
   );
 
-  static final _getPreference = jni$_.ProtectedJniExtensions.lookup<
-          jni$_.NativeFunction<
+  static final _getPreference =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.JMethodIDPtr,
-                  jni$_.VarArgs<
-                      (
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Int32,
-                        jni$_.Pointer<jni$_.Void>
-                      )>)>>('globalEnv_CallObjectMethod')
-      .asFunction<
-          jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Int32,
+                    jni$_.Pointer<jni$_.Void>,
+                  )
+                >,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
               jni$_.Pointer<jni$_.Void>,
               jni$_.JMethodIDPtr,
               jni$_.Pointer<jni$_.Void>,
               core$_.int,
-              jni$_.Pointer<jni$_.Void>)>();
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public suspend fun getPreference(sourceId: kotlin.String, isAnime: kotlin.Boolean): kotlin.String`
   /// The returned object must be released after use, by calling the [release] method.
@@ -737,59 +828,70 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     final $p = jni$_.ReceivePort();
     final _$continuation = jni$_.ProtectedJniExtensions.newPortContinuation($p);
     final _$string = string.reference;
-    final $r = _getPreference(reference.pointer, _id_getPreference.pointer,
-            _$string.pointer, z ? 1 : 0, _$continuation.pointer)
-        .object<jni$_.JObject>();
+    final $r = _getPreference(
+      reference.pointer,
+      _id_getPreference.pointer,
+      _$string.pointer,
+      z ? 1 : 0,
+      _$continuation.pointer,
+    ).object<jni$_.JObject>();
     _$continuation.release();
     jni$_.JObject $o;
     if ($r.isInstanceOf(jni$_.coroutineSingletonsClass)) {
       $r.release();
       final $a = await $p.first;
       $o = jni$_.JObject.fromReference(
-          jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)));
+        jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)),
+      );
       if ($o.isInstanceOf(jni$_.result$Class)) {
         $o = jni$_.resultValueField.get($o, const jni$_.$JObject$Type$());
       } else if ($o.isInstanceOf(jni$_.result$FailureClass)) {
-        final $e =
-            jni$_.failureExceptionField.get($o, const jni$_.$JObject$Type$());
+        final $e = jni$_.failureExceptionField.get(
+          $o,
+          const jni$_.$JObject$Type$(),
+        );
         $o.release();
         jni$_.Jni.throwException($e.reference.toPointer());
       }
     } else {
       $o = $r;
     }
-    return $o.as<jni$_.JString>(
-      jni$_.JString.type,
-      releaseOriginal: true,
-    );
+    return $o.as<jni$_.JString>(jni$_.JString.type, releaseOriginal: true);
   }
 
-  static final _id_saveSourcePreference =
-      AniyomiExtensionApi._class.instanceMethodId(
-    r'saveSourcePreference',
-    r'(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;',
-  );
+  static final _id_saveSourcePreference = AniyomiExtensionApi._class
+      .instanceMethodId(
+        r'saveSourcePreference',
+        r'(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;',
+      );
 
-  static final _saveSourcePreference = jni$_.ProtectedJniExtensions.lookup<
-          jni$_.NativeFunction<
+  static final _saveSourcePreference =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
               jni$_.JniResult Function(
-                  jni$_.Pointer<jni$_.Void>,
-                  jni$_.JMethodIDPtr,
-                  jni$_.VarArgs<
-                      (
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Pointer<jni$_.Void>,
-                        jni$_.Pointer<jni$_.Void>
-                      )>)>>('globalEnv_CallObjectMethod')
-      .asFunction<
-          jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Pointer<jni$_.Void>,
+                    jni$_.Pointer<jni$_.Void>,
+                  )
+                >,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
               jni$_.Pointer<jni$_.Void>,
               jni$_.JMethodIDPtr,
               jni$_.Pointer<jni$_.Void>,
               jni$_.Pointer<jni$_.Void>,
               jni$_.Pointer<jni$_.Void>,
-              jni$_.Pointer<jni$_.Void>)>();
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public suspend fun saveSourcePreference(sourceId: kotlin.String, key: kotlin.String, value: kotlin.String?): kotlin.Boolean`
   /// The returned object must be released after use, by calling the [release] method.
@@ -804,62 +906,66 @@ extension AniyomiExtensionApi$$Methods on AniyomiExtensionApi {
     final _$string1 = string1.reference;
     final _$string2 = string2?.reference ?? jni$_.jNullReference;
     final $r = _saveSourcePreference(
-            reference.pointer,
-            _id_saveSourcePreference.pointer,
-            _$string.pointer,
-            _$string1.pointer,
-            _$string2.pointer,
-            _$continuation.pointer)
-        .object<jni$_.JObject>();
+      reference.pointer,
+      _id_saveSourcePreference.pointer,
+      _$string.pointer,
+      _$string1.pointer,
+      _$string2.pointer,
+      _$continuation.pointer,
+    ).object<jni$_.JObject>();
     _$continuation.release();
     jni$_.JObject $o;
     if ($r.isInstanceOf(jni$_.coroutineSingletonsClass)) {
       $r.release();
       final $a = await $p.first;
       $o = jni$_.JObject.fromReference(
-          jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)));
+        jni$_.JGlobalReference(jni$_.JObjectPtr.fromAddress($a)),
+      );
       if ($o.isInstanceOf(jni$_.result$Class)) {
         $o = jni$_.resultValueField.get($o, const jni$_.$JObject$Type$());
       } else if ($o.isInstanceOf(jni$_.result$FailureClass)) {
-        final $e =
-            jni$_.failureExceptionField.get($o, const jni$_.$JObject$Type$());
+        final $e = jni$_.failureExceptionField.get(
+          $o,
+          const jni$_.$JObject$Type$(),
+        );
         $o.release();
         jni$_.Jni.throwException($e.reference.toPointer());
       }
     } else {
       $o = $r;
     }
-    return $o.as<jni$_.JBoolean>(
-      jni$_.JBoolean.type,
-      releaseOriginal: true,
-    );
+    return $o.as<jni$_.JBoolean>(jni$_.JBoolean.type, releaseOriginal: true);
   }
 
-  static final _id_initializeAndroid =
-      AniyomiExtensionApi._class.instanceMethodId(
-    r'initializeAndroid',
-    r'(Ljava/lang/Object;)V',
-  );
+  static final _id_initializeAndroid = AniyomiExtensionApi._class
+      .instanceMethodId(r'initializeAndroid', r'(Ljava/lang/Object;)V');
 
-  static final _initializeAndroid = jni$_.ProtectedJniExtensions.lookup<
-              jni$_.NativeFunction<
-                  jni$_.JThrowablePtr Function(
-                      jni$_.Pointer<jni$_.Void>,
-                      jni$_.JMethodIDPtr,
-                      jni$_.VarArgs<(jni$_.Pointer<jni$_.Void>,)>)>>(
-          'globalEnv_CallVoidMethod')
-      .asFunction<
-          jni$_.JThrowablePtr Function(jni$_.Pointer<jni$_.Void>,
-              jni$_.JMethodIDPtr, jni$_.Pointer<jni$_.Void>)>();
+  static final _initializeAndroid =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JThrowablePtr Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<(jni$_.Pointer<jni$_.Void>,)>,
+              )
+            >
+          >('globalEnv_CallVoidMethod')
+          .asFunction<
+            jni$_.JThrowablePtr Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
 
   /// from: `public void initializeAndroid(java.lang.Object object)`
-  void initializeAndroid(
-    jni$_.JObject object,
-  ) {
+  void initializeAndroid(jni$_.JObject object) {
     final _$object = object.reference;
     _initializeAndroid(
-            reference.pointer, _id_initializeAndroid.pointer, _$object.pointer)
-        .check();
+      reference.pointer,
+      _id_initializeAndroid.pointer,
+      _$object.pointer,
+    ).check();
   }
 }
 

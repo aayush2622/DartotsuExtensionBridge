@@ -15,6 +15,12 @@ object Logger {
         mainScope.launch {
             customAniyomiMethods?.log(level.name, message) ?: Log.d("ExtensionLogger", "[${level.name}] $message")
         }
+    fun log(message: String,throwable: Throwable, level: LogLevel = LogLevel.ERROR) {
+        mainScope.launch {
+            customAniyomiMethods?.log(level.name, "$message\n${throwable.stackTraceToString()}")
+                ?: println("[${level.name}] $message\n${throwable.stackTraceToString()}")
+        }
+    }
 
 }
 

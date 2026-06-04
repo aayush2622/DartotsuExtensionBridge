@@ -7,11 +7,8 @@ import 'package:http/http.dart';
 import 'package:isar_community/isar.dart';
 
 import 'ExtensionManager.dart';
-import 'Logger.dart';
 import 'Services/LnReader/JsEngine/JsEngine.dart';
 import 'Settings/KvStore.dart';
-
-Isar isar = DartotsuExtensionBridge.isar;
 
 class DartotsuExtensionBridge {
   DartotsuExtensionBridge._();
@@ -32,21 +29,24 @@ class DartotsuExtensionBridge {
     required GetDirectory getDirectory,
     Client? http,
     Isar? isarInstance,
+    BridgeNetwork? network,
+    Function(String log, bool show) onLog = onLog,
   }) async {
     if (_initialized) return;
 
-    Logger.init();
-
     final isar = isarInstance ?? await _openIsar(getDirectory);
 
-    final webViewEnv =
-        Platform.isWindows ? await _createWebViewEnv(getDirectory) : null;
+    final webViewEnv = Platform.isWindows
+        ? await _createWebViewEnv(getDirectory)
+        : null;
 
     context = BridgeContext(
       isar: isar,
       http: http,
       webViewEnvironment: webViewEnv,
       getDirectory: getDirectory,
+      network: network,
+      onLog: onLog,
     );
 
     Get.put(ExtensionManager());
@@ -64,10 +64,7 @@ class DartotsuExtensionBridge {
       throw StateError('Isar directory could not be resolved');
     }
 
-    return Isar.open(
-      isarSchema,
-      directory: dir.path,
-    );
+    return Isar.open(isarSchema, directory: dir.path);
   }
 
   static Future<WebViewEnvironment?> _createWebViewEnv(
@@ -85,17 +82,13 @@ class DartotsuExtensionBridge {
     if (dir == null) return null;
 
     return WebViewEnvironment.create(
-      settings: WebViewEnvironmentSettings(
-        userDataFolder: dir.path,
-      ),
+      settings: WebViewEnvironmentSettings(userDataFolder: dir.path),
     );
   }
 
   static void _assertInitialized() {
     if (!_initialized) {
-      throw StateError(
-        'DartotsuExtensionBridge.init() must be called first',
-      );
+      throw StateError('DartotsuExtensionBridge.init() must be called first');
     }
   }
 
@@ -104,13 +97,11 @@ class DartotsuExtensionBridge {
     return context.isar;
   }
 
-  static const isarSchema = [
-    KvEntrySchema,
-  ];
+  static const isarSchema = [KvEntrySchema];
 
-  static void Function(String log, bool show) onLog = (log, _) {
+  static void onLog(String log, bool _) {
     debugPrint('DartotsuExtensionBridge: $log');
-  };
+  }
 
   static void dispose() {
     if (_initialized) {
@@ -121,24 +112,41 @@ class DartotsuExtensionBridge {
   }
 }
 
+Isar isar = DartotsuExtensionBridge.isar;
+
+abstract interface class BridgeNetwork {
+  String? get dns;
+
+  String? get proxy;
+
+  Future<String?> getCookies(String url);
+
+  Future<void> setCookies(String url, List<String> cookies);
+}
+
 /// {@macro get_directory_contract}
-typedef GetDirectory = Future<Directory?> Function({
-  String? subPath,
-  bool useCustomPath,
-  bool useSystemPath,
-});
+typedef GetDirectory =
+    Future<Directory?> Function({
+      String? subPath,
+      bool useCustomPath,
+      bool useSystemPath,
+    });
 
 class BridgeContext {
   final Isar isar;
   final Client? http;
   final WebViewEnvironment? webViewEnvironment;
   final GetDirectory getDirectory;
+  final BridgeNetwork? network;
 
+  final Function(String log, bool show) onLog;
   const BridgeContext({
     required this.isar,
     this.http,
     this.webViewEnvironment,
     required this.getDirectory,
+    this.network,
+    this.onLog = DartotsuExtensionBridge.onLog,
   });
 }
 

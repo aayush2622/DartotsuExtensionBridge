@@ -2,19 +2,20 @@ import 'dart:async';
 
 import 'package:jni/jni.dart';
 
+import '../../Engines/JavaEngine/JavaHandler.dart';
 import 'Generated/com/aayush262/dartotsu_extension_bridge/AniyomiExtensionApi.dart';
 
-class AniyomiService {
+class AniyomiService extends JavaHandler {
   static final _api = AniyomiExtensionApi();
 
-  static Future<dynamic> handle(
-    String method,
-    Map<String, dynamic> args,
-  ) async {
+  @override
+  Future<dynamic> handle(String method, Map<String, dynamic> args) async {
     switch (method) {
-      case "initialize":
+      case "initializeDesktop":
         _api.initializeDesktop((args["path"] as String).toJString());
         return null;
+      case "initClient":
+        return _api.initClient((args["data"] as String).toJString());
 
       case "getInstalledAnimeExtensions":
         return await _api.getInstalledAnimeExtensions(

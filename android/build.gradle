@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 group = "com.aayush262.dartotsu_extension_bridge"
 version = "1.0-SNAPSHOT"
 
@@ -9,7 +7,6 @@ buildscript {
     repositories {
         google()
         mavenCentral()
-
     }
 
     dependencies {
@@ -36,6 +33,9 @@ apply plugin: "com.android.library"
 apply plugin: "org.jetbrains.kotlin.plugin.serialization"
 
 android {
+    if (project.android.hasProperty("namespace")) {
+        namespace 'com.aayush262.dartotsu_extension_bridge'
+    }
     namespace = "com.aayush262.dartotsu_extension_bridge"
 
     compileSdk = 37
@@ -81,12 +81,11 @@ dependencies {
     implementation project(":common")
     compileOnly "io.flutter:flutter_embedding_debug:1.0.0-ef0cd000916d64fa0c5d09cc809fa7ad244a5767"
 }
-
-configurations.configureEach {
-    exclude group: 'org.json', module: 'json'
-}
 kotlin {
     compilerOptions {
-        jvmTarget = JvmTarget.JVM_17
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
+}
+configurations.configureEach {
+    exclude group: 'org.json', module: 'json'
 }

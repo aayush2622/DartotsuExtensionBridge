@@ -21,12 +21,12 @@ class ExtensionManager extends GetxController {
   final Map<Type, SourceMethods Function(Source source)> _factories = {};
 
   List<Extension> get _extensionManagers => [
-        SoraExtensions(),
-        MangayomiExtensions(),
-        if (Platform.isAndroid) AniyomiExtensions(),
-        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-          AniyomiDesktopExtensions(),
-      ];
+    SoraExtensions(),
+    MangayomiExtensions(),
+    if (Platform.isAndroid) AniyomiExtensions(),
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+      AniyomiDesktopExtensions(),
+  ];
 
   @override
   void onInit() {
@@ -67,8 +67,10 @@ class ExtensionManager extends GetxController {
   T get<T extends Extension>() {
     final result = find<T>();
     if (result == null) {
-      throw Exception('Extension manager of type $T not registered\n'
-          'Perhaps $T is not supported on ${Platform.operatingSystem}?');
+      throw Exception(
+        'Extension manager of type $T not registered\n'
+        'Perhaps $T is not supported on ${Platform.operatingSystem}?',
+      );
     }
     return result;
   }
@@ -97,9 +99,7 @@ class ExtensionManager extends GetxController {
       }
     }
 
-    throw Exception(
-      "No SourceMethods registered for ${source.runtimeType}",
-    );
+    throw Exception("No SourceMethods registered for ${source.runtimeType}");
   }
 }
 

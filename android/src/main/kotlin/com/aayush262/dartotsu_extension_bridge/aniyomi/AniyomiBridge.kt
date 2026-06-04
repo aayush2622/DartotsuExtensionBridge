@@ -349,7 +349,7 @@ class AniyomiBridge(var context: Context) {
             when (call.method) {
                 "initClient" -> {
                     scope.launch {
-                        val args = call.arguments as? Map<*, *>
+                        val args = call.arguments as? String
                             ?: return@launch result.error(
                                 "INVALID_ARGUMENTS",
                                 "Expected a map",

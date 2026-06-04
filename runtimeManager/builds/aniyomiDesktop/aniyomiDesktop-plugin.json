@@ -1,13 +1,13 @@
 {
   "name": "aniyomiDesktop",
-  "versionCode": 10,
-  "versionName": "1.0.9",
+  "versionCode": 11,
+  "versionName": "1.0.10",
   "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
   "author": "aayush262",
-  "createdAt": 1780097050693,
+  "createdAt": 1780607177347,
   "type": "jar",
   "fileName": "aniyomiDesktop-plugin.jar",
-  "fileSize": 54010093,
+  "fileSize": 54013402,
   "downloadUrl": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiDesktop/aniyomiDesktop-plugin.jar",
   "platform": "desktop"
 }
