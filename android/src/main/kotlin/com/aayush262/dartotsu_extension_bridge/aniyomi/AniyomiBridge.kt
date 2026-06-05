@@ -371,7 +371,7 @@ class AniyomiBridge(var context: Context) {
                         }.onFailure {
                             Logger.log("initClient failed: ${it.stackTraceToString()}", LogLevel.ERROR)
                             withContext(Dispatchers.Main) {
-                                result.error("INIT_FAILED", it.message, null)
+                                result.success(null)
                             }
                             return@launch
                         }
