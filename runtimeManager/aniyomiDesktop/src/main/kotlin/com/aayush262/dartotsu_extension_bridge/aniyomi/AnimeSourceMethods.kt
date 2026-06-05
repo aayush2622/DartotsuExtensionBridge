@@ -54,7 +54,7 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
     override suspend fun getLatestUpdates(page: Int): AnimesPage = source.getLatestUpdates(page)
 
     override suspend fun getSearchResults(query: String, page: Int): AnimesPage = source.getSearchAnime(
-        page = page, query = query, filters = AnimeFilterList()
+        page = page, query = query, filters = source.getFilterList()
     )
 
     override suspend fun getDetails(media: SAnime): SAnime = source.getAnimeDetails(media)

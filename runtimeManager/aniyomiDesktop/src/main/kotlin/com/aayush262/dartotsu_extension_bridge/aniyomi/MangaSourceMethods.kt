@@ -62,7 +62,7 @@ class MangaSourceMethods(sourceID: String) : AniyomiSourceMethods {
             source.getSearchManga(
                 page = page,
                 query = query,
-                filters = FilterList()
+                filters = source.getFilterList()
             )
         )
     }
