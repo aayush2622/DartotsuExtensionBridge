@@ -4,7 +4,7 @@
   "versionName": "1.0.11",
   "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
   "author": "aayush262",
-  "createdAt": 1780697235067,
+  "createdAt": 1780700212075,
   "type": "jar",
   "fileName": "aniyomiDesktop-plugin.jar",
   "fileSize": 54013373,
