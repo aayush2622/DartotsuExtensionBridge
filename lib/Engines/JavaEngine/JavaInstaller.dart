@@ -61,7 +61,7 @@ class JavaRuntimeManager {
     final javaHome = javaFile.parent.parent;
 
     if (Platform.isWindows) {
-      final jvm = File('${javaHome.path}/bin/server/jvm.dll');
+      final jvm = File('${javaHome.path}\\bin\\server\\jvm.dll');
 
       if (await jvm.exists()) {
         return _cachedJvmPath = jvm.path;
