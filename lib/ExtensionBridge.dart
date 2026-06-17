@@ -68,22 +68,26 @@ class DartotsuExtensionBridge {
   }
 
   static Future<WebViewEnvironment?> _createWebViewEnv(
-    GetDirectory getDirectory,
-  ) async {
-    final version = await WebViewEnvironment.getAvailableVersion();
-    if (version == null) return null;
+      GetDirectory getDirectory,) async {
+    try {
+      final version = await WebViewEnvironment.getAvailableVersion();
+      if (version == null) return null;
 
-    final dir = await getDirectory(
-      subPath: 'webview',
-      useSystemPath: true,
-      useCustomPath: false,
-    );
+      final dir = await getDirectory(
+        subPath: 'webview',
+        useSystemPath: true,
+        useCustomPath: false,
+      );
 
-    if (dir == null) return null;
+      if (dir == null) return null;
 
-    return WebViewEnvironment.create(
-      settings: WebViewEnvironmentSettings(userDataFolder: dir.path),
-    );
+      return WebViewEnvironment.create(
+        settings: WebViewEnvironmentSettings(userDataFolder: dir.path),
+      );
+    } catch (e, st) {
+      debugPrint("Failed to create WebView environment: $e\n$st");
+      return null;
+    }
   }
 
   static void _assertInitialized() {
@@ -126,11 +130,11 @@ abstract interface class BridgeNetwork {
 
 /// {@macro get_directory_contract}
 typedef GetDirectory =
-    Future<Directory?> Function({
-      String? subPath,
-      bool useCustomPath,
-      bool useSystemPath,
-    });
+Future<Directory?> Function({
+String? subPath,
+bool useCustomPath,
+bool useSystemPath,
+});
 
 class BridgeContext {
   final Isar isar;
@@ -140,6 +144,7 @@ class BridgeContext {
   final BridgeNetwork? network;
 
   final Function(String log, bool show) onLog;
+
   const BridgeContext({
     required this.isar,
     this.http,

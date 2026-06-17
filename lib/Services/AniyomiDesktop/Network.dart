@@ -26,5 +26,5 @@ class AniyomiDesktopNetwork {
     }).start();
   }
 
-  void test() {}
+  
 }

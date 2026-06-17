@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 
 import '../Logger.dart';
 import '../NetworkClient.dart';
@@ -38,7 +39,7 @@ abstract class DownloadablePlugin {
 
   Future<File> get _file async {
     final dir = await _dir;
-    return File("${dir.path}/$fileName");
+    return File(p.join(dir.path, fileName));
   }
 
   Future<bool> isInstalled() async => (await _file).exists();
@@ -180,7 +181,8 @@ abstract class DownloadablePlugin {
 
     await sink.flush();
     await sink.close();
-    await temp.rename(file.path);
+    await temp.copy(file.path);
+    await temp.delete();
 
     setVal(_versionKey, version);
     progress.value = 1.0;

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'dart:isolate';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:jni/jni.dart';
 
@@ -113,7 +113,7 @@ class JniBridge implements JavaBridge {
         if (throwError) {
           throw Exception(result["error"]);
         }
-
+        Logger.log(result["error"]);
         return _emptyForType<T>();
       }
 
@@ -171,8 +171,19 @@ class JniBridge implements JavaBridge {
 
     try {
       if (jvmPath != null) {
+        final jvmDir = File(jvmPath).parent.path;
+
+        final currentPath = Platform.environment['PATH'] ?? '';
+
+        Platform.environment['PATH'] =
+        '$jvmDir;$currentPath';
+
         ffi.DynamicLibrary.open(jvmPath);
-        Logger.log("Loaded JVM: $jvmPath");
+        Jni.setDylibDir(
+          dylibDir: File(jvmPath).parent.path,
+        );
+        debugPrint("Loaded JVM: $jvmPath");
+
       }
 
       Jni.spawnIfNotExists(
@@ -183,7 +194,7 @@ class JniBridge implements JavaBridge {
 
       mainSendPort.send(port.sendPort);
     } catch (e, st) {
-      Logger.log("Failed to start JVM: $e\n$st");
+      debugPrint("Failed to start JVM: $e\n$st");
       rethrow;
     }
 
