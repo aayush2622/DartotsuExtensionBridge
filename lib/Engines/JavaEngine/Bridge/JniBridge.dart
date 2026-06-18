@@ -113,7 +113,7 @@ class JniBridge implements JavaBridge {
         if (throwError) {
           throw Exception(result["error"]);
         }
-        Logger.log(result["error"]);
+        Logger.log("${result["error"]} ${result["stack"]}");
         return _emptyForType<T>();
       }
 
@@ -153,7 +153,7 @@ class JniBridge implements JavaBridge {
   Future<void> _ensureFile(String path, ByteData data) async {
     final file = File(path);
 
-    if (await file.exists()) return;
+    //if (await file.exists()) return;
 
     await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
   }
@@ -171,24 +171,14 @@ class JniBridge implements JavaBridge {
 
     try {
       if (jvmPath != null) {
-        final jvmDir = File(jvmPath).parent.path;
-
-        final currentPath = Platform.environment['PATH'] ?? '';
-
-        Platform.environment['PATH'] =
-        '$jvmDir;$currentPath';
-
         ffi.DynamicLibrary.open(jvmPath);
-        Jni.setDylibDir(
-          dylibDir: File(jvmPath).parent.path,
-        );
         debugPrint("Loaded JVM: $jvmPath");
-
       }
-
+      Jni.setDylibDir(
+        dylibDir: File(libPath).parent.path,
+      );
       Jni.spawnIfNotExists(
         classPath: [jniJar, pluginJar],
-        dylibDir: File(libPath).parent.path,
         jvmOptions: const ["-Dfile.encoding=UTF-8", "-Xms128m", "-Xmx512m"],
       );
 
