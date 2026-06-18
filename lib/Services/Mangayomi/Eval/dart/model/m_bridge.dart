@@ -595,7 +595,6 @@ class MBridge {
     String response = "";
     HeadlessInAppWebView? headlessWebView;
     headlessWebView = HeadlessInAppWebView(
-      webViewEnvironment: DartotsuExtensionBridge.context.webViewEnvironment,
       onWebViewCreated: (controller) {
         controller.addJavaScriptHandler(
           handlerName: 'setResponse',

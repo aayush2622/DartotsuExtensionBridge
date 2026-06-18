@@ -36,14 +36,11 @@ class DartotsuExtensionBridge {
 
     final isar = isarInstance ?? await _openIsar(getDirectory);
 
-    final webViewEnv = Platform.isWindows
-        ? await _createWebViewEnv(getDirectory)
-        : null;
+
 
     context = BridgeContext(
       isar: isar,
       http: http,
-      webViewEnvironment: webViewEnv,
       getDirectory: getDirectory,
       network: network,
       onLog: onLog,
@@ -67,28 +64,6 @@ class DartotsuExtensionBridge {
     return Isar.open(isarSchema, directory: dir.path);
   }
 
-  static Future<WebViewEnvironment?> _createWebViewEnv(
-      GetDirectory getDirectory,) async {
-    try {
-      final version = await WebViewEnvironment.getAvailableVersion();
-      if (version == null) return null;
-
-      final dir = await getDirectory(
-        subPath: 'webview',
-        useSystemPath: true,
-        useCustomPath: false,
-      );
-
-      if (dir == null) return null;
-
-      return WebViewEnvironment.create(
-        settings: WebViewEnvironmentSettings(userDataFolder: dir.path),
-      );
-    } catch (e, st) {
-      debugPrint("Failed to create WebView environment: $e\n$st");
-      return null;
-    }
-  }
 
   static void _assertInitialized() {
     if (!_initialized) {
@@ -139,7 +114,6 @@ bool useSystemPath,
 class BridgeContext {
   final Isar isar;
   final Client? http;
-  final WebViewEnvironment? webViewEnvironment;
   final GetDirectory getDirectory;
   final BridgeNetwork? network;
 
@@ -148,7 +122,6 @@ class BridgeContext {
   const BridgeContext({
     required this.isar,
     this.http,
-    this.webViewEnvironment,
     required this.getDirectory,
     this.network,
     this.onLog = DartotsuExtensionBridge.onLog,
