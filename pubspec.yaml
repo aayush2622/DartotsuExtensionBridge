@@ -19,11 +19,7 @@ dependencies:
   http_interceptor: ^3.0.0
   html: ^0.15.6
   intl: ^0.20.2
-  flutter_inappwebview:
-    git:
-      url: https://github.com/roshancodespace/flutter_inappwebview.git
-      ref: master
-      path: flutter_inappwebview
+  flutter_inappwebview: ^6.2.0-beta.2
   pseudom: ^1.0.1
   encrypt: ^5.0.3
   xpath_selector_html_parser: ^3.0.1
@@ -40,7 +36,11 @@ dependencies:
       ref: dev
   install_plugin: ^2.1.0
   installed_apps: ^2.1.1
-  jnigen: ^0.16.0
+  jnigen:
+    git:
+      url: https://github.com/dart-lang/native.git
+      path: pkgs/jnigen
+      ref: d8ea533
   jni: ^1.0.0
 dev_dependencies:
   flutter_test:

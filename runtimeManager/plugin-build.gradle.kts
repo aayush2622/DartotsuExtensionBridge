@@ -135,8 +135,8 @@ tasks.register("buildPlugin") {
         val finalName: String
 
         if (hasChanged) {
-            finalCode = oldCode + 1
-            finalName = incrementVersion(oldName)
+            finalCode = oldCode //+ 1
+            finalName = oldName //incrementVersion(oldName)
             newFile.copyTo(existingFile, overwrite = true)
             println("[$pluginName] APK changed → bumping version to $finalName ($finalCode)")
         } else {

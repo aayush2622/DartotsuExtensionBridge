@@ -17,21 +17,9 @@ import '../../Logger.dart';
 import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
+import '../Network.dart';
 import 'AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
-import 'Network.dart';
-
-class AniyomiPlugin extends DownloadablePlugin {
-  @override
-  String get name => "aniyomi";
-
-  @override
-  String get remoteUrl =>
-      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiAndroid/aniyomiAndroid-plugin.json";
-
-  @override
-  String get fileName => "${name}_plugin.apk";
-}
 
 class AniyomiExtensions extends Extension {
   final _client = MClient.init();
@@ -62,8 +50,19 @@ class AniyomiExtensions extends Extension {
     await platform.invokeMethod('loadPlugin', {
       "path": filePath,
       "hasUpdate": hasUpdate,
+      "debug": true,
     });
-    await AniyomiNetwork.init();
+    await BridgeChannels.init();
+    var context = DartotsuExtensionBridge.context;
+    if (context.network != null) {
+      await platform.invokeMethod(
+        'initClient',
+        jsonEncode({
+          'dns': context.network?.dns,
+          'proxy': context.network?.proxy,
+        }),
+      );
+    }
     return true;
   }
 
@@ -653,4 +652,16 @@ class AniyomiExtensions extends Extension {
       ),
     ];
   }
+}
+
+class AniyomiPlugin extends DownloadablePlugin {
+  @override
+  String get name => "aniyomi";
+
+  @override
+  String get remoteUrl =>
+      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiAndroid/aniyomiAndroid-plugin.json";
+
+  @override
+  String get fileName => "${name}_plugin.apk";
 }

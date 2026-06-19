@@ -1,0 +1,16 @@
+output:
+  dart:
+    path: lib/Services/CloudStreamDesktop/Generated/
+
+classes:
+  - com.aayush262.dartotsu_extension_bridge.CloudStreamExtensionApi
+
+class_path:
+  - runtimeManager/builds/cloudStreamDesktop/cloudStreamDesktop-plugin.jar
+
+
+summarizer:
+  backend: asm
+
+
+#dart run jnigen --config jnigen_cloud_stream.yaml

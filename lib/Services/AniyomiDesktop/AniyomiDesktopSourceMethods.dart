@@ -76,7 +76,6 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
         'scanlator': episode.scanlator,
       }),
     });
-
     return await compute(parseVideos, result);
   }
 
@@ -133,20 +132,18 @@ class AniyomiSourceMethodsDesktop extends SourceMethods {
     });
   }
 
-  List<Video> parseVideos(List<dynamic> list) {
-    return list
-        .map((e) => Video.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
-  }
-
-  List<PageUrl> parsePageUrls(List<dynamic> list) {
-    return list
-        .map((e) => PageUrl.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
-  }
-
   @override
   Future<String?> getNovelContent(String chapterTitle, String chapterId) {
     throw UnimplementedError();
   }
+}
+
+List<PageUrl> parsePageUrls(List<dynamic> list) {
+  return list
+      .map((e) => PageUrl.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+}
+
+List<Video> parseVideos(List<dynamic> list) {
+  return list.map((e) => Video.fromJson(Map<String, dynamic>.from(e))).toList();
 }

@@ -1,0 +1,16 @@
+output:
+  dart:
+    path: lib/Services/AniyomiDesktop/Generated/
+
+classes:
+  - com.aayush262.dartotsu_extension_bridge.AniyomiExtensionApi
+
+class_path:
+  - runtimeManager/builds/aniyomiDesktop/aniyomiDesktop-plugin.jar
+
+summarizer:
+  backend: asm
+
+
+
+#dart run jnigen --config jnigen_aniyomi.yaml

@@ -29,33 +29,31 @@ class SoraExtensions extends Extension {
 
   @override
   Future<void> fetchAnimeExtensions() async {
+    await super.fetchAnimeExtensions();
     final res = await _fetchExtensions(ItemType.anime);
     getAvailableRx(ItemType.anime).value = res;
   }
 
   @override
   Future<void> fetchMangaExtensions() async {
+    await super.fetchMangaExtensions();
     final res = await _fetchExtensions(ItemType.manga);
     getAvailableRx(ItemType.manga).value = res;
   }
 
   @override
-  Future<void> fetchNovelExtensions() async {}
-
-  @override
   Future<void> fetchInstalledAnimeExtensions() async {
+    await super.fetchInstalledAnimeExtensions();
     final installed = _loadInstalled(ItemType.anime);
     getInstalledRx(ItemType.anime).value = installed;
   }
 
   @override
   Future<void> fetchInstalledMangaExtensions() async {
+    await super.fetchInstalledMangaExtensions();
     final installed = _loadInstalled(ItemType.manga);
     getInstalledRx(ItemType.manga).value = installed;
   }
-
-  @override
-  Future<void> fetchInstalledNovelExtensions() async {}
 
   @override
   Future<void> addRepo(String repoUrl, ItemType type) async {
@@ -78,10 +76,7 @@ class SoraExtensions extends Extension {
 
       final decoded = jsonDecode(res.body);
 
-      final parsed = await compute(
-        _parseExtensions,
-        (res.body, repoUrl, type),
-      );
+      final parsed = await compute(_parseExtensions, (res.body, repoUrl, type));
 
       String? repoName;
       String? repoIcon;
@@ -109,10 +104,11 @@ class SoraExtensions extends Extension {
       }
 
       final repo = Repo(
-          url: repoUrl,
-          name: repoName,
-          iconUrl: repoIcon,
-          extensions: parsed.length.toString());
+        url: repoUrl,
+        name: repoName,
+        iconUrl: repoIcon,
+        extensions: parsed.length.toString(),
+      );
 
       final updatedRepos = List<Repo>.from(repos)..add(repo);
 
@@ -136,9 +132,9 @@ class SoraExtensions extends Extension {
   @override
   Future<void> removeRepo(String repoUrl, ItemType type) async {
     try {
-      final repos = _loadRepos(type)
-          .where((r) => r.url != repoUrl)
-          .toList(growable: false);
+      final repos = _loadRepos(
+        type,
+      ).where((r) => r.url != repoUrl).toList(growable: false);
 
       _saveRepos(repos, type);
 
@@ -157,9 +153,7 @@ class SoraExtensions extends Extension {
 
     getReposRx(type).value = repos;
 
-    final results = await Future.wait(
-      repos.map((r) => _fetchRepo(r, type)),
-    );
+    final results = await Future.wait(repos.map((r) => _fetchRepo(r, type)));
 
     final allSources = results.expand((e) => e).toList(growable: false);
 
@@ -179,10 +173,7 @@ class SoraExtensions extends Extension {
       final res = await _client.get(Uri.parse(repo.url));
       if (res.statusCode != 200) return const [];
 
-      return compute(
-        _parseExtensions,
-        (res.body, repo.url, type),
-      );
+      return compute(_parseExtensions, (res.body, repo.url, type));
     } catch (e) {
       Logger.log("Repo failed ${repo.url}: $e");
       return const [];
@@ -190,7 +181,8 @@ class SoraExtensions extends Extension {
   }
 
   static List<Source> _parseExtensions(
-      (String body, String repoUrl, ItemType itemType) args) {
+    (String body, String repoUrl, ItemType itemType) args,
+  ) {
     final (body, repoUrl, itemType) = args;
 
     try {
