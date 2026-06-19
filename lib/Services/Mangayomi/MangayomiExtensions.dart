@@ -27,18 +27,21 @@ class MangayomiExtensions extends Extension {
 
   @override
   Future<void> fetchAnimeExtensions() async {
+    await super.fetchAnimeExtensions();
     final res = await _fetchExtensions(ItemType.anime);
     getAvailableRx(ItemType.anime).value = res;
   }
 
   @override
   Future<void> fetchMangaExtensions() async {
+    await super.fetchMangaExtensions();
     final res = await _fetchExtensions(ItemType.manga);
     getAvailableRx(ItemType.manga).value = res;
   }
 
   @override
   Future<void> fetchNovelExtensions() async {
+    await super.fetchNovelExtensions();
     final res = await _fetchExtensions(ItemType.novel);
     getAvailableRx(ItemType.novel).value = res;
   }
@@ -49,9 +52,7 @@ class MangayomiExtensions extends Extension {
 
     getReposRx(type).value = repos;
 
-    final results = await Future.wait(
-      repos.map((r) => _fetchRepo(r, type)),
-    );
+    final results = await Future.wait(repos.map((r) => _fetchRepo(r, type)));
 
     final all = results.expand((e) => e).toList(growable: false);
 
@@ -62,9 +63,7 @@ class MangayomiExtensions extends Extension {
 
     getRawAvailableRx(type).value = List.unmodifiable(all);
 
-    return List.unmodifiable(
-      all.where((s) => !installedIds.contains(s.id)),
-    );
+    return List.unmodifiable(all.where((s) => !installedIds.contains(s.id)));
   }
 
   Future<List<Source>> _fetchRepo(Repo repo, ItemType type) async {
@@ -72,10 +71,7 @@ class MangayomiExtensions extends Extension {
       final res = await _client.get(Uri.parse(repo.url));
       if (res.statusCode != 200) return const [];
 
-      return compute(
-        _parseExtensions,
-        (res.body, repo.url, type),
-      );
+      return compute(_parseExtensions, (res.body, repo.url, type));
     } catch (e) {
       Logger.log("Repo failed ${repo.url}: $e");
       return const [];
@@ -84,16 +80,19 @@ class MangayomiExtensions extends Extension {
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
+    await super.fetchInstalledAnimeExtensions();
     getInstalledRx(ItemType.anime).value = _loadInstalled(ItemType.anime);
   }
 
   @override
   Future<void> fetchInstalledMangaExtensions() async {
+    await super.fetchInstalledMangaExtensions();
     getInstalledRx(ItemType.manga).value = _loadInstalled(ItemType.manga);
   }
 
   @override
   Future<void> fetchInstalledNovelExtensions() async {
+    await super.fetchInstalledNovelExtensions();
     getInstalledRx(ItemType.novel).value = _loadInstalled(ItemType.novel);
   }
 
@@ -110,9 +109,7 @@ class MangayomiExtensions extends Extension {
 
       final installed = m
         ..sourceCode = res.body
-        ..headers = jsonEncode(
-          getExtensionService(m).getHeaders(),
-        );
+        ..headers = jsonEncode(getExtensionService(m).getHeaders());
 
       final list = _loadInstalled(m.itemType!);
 
@@ -230,10 +227,7 @@ class MangayomiExtensions extends Extension {
       final updatedRepos = List<Repo>.from(repos)..add(repo);
 
       _saveRepos(updatedRepos, type);
-      final parsed = await compute(
-        _parseExtensions,
-        (res.body, repoUrl, type),
-      );
+      final parsed = await compute(_parseExtensions, (res.body, repoUrl, type));
 
       final rx = getAvailableRx(type);
       final existing = rx.value;
@@ -252,7 +246,8 @@ class MangayomiExtensions extends Extension {
   }
 
   static List<Source> _parseExtensions(
-      (String body, String repoUrl, ItemType itemType) args) {
+    (String body, String repoUrl, ItemType itemType) args,
+  ) {
     final (body, repoUrl, itemType) = args;
 
     final decoded = jsonDecode(body);
@@ -264,9 +259,7 @@ class MangayomiExtensions extends Extension {
     for (final e in decoded) {
       final ext = Map<String, dynamic>.from(e);
 
-      sources.add(
-        MSource.fromJson(ext)..repo = repoUrl,
-      );
+      sources.add(MSource.fromJson(ext)..repo = repoUrl);
     }
 
     return sources.where((s) => s.itemType == itemType).toList(growable: false);
@@ -275,9 +268,9 @@ class MangayomiExtensions extends Extension {
   @override
   Future<void> removeRepo(String repoUrl, ItemType type) async {
     try {
-      final repos = _loadRepos(type)
-          .where((r) => r.url != repoUrl)
-          .toList(growable: false);
+      final repos = _loadRepos(
+        type,
+      ).where((r) => r.url != repoUrl).toList(growable: false);
 
       _saveRepos(repos, type);
 

@@ -1,0 +1,5 @@
+package com.aayush262.dartotsu_extension_bridge
+
+import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
+
+expect class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi

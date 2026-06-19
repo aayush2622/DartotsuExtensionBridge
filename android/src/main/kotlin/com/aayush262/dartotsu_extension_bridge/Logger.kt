@@ -26,6 +26,7 @@ object Logger {
     }
 }
 
+
 enum class LogLevel {
     ERROR, WARNING, INFO, DEBUG
 }

@@ -21,14 +21,17 @@ class KvStore {
   static final Isar _isar = DartotsuExtensionBridge.context.isar;
 
   static void setSync(String key, dynamic value) {
-    _isar.writeTxnSync(() {
-      final existing = _isar.kvEntrys.filter().keyEqualTo(key).findFirstSync();
+    _isar.writeTxn(() async {
+      final existing = await _isar.kvEntrys
+          .filter()
+          .keyEqualTo(key)
+          .findFirst();
 
       final entry = existing ?? KvEntry();
       entry.key = key;
       entry.value = _encode(value);
 
-      _isar.kvEntrys.putSync(entry);
+      await _isar.kvEntrys.put(entry);
     });
   }
 
@@ -85,10 +88,7 @@ class KvStore {
     if (value is bool) return {'t': 'bool', 'v': value};
 
     if (value is List) {
-      return {
-        't': 'list',
-        'v': value.map(_wrap).toList(),
-      };
+      return {'t': 'list', 'v': value.map(_wrap).toList()};
     }
 
     throw UnsupportedError(

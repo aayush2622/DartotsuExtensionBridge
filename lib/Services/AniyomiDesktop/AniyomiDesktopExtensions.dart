@@ -15,22 +15,10 @@ import '../../Logger.dart';
 import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
+import '../Network.dart';
 import 'AniyomiDesktopSourceMethods.dart';
 import 'AniyomiService.dart';
 import 'Models/Source.dart';
-import 'Network.dart';
-
-class AniyomiDesktopPlugin extends DownloadablePlugin {
-  @override
-  String get name => "aniyomiDesktop";
-
-  @override
-  String get remoteUrl =>
-      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiDesktop/aniyomiDesktop-plugin.json";
-
-  @override
-  String get fileName => "aniyomiDesktop-plugin.jar";
-}
 
 class AniyomiDesktopExtensions extends Extension {
   @override
@@ -74,7 +62,7 @@ class AniyomiDesktopExtensions extends Extension {
 
     final filePath = await plugin.getPath();
 
-    await AniyomiDesktopNetwork.init();
+    await BridgeChannels.init();
 
     await jni.init(pluginJarPath: filePath, handler: AniyomiService());
 
@@ -232,8 +220,6 @@ class AniyomiDesktopExtensions extends Extension {
 
   @override
   Future<void> updateSource(Source source) async => await installSource(source);
-
-  /// ================= NO REPO LOGIC CHANGE =================
 
   @override
   Future<void> addRepo(String repoUrl, ItemType type) async {
@@ -560,4 +546,16 @@ class AniyomiDesktopExtensions extends Extension {
       },
     ),
   ];
+}
+
+class AniyomiDesktopPlugin extends DownloadablePlugin {
+  @override
+  String get name => "aniyomiDesktop";
+
+  @override
+  String get remoteUrl =>
+      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiDesktop/aniyomiDesktop-plugin.json";
+
+  @override
+  String get fileName => "aniyomiDesktop-plugin.jar";
 }

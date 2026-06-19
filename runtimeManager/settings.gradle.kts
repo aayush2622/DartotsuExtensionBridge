@@ -1,5 +1,5 @@
 @file:Suppress("UnstableApiUsage")
-
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "DartotsuRuntimePlugins"
 
 pluginManagement {
@@ -23,14 +23,20 @@ dependencyResolutionManagement {
         maven("https://jogamp.org/deployment/maven")
     }
     versionCatalogs {
-        create("aniyomiDesktop") {
-            from(files("gradle/aniyomiDesktop-lib.toml"))
+        create("commonLib") {
+            from(files("libraries/commonLib/libs/common-lib.toml"))
+        }
+        create("commonDesktopLib") {
+            from(files("libraries/commonDesktopLib/libs/commonDesktop-lib.toml"))
         }
         create("aniyomiCommon") {
-            from(files("gradle/aniyomiCommon-lib.toml"))
+            from(files("aniyomi/aniyomiCommon/libs/aniyomiCommon-lib.toml"))
         }
         create("aniyomiAndroid") {
-            from(files("gradle/aniyomiAndroid-lib.toml"))
+            from(files("aniyomi/aniyomiCommon/libs/aniyomiAndroid-lib.toml"))
+        }
+        create("cloudStreamAndroid") {
+            from(files("gradle/cloudStreamAndroid-lib.toml"))
         }
         create("libs") {
             from(files("gradle/libs.version.toml"))
@@ -39,7 +45,15 @@ dependencyResolutionManagement {
 }
 
 
-include(":common")
-include(":aniyomiAndroid")
-include(":aniyomiDesktop")
-include(":cloudStream")
+include(
+    ":libraries:common",
+    ":libraries:commonLib",
+    ":libraries:commonDesktopLib",
+    ":aniyomi:aniyomiCommon",
+    ":aniyomi:aniyomiAndroid",
+    ":aniyomi:aniyomiDesktop",
+    ":cloudStream:cloudStreamCommon",
+    ":cloudStream:cloudStreamAndroid",
+    ":cloudStream:cloudStreamDesktop",
+
+)

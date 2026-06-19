@@ -1,3 +1,7 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+import org.gradle.internal.os.OperatingSystem
+
 group = "com.aayush262.dartotsu_extension_bridge"
 version = "1.0-SNAPSHOT"
 
@@ -10,7 +14,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:9.1.0")
+        classpath("com.android.tools.build:gradle:9.2.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlin_version")
     }
@@ -33,9 +37,6 @@ apply plugin: "com.android.library"
 apply plugin: "org.jetbrains.kotlin.plugin.serialization"
 
 android {
-    if (project.android.hasProperty("namespace")) {
-        namespace 'com.aayush262.dartotsu_extension_bridge'
-    }
     namespace = "com.aayush262.dartotsu_extension_bridge"
 
     compileSdk = 37
@@ -60,32 +61,38 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-okio:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2"
 
-    implementation "org.jsoup:jsoup:1.21.1"
-    implementation "com.github.Blatzar:NiceHttp:0.4.16"
+    implementation files("../runtimeManager/common/build/libs/common-1.0.jar")
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:2.13.1"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
-    implementation "me.xdrop:fuzzywuzzy:1.4.0"
-
-    implementation "androidx.preference:preference-ktx:1.2.1"
-
-    implementation "com.github.TeamNewPipe:NewPipeExtractor:v0.24.4"
-    implementation "org.mozilla:rhino:1.7.15"
-    implementation "com.google.code.gson:gson:2.11.0"
-
-    implementation "com.uwetrottmann.tmdb2:tmdb-java:2.10.0"
-    implementation "com.squareup.retrofit2:retrofit:2.11.0"
-    implementation "com.squareup.retrofit2:converter-jackson:2.11.0"
-    implementation project(":common")
     compileOnly "io.flutter:flutter_embedding_debug:1.0.0-ef0cd000916d64fa0c5d09cc809fa7ad244a5767"
 }
 kotlin {
     compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+        jvmTarget = JvmTarget.JVM_17
     }
 }
 configurations.configureEach {
     exclude group: 'org.json', module: 'json'
+}
+
+def runtimeManagerDir = file("../runtimeManager")
+
+def buildCommonJar = tasks.register("buildCommonJar", Exec) {
+    commandLine(
+            new File(
+                    runtimeManagerDir,
+                    OperatingSystem.current().isWindows()
+                            ? "gradlew.bat"
+                            : "gradlew"
+            ).absolutePath,
+            "-p",
+            runtimeManagerDir.absolutePath,
+            ":libraries:common:jar"
+    )
+}
+
+tasks.configureEach {
+    if (name.startsWith("compile") || name == "preBuild") {
+        dependsOn(buildCommonJar)
+    }
 }

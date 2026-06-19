@@ -1,0 +1,50 @@
+[versions]
+injekt = "1.16.1"
+nicehttp = "0.4.16"
+fuzzywuzzy = "1.4.0"
+preference = "1.2.1"
+coroutines = "1.10.2"
+newpipe = "v0.24.4"
+rhino = "1.7.15"
+tmdb = "2.10.0"
+retrofit = "2.11.0"
+jackson = "2.13.1"
+[libraries]
+injekt-core = { module = "uy.kohesive.injekt:injekt-core", version.ref = "injekt" }
+
+nicehttp = { module = "com.github.Blatzar:NiceHttp", version.ref = "nicehttp" }
+
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+
+fuzzywuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzywuzzy" }
+
+preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preference" }
+
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+
+newpipe-extractor = { module = "com.github.TeamNewPipe:NewPipeExtractor", version.ref = "newpipe" }
+
+rhino = { module = "org.mozilla:rhino", version.ref = "rhino" }
+
+
+tmdb-java = { module = "com.uwetrottmann.tmdb2:tmdb-java", version.ref = "tmdb" }
+
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+retrofit-jackson = { module = "com.squareup.retrofit2:converter-jackson", version.ref = "retrofit" }
+
+
+[bundles]
+common = [
+    "injekt-core",
+    "nicehttp",
+    "jackson-databind",
+    "jackson-kotlin",
+    "fuzzywuzzy",
+    "coroutines-core",
+    "newpipe-extractor",
+    "rhino",
+    "tmdb-java",
+    "retrofit",
+    "retrofit-jackson",
+]

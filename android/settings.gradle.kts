@@ -1,4 +1,1 @@
 rootProject.name = "dartotsu_extension_bridge"
-
-include(":common")
-project(":common").projectDir = file("../runtimeManager/common")

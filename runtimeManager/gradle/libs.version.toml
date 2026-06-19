@@ -1,17 +1,21 @@
 [versions]
 kotlin = "2.1.0"
-shadow = "9.4.1"
-android-gradle = "8.10.0"
+shadow = "9.4.2"
+android-gradle = "9.2.1"
 
+compileSdk = "37"
+targetSdk = "36"
+minSdk = "21"
 
+java = "17"
+jvmTarget = "17"
 [plugins]
-# Android
 android-application = { id = "com.android.application", version.ref = "android-gradle" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-# Kotlin
+android-library = { id = "com.android.library", version.ref = "android-gradle" }
 
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-
-# Shadow
+android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "android-gradle" }
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

@@ -1,25 +1,36 @@
 package com.aayush262.dartotsu_extension_bridge
 
-import com.ryan.cloudstream_bridge.cloudstream.CloudStreamPluginBridge
-import android.app.Application
 import com.aayush262.dartotsu_extension_bridge.aniyomi.AniyomiBridge
+import com.aayush262.dartotsu_extension_bridge.CustomMethods
+import com.aayush262.dartotsu_extension_bridge.cloudStream.CloudStreamBridge
 import io.flutter.embedding.engine.plugins.FlutterPlugin
-import io.flutter.embedding.engine.plugins.activity.ActivityAware
-import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.plugin.common.MethodChannel
+
 /** DartotsuExtensionBridgePlugin */
-class DartotsuExtensionBridgePlugin : FlutterPlugin, ActivityAware {
+class DartotsuExtensionBridgePlugin : FlutterPlugin {
 
     private lateinit var aniyomiBridge: AniyomiBridge
+    private lateinit var cloudStreamBridge: CloudStreamBridge
 
+    private lateinit var loggerChannel: MethodChannel
+    private lateinit var networkChannel: MethodChannel
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        loggerChannel = MethodChannel(
+            binding.binaryMessenger, "flutterKotlinBridge.logger"
+        )
+        networkChannel = MethodChannel(
+            binding.binaryMessenger, "flutterKotlinBridge.network"
+        )
 
-        CloudStreamPluginBridge.onAttachedToEngine(binding)
+        Logger.init(loggerChannel)
+        val customMethods = CustomMethods(networkChannel)
 
-        AniyomiBridge(binding.applicationContext).apply {
-            aniyomiBridge = this
+        aniyomiBridge = AniyomiBridge(binding.applicationContext, customMethods).apply {
             attach(binding)
         }
-
+        cloudStreamBridge = CloudStreamBridge(binding.applicationContext, customMethods).apply {
+            attach(binding)
+        }
         Logger.log("Plugin attached to engine", LogLevel.INFO)
         println("Plugin attached to engine")
 
@@ -27,23 +38,8 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin, ActivityAware {
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         aniyomiBridge.detach()
-        CloudStreamPluginBridge.onDetachedFromEngine(binding)
+        cloudStreamBridge.detach()
+        loggerChannel.setMethodCallHandler(null)
+        networkChannel.setMethodCallHandler(null)
     }
-
-    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        CloudStreamPluginBridge.onAttachedToActivity(binding)
-    }
-
-    override fun onDetachedFromActivityForConfigChanges() {
-        CloudStreamPluginBridge.onDetachedFromActivityForConfigChanges()
-    }
-
-    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-        CloudStreamPluginBridge.onReattachedToActivityForConfigChanges(binding)
-    }
-
-    override fun onDetachedFromActivity() {
-        CloudStreamPluginBridge.onDetachedFromActivity()
-    }
-
 }

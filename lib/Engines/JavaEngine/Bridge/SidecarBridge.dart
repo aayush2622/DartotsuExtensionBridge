@@ -67,6 +67,7 @@ class SidecarBridge implements JavaBridge {
 
   void _handleLine(String line) {
     try {
+
       final json = jsonDecode(line);
 
       final id = json['id'];
@@ -74,14 +75,14 @@ class SidecarBridge implements JavaBridge {
       final completer = _pending.remove(id);
 
       if (completer == null) {
-        Logger.log('[SIDECAR][$id] No pending request');
+        Logger.log('[SIDECAR] No pending request');
         return;
       }
 
       if (json['success'] == true) {
         completer.complete(json['data']);
       } else {
-        Logger.log('[SIDECAR][$id] Error: ${json['error']}', show: true);
+        Logger.log('[SIDECAR] Error: ${json['error']}', show: true);
 
         completer.completeError(Exception(json['error']));
       }
@@ -127,7 +128,7 @@ class SidecarBridge implements JavaBridge {
 
       return decoded as T;
     } catch (e) {
-      Logger.log('[SIDECAR] [$id] Call failed: $e', show: true);
+      Logger.log('[SIDECAR] Call failed: $e', show: true);
 
       if (throwError) {
         rethrow;
