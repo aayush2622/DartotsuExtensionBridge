@@ -1,10 +1,9 @@
-package com.aayush262.dartotsu_extension_bridge.aniyomi
+package com.aayush262.dartotsu_extension_bridge
 
 import com.aayush262.dartotsu_extension_bridge.common.BridgeCallbacks
-import com.aayush262.dartotsu_extension_bridge.FlutterBridge
 
 
-class CustomAniyomiMethods : BridgeCallbacks {
+class CustomMethods : BridgeCallbacks {
 
     override fun getCookies(url: String): String? {
         return try {

@@ -1,10 +1,11 @@
 package com.lagradost.cloudstream3.plugins
 
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.APIHolder
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.utils.ExtractorApi
-import android.util.Log
+
 import com.lagradost.cloudstream3.utils.extractorApis
 
 const val PLUGIN_TAG = "PluginInstance"
@@ -15,7 +16,7 @@ abstract class BasePlugin {
      * @param element MainAPI provider you want to register
      */
     fun registerMainAPI(element: MainAPI) {
-        Log.i(PLUGIN_TAG, "Adding ${element.name} (${element.mainUrl}) MainAPI")
+        Logger.log( "Adding ${element.name} (${element.mainUrl}) MainAPI")
         element.sourcePlugin = this.filename
         // Race condition causing which would case duplicates if not for distinctBy
         synchronized(APIHolder.allProviders) {
@@ -29,7 +30,7 @@ abstract class BasePlugin {
      * @param element ExtractorApi provider you want to register
      */
     fun registerExtractorAPI(element: ExtractorApi) {
-        Log.i(PLUGIN_TAG, "Adding ${element.name} (${element.mainUrl}) ExtractorApi")
+        Logger.log( "Adding ${element.name} (${element.mainUrl}) ExtractorApi")
         element.sourcePlugin = this.filename
         extractorApis.add(element)
     }

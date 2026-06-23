@@ -56,28 +56,35 @@ android {
     }
 
 }
-
-dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-okio:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-
-    implementation files("../runtimeManager/common/build/libs/common-1.0.jar")
-
-    compileOnly "io.flutter:flutter_embedding_debug:1.0.0-ef0cd000916d64fa0c5d09cc809fa7ad244a5767"
-}
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_17
     }
 }
+
 configurations.configureEach {
     exclude group: 'org.json', module: 'json'
 }
 
 def runtimeManagerDir = file("../runtimeManager")
+def commonJar = file("../runtimeManager/libraries/common/build/libs/common-1.0.jar")
+
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-okio:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:2.2.0")
+    implementation "com.squareup.okio:okio:3.16.4"
+    implementation files(commonJar)
+
+    compileOnly "io.flutter:flutter_embedding_debug:1.0.0-ef0cd000916d64fa0c5d09cc809fa7ad244a5767"
+}
+
+
 
 def buildCommonJar = tasks.register("buildCommonJar", Exec) {
+    outputs.file(commonJar)
+
     commandLine(
             new File(
                     runtimeManagerDir,
@@ -89,6 +96,10 @@ def buildCommonJar = tasks.register("buildCommonJar", Exec) {
             runtimeManagerDir.absolutePath,
             ":libraries:common:jar"
     )
+
+    onlyIf {
+        !commonJar.exists()
+    }
 }
 
 tasks.configureEach {

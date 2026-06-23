@@ -67,7 +67,6 @@ class SidecarBridge implements JavaBridge {
 
   void _handleLine(String line) {
     try {
-
       final json = jsonDecode(line);
 
       final id = json['id'];
@@ -86,10 +85,8 @@ class SidecarBridge implements JavaBridge {
 
         completer.completeError(Exception(json['error']));
       }
-    } catch (e, st) {
-      Logger.log('Sidecar parse error: $e', show: true);
-
-      Logger.log(st.toString());
+    } catch (_, _) {
+      Logger.log(line);
     }
   }
 

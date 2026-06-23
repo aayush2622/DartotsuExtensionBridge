@@ -10,20 +10,32 @@ import kotlin.collections.isNotEmpty
 import kotlin.text.isNullOrEmpty
 import com.aayush262.dartotsu_extension_bridge.customMethods
 
-/// [WebviewCookieJar] is technique used to sync cookies between okhttp and webview now
-/// but now am too lazy to remove it
 class CookieInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val url = request.url.toString()
 
         val cookieHeader = getCookiesBlocking(url)
+
         val newRequest = if (!cookieHeader.isNullOrEmpty()) {
-            request.newBuilder().removeHeader("Cookie").addHeader("Cookie", cookieHeader).build()
+            val existing = request.header("Cookie")
+
+            val merged = buildString {
+                if (!existing.isNullOrBlank()) {
+                    append(existing)
+                }
+                if (cookieHeader.isNotBlank()) {
+                    if (isNotEmpty()) append("; ")
+                    append(cookieHeader)
+                }
+            }
+
+            request.newBuilder()
+                .header("Cookie", merged)
+                .build()
         } else {
             request
         }
-
         val response = chain.proceed(newRequest)
 
         val setCookies = response.headers("Set-Cookie")

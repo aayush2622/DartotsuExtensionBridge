@@ -11,6 +11,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import android.content.Context
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 
 object APIHolder {
     val allProviders: MutableList<MainAPI> = synchronizedList(mutableListOf())
@@ -181,10 +182,10 @@ inline fun <T> safe(f: () -> T): T? {
 }
 
 object Log {
-    fun d(tag: String, msg: String): Int = android.util.Log.d(tag, msg)
-    fun i(tag: String, msg: String): Int = android.util.Log.i(tag, msg)
-    fun e(tag: String, msg: String): Int = android.util.Log.e(tag, msg)
-    fun w(tag: String, msg: String): Int = android.util.Log.w(tag, msg)
+    fun d(tag: String, msg: String): Int = Logger.log( msg)
+    fun i(tag: String, msg: String): Int = Logger.log( msg)
+    fun e(tag: String, msg: String): Int = Logger.log( msg)
+    fun w(tag: String, msg: String): Int = Logger.log( msg)
 }
 
 enum class RequestBodyTypes(val value: String) {

@@ -1,13 +1,13 @@
 package com.aayush262.dartotsu_extension_bridge
 
 import android.app.Application
-import android.content.Context
 import android.os.Looper
 import com.aayush262.dartotsu_extension_bridge.cloudStream.CloudStreamSourceMethods
 import com.aayush262.dartotsu_extension_bridge.cloudStream.ExtensionLoader
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.aayush262.dartotsu_extension_bridge.network.Network.enableNetworking
+import com.google.gson.Gson
 import com.lagradost.cloudstream3.APIHolder.allProviders
 import com.lagradost.cloudstream3.APIHolder.mapper
 import com.lagradost.cloudstream3.AcraApplication
@@ -22,7 +22,6 @@ import org.koin.mp.KoinPlatformTools
 import xyz.nulldev.androidcompat.androidimpl.CustomContext
 import xyz.nulldev.androidcompat.xyz.nulldev.androidcompat.androidCompatModule
 import java.io.File
-import kotlin.getValue
 
 actual class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi {
     override fun initClient(data: String) {
@@ -37,7 +36,7 @@ actual class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi {
             Logger.log("Koin already started")
             return
         }
-
+        initialize(CustomMethods())
         val application = object : Application() {}
 
         startMainLooper()
@@ -74,10 +73,16 @@ actual class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi {
             start()
         }
     }
+    private val gson = Gson()
 
+    @Suppress("UNCHECKED_CAST")
+    private fun decode(json: String): Map<String, Any?> =
+        gson.fromJson(json, Map::class.java) as Map<String, Any?>
     private fun provider(sourceId: String): MainAPI {
         return allProviders.firstOrNull {
-            it.name == sourceId || it.javaClass.simpleName == sourceId
+            it.name.equals(sourceId, ignoreCase = true) ||
+                    it.javaClass.simpleName.equals(sourceId, ignoreCase = true) ||
+                    it.javaClass.name.equals(sourceId, ignoreCase = true)
         } ?: error("Provider not found: $sourceId")
     }
 
@@ -97,7 +102,9 @@ actual class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi {
                     "supportsLatest" to true,
                     "sourcePlugin" to it.sourcePlugin,
                     "baseUrl" to it.mainUrl,
-                    "iconUrl" to "https://avatars.githubusercontent.com/u/110591699?s=48&v=4"
+                    "iconUrl" to "https://avatars.githubusercontent.com/u/110591699?s=48&v=4",
+                    "itemType" to 1,
+                    "version" to ExtensionLoader.plugins[it.sourcePlugin]?.manifest?.version.toString()
                 )
             }
         )
@@ -143,8 +150,9 @@ actual class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi {
         isAnime: Boolean,
         media: String
     ): String {
+        val mediaMap: Map<String, Any?> = decode(media)
         return mapper.writeValueAsString(
-            methods(sourceId).getDetails(media)
+            methods(sourceId).getDetails(mediaMap["url"] as String)
         )
     }
 
@@ -153,8 +161,9 @@ actual class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi {
         isAnime: Boolean,
         episode: String
     ): String {
+        val epMap = decode(episode)
         return mapper.writeValueAsString(
-            methods(sourceId).loadLinks(episode)
+            methods(sourceId).loadLinks(epMap["url"] as String)
         )
     }
 

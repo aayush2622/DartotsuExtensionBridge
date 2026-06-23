@@ -1,7 +1,7 @@
 import java.io.File
 import java.security.MessageDigest
 import groovy.json.JsonSlurper
-
+import groovy.json.JsonOutput
 val pluginName = project.name
 
 fun hash(file: File): String {
@@ -19,8 +19,7 @@ fun incrementVersion(name: String): String {
 
 fun loadVersion(): Pair<Int, String> {
     val jsonFile = File(
-        rootProject.projectDir,
-        "builds/$pluginName/$pluginName-plugin.json"
+        rootProject.projectDir, "builds/$pluginName/$pluginName-plugin.json"
     )
 
     if (!jsonFile.exists()) return 1 to "1.0.0"
@@ -36,14 +35,12 @@ fun loadVersion(): Pair<Int, String> {
 }
 
 data class Artifact(
-    val file: File,
-    val type: String
+    val file: File, val type: String
 )
 
 fun findArtifact(): Artifact {
     val apkDir = layout.projectDirectory.dir("build/outputs/apk/release").asFile
-    val apk = apkDir.listFiles()
-        ?.firstOrNull { it.extension == "apk" && it.name.contains("release") }
+    val apk = apkDir.listFiles()?.firstOrNull { it.extension == "apk" && it.name.contains("release") }
 
     if (apk != null) {
         return Artifact(apk, "apk")
@@ -63,8 +60,7 @@ fun findArtifact(): Artifact {
     }
 
     val customJar = File(
-        rootProject.projectDir,
-        "builds/$pluginName/$pluginName.jar"
+        rootProject.projectDir, "builds/$pluginName/$pluginName.jar"
     )
     if (customJar.exists()) {
         return Artifact(customJar, "jar")
@@ -72,12 +68,9 @@ fun findArtifact(): Artifact {
 
     throw RuntimeException("No APK or JAR found for $pluginName")
 }
+
 fun prop(name: String, default: String): String {
-    val value = project.extensions.extraProperties
-        .takeIf { it.has(name) }
-        ?.get(name)?.toString()
-        ?: project.findProperty(name)?.toString()
-        ?: default
+    val value = project.extensions.extraProperties.takeIf { it.has(name) }?.get(name)?.toString() ?: project.findProperty(name)?.toString() ?: default
 
     if (value.isBlank()) {
         throw GradleException(
@@ -113,8 +106,7 @@ tasks.register("buildPlugin") {
     doLast {
 
         val outputDir = File(
-            rootProject.projectDir,
-            "builds/$pluginName"
+            rootProject.projectDir, "builds/$pluginName"
         ).apply { mkdirs() }
 
         val artifact = findArtifact()
@@ -135,8 +127,8 @@ tasks.register("buildPlugin") {
         val finalName: String
 
         if (hasChanged) {
-            finalCode = oldCode //+ 1
-            finalName = oldName //incrementVersion(oldName)
+            finalCode = oldCode + 1
+            finalName = incrementVersion(oldName)
             newFile.copyTo(existingFile, overwrite = true)
             println("[$pluginName] APK changed → bumping version to $finalName ($finalCode)")
         } else {
@@ -172,14 +164,12 @@ tasks.register("buildPlugin") {
 
         jsonFile.writeText(json)
     }
+    finalizedBy(rootProject.tasks.named("generatePluginIndex"))
 }
 
 fun getGitRepoUrl(): String {
     return try {
-        val process = ProcessBuilder("git", "config", "--get", "remote.origin.url")
-            .directory(rootProject.projectDir)
-            .redirectErrorStream(true)
-            .start()
+        val process = ProcessBuilder("git", "config", "--get", "remote.origin.url").directory(rootProject.projectDir).redirectErrorStream(true).start()
 
         val url = process.inputStream.bufferedReader().readText().trim()
 
@@ -187,29 +177,26 @@ fun getGitRepoUrl(): String {
 
         when {
             url.startsWith("git@") -> {
-                url.replace("git@", "https://")
-                    .replace(":", "/")
-                    .removeSuffix(".git")
+                url.replace("git@", "https://").replace(":", "/").removeSuffix(".git")
             }
+
             else -> url.removeSuffix(".git")
         }
     } catch (_: Exception) {
         ""
     }
 }
+
 fun detectGitBranch(): String? {
     return try {
-        val process = ProcessBuilder("git", "rev-parse", "--abbrev-ref", "HEAD")
-            .directory(rootProject.projectDir)
-            .redirectErrorStream(true)
-            .start()
+        val process = ProcessBuilder("git", "rev-parse", "--abbrev-ref", "HEAD").directory(rootProject.projectDir).redirectErrorStream(true).start()
 
-        process.inputStream.bufferedReader().readText().trim()
-            .takeIf { it.isNotBlank() }
+        process.inputStream.bufferedReader().readText().trim().takeIf { it.isNotBlank() }
     } catch (_: Exception) {
         null
     }
 }
+
 fun normalizeRepo(baseRepoInput: String): String {
     val baseRepo = baseRepoInput.trim().removeSuffix("/")
 
@@ -219,10 +206,7 @@ fun normalizeRepo(baseRepoInput: String): String {
 
     if (baseRepo.contains("raw.githubusercontent.com")) {
         val cleaned = baseRepo.trim().removeSuffix("/")
-        val parts = cleaned
-            .substringAfter("raw.githubusercontent.com/")
-            .split("/")
-            .filter { it.isNotBlank() }
+        val parts = cleaned.substringAfter("raw.githubusercontent.com/").split("/").filter { it.isNotBlank() }
 
         if (parts.size < 2) {
             throw GradleException("[$pluginName] Invalid raw GitHub URL: $baseRepo")
@@ -250,10 +234,9 @@ fun normalizeRepo(baseRepoInput: String): String {
     }
     val httpsRepo = when {
         baseRepo.startsWith("git@") -> {
-            baseRepo
-                .replace("git@", "https://")
-                .replace(":", "/")
+            baseRepo.replace("git@", "https://").replace(":", "/")
         }
+
         else -> baseRepo
     }.removeSuffix(".git")
 
@@ -277,10 +260,12 @@ fun normalizeRepo(baseRepoInput: String): String {
                 val idx = segments.indexOf("tree")
                 segments.drop(idx + 2).joinToString("/")
             }
+
             segments.contains("blob") -> {
                 val idx = segments.indexOf("blob")
                 segments.drop(idx + 2).joinToString("/")
             }
+
             else -> ""
         }
 

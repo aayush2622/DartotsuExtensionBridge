@@ -61,10 +61,10 @@ actual object AnimeExtensionLoader {
 
         try {
             Logger.log(
-                "Path for private extensions: ${path ?: "default internal storage"}", LogLevel.INFO
+                "Path for private extensions: $path", LogLevel.INFO
             )
             val defaultDir = File(context.filesDir, "aniyomi-extensions/Anime")
-            val externalDir = path?.let { File(it) } ?: defaultDir
+            val externalDir = File(path)
             val privateDir = File(context.filesDir, "aniyomi-extensions/Anime")
 
             if (!privateDir.exists()) {

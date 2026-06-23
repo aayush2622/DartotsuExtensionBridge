@@ -53,7 +53,7 @@ actual class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
             }
         }
 
-        Injekt.addSingletonFactory { AniyomiExtensionManager(ctx) }
+        Injekt.addSingletonFactory { AniyomiExtensionManager() }
 
     }
 

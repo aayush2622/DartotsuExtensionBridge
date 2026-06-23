@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart';
 import 'package:isar_community/isar.dart';
 
+import 'AddonManager.dart';
 import 'ExtensionManager.dart';
 import 'Services/LnReader/JsEngine/JsEngine.dart';
 import 'Settings/KvStore.dart';
@@ -36,8 +36,6 @@ class DartotsuExtensionBridge {
 
     final isar = isarInstance ?? await _openIsar(getDirectory);
 
-
-
     context = BridgeContext(
       isar: isar,
       http: http,
@@ -47,6 +45,10 @@ class DartotsuExtensionBridge {
     );
 
     Get.put(ExtensionManager());
+    Get.put(AddonManager());
+
+    await Get.find<AddonManager>().checkForUpdates();
+
     _initialized = true;
   }
 
@@ -63,7 +65,6 @@ class DartotsuExtensionBridge {
 
     return Isar.open(isarSchema, directory: dir.path);
   }
-
 
   static void _assertInitialized() {
     if (!_initialized) {
@@ -105,11 +106,11 @@ abstract interface class BridgeNetwork {
 
 /// {@macro get_directory_contract}
 typedef GetDirectory =
-Future<Directory?> Function({
-String? subPath,
-bool useCustomPath,
-bool useSystemPath,
-});
+    Future<Directory?> Function({
+      String? subPath,
+      bool useCustomPath,
+      bool useSystemPath,
+    });
 
 class BridgeContext {
   final Isar isar;

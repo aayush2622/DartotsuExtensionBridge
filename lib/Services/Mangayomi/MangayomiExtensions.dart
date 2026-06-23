@@ -47,7 +47,7 @@ class MangayomiExtensions extends Extension {
   }
 
   Future<List<Source>> _fetchExtensions(ItemType type) async {
-    final repos = _loadRepos(type);
+    final repos = loadRepos(type);
     if (repos.isEmpty) return const [];
 
     getReposRx(type).value = repos;
@@ -67,15 +67,22 @@ class MangayomiExtensions extends Extension {
   }
 
   Future<List<Source>> _fetchRepo(Repo repo, ItemType type) async {
-    try {
-      final res = await _client.get(Uri.parse(repo.url));
-      if (res.statusCode != 200) return const [];
+    final indexUrl = repo.url;
+    final res = await _client
+        .get(Uri.parse(indexUrl))
+        .timeout(const Duration(seconds: 10));
 
-      return compute(_parseExtensions, (res.body, repo.url, type));
-    } catch (e) {
-      Logger.log("Repo failed ${repo.url}: $e");
-      return const [];
+    if (res.statusCode == 200) {
+      var extensions = await compute(_parseExtensions, (
+        res.body,
+        indexUrl,
+        type,
+      ));
+      await updateRepoExtensionCount(repo, type, extensions.length);
+
+      return extensions;
     }
+    return [];
   }
 
   @override
@@ -212,7 +219,7 @@ class MangayomiExtensions extends Extension {
         throw Exception("Invalid URL");
       }
 
-      final repos = _loadRepos(type);
+      final repos = loadRepos(type);
 
       if (repos.any((r) => r.url == repoUrl)) {
         return;
@@ -226,7 +233,7 @@ class MangayomiExtensions extends Extension {
       final repo = Repo(url: repoUrl);
       final updatedRepos = List<Repo>.from(repos)..add(repo);
 
-      _saveRepos(updatedRepos, type);
+      saveRepos(updatedRepos, type);
       final parsed = await compute(_parseExtensions, (res.body, repoUrl, type));
 
       final rx = getAvailableRx(type);
@@ -265,24 +272,6 @@ class MangayomiExtensions extends Extension {
     return sources.where((s) => s.itemType == itemType).toList(growable: false);
   }
 
-  @override
-  Future<void> removeRepo(String repoUrl, ItemType type) async {
-    try {
-      final repos = _loadRepos(
-        type,
-      ).where((r) => r.url != repoUrl).toList(growable: false);
-
-      _saveRepos(repos, type);
-
-      final rx = getAvailableRx(type);
-      rx.value = rx.value.where((s) => s.repo != repoUrl).toList();
-
-      getReposRx(type).value = repos;
-    } catch (e) {
-      Logger.log("Failed to remove repo $repoUrl: $e");
-    }
-  }
-
   List<MSource> _loadInstalled(ItemType type) {
     final encoded = getVal<List<String>>('$id-Installed-${type.name}');
     if (encoded == null) return [];
@@ -294,20 +283,6 @@ class MangayomiExtensions extends Extension {
     setVal(
       '$id-Installed-${type.name}',
       list.map((e) => jsonEncode(e.toJson())).toList(),
-    );
-  }
-
-  List<Repo> _loadRepos(ItemType type) {
-    final encoded = getVal<List<String>>('$id${type.name}Repos');
-    if (encoded == null) return [];
-
-    return encoded.map((e) => Repo.fromJson(jsonDecode(e))).toList();
-  }
-
-  void _saveRepos(List<Repo> repos, ItemType type) {
-    setVal(
-      '$id${type.name}Repos',
-      repos.map((e) => jsonEncode(e.toJson())).toList(),
     );
   }
 

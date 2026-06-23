@@ -50,7 +50,7 @@ object FlutterBridge {
                 .use { response ->
 
                     gson.fromJson(
-                        response.body!!.charStream(),
+                        response.body.charStream(),
                         JsonObject::class.java,
                     )
                 }

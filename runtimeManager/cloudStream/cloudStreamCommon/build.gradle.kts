@@ -18,6 +18,7 @@ kotlin {
         getByName("androidMain") {
             dependencies {
                 api(projects.libraries.commonLib)
+                api(cloudStreamAndroid.preference.ktx)
             }
         }
 

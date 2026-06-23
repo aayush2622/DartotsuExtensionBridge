@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:developer' as Logger;
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -13,105 +13,94 @@ class CloudStreamSourceMethods extends SourceMethods {
 
   CloudStreamSourceMethods(Source source) : source = source as CSource;
 
-  static const platform = MethodChannel('cloudstreamExtensionBridge');
+  static const platform = MethodChannel('cloudStreamExtensionBridge');
 
+  bool get isAnime => source.itemType?.index == 1;
   @override
   Future<DMedia> getDetail(DMedia media) async {
     final result = await platform.invokeMethod('getDetail', {
-      'apiName': source.id,
-      'url': media.url,
+      'sourceId': source.id,
+      'isAnime': isAnime,
+      'media': jsonEncode({
+        'title': media.title,
+        'url': media.url,
+        'thumbnail_url': media.cover,
+        'description': media.description,
+        'author': media.author,
+        'artist': media.artist,
+        'genre': media.genre,
+      }),
     });
 
     return await compute(
       DMedia.fromJson,
-      Map<String, dynamic>.from(result as Map),
+      Map<String, dynamic>.from(jsonDecode(result)),
     );
   }
 
   @override
   Future<Pages> getLatestUpdates(int page) async {
-    return Pages(list: [], hasNextPage: false);
+    final result = await platform.invokeMethod('getLatestUpdates', {
+      'sourceId': source.id,
+      'isAnime': isAnime,
+      'page': page,
+    });
+
+    return await compute(
+      Pages.fromJson,
+      Map<String, dynamic>.from(jsonDecode(result)),
+    );
   }
 
   @override
   Future<Pages> getPopular(int page) async {
-    return Pages(
-      list: [],
-      hasNextPage: false,
+    final result = await platform.invokeMethod('getPopular', {
+      'sourceId': source.id,
+      'isAnime': isAnime,
+      'page': page,
+    });
+
+    return await compute(
+      Pages.fromJson,
+      Map<String, dynamic>.from(jsonDecode(result)),
     );
   }
 
   @override
   Future<List<Video>> getVideoList(DEpisode episode) async {
     final result = await platform.invokeMethod('getVideoList', {
-      'apiName': source.id,
-      'url': episode.url,
+      'sourceId': source.id,
+      'isAnime': isAnime,
+      'episode': jsonEncode({
+        'name': episode.name,
+        'url': episode.url,
+        'date_upload': episode.dateUpload,
+        'description': episode.description,
+        'episode_number': episode.episodeNumber,
+        'scanlator': episode.scanlator,
+      }),
     });
 
-    return await compute(parseVideos, List<dynamic>.from(result));
-  }
-
-  static const videoStreamChannel =
-      EventChannel('cloudstreamExtensionBridge/videoStream');
-
-  @override
-  Stream<Video>? getVideoListStream(DEpisode episode) {
-    final controller = StreamController<Video>();
-
-    final subscription = videoStreamChannel.receiveBroadcastStream({
-      'apiName': source.id,
-      'url': episode.url,
-    }).listen(
-      (event) {
-        try {
-          final Map<String, dynamic> data =
-              Map<String, dynamic>.from(event as Map);
-          final video = Video.fromJson(data);
-
-          if (!controller.isClosed) {
-            controller.add(video);
-          }
-        } catch (e) {
-          Logger.log("Error parsing video stream event: $e");
-        }
-      },
-      onError: (error) {
-        Logger.log("Video stream error: $error");
-        if (!controller.isClosed) {
-          controller.addError(error);
-        }
-      },
-      onDone: () {
-        if (!controller.isClosed) {
-          controller.close();
-        }
-      },
-      cancelOnError: false,
-    );
-
-    controller.onCancel = () {
-      subscription.cancel();
-    };
-
-    return controller.stream;
+    return await compute(parseVideos, List<dynamic>.from(jsonDecode(result)));
   }
 
   @override
   Future<List<PageUrl>> getPageList(DEpisode episode) {
-    return Future.value([]);
+    throw UnimplementedError();
   }
 
   @override
   Future<Pages> search(String query, int page, List filters) async {
     final result = await platform.invokeMethod('search', {
-      'apiName': source.id,
+      'sourceId': source.id,
+      'isAnime': isAnime,
       'query': query,
       'page': page,
     });
 
     return await compute(
       Pages.fromJson,
-      Map<String, dynamic>.from(result as Map),
+      Map<String, dynamic>.from(jsonDecode(result)),
     );
   }
 

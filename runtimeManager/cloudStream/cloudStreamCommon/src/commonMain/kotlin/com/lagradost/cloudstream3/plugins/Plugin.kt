@@ -2,7 +2,7 @@ package com.lagradost.cloudstream3.plugins
 
 import android.content.Context
 import android.content.res.Resources
-import android.util.Log
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.lagradost.cloudstream3.actions.VideoClickAction
 import com.lagradost.cloudstream3.actions.VideoClickActionHolder
 import kotlin.Throws
@@ -23,7 +23,7 @@ abstract class Plugin : BasePlugin() {
      * @param element VideoClickAction you want to register
      */
     fun registerVideoClickAction(element: VideoClickAction) {
-        Log.i(PLUGIN_TAG, "Adding ${element.name} VideoClickAction")
+        Logger.log( "Adding ${element.name} VideoClickAction")
         element.sourcePlugin = this.filename
         synchronized(VideoClickActionHolder.allVideoClickActions) {
             VideoClickActionHolder.allVideoClickActions.add(element)

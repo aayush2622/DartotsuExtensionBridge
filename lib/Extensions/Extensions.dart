@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:d4rt/d4rt.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
 import '../Models/Source.dart';
+import '../Settings/KvStore.dart';
 import 'DownloadablePlugin.dart';
 import 'ExtensionSettings.dart';
 import 'SourceMethods.dart';
@@ -146,7 +148,22 @@ abstract class Extension {
 
   Future<void> addRepo(String repoUrl, ItemType type);
 
-  Future<void> removeRepo(String repoUrl, ItemType type);
+  Future<void> removeRepo(String repoUrl, ItemType type) async {
+    try {
+      final repos = loadRepos(
+        type,
+      ).where((r) => r.url != repoUrl).toList(growable: false);
+
+      saveRepos(repos, type);
+
+      final rx = getAvailableRx(type);
+      rx.value = rx.value.where((s) => s.repo != repoUrl).toList();
+
+      getReposRx(type).value = repos;
+    } catch (e) {
+      Logger.log("Failed to remove repo $repoUrl: $e");
+    }
+  }
 
   Future<void> installSource(Source source);
 
@@ -215,20 +232,52 @@ abstract class Extension {
 
     return 0;
   }
+
+  List<Repo> loadRepos(ItemType type) {
+    final encoded = getVal<List<String>>('$id${type.name}Repos');
+    if (encoded == null || encoded.isEmpty) return const [];
+
+    final repos = encoded.map((e) => Repo.fromJson(jsonDecode(e)));
+
+    return {for (final r in repos) r.url: r}.values.toList(growable: false);
+  }
+
+  void saveRepos(List<Repo> repos, ItemType type) {
+    final key = '$id${type.name}Repos';
+
+    final unique = {for (final r in repos) r.url: r}.values;
+
+    setVal(
+      key,
+      unique.map((e) => jsonEncode(e.toJson())).toList(growable: false),
+    );
+  }
+
+  Future<void> updateRepoExtensionCount(
+    Repo repo,
+    ItemType type,
+    int count,
+  ) async {
+    repo.extensions = count.toString();
+
+    final repos = loadRepos(type);
+    final index = repos.indexWhere((r) => r.url == repo.url);
+
+    if (index != -1) {
+      repos[index] = repo;
+      saveRepos(repos, type);
+      getReposRx(type).value = List.unmodifiable(repos);
+    }
+  }
 }
 
 class Repo {
   final String url;
   final String? name;
   final String? iconUrl;
-  final String? extensions;
+  String? extensions;
 
-  Repo({
-    required this.url,
-    this.name,
-    this.iconUrl,
-    this.extensions,
-  });
+  Repo({required this.url, this.name, this.iconUrl, this.extensions});
 
   factory Repo.fromJson(Map<String, dynamic> json) {
     return Repo(
@@ -240,9 +289,9 @@ class Repo {
   }
 
   Map<String, dynamic> toJson() => {
-        'url': url,
-        'name': name,
-        'iconUrl': iconUrl,
-        'extensions': extensions,
-      };
+    'url': url,
+    'name': name,
+    'iconUrl': iconUrl,
+    'extensions': extensions,
+  };
 }

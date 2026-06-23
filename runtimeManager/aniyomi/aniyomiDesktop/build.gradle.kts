@@ -3,8 +3,7 @@ import com.android.build.gradle.internal.tasks.factory.dependsOn
 extra.apply {
     set("pluginAuthor", "aayush262")
     set("pluginDescription", "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.")
-    set("pluginRepo", "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds")
-}
+    }
 
 plugins {
     alias(libs.plugins.kotlin.jvm)

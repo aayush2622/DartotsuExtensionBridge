@@ -8,11 +8,12 @@ object Logger {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @JvmStatic
-    fun log(message: String, level: LogLevel = LogLevel.INFO) {
+    fun log(message: String, level: LogLevel = LogLevel.INFO):Int {
         scope.launch {
             customMethods?.log(level.name, message)
                 ?: println("[${level.name}] $message")
         }
+        return 1
     }
     @JvmStatic
     fun log(message: String,throwable: Throwable, level: LogLevel = LogLevel.ERROR) {
