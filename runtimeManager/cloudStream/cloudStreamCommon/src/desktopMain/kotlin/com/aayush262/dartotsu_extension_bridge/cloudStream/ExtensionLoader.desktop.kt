@@ -14,7 +14,12 @@ import kotlin.collections.set
 import kotlin.getValue
 
 actual object ExtensionLoader {
-    var plugins: MutableMap<String, BasePlugin> = mutableMapOf()
+    data class LoadedPlugin(
+        val plugin: BasePlugin,
+        val manifest: BasePlugin.Manifest
+    )
+
+    var plugins = mutableMapOf<String, LoadedPlugin>()
 
     fun loadExtensions(path: String) {
 
@@ -31,53 +36,13 @@ actual object ExtensionLoader {
             try {
                 loadPlugin(file)
             } catch (e: Throwable) {
-                println("Failed to load ${file.name}: ${e.message}\n${e.stackTraceToString()}")
+                Logger.log("Failed to load ${file.name}: ${e.message}\n${e.stackTraceToString()}")
             }
         }
 
-        println("Loaded ${plugins.size} plugins")
+        Logger.log("Loaded ${plugins.size} plugins")
 
     }
-
-
-/*
-    fun getPluginsOnline(): Array<PluginData> {
-        return DataStore.getPrefs()?.let {
-            it.getString(PLUGINS_KEY, null)?.let { json ->
-                parseJson<Array<PluginData>>(json)
-            }
-        } ?: emptyArray()
-    }
-
-    private fun setPluginsOnline(plugins: Array<PluginData>) {
-        setKey(PLUGINS_KEY, plugins)
-    }
-
-    private fun updatePluginData(data: PluginData) {
-        val plugins = getPluginsOnline().toMutableList()
-        val index = plugins.indexOfFirst { it.internalName == data.internalName }
-        if (index != -1) {
-            plugins[index] = data
-        } else {
-            plugins.add(data)
-        }
-        setPluginsOnline(plugins.toTypedArray())
-    }
-
-    fun getPluginSanitizedFileName(url: String): String {
-        return url.replace(Regex("""[^a-zA-Z0-9.\-]"""), "_")
-    }
-
-    fun getPluginPath(
-        context: Context,
-        internalName: String,
-        repositoryUrl: String
-    ): File {
-        val folderName = getPluginSanitizedFileName(repositoryUrl)
-        val fileName = getPluginSanitizedFileName(internalName)
-        return File("${context.filesDir}/${ONLINE_PLUGINS_FOLDER}/${folderName}/$fileName.cs3")
-    }*/
-
 
 
     fun loadPlugin(file: File): Boolean {
@@ -146,9 +111,7 @@ actual object ExtensionLoader {
                     ?.bufferedReader()
                     ?.use { it.readText() }
                     ?: error("manifest.json not found")
-
-            val manifest =
-                parseJson<BasePlugin.Manifest>(manifestText)
+            val manifest = parseJson<BasePlugin.Manifest>(manifestText)
 
             @Suppress("UNCHECKED_CAST")
             val pluginClass =
@@ -163,7 +126,10 @@ actual object ExtensionLoader {
 
             plugin.filename = file.absolutePath
 
-            plugins[file.absolutePath] = plugin
+            plugins[file.absolutePath] = LoadedPlugin(
+                plugin = plugin,
+                manifest = manifest
+            )
             val app: Application by KoinPlatformTools.defaultContext().get().inject()
             if (plugin is Plugin) {
                 plugin.load(app.applicationContext)
@@ -258,7 +224,7 @@ actual object ExtensionLoader {
 
         plugins.values.forEach {
             try {
-                it.beforeUnload()
+                it.plugin.beforeUnload()
             } catch (_: Exception) {
             }
         }

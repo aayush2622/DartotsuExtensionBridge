@@ -51,7 +51,7 @@ actual object TorrentUtils {
 
         if (multiFiles != null) {
             multiFiles.forEachIndexed { index, fileObj ->
-                val file = fileObj as Map<String, Any>
+                val file = fileObj as Map<*, *>
 
                 val length = (file["length"] as Number).toLong()
 

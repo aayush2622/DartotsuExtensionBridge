@@ -2,51 +2,108 @@ package com.lagradost.cloudstream3.utils
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.lagradost.cloudstream3.mapper
-import com.lagradost.cloudstream3.mvvm.logError
 import java.util.Calendar
 import java.util.Date
 import java.util.GregorianCalendar
+
+
+
+import com.lagradost.cloudstream3.mvvm.logError
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
+import androidx.core.content.edit
 
-// Mock implementation of DataStore to run on Desktop JVM without Android dependencies.
-// We use a simple in-memory map here.
+import com.lagradost.cloudstream3.mapper
+import com.fasterxml.jackson.databind.json.JsonMapper
+
+const val PREFERENCES_NAME = "cloudstream_plugin_preferences"
+
+class PreferenceDelegate<T : Any>(
+    val key: String, val default: T
+) {
+    private val klass: KClass<out T> = default::class
+    private var cache: T? = null
+
+    operator fun getValue(self: Any?, property: KProperty<*>): T {
+        if (cache != null) return cache!!
+        val json = DataStore.getPrefs()?.getString(key, null) ?: return default
+        val parsed = mapper.readValue(json, klass.java)
+        cache = parsed ?: default
+        return cache!!
+    }
+
+    operator fun setValue(self: Any?, property: KProperty<*>, t: T?) {
+        cache = t
+        if (t == null) {
+            DataStore.getPrefs()?.edit { remove(key) }
+        } else {
+            DataStore.getPrefs()?.edit {
+                putString(key, mapper.writeValueAsString(t))
+            }
+        }
+    }
+}
+
 object DataStore {
-    @PublishedApi internal val memoryPrefs = mutableMapOf<String, String>()
 
     @PublishedApi internal var appContext: Context? = null
+
     val mapper: JsonMapper = com.lagradost.cloudstream3.mapper
 
     fun init(context: Context) {
-        appContext = context
+        appContext = context.applicationContext
+    }
+
+    @PublishedApi internal fun getPrefs(): SharedPreferences? {
+        return appContext?.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    }
+
+    /** Called by plugins as context.getSharedPrefs() or DataStore.run { context.getSharedPrefs() } */
+    fun Context.getSharedPrefs(): SharedPreferences {
+        return getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
 
     @PublishedApi internal fun getFolderName(folder: String, path: String): String = "$folder/$path"
 
     fun Context.getKeys(folder: String): List<String> {
         val fixedFolder = folder.trimEnd('/') + "/"
-        return memoryPrefs.keys.filter { it.startsWith(fixedFolder) }
+        return getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE).all.keys.filter { it.startsWith(fixedFolder) }
     }
 
     fun Context.removeKey(folder: String, path: String) = removeKey(getFolderName(folder, path))
 
-    fun Context.containsKey(path: String): Boolean = memoryPrefs.containsKey(path)
+    fun Context.containsKey(path: String): Boolean =
+        getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE).contains(path)
 
     fun Context.removeKey(path: String) {
-        memoryPrefs.remove(path)
+        try {
+            val prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+            if (prefs.contains(path)) {
+                prefs.edit { remove(path) }
+            }
+        } catch (e: Exception) {
+            logError(e)
+        }
     }
 
     fun Context.removeKeys(folder: String): Int {
         val keys = getKeys("$folder/")
-        keys.forEach { memoryPrefs.remove(it) }
-        return keys.size
+        return try {
+            getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE).edit {
+                keys.forEach { remove(it) }
+            }
+            keys.size
+        } catch (e: Exception) {
+            logError(e)
+            0
+        }
     }
 
     fun <T> Context.setKey(path: String, value: T) {
         try {
-            memoryPrefs[path] = mapper.writeValueAsString(value)
+            getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE).edit {
+                putString(path, mapper.writeValueAsString(value))
+            }
         } catch (e: Exception) {
             logError(e)
         }
@@ -54,7 +111,8 @@ object DataStore {
 
     fun <T> Context.getKey(path: String, valueType: Class<T>): T? {
         return try {
-            val json = memoryPrefs[path] ?: return null
+            val json: String = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+                .getString(path, null) ?: return null
             mapper.readValue(json, valueType)
         } catch (e: Exception) {
             null
@@ -69,7 +127,8 @@ object DataStore {
 
     inline fun <reified T : Any> Context.getKey(path: String, defVal: T?): T? {
         return try {
-            val json = memoryPrefs[path] ?: return defVal
+            val json: String = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+                .getString(path, null) ?: return defVal
             json.toKotlinObject()
         } catch (e: Exception) {
             null
@@ -84,6 +143,7 @@ object DataStore {
     inline fun <reified T : Any> Context.getKey(folder: String, path: String, defVal: T?): T? =
         getKey(getFolderName(folder, path), defVal) ?: defVal
 
+    // --- Convenience static methods using appContext ---
 
     fun <T> setKey(path: String, value: T) {
         appContext?.setKey(path, value)
@@ -118,29 +178,4 @@ object DataStore {
     fun removeKeys(folder: String): Int? = appContext?.removeKeys(folder)
 
     fun Int.toYear(): Date = GregorianCalendar.getInstance().also { it.set(Calendar.YEAR, this) }.time
-}
-
-class PreferenceDelegate<T : Any>(
-    val key: String, val default: T
-) {
-    private val klass: KClass<out T> = default::class
-    private var cache: T? = null
-
-    operator fun getValue(self: Any?, property: KProperty<*>): T {
-        if (cache != null) return cache!!
-        val json = DataStore.getKeyClass(key, String::class.java)
-        if (json == null) return default
-        val parsed = mapper.readValue(json, klass.java)
-        cache = parsed ?: default
-        return cache!!
-    }
-
-    operator fun setValue(self: Any?, property: KProperty<*>, t: T?) {
-        cache = t
-        if (t == null) {
-            DataStore.removeKey(key)
-        } else {
-            DataStore.setKey(key, mapper.writeValueAsString(t))
-        }
-    }
 }

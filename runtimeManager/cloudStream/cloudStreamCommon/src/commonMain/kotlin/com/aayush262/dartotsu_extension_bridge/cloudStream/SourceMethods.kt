@@ -1,12 +1,12 @@
 package com.aayush262.dartotsu_extension_bridge.cloudStream
 
-import android.util.Log
+
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.fasterxml.jackson.core.type.TypeReference
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.net.URI
 import java.util.concurrent.CopyOnWriteArrayList
-
 private const val TAG = "CloudStreamMethods"
 
 private fun Any?.toRawMap(): Map<String, Any?>? {
@@ -42,13 +42,24 @@ private fun isInvalidData(data: String): Boolean {
 class CloudStreamSourceMethods(val provider: MainAPI) {
 
     suspend fun search(query: String, page: Int): Map<String, Any?> {
+        Logger.log( "Searching on '${provider.name}' for '$query' (page $page)...")
         return try {
-            val res = provider.search(query, page) ?: return mapOf("list" to emptyList<Any>(), "hasNextPage" to false)
+            val res = provider.search(query, page)
+            if (res == null) {
+                Logger.log( "'${provider.name}' returned null search results.")
+                return mapOf("list" to emptyList<Any>(), "hasNextPage" to false)
+            }
+            if (res.items.isEmpty()) {
+                Logger.log( "'${provider.name}' search returned 0 items.")
+            } else {
+                Logger.log( "'${provider.name}' search returned ${res.items.size} items (hasNext = ${res.hasNext}).")
+            }
             mapOf(
                 "list" to res.items.map { it.toMap() },
                 "hasNextPage" to res.hasNext
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Logger.log("ERROR: '${provider.name}' search failed for query '$query'", e)
             mapOf("list" to emptyList<Any>(), "hasNextPage" to false)
         }
     }
@@ -100,9 +111,9 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
     }
 
     suspend fun loadLinks(data: String): List<Map<String, Any?>> {
-        Log.d(TAG, "loadLinks called with data: $data")
+        Logger.log("loadLinks called with data: $data")
         if (isInvalidData(data)) {
-            Log.w(TAG, "isInvalidData returned true for: $data")
+            Logger.log("isInvalidData returned true for: $data")
             return emptyList()
         }
         val links = CopyOnWriteArrayList<Map<String, Any?>>()
@@ -113,7 +124,7 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
                 data,
                 false,
                 { subtitle ->
-                    Log.d(TAG, "Subtitle found: ${subtitle.url}")
+                     Logger.log("Subtitle found: ${subtitle.url}")
                     subtitles.add(
                         subtitle.withExtraData(
                             mapOf(
@@ -125,7 +136,7 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
                     )
                 },
                 { link ->
-                    Log.d(TAG, "Link found: ${link.url}")
+                    Logger.log( "Link found: ${link.url}")
                     links.add(linkToMap(link, subtitles.toList()))
                 }
             )
@@ -142,7 +153,7 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
                         wrapped,
                         false,
                         { subtitle ->
-                            Log.d(TAG, "Subtitle found (wrapped): ${subtitle.url}")
+                            Logger.log( "Subtitle found (wrapped): ${subtitle.url}")
                             subtitles.add(
                                 subtitle.withExtraData(
                                     mapOf(
@@ -154,20 +165,20 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
                             )
                         },
                         { link ->
-                            Log.d(TAG, "Link found (wrapped): ${link.url}")
+                            Logger.log( "Link found (wrapped): ${link.url}")
                             links.add(linkToMap(link, subtitles.toList()))
                         }
                     )
                 } catch (e2: Exception) {
-                    Log.e(TAG, "Wrapped retry failed", e2)
+                    Logger.log( "Wrapped retry failed", e2)
                 }
             } else {
-                Log.e(TAG, "loadLinks failed for $data", e)
+                Logger.log("loadLinks failed for $data", e)
             }
         }
 
         if (links.isEmpty() && data.startsWith("http") && !data.contains("[{") && !data.contains("{\"")) {
-            Log.i(TAG, "Smart Fallback: Calling provider.load($data)")
+            Logger.log( "Smart Fallback: Calling provider.load($data)")
             try {
                 val extractedData = when (val res = provider.load(data)) {
                     is MovieLoadResponse -> res.dataUrl
@@ -177,7 +188,7 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
                 }
 
                 if (extractedData != null && !isInvalidData(extractedData) && extractedData != data) {
-                    Log.i(TAG, "Smart Fallback successful, found dataUrl: $extractedData. Retrying loadLinks...")
+                    Logger.log("Smart Fallback successful, found dataUrl: $extractedData. Retrying loadLinks...")
                     provider.loadLinks(
                         extractedData,
                         false,
@@ -194,20 +205,19 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
                         }
                     )
                 } else if (data.startsWith("http")) {
-                    Log.i(TAG, "Final resort: direct loadExtractor for: $data")
+                    Logger.log( "Final resort: direct loadExtractor for: $data")
                     loadExtractor(data, "", { }, { link ->
                         links.add(linkToMap(link, emptyList()))
                     })
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Smart Fallback failed for $data", e)
+                Logger.log( "Smart Fallback failed for $data", e)
             }
         }
 
-        Log.d(TAG, "loadLinks returning ${links.size} links")
+         Logger.log("loadLinks returning ${links.size} links")
         return links
     }
-
 
     private fun linkToMap(link: ExtractorLink, subtitles: List<Map<String, Any?>>): Map<String, Any?> {
         val finalHeaders = fixHeaders(link.headers, link.referer)

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'dart:isolate';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:jni/jni.dart';
@@ -174,11 +175,10 @@ class JniBridge implements JavaBridge {
         ffi.DynamicLibrary.open(jvmPath);
         debugPrint("Loaded JVM: $jvmPath");
       }
-      Jni.setDylibDir(
-        dylibDir: File(libPath).parent.path,
-      );
+
       Jni.spawnIfNotExists(
         classPath: [jniJar, pluginJar],
+        dylibDir: File(libPath).parent.path,
         jvmOptions: const ["-Dfile.encoding=UTF-8", "-Xms128m", "-Xmx512m"],
       );
 

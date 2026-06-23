@@ -34,9 +34,3 @@ apply(from = "$rootDir/plugin-build.gradle.kts")
 tasks.jar { enabled = false }
 
 tasks.build.dependsOn(tasks.shadowJar)
-
-tasks.register("printKotlinCompilerVersion") {
-    doLast {
-        println(org.jetbrains.kotlin.config.KotlinCompilerVersion.VERSION)
-    }
-}

@@ -1,6 +1,6 @@
 package com.lagradost.cloudstream3.mvvm
 
-import android.util.Log
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.lagradost.cloudstream3.ErrorLoadingException
 import kotlinx.coroutines.*
 import java.io.InterruptedIOException
@@ -14,17 +14,17 @@ const val DEBUG_EXCEPTION = "THIS IS A DEBUG EXCEPTION!"
 const val DEBUG_PRINT = "DEBUG PRINT"
 
 inline fun debugPrint(block: () -> String) {
-    Log.d(DEBUG_PRINT, block())
+    Logger.log(block())
 }
 
 class DebugException(message: String) : Exception("$DEBUG_EXCEPTION\n$message")
 
 fun logError(throwable: Throwable) {
-    Log.d("ApiError", "-------------------------------------------------------------------")
-    Log.d("ApiError", "safeApiCall: " + throwable.localizedMessage)
-    Log.d("ApiError", "safeApiCall: " + throwable.message)
+    Logger.log("ApiError -------------------------------------------------------------------")
+    Logger.log("ApiError safeApiCall: " + throwable.localizedMessage)
+    Logger.log("ApiError safeApiCall: " + throwable.message)
     throwable.printStackTrace()
-    Log.d("ApiError", "-------------------------------------------------------------------")
+    Logger.log("ApiError -------------------------------------------------------------------")
 }
 
 /** Catches any exception (or error) and only logs it. Will return null on exceptions. */

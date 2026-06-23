@@ -8,13 +8,13 @@ import '../../Models/DEpisode.dart';
 import '../../Models/DMedia.dart';
 import '../../Models/Page.dart';
 import '../../Models/Pages.dart';
-import '../../Models/Source.dart';
 import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
+import 'Models/Source.dart';
 
 class CloudStreamSourceMethodsDesktop extends SourceMethods {
   @override
-  final Source source;
+  final CdSource source;
   final JavaBridge jni;
   CloudStreamSourceMethodsDesktop(this.source, this.jni);
 

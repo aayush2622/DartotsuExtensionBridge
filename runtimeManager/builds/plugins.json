@@ -1,0 +1,54 @@
+[
+    {
+        "name": "cloudStreamAndroid",
+        "versionCode": 5,
+        "versionName": "1.0.4",
+        "description": "A plugin that allows you to run cloudstream extensions on android",
+        "author": "aayush262/Ryan",
+        "createdAt": 1782206906413,
+        "type": "apk",
+        "fileName": "cloudStreamAndroid-plugin.apk",
+        "fileSize": 7617634,
+        "downloadUrl": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/cloudStreamAndroid/cloudStreamAndroid-plugin.apk",
+        "platform": "android"
+    },
+    {
+        "name": "cloudStreamDesktop",
+        "versionCode": 3,
+        "versionName": "1.0.2",
+        "description": "A plugin that allows you to run cloudstream extensions on desktop",
+        "author": "aayush262/Ryan",
+        "createdAt": 1782206907876,
+        "type": "jar",
+        "fileName": "cloudStreamDesktop-plugin.jar",
+        "fileSize": 60748028,
+        "downloadUrl": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/cloudStreamDesktop/cloudStreamDesktop-plugin.jar",
+        "platform": "desktop"
+    },
+    {
+        "name": "aniyomiAndroid",
+        "versionCode": 12,
+        "versionName": "1.0.11",
+        "description": "A plugin that allows you to run Aniyomi extensions on android",
+        "author": "aayush262",
+        "createdAt": 1782206807499,
+        "type": "apk",
+        "fileName": "aniyomiAndroid-plugin.apk",
+        "fileSize": 6870089,
+        "downloadUrl": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiAndroid/aniyomiAndroid-plugin.apk",
+        "platform": "android"
+    },
+    {
+        "name": "aniyomiDesktop",
+        "versionCode": 16,
+        "versionName": "1.0.15",
+        "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
+        "author": "aayush262",
+        "createdAt": 1782206793460,
+        "type": "jar",
+        "fileName": "aniyomiDesktop-plugin.jar",
+        "fileSize": 54075887,
+        "downloadUrl": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiDesktop/aniyomiDesktop-plugin.jar",
+        "platform": "desktop"
+    }
+]

@@ -1,31 +1,80 @@
 package com.aayush262.dartotsu_extension_bridge.cloudStream
 
-import android.content.Context
+import android.annotation.SuppressLint
 import dalvik.system.PathClassLoader
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.lagradost.cloudstream3.APIHolder
 import com.lagradost.cloudstream3.CloudStreamApp
+import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import java.io.File
+import java.io.IOException
+import kotlin.jvm.java
 
+@SuppressLint("StaticFieldLeak")
 actual object ExtensionLoader {
-    private val plugins = mutableMapOf<String, BasePlugin>()
 
+    data class LoadedPlugin(
+        val plugin: BasePlugin,
+        val manifest: BasePlugin.Manifest
+    )
+    val context = CloudStreamApp.context ?: error("Context is null")
+    var plugins = mutableMapOf<String, LoadedPlugin>()
     fun loadExtensions(path: String) {
-        val dir = File(path)
+        val privateDir = File(context.filesDir, "cloudstream-plugins")
+        val externalDir = File(path)
 
-        if (!dir.exists() || !dir.isDirectory) return
+        privateDir.mkdirs()
 
-        dir.listFiles()
-            ?.filter { it.isFile && (it.extension == "cs3" || it.extension == "apk") }
+        val externalFiles = externalDir.listFiles()
+            ?.filter { it.isFile && (it.extension == "apk" || it.extension == "cs3") }
+            ?: emptyList()
+
+        val privateFiles = privateDir.listFiles()
+            ?.associateBy { it.name }
+            ?: emptyMap()
+
+        externalFiles.forEach { src ->
+            val dst = File(privateDir, src.name)
+
+            val shouldCopy = !dst.exists() || dst.length() != src.length()
+
+            if (shouldCopy) {
+                val tmp = File(privateDir, "${src.name}.tmp")
+
+                src.inputStream().use { input ->
+                    tmp.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+
+                if (!tmp.renameTo(dst)) {
+                    tmp.delete()
+                    throw IOException("Failed to finalize ${dst.name}")
+                }
+
+                dst.setReadOnly()
+            }
+        }
+
+        privateFiles.forEach { (name, file) ->
+            if (externalFiles.none { it.name == name }) {
+                file.delete()
+            }
+        }
+
+        plugins.clear()
+
+        privateDir.listFiles()
+            ?.filter { it.isFile && (it.extension == "apk" || it.extension == "cs3") }
             ?.forEach { file ->
                 try {
                     loadPlugin(file)
                 } catch (e: Throwable) {
                     Logger.log(
-                        "Failed to load ${file.name}: ${e.message}\n${e.stackTraceToString()}"
+                        "Failed loading ${file.name}: ${e.stackTraceToString()}",
                     )
                 }
             }
@@ -36,16 +85,16 @@ actual object ExtensionLoader {
     fun loadPlugin(
         file: File,
     ): Boolean {
-        val context = CloudStreamApp.context ?: error("Context is null")
+
         if (!file.exists()) {
             Logger.log("Plugin file does not exist: ${file.absolutePath}")
             return false
         }
-
+        val parent = context.classLoader!!
         return try {
             val loader = PathClassLoader(
                 file.absolutePath,
-                javaClass.classLoader
+                parent
             )
 
             val manifestText =
@@ -54,8 +103,7 @@ actual object ExtensionLoader {
                     ?.use { it.readText() }
                     ?: error("manifest.json not found")
 
-            val manifest =
-                parseJson<BasePlugin.Manifest>(manifestText)
+            val manifest = parseJson<BasePlugin.Manifest>(manifestText)
 
             @Suppress("UNCHECKED_CAST")
             val pluginClass =
@@ -69,8 +117,11 @@ actual object ExtensionLoader {
                     .newInstance()
 
             plugin.filename = file.absolutePath
-            plugins[file.absolutePath] = plugin
 
+            plugins[file.absolutePath] = LoadedPlugin(
+                plugin = plugin,
+                manifest = manifest
+            )
             if (plugin is Plugin) {
                 plugin.load(context.applicationContext)
             } else {
@@ -96,7 +147,7 @@ actual object ExtensionLoader {
 
         plugins.values.forEach {
             try {
-                it.beforeUnload()
+                it.plugin.beforeUnload()
             } catch (_: Exception) {
             }
         }

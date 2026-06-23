@@ -7,6 +7,7 @@ import 'Extensions/SourceMethods.dart';
 import 'Models/Source.dart';
 import 'Services/Aniyomi/AniyomiExtensions.dart';
 import 'Services/AniyomiDesktop/AniyomiDesktopExtensions.dart';
+import 'Services/CloudStream/CloudStreamExtensions.dart';
 import 'Services/CloudStreamDesktop/ClousStreamDesktopExtensions.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
 import 'Services/Sora/SoraExtensions.dart';
@@ -25,6 +26,7 @@ class ExtensionManager extends GetxController {
     SoraExtensions(),
     MangayomiExtensions(),
     if (Platform.isAndroid) AniyomiExtensions(),
+    if (Platform.isAndroid) CloudStreamExtensions(),
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
       AniyomiDesktopExtensions(),
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)

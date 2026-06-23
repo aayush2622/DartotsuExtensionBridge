@@ -138,7 +138,7 @@ class AniyomiDesktopExtensions extends Extension {
       useCustomPath: true,
     );
 
-    final file = File("${dir!.path}/${s.apkName}");
+    final file = File(path.join(dir!.path, s.apkName));
 
     if (s.apkUrl == null) {
       throw Exception("APK URL missing");
@@ -231,7 +231,7 @@ class AniyomiDesktopExtensions extends Extension {
 
       final normalizedUrl = repoUrl.replaceAll(RegExp(r'/+$'), '');
 
-      final repos = _loadRepos(type);
+      final repos = loadRepos(type);
       if (repos.any((r) => r.url == normalizedUrl)) {
         return;
       }
@@ -284,7 +284,7 @@ class AniyomiDesktopExtensions extends Extension {
         extensions: parsed.length.toString(),
       );
       final updatedRepos = List<Repo>.from(repos)..add(repo);
-      _saveRepos(updatedRepos, type);
+      saveRepos(updatedRepos, type);
 
       final rx = getAvailableRx(type);
       final existing = rx.value;
@@ -361,7 +361,7 @@ class AniyomiDesktopExtensions extends Extension {
   }
 
   Future<List<Source>> _fetchExtensions(ItemType type) async {
-    final repos = _loadRepos(type);
+    final repos = loadRepos(type);
     if (repos.isEmpty) return const [];
 
     getReposRx(type).value = repos;
@@ -441,7 +441,14 @@ class AniyomiDesktopExtensions extends Extension {
           .timeout(const Duration(seconds: 10));
 
       if (res.statusCode == 200) {
-        return compute(_parseExtensions, (res.body, indexUrl, type));
+        var extensions = await compute(_parseExtensions, (
+          res.body,
+          indexUrl,
+          type,
+        ));
+        await updateRepoExtensionCount(repo, type, extensions.length);
+
+        return extensions;
       }
 
       throw Exception("Primary fetch failed");
@@ -459,7 +466,14 @@ class AniyomiDesktopExtensions extends Extension {
             .timeout(const Duration(seconds: 10));
 
         if (res.statusCode == 200) {
-          return compute(_parseExtensions, (res.body, fallbackUrl, type));
+          var extensions = await compute(_parseExtensions, (
+            res.body,
+            fallbackUrl,
+            type,
+          ));
+          await updateRepoExtensionCount(repo, type, extensions.length);
+
+          return extensions;
         }
       } catch (e2) {
         Logger.log("Fallback failed: $fallbackUrl → $e2");
@@ -481,44 +495,6 @@ class AniyomiDesktopExtensions extends Extension {
     await super.fetchMangaExtensions();
     final res = await _fetchExtensions(ItemType.manga);
     getAvailableRx(ItemType.manga).value = res;
-  }
-
-  @override
-  Future<void> removeRepo(String repoUrl, ItemType type) async {
-    try {
-      final repos = _loadRepos(
-        type,
-      ).where((r) => r.url != repoUrl).toList(growable: false);
-
-      _saveRepos(repos, type);
-
-      final rx = getAvailableRx(type);
-      rx.value = rx.value.where((s) => s.repo != repoUrl).toList();
-
-      getReposRx(type).value = repos;
-    } catch (e) {
-      Logger.log("Failed to remove repo $repoUrl: $e");
-    }
-  }
-
-  List<Repo> _loadRepos(ItemType type) {
-    final encoded = getVal<List<String>>('$id${type.name}Repos');
-    if (encoded == null || encoded.isEmpty) return const [];
-
-    final repos = encoded.map((e) => Repo.fromJson(jsonDecode(e)));
-
-    return {for (final r in repos) r.url: r}.values.toList(growable: false);
-  }
-
-  void _saveRepos(List<Repo> repos, ItemType type) {
-    final key = '$id${type.name}Repos';
-
-    final unique = {for (final r in repos) r.url: r}.values;
-
-    setVal(
-      key,
-      unique.map((e) => jsonEncode(e.toJson())).toList(growable: false),
-    );
   }
 
   @override

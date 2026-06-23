@@ -2,6 +2,39 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
 }
+
+
+android {
+    namespace = "com.aayush262.plugin"
+
+    compileSdk = 37
+
+    defaultConfig {
+        applicationId = "com.aayush262.dartotsu_extension_bridge.cloudStream_plugin"
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+        }
+        debug {
+            isMinifyEnabled = false
+        }
+    }
+}
+dependencies {
+    implementation(projects.cloudStream.cloudStreamCommon)
+}
+
 extra.apply {
     set("pluginAuthor", "aayush262/Ryan")
     set("pluginDescription", "A plugin that allows you to run cloudstream extensions on android")
@@ -9,63 +42,9 @@ extra.apply {
 
 apply(from = "$rootDir/plugin-build.gradle.kts")
 
-android {
-    namespace = "com.ryan.cloudStrean_plugin"
-
-    compileSdk = 37
-
-    defaultConfig {
-        applicationId = "com.ryan.cloudStrean_plugin"
-        minSdk = 21
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    buildTypes {
-        release {
-        }
-        debug {
-            isMinifyEnabled = false
-        }
-    }
-}
-
 tasks.register("buildAndInstall") {
-    dependsOn(":aniyomi:assembleDebug")
-    finalizedBy(":aniyomi:installDebug")
+    dependsOn(":cloudStream:cloudStreamAndroid:assembleDebug")
+    finalizedBy(":cloudStream:cloudStreamAndroid:installDebug")
 }
 
-kotlin {
-    jvmToolchain(17)
-    compilerOptions {
-        freeCompilerArgs.add("-Xcontext-receivers")
-    }
-}
-dependencies {
-    implementation(cloudStreamAndroid.injekt.core)
-    implementation(cloudStreamAndroid.nicehttp)
 
-    implementation(cloudStreamAndroid.jackson.databind)
-    implementation(cloudStreamAndroid.jackson.kotlin)
-
-    implementation(cloudStreamAndroid.fuzzywuzzy)
-    implementation(cloudStreamAndroid.preference.ktx)
-
-    implementation(cloudStreamAndroid.coroutines.core)
-
-    implementation(cloudStreamAndroid.newpipe.extractor)
-    implementation(cloudStreamAndroid.rhino)
-
-    implementation(cloudStreamAndroid.tmdb.java)
-
-    implementation(cloudStreamAndroid.retrofit)
-    implementation(cloudStreamAndroid.retrofit.jackson)
-
-    implementation(projects.libraries.commonLib)
-}

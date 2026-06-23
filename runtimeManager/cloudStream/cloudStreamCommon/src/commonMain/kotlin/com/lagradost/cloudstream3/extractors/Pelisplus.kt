@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.extractors
 
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -46,7 +47,7 @@ open class Pelisplus(val mainUrl: String) {
             /** Stolen from GogoanimeProvider.kt extractor */
             safeAsync {
                 val link = getDownloadUrl(id)
-                println("Generated vidstream download link: $link")
+                Logger.log("Generated vidstream download link: $link")
                 val page = app.get(link, referer = extractorUrl)
 
                 val pageDoc = Jsoup.parse(page.text)

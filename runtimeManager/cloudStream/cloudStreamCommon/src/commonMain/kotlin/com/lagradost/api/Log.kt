@@ -1,21 +1,21 @@
 package com.lagradost.api
 
-import android.util.Log
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 
 object Log {
     fun d(tag: String, message: String) {
-        Log.d(tag, message)
+         Logger.log( message)
     }
 
     fun i(tag: String, message: String) {
-        Log.i(tag, message)
+        Logger.log( message)
     }
 
     fun w(tag: String, message: String) {
-        Log.w(tag, message)
+        Logger.log( message)
     }
 
     fun e(tag: String, message: String) {
-        Log.e(tag, message)
+        Logger.log( message)
     }
 }

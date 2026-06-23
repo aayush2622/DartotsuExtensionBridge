@@ -1,20 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
 
+import '../../Extensions/DownloadablePlugin.dart';
 import '../../Logger.dart';
-import '../../Settings/KvStore.dart';
+import '../../NetworkClient.dart';
 import '../../dartotsu_extension_bridge.dart';
+import '../Network.dart';
 import 'CloudStreamSourceMethods.dart';
 import 'Models/CloudStreamSource.dart';
-
-List<dynamic> _decodeJsonList(String body) => jsonDecode(body) as List<dynamic>;
-Map<String, dynamic> _decodeJsonMap(String body) =>
-    jsonDecode(body) as Map<String, dynamic>;
 
 class CloudStreamExtensions extends Extension {
   @override
@@ -23,249 +22,359 @@ class CloudStreamExtensions extends Extension {
   @override
   String get name => 'CloudStream';
 
-  static const platform = MethodChannel('cloudstreamExtensionBridge');
-
-  final Rx<List<Source>> installedAnimeExtensions = Rx([]);
-  final Rx<List<Source>> availableAnimeExtensions = Rx([]);
-
   @override
   bool get supportsNovel => false;
+
   @override
   bool get supportsManga => false;
 
   @override
-  Future<void> fetchAnimeExtensions() async {
-    final repos = _loadRepos();
-    final allAvailable = <Source>[];
+  (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
+      (CSource, (source) => CloudStreamSourceMethods(source as CSource));
 
-    for (final repo in repos) {
-      try {
-        final response = await http.get(Uri.parse(repo.url));
-        if (response.statusCode == 200) {
-          final List<dynamic> data =
-              await compute(_decodeJsonList, response.body);
-          for (final item in data) {
-            allAvailable.add(CSource.fromJson(item..['repo'] = repo.url));
-          }
-        }
-      } catch (e, st) {
-        Logger.log("Failed to fetch CloudStream repo ${repo.url}: $e - $st");
-      }
+  @override
+  DownloadablePlugin plugin = CloudStreamPlugin();
+
+  static const platform = MethodChannel('cloudStreamExtensionBridge');
+  final _client = MClient.init();
+
+  final _context = DartotsuExtensionBridge.context;
+  @override
+  Future<bool> onInitialize() async {
+    plugin.installed.value = await plugin.isInstalled();
+    if (!plugin.installed.value) return false;
+
+    unawaited(plugin.autoUpdate());
+
+    final filePath = await plugin.getPath();
+    final hasUpdate = plugin.hasUpdate;
+
+    await platform.invokeMethod('loadPlugin', {
+      "path": filePath,
+      "hasUpdate": hasUpdate,
+      "debug": kDebugMode
+    });
+    await BridgeChannels.init();
+    if (_context.network != null) {
+      await platform.invokeMethod(
+        'initClient',
+        jsonEncode({
+          'dns': _context.network?.dns,
+          'proxy': _context.network?.proxy,
+        }),
+      );
     }
-
-    final installedNames =
-        installedAnimeExtensions.value.map((e) => e.name).toSet();
-    final installedInternalNames = installedAnimeExtensions.value
-        .map((e) => (e as CSource).internalName)
-        .where((name) => name != null)
-        .toSet();
-
-    availableAnimeExtensions.value = allAvailable.where((s) {
-      final source = s as CSource;
-      return !installedNames.contains(source.name) &&
-          !installedInternalNames.contains(source.internalName);
-    }).toList();
+    return true;
   }
-
-  @override
-  Future<void> fetchMangaExtensions() async {}
-
-  @override
-  Future<void> fetchNovelExtensions() async {}
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
+    await super.fetchInstalledAnimeExtensions();
     try {
-      final List<dynamic>? result =
-          await platform.invokeMethod('getRegisteredProviders');
-      final sources = result
-              ?.map((e) => CSource.fromJson(Map<String, dynamic>.from(e)))
-              .toList() ??
-          [];
-      installedAnimeExtensions.value = sources;
+      final dir = await _context.getDirectory(
+        subPath: 'bridge/cloudStream/extensions/Anime',
+        useSystemPath: false,
+        useCustomPath: true,
+      );
+      final jsonString = await platform.invokeMethod<String>(
+        "getInstalledAnimeExtensions",
+        dir?.path,
+      );
+
+      if (jsonString == null || jsonString.isEmpty) {
+        return;
+      }
+
+      final List<dynamic> result = jsonDecode(jsonString);
+
+      getInstalledRx(ItemType.anime).value = result
+          .map((e) => CSource.fromJson(e))
+          .toList(growable: false);
     } catch (e) {
-      Logger.log("Error fetching installed CloudStream extensions: $e");
+      Logger.log("Error fetching installed CloudStream Desktop extensions: $e");
     }
   }
 
   @override
-  Future<void> fetchInstalledMangaExtensions() async {}
-
-  @override
-  Future<void> fetchInstalledNovelExtensions() async {}
-
-  @override
-  Future<void> installSource(Source source) async {
-    if (source is CSource && source.pluginUrl != null) {
-      try {
-        Logger.log(
-            "Downloading CloudStream plugin: ${source.name} from ${source.pluginUrl}");
-        final bool success = await platform.invokeMethod(
-          'downloadPlugin',
-          {
-            'pluginUrl': source.pluginUrl,
-            'internalName': source.internalName ?? source.name,
-            'repositoryUrl': source.repo ?? '',
-          },
-        );
-
-        if (success) {
-          Logger.log("Successfully loaded CloudStream plugin: ${source.name}");
-          await fetchInstalledAnimeExtensions();
-          await fetchAnimeExtensions();
-        } else {
-          throw Exception("Bridge failed to download plugin");
-        }
-      } catch (e) {
-        Logger.log("Error installing CloudStream source ${source.name}: $e");
-        rethrow;
-      }
-    }
-  }
-
-  @override
-  Future<void> uninstallSource(Source source) async {
-    if (source is CSource) {
-      try {
-        Logger.log("Uninstalling CloudStream plugin: ${source.name}");
-        await platform.invokeMethod(
-          'deletePlugin',
-          {
-            'internalName': source.internalName ?? source.name,
-            'repositoryUrl': source.repo ?? '',
-          },
-        );
-        Logger.log(
-            "Successfully uninstalled CloudStream plugin: ${source.name}");
-        await fetchInstalledAnimeExtensions();
-        await fetchAnimeExtensions();
-      } catch (e) {
-        Logger.log("Error uninstalling CloudStream source ${source.name}: $e");
-        rethrow;
-      }
-    }
-  }
-
-  @override
-  Future<void> updateSource(Source source) async {
-    await installSource(source);
+  Future<void> fetchAnimeExtensions() async {
+    await super.fetchAnimeExtensions();
+    final res = await _fetchExtensions(ItemType.anime);
+    getAvailableRx(ItemType.anime).value = res;
   }
 
   @override
   Future<void> addRepo(String repoUrl, ItemType type) async {
-    final repos = _loadRepos();
+    final uri = Uri.tryParse(repoUrl);
+    if (uri == null || !uri.hasScheme) {
+      throw Exception("Invalid repo URL");
+    }
+
+    final repos = loadRepos(type);
 
     if (repos.any((r) => r.url == repoUrl)) {
-      Logger.log("CloudStream repo already exists: $repoUrl");
       return;
     }
 
-    late final http.Response response;
-    try {
-      response = await http.get(Uri.parse(repoUrl));
-    } catch (e) {
-      Logger.log("CloudStream repo unreachable: $repoUrl — $e");
-      throw Exception("Failed to reach repo URL: $repoUrl");
+    final res = await _client
+        .get(Uri.parse(repoUrl))
+        .timeout(const Duration(seconds: 10));
+
+    if (res.statusCode != 200) {
+      throw Exception("Repo returned ${res.statusCode}");
     }
 
-    if (response.statusCode != 200) {
-      throw Exception("Repo returned status ${response.statusCode}: $repoUrl");
-    }
+    final decoded = jsonDecode(res.body);
 
-    late final dynamic decoded;
-    try {
-      decoded = await compute(_decodeJsonMap, response.body);
-    } catch (_) {
-      try {
-        await compute(_decodeJsonList, response.body);
+    if (decoded is Map<String, dynamic>) {
+      final pluginLists = decoded["pluginLists"];
 
-        repos.add(Repo(url: repoUrl));
-        _saveRepos(repos);
-        await fetchAnimeExtensions();
-        return;
-      } catch (e) {
-        throw Exception("Repo URL does not return valid JSON: $repoUrl — $e");
-      }
-    }
-
-    if (decoded is Map<String, dynamic> &&
-        decoded.containsKey('pluginLists') &&
-        decoded['pluginLists'] is List) {
-      final pluginLists = (decoded['pluginLists'] as List).cast<String>();
-      Logger.log(
-          "Detected meta-repo at $repoUrl with ${pluginLists.length} sub-repos");
-
-      for (final subUrl in pluginLists) {
-        try {
-          await addRepo(subUrl, type);
-        } catch (e) {
-          Logger.log(
-              "Failed to add sub-repo $subUrl from meta-repo $repoUrl: $e");
+      if (pluginLists is List) {
+        for (final subRepo in pluginLists.cast<String>()) {
+          try {
+            await addRepo(subRepo, type);
+          } catch (e) {
+            Logger.log("Failed to add $subRepo: $e");
+          }
         }
+        return;
       }
-      return;
+
+      throw Exception("Invalid CloudStream repository");
     }
 
-    repos.add(Repo(url: repoUrl));
-    _saveRepos(repos);
-    await fetchAnimeExtensions();
+    if (decoded is! List) {
+      throw Exception("Invalid CloudStream repository");
+    }
+
+    final parsed = await compute(_parseExtensions, (res.body, repoUrl, type));
+    final repo = Repo(url: repoUrl, extensions: parsed.length.toString());
+
+    final updatedRepos = [...repos, repo];
+    saveRepos(updatedRepos, type);
+
+    getReposRx(type).value = updatedRepos;
+
+    final existing = getAvailableRx(type).value;
+
+    getAvailableRx(type).value = List.unmodifiable(
+      {
+        for (final s in existing) s.id: s,
+        for (final s in parsed) s.id: s,
+      }.values,
+    );
   }
 
   @override
-  Future<void> removeRepo(String repoUrl, ItemType type) async {
-    final repos = _loadRepos();
-    repos.removeWhere((r) => r.url == repoUrl);
-    _saveRepos(repos);
-    await fetchAnimeExtensions();
+  Future<void> installSource(Source source) async {
+    final s = source as CSource;
+    final type = source.itemType!;
+    final dir = await DartotsuExtensionBridge.context.getDirectory(
+      subPath: 'bridge/cloudStream/extensions/Anime',
+      useSystemPath: false,
+      useCustomPath: true,
+    );
+
+    final file = File(
+      path.join(dir!.path, path.basename(Uri.parse(s.pluginUrl!).path)),
+    );
+
+    if (s.pluginUrl == null) {
+      throw Exception("APK URL missing");
+    }
+
+    final request = http.Request('GET', Uri.parse(s.pluginUrl!));
+    final response = await _client.send(request);
+
+    final bytes = await response.stream.fold<List<int>>(
+      [],
+      (a, b) => a..addAll(b),
+    );
+    await file.writeAsBytes(bytes);
+
+    final avail = getAvailableRx(s.itemType!);
+
+    avail.value = avail.value.where((e) => e.id != s.id).toList();
+
+    switch (s.itemType) {
+      case ItemType.anime:
+        await fetchInstalledAnimeExtensions();
+        break;
+
+      default:
+        throw Exception('Unsupported item type: ${source.itemType}');
+    }
+    final raw = getRawAvailableRx(type).value;
+    _detectUpdates(raw.map((e) => e as CSource).toList(), type);
   }
 
   @override
-  Rx<List<Source>> getInstalledRx(ItemType type) {
-    if (type == ItemType.anime) return installedAnimeExtensions;
-    return Rx([]);
+  Future<void> uninstallSource(Source source) async {
+    final s = source as CSource;
+    final type = source.itemType!;
+
+    final dir = await DartotsuExtensionBridge.context.getDirectory(
+      subPath: 'bridge/cloudStream/extensions/Anime',
+      useSystemPath: false,
+      useCustomPath: true,
+    );
+
+    File? pluginFile;
+
+    await for (final entity in dir!.list()) {
+      if (entity is! File) continue;
+
+      if (path.basenameWithoutExtension(entity.path) == s.internalName) {
+        pluginFile = entity;
+        break;
+      }
+    }
+
+    if (pluginFile != null) {
+      await pluginFile.delete();
+      Logger.log("Deleted private extension: ${s.name}");
+    } else {
+      Logger.log("Private extension file not found: ${s.name}");
+    }
+
+    switch (type) {
+      case ItemType.anime:
+        await fetchInstalledAnimeExtensions();
+        break;
+      default:
+        throw Exception("Unsupported item type: $type");
+    }
+
+    final raw = getRawAvailableRx(type).value;
+    final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();
+
+    getAvailableRx(type).value = List.unmodifiable(
+      raw.where((e) => !installedIds.contains(e.id)),
+    );
+
+    _detectUpdates(raw.cast<CSource>(), type);
   }
 
   @override
-  Rx<List<Source>> getAvailableRx(ItemType type) {
-    if (type == ItemType.anime) return availableAnimeExtensions;
-    return Rx([]);
-  }
-
-  List<Repo> _loadRepos() {
-    final key = 'cloudstreamAnimeRepos';
-    final encoded = getVal<List<String>>(key);
-    if (encoded == null) return [];
-    return encoded.map((e) => Repo.fromJson(jsonDecode(e))).toList();
-  }
-
-  void _saveRepos(List<Repo> repos) {
-    final key = 'cloudstreamAnimeRepos';
-    setVal(key, repos.map((e) => jsonEncode(e.toJson())).toList());
-  }
-
-  @override
-  Rx<List<Repo>> getReposRx(ItemType type) {
-    final repos = _loadRepos();
-    final rx = Rx<List<Repo>>(repos);
-    return rx;
-  }
+  Future<void> updateSource(Source source) async => await installSource(source);
 
   @override
   Set<String> schemes = {"cloudstreamrepo"};
 
   @override
   Future<void> handleSchemes(Uri uri) async {
-    final urlWithoutScheme =
-        uri.toString().replaceFirst('cloudstreamrepo://', '');
+    final urlWithoutScheme = uri.toString().replaceFirst(
+      'cloudstreamrepo://',
+      '',
+    );
 
     await addRepo(
-        urlWithoutScheme.startsWith('http')
-            ? urlWithoutScheme
-            : 'https://$urlWithoutScheme',
-        ItemType.anime);
+      urlWithoutScheme.startsWith('http')
+          ? urlWithoutScheme
+          : 'https://$urlWithoutScheme',
+      ItemType.anime,
+    );
   }
 
+  Future<List<Source>> _fetchExtensions(ItemType type) async {
+    final repos = loadRepos(type);
+    if (repos.isEmpty) return const [];
+
+    getReposRx(type).value = repos;
+
+    final results = await Future.wait(repos.map((r) => _fetchRepo(r, type)));
+
+    final all = results.expand((e) => e).toList(growable: false);
+
+    final installed = getInstalledRx(type).value;
+    final installedIds = installed.map((e) => e.id).toSet();
+
+    _detectUpdates(all.map((e) => e as CSource).toList(), type);
+
+    getRawAvailableRx(type).value = List.unmodifiable(all);
+
+    return List.unmodifiable(all.where((s) => !installedIds.contains(s.id)));
+  }
+
+  Future<List<Source>> _fetchRepo(Repo repo, ItemType type) async {
+    final indexUrl = repo.url;
+    final res = await _client
+        .get(Uri.parse(indexUrl))
+        .timeout(const Duration(seconds: 10));
+
+    if (res.statusCode == 200) {
+      var extensions = await compute(_parseExtensions, (
+        res.body,
+        indexUrl,
+        type,
+      ));
+      await updateRepoExtensionCount(repo, type, extensions.length);
+
+      return extensions;
+    }
+    return [];
+  }
+
+  void _detectUpdates(List<CSource> available, ItemType type) {
+    final installed = getInstalledRx(type).value.cast<CSource>();
+
+    final repoMap = {for (var s in available) s.id: s};
+
+    for (var i = 0; i < installed.length; i++) {
+      final inst = installed[i];
+      final repo = repoMap[inst.id];
+
+      if (repo == null) continue;
+
+      if (compareVersions(repo.version ?? "0", inst.version ?? "0") > 0) {
+        installed[i] = inst
+          ..hasUpdate = true
+          ..versionLast = repo.version;
+      }
+      if (repo.iconUrl != inst.iconUrl) {
+        installed[i] = inst..iconUrl = repo.iconUrl;
+      }
+    }
+    getInstalledRx(type).value = List.unmodifiable(installed);
+  }
+
+  static List<Source> _parseExtensions(
+    (String body, String repoUrl, ItemType itemType) args,
+  ) {
+    final (body, repoUrl, _) = args;
+
+    final decoded = jsonDecode(body) as List;
+
+    return decoded
+        .map<Source>((e) {
+          final json = e as Map<String, dynamic>;
+
+          return CSource(
+            id: (json["internalName"] ?? json["name"]).toString().toLowerCase(),
+            name: json["name"],
+            baseUrl: json["url"],
+            lang: json["language"],
+            iconUrl: json["iconUrl"],
+            isNsfw: json["isNsfw"] ?? false,
+            version: json["version"]?.toString(),
+            versionLast: json["version"]?.toString(),
+            itemType: ItemType.anime,
+            repo: repoUrl,
+            internalName: json["internalName"] ?? json["name"],
+            pluginUrl: json["url"],
+          );
+        })
+        .toList(growable: false);
+  }
+}
+
+class CloudStreamPlugin extends DownloadablePlugin {
   @override
-  (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
-      (CSource, (source) => CloudStreamSourceMethods(source as CSource));
+  String get name => "cloudStream";
+
+  @override
+  String get remoteUrl =>
+      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/cloudStreamAndroid/cloudStreamAndroid-plugin.json";
+
+  @override
+  String get fileName => "cloudStreamAndroid-plugin.apk";
 }

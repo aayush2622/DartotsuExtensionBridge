@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.extractors
 
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.SubtitleFile
@@ -64,7 +65,7 @@ open class Voe : ExtractorApi() {
         }
         val encodedString = res.document.selectFirst("script[type=application/json]")?.data()?.trim()?.substringAfter("[\"")?.substringBeforeLast("\"]")
         if (encodedString == null) {
-            println("encoded string not found.")
+            Logger.log("encoded string not found.")
             return
         }
         val decryptedJson = decryptF7(encodedString)
@@ -107,7 +108,7 @@ open class Voe : ExtractorApi() {
 
             JsonParser.parseString(vAtob).asJsonObject
         } catch (e: Exception) {
-            println("Decryption error: ${e.message}")
+            Logger.log("Decryption error: ${e.message}")
             JsonObject()
         }
     }

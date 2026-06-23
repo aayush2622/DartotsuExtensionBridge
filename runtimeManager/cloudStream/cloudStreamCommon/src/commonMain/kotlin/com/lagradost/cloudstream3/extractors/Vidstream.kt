@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.extractors
  
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
@@ -51,7 +52,7 @@ class Vidstream(val mainUrl: String) {
             }, {
                 /** Stolen from GogoanimeProvider.kt extractor */
                 val link = getDownloadUrl(id)
-                println("Generated vidstream download link: $link")
+                Logger.log("Generated vidstream download link: $link")
                 val page = app.get(link, headers = mapOf("Referer" to extractorUrl))
 
                 val pageDoc = Jsoup.parse(page.text)

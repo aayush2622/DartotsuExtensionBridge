@@ -22,11 +22,6 @@ class CloudStreamService extends JavaHandler {
           (args["path"] as String?)?.toJString(),
         );
 
-      case "getInstalledMangaExtensions":
-        return await _api.getInstalledMangaExtensions(
-          (args["path"] as String?)?.toJString(),
-        );
-
       case "getPopular":
         return await _api.getPopular(
           (args["sourceId"] as String).toJString(),
@@ -51,13 +46,6 @@ class CloudStreamService extends JavaHandler {
 
       case "getVideoList":
         return await _api.getVideoList(
-          (args["sourceId"] as String).toJString(),
-          args["isAnime"],
-          (args["episode"] as String).toJString(),
-        );
-
-      case "getPageList":
-        return await _api.getPageList(
           (args["sourceId"] as String).toJString(),
           args["isAnime"],
           (args["episode"] as String).toJString(),

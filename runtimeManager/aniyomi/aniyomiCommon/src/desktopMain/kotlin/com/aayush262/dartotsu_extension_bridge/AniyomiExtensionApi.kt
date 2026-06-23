@@ -53,7 +53,7 @@ actual class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
             Logger.log("Koin already started")
             return
         }
-        initialize(CustomAniyomiMethods())
+        initialize(CustomMethods())
         val context = object : Application() {}
         val mainLoop = object : Thread() {
             override fun run() {
@@ -69,7 +69,7 @@ actual class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
                         single<Application> { context }
                         single { NetworkHelper(context) }
                         single { Json { ignoreUnknownKeys = true } }
-                        single { AniyomiExtensionManager(context) }
+                        single { AniyomiExtensionManager() }
                     },
                     androidCompatModule(root),
                 )

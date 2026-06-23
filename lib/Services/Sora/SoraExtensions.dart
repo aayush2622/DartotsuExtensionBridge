@@ -63,7 +63,7 @@ class SoraExtensions extends Extension {
         throw Exception("Invalid repo URL");
       }
 
-      final repos = _loadRepos(type);
+      final repos = loadRepos(type);
 
       if (repos.any((r) => r.url == repoUrl)) {
         return;
@@ -112,7 +112,7 @@ class SoraExtensions extends Extension {
 
       final updatedRepos = List<Repo>.from(repos)..add(repo);
 
-      _saveRepos(updatedRepos, type);
+      saveRepos(updatedRepos, type);
       final rx = getAvailableRx(type);
       final existing = rx.value;
 
@@ -129,26 +129,8 @@ class SoraExtensions extends Extension {
     }
   }
 
-  @override
-  Future<void> removeRepo(String repoUrl, ItemType type) async {
-    try {
-      final repos = _loadRepos(
-        type,
-      ).where((r) => r.url != repoUrl).toList(growable: false);
-
-      _saveRepos(repos, type);
-
-      final rx = getAvailableRx(type);
-      rx.value = rx.value.where((s) => s.repo != repoUrl).toList();
-
-      getReposRx(type).value = repos;
-    } catch (e) {
-      Logger.log("Failed to remove repo $repoUrl: $e");
-    }
-  }
-
   Future<List<Source>> _fetchExtensions(ItemType type) async {
-    final repos = _loadRepos(type);
+    final repos = loadRepos(type);
     if (repos.isEmpty) return const [];
 
     getReposRx(type).value = repos;
@@ -171,9 +153,17 @@ class SoraExtensions extends Extension {
   Future<List<Source>> _fetchRepo(Repo repo, ItemType type) async {
     try {
       final res = await _client.get(Uri.parse(repo.url));
-      if (res.statusCode != 200) return const [];
+      if (res.statusCode == 200) {
+        var extensions = await compute(_parseExtensions, (
+          res.body,
+          repo.url,
+          type,
+        ));
+        await updateRepoExtensionCount(repo, type, extensions.length);
 
-      return compute(_parseExtensions, (res.body, repo.url, type));
+        return extensions;
+      }
+      return [];
     } catch (e) {
       Logger.log("Repo failed ${repo.url}: $e");
       return const [];
@@ -351,24 +341,6 @@ class SoraExtensions extends Extension {
       _saveInstalled(installed, type);
       getInstalledRx(type).value = List.unmodifiable(installed);
     }
-  }
-
-  List<Repo> _loadRepos(ItemType type) {
-    final encoded = getVal<List<String>>('$id${type.name}Repos');
-    if (encoded == null || encoded.isEmpty) return const [];
-
-    return encoded
-        .map((e) => Repo.fromJson(jsonDecode(e)))
-        .toList(growable: false);
-  }
-
-  void _saveRepos(List<Repo> repos, ItemType type) {
-    final key = '$id${type.name}Repos';
-
-    setVal(
-      key,
-      repos.map((e) => jsonEncode(e.toJson())).toList(growable: false),
-    );
   }
 
   List<SSource> _loadInstalled(ItemType type) {

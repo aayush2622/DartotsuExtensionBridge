@@ -1,6 +1,6 @@
 [versions]
 serialization = "1.9.0"
-okio = "3.16.4"
+
 rxjava = "1.3.8"
 bencode = "1.4.2"
 [libraries]
@@ -9,9 +9,6 @@ bencode = "1.4.2"
 serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 serialization-json-okio = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json-okio", version.ref = "serialization" }
 serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "serialization" }
-
-
-okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 
 rxjava = { module = "io.reactivex:rxjava", version.ref = "rxjava" }
 
@@ -22,7 +19,6 @@ common = [
     "serialization-json",
     "serialization-json-okio",
     "serialization-protobuf",
-    "okio",
     "rxjava",
     "bencode",
 ]

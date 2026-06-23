@@ -23,12 +23,16 @@ import 'Models/Source.dart';
 
 class AniyomiExtensions extends Extension {
   final _client = MClient.init();
+
   @override
   String get id => 'aniyomi';
+
   @override
   String get name => 'Aniyomi';
+
   @override
   bool get supportsNovel => false;
+
   @override
   (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
       (ASource, (source) => AniyomiSourceMethods(source as ASource));
@@ -40,7 +44,7 @@ class AniyomiExtensions extends Extension {
   @override
   Future<bool> onInitialize() async {
     plugin.installed.value = await plugin.isInstalled();
-    if (!plugin.installed.value) return true;
+    if (!plugin.installed.value) return false;
 
     unawaited(plugin.autoUpdate());
 
@@ -50,7 +54,6 @@ class AniyomiExtensions extends Extension {
     await platform.invokeMethod('loadPlugin', {
       "path": filePath,
       "hasUpdate": hasUpdate,
-      "debug": true,
     });
     await BridgeChannels.init();
     var context = DartotsuExtensionBridge.context;
@@ -337,7 +340,7 @@ class AniyomiExtensions extends Extension {
 
       final normalizedUrl = repoUrl.replaceAll(RegExp(r'/+$'), '');
 
-      final repos = _loadRepos(type);
+      final repos = loadRepos(type);
       if (repos.any((r) => r.url == normalizedUrl)) {
         return;
       }
@@ -390,7 +393,7 @@ class AniyomiExtensions extends Extension {
         extensions: parsed.length.toString(),
       );
       final updatedRepos = List<Repo>.from(repos)..add(repo);
-      _saveRepos(updatedRepos, type);
+      saveRepos(updatedRepos, type);
 
       final rx = getAvailableRx(type);
       final existing = rx.value;
@@ -467,7 +470,7 @@ class AniyomiExtensions extends Extension {
   }
 
   Future<List<Source>> _fetchExtensions(ItemType type) async {
-    final repos = _loadRepos(type);
+    final repos = loadRepos(type);
     if (repos.isEmpty) return const [];
 
     getReposRx(type).value = repos;
@@ -590,44 +593,6 @@ class AniyomiExtensions extends Extension {
   }
 
   @override
-  Future<void> removeRepo(String repoUrl, ItemType type) async {
-    try {
-      final repos = _loadRepos(
-        type,
-      ).where((r) => r.url != repoUrl).toList(growable: false);
-
-      _saveRepos(repos, type);
-
-      final rx = getAvailableRx(type);
-      rx.value = rx.value.where((s) => s.repo != repoUrl).toList();
-
-      getReposRx(type).value = repos;
-    } catch (e) {
-      Logger.log("Failed to remove repo $repoUrl: $e");
-    }
-  }
-
-  List<Repo> _loadRepos(ItemType type) {
-    final encoded = getVal<List<String>>('$id${type.name}Repos');
-    if (encoded == null || encoded.isEmpty) return const [];
-
-    final repos = encoded.map((e) => Repo.fromJson(jsonDecode(e)));
-
-    return {for (final r in repos) r.url: r}.values.toList(growable: false);
-  }
-
-  void _saveRepos(List<Repo> repos, ItemType type) {
-    final key = '$id${type.name}Repos';
-
-    final unique = {for (final r in repos) r.url: r}.values;
-
-    setVal(
-      key,
-      unique.map((e) => jsonEncode(e.toJson())).toList(growable: false),
-    );
-  }
-
-  @override
   Set<String> get schemes => {"aniyomi", "tachiyomi"};
 
   @override
@@ -663,5 +628,5 @@ class AniyomiPlugin extends DownloadablePlugin {
       "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiAndroid/aniyomiAndroid-plugin.json";
 
   @override
-  String get fileName => "${name}_plugin.apk";
+  String get fileName => "aniyomiAndroid-plugin.apk";
 }
