@@ -23,7 +23,7 @@ abstract class SourceMethods {
 
   Stream<Video>? getVideoListStream(DEpisode episode) => null;
 
-  Future<String?> getNovelContent(String chapterTitle, String chapterId);
+  Future<String?> getNovelContent(DEpisode episode);
 
   Future<List<SourcePreference>> getPreference();
 

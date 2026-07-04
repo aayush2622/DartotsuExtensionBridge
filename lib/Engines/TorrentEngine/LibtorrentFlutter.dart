@@ -13,9 +13,6 @@ import '../../Logger.dart';
 import 'Models.dart';
 import 'ffi_bindings.dart';
 
-// ─── Tracker Management ─────────────────────────────────────────────────────
-
-/// Automatically fetches and injects best public trackers into magnet URIs.
 class TrackerManager {
   static final List<String> _extraTrackers = [];
 
@@ -153,6 +150,7 @@ class LibtorrentFlutter {
   /// - [fetchTrackers] — automatically fetch best public trackers on startup.
   /// - [defaultSavePath] — where to save torrent data. Defaults to system temp dir.
   static Future<void> init({
+    DynamicLibrary? torrentLib,
     String listenInterface = '',
     int downloadLimit = 0,
     int uploadLimit = 0,
@@ -161,12 +159,11 @@ class LibtorrentFlutter {
     String? defaultSavePath,
   }) async {
     if (_instance != null) return;
-
-    final lib = await TorrentBridgeBindings.open();
-    if (lib == null) {
+    if (torrentLib == null) {
       Logger.log("Libtorrent addon not installed.");
       return;
     }
+    final lib = TorrentBridgeBindings(torrentLib);
 
     final engine = LibtorrentFlutter._();
     engine._b = lib;

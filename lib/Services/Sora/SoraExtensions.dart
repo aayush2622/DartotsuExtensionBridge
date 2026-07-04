@@ -21,6 +21,9 @@ class SoraExtensions extends Extension {
   String get name => 'Sora';
 
   @override
+  String get icon =>
+      "packages/dartotsu_extension_bridge/assets/images/sora.png";
+  @override
   bool get supportsNovel => false;
 
   @override
@@ -30,29 +33,25 @@ class SoraExtensions extends Extension {
   @override
   Future<void> fetchAnimeExtensions() async {
     await super.fetchAnimeExtensions();
-    final res = await _fetchExtensions(ItemType.anime);
-    getAvailableRx(ItemType.anime).value = res;
+    anime.available.value = await fetchExtensions(ItemType.anime);
   }
 
   @override
   Future<void> fetchMangaExtensions() async {
     await super.fetchMangaExtensions();
-    final res = await _fetchExtensions(ItemType.manga);
-    getAvailableRx(ItemType.manga).value = res;
+    manga.available.value = await fetchExtensions(ItemType.manga);
   }
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
     await super.fetchInstalledAnimeExtensions();
-    final installed = _loadInstalled(ItemType.anime);
-    getInstalledRx(ItemType.anime).value = installed;
+    anime.installed.value = _loadInstalled(ItemType.anime);
   }
 
   @override
   Future<void> fetchInstalledMangaExtensions() async {
     await super.fetchInstalledMangaExtensions();
-    final installed = _loadInstalled(ItemType.manga);
-    getInstalledRx(ItemType.manga).value = installed;
+    manga.installed.value = _loadInstalled(ItemType.manga);
   }
 
   @override
@@ -105,7 +104,7 @@ class SoraExtensions extends Extension {
 
       final repo = Repo(
         url: repoUrl,
-        name: repoName,
+        name: repoName ?? repoNameFromUrl(repoUrl),
         iconUrl: repoIcon,
         extensions: parsed.length.toString(),
       );
@@ -113,44 +112,16 @@ class SoraExtensions extends Extension {
       final updatedRepos = List<Repo>.from(repos)..add(repo);
 
       saveRepos(updatedRepos, type);
-      final rx = getAvailableRx(type);
-      final existing = rx.value;
-
-      final merged = {
-        for (final s in existing) s.id: s,
-        for (final s in parsed) s.id: s,
-      }.values.toList(growable: false);
-
-      rx.value = List.unmodifiable(merged);
-      getReposRx(type).value = updatedRepos;
+      state(type).repos.value = updatedRepos;
+      await selectRepo(repo, type);
     } catch (e) {
       Logger.log("Failed to add repo $repoUrl: $e");
       rethrow;
     }
   }
 
-  Future<List<Source>> _fetchExtensions(ItemType type) async {
-    final repos = loadRepos(type);
-    if (repos.isEmpty) return const [];
-
-    getReposRx(type).value = repos;
-
-    final results = await Future.wait(repos.map((r) => _fetchRepo(r, type)));
-
-    final allSources = results.expand((e) => e).toList(growable: false);
-
-    final installed = getInstalledRx(type).value;
-    final installedIds = installed.map((e) => e.id).toSet();
-
-    _detectUpdates(allSources, type);
-    getRawAvailableRx(type).value = List.unmodifiable(allSources);
-
-    return List.unmodifiable(
-      allSources.where((s) => !installedIds.contains(s.id)),
-    );
-  }
-
-  Future<List<Source>> _fetchRepo(Repo repo, ItemType type) async {
+  @override
+  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
     try {
       final res = await _client.get(Uri.parse(repo.url));
       if (res.statusCode == 200) {
@@ -231,6 +202,7 @@ class SoraExtensions extends Extension {
     final s = source as SSource;
 
     try {
+      final type = s.itemType!;
       if (s.sourceCodeUrl == null) {
         throw Exception("Missing sourceCodeUrl");
       }
@@ -242,17 +214,19 @@ class SoraExtensions extends Extension {
 
       final installed = s..sourceCode = res.body;
 
-      final installedList = _loadInstalled(s.itemType!);
+      final installedList = _loadInstalled(type);
 
       installedList.removeWhere((e) => e.id == s.id);
       installedList.add(installed);
 
-      _saveInstalled(installedList, s.itemType!);
+      _saveInstalled(installedList, type);
 
-      getInstalledRx(s.itemType!).value = List.unmodifiable(installedList);
+      state(type).installed.value = List.unmodifiable(installedList);
 
-      final avail = getAvailableRx(s.itemType!);
+      final avail = state(type).available;
       avail.value = avail.value.where((e) => e.id != s.id).toList();
+      final raw = state(type).rawAvailable.value;
+      detectUpdates(raw, type);
     } catch (e) {
       Logger.log("Install failed ${s.id}: $e");
       rethrow;
@@ -270,14 +244,15 @@ class SoraExtensions extends Extension {
       installed.removeWhere((e) => e.id == s.id);
 
       _saveInstalled(installed, type);
-      getInstalledRx(type).value = List.unmodifiable(installed);
+      state(type).installed.value = List.unmodifiable(installed);
 
-      final raw = getRawAvailableRx(type).value;
+      final raw = state(type).rawAvailable.value;
       final installedIds = installed.map((e) => e.id).toSet();
 
-      getAvailableRx(type).value = List.unmodifiable(
+      state(type).available.value = List.unmodifiable(
         raw.where((e) => !installedIds.contains(e.id)),
       );
+      detectUpdates(raw, type);
     } catch (e) {
       Logger.log("Uninstall failed ${s.id}: $e");
     }
@@ -286,7 +261,7 @@ class SoraExtensions extends Extension {
   @override
   Future<void> updateSource(Source source) async {
     final s = source as SSource;
-
+    final type = s.itemType!;
     try {
       if (s.sourceCodeUrl == null) {
         throw Exception("Missing sourceCodeUrl");
@@ -297,7 +272,7 @@ class SoraExtensions extends Extension {
         throw Exception("Failed to download update");
       }
 
-      final installed = _loadInstalled(s.itemType!);
+      final installed = _loadInstalled(type);
 
       final index = installed.indexWhere((e) => e.id == s.id);
       if (index == -1) return;
@@ -307,16 +282,17 @@ class SoraExtensions extends Extension {
         ..version = s.version
         ..hasUpdate = false;
 
-      _saveInstalled(installed, s.itemType!);
+      _saveInstalled(installed, type);
 
-      getInstalledRx(s.itemType!).value = List.unmodifiable(installed);
+      state(type).installed.value = List.unmodifiable(installed);
     } catch (e) {
       Logger.log("Update failed ${s.id}: $e");
       rethrow;
     }
   }
 
-  void _detectUpdates(List<Source> available, ItemType type) {
+  @override
+  void detectUpdates(List<Source> available, ItemType type) {
     final installed = _loadInstalled(type);
     if (installed.isEmpty || available.isEmpty) return;
 
@@ -339,7 +315,7 @@ class SoraExtensions extends Extension {
 
     if (changed) {
       _saveInstalled(installed, type);
-      getInstalledRx(type).value = List.unmodifiable(installed);
+      state(type).installed.value = List.unmodifiable(installed);
     }
   }
 

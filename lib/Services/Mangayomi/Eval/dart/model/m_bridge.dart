@@ -8,7 +8,6 @@ import 'package:intl/intl.dart';
 import 'package:js_packer/js_packer.dart';
 import 'package:xpath_selector_html_parser/xpath_selector_html_parser.dart';
 
-import '../../../../../ExtensionBridge.dart';
 import '../../../Util/reg_exp_matcher.dart';
 import '../../../Util/string_extensions.dart';
 import '../../../anime_extractors/dood_extractor.dart';
@@ -77,8 +76,9 @@ class MBridge {
       }
       //Return one attr
       else if (query.nodes.length == 1) {
-        String attr =
-            query.attr != null ? query.attr!.trim().trimLeft().trimRight() : "";
+        String attr = query.attr != null
+            ? query.attr!.trim().trimLeft().trimRight()
+            : "";
         if (attr.isNotEmpty) {
           attrs = [attr];
         }
@@ -98,8 +98,8 @@ class MBridge {
       statusMap = element;
       for (var element in statusMap.entries) {
         if (element.key.toString().toLowerCase().contains(
-              status.toLowerCase().trim().trimLeft().trimRight(),
-            )) {
+          status.toLowerCase().trim().trimLeft().trimRight(),
+        )) {
           return switch (element.value as int) {
             0 => Status.ongoing,
             1 => Status.completed,

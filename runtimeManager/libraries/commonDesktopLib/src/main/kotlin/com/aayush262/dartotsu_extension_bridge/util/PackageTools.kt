@@ -115,7 +115,6 @@ object PackageTools {
         className: String,
     ): Any {
         try {
-            Logger.log("Loading jar with path: $jarPath", LogLevel.DEBUG)
             val parent = this.javaClass.classLoader
             val classLoader = jarLoaderMap[jarPath] ?: ChildFirstURLClassLoader(
                 arrayOf(Path(jarPath).toUri().toURL()),

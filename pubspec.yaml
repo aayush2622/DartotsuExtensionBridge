@@ -52,6 +52,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/jni/
+    - assets/images/
   plugin:
     platforms:
       android:

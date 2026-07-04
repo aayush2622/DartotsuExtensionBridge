@@ -45,7 +45,7 @@ actual object AnimeExtensionLoader {
     private val PACKAGE_FLAGS =
         PackageManager.GET_CONFIGURATIONS or PackageManager.GET_META_DATA or PackageManager.GET_SIGNATURES or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else 0)
 
-    @SuppressLint("QueryPermissionsNeeded")
+    @SuppressLint("QueryPermissionsNeeded", "WrongConstant")
     actual fun loadExtensions(path: String):  Map<AnimeExtension.Installed, String> {
         val context = Injekt.get<Context>()
         val pkgManager = context.packageManager
@@ -60,10 +60,6 @@ actual object AnimeExtensionLoader {
         val sharedExtPkgs = installedPkgs.asSequence().filter(::isPackageAnExtension).map { AnimeExtensionInfo(it, isShared = true) }.toList()
 
         try {
-            Logger.log(
-                "Path for private extensions: $path", LogLevel.INFO
-            )
-            val defaultDir = File(context.filesDir, "aniyomi-extensions/Anime")
             val externalDir = File(path)
             val privateDir = File(context.filesDir, "aniyomi-extensions/Anime")
 

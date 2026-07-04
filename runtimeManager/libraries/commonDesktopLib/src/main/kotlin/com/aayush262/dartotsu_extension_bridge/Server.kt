@@ -64,6 +64,11 @@ object Server {
                             )
                         }
 
+                        "getInstalledNovelExtensions" -> {
+                            api.getInstalledNovelExtensions(
+                                params["path"].asString,
+                            )
+                        }
                         "getPopular" -> {
                             api.getPopular(
                                 params["sourceId"].asString,
@@ -160,6 +165,7 @@ object Server {
                                     "id" to id,
                                     "success" to false,
                                     "error" to (e.message ?: "unknown"),
+                                    "trace" to e.stackTraceToString(),
                                 ),
                             ),
                         )

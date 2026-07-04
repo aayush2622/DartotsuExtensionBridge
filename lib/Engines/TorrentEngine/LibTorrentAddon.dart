@@ -22,7 +22,10 @@ class LibtorrentAddon extends Addon {
 
   Future<void> init() async {
     if (!(await isInstalled())) return;
-    await LibtorrentFlutter.init(defaultSavePath: (await _directory).path);
+    await LibtorrentFlutter.init(
+      defaultSavePath: (await _directory).path,
+      torrentLib: await open(),
+    );
   }
 
   DynamicLibrary? _library;
