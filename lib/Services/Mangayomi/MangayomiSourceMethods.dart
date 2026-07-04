@@ -101,8 +101,9 @@ class MangayomiSourceMethods implements SourceMethods {
         e.url,
         e.quality,
         headers: e.headers,
-        audios:
-            e.audios?.map((a) => Track(file: a.file, label: a.label)).toList(),
+        audios: e.audios
+            ?.map((a) => Track(file: a.file, label: a.label))
+            .toList(),
         subtitles: e.subtitles
             ?.map((s) => Track(file: s.file, label: s.label))
             .toList(),
@@ -111,10 +112,11 @@ class MangayomiSourceMethods implements SourceMethods {
   }
 
   @override
-  Future<String?> getNovelContent(String chapterTitle, String chapterId) async {
+  Future<String?> getNovelContent(DEpisode episode) async {
     try {
-      final data = await getExtensionService(source)
-          .getHtmlContent(chapterTitle, chapterId);
+      final data = await getExtensionService(
+        source,
+      ).getHtmlContent(episode.name ?? "", episode.url ?? "");
 
       return data;
     } catch (e) {
@@ -141,9 +143,9 @@ class MangayomiSourceMethods implements SourceMethods {
     }
 
     try {
-      final data = getSourcePreference(source: source)
-          .map((e) => getSourcePreferenceEntry(e.key!, source.id!))
-          .toList();
+      final data = getSourcePreference(
+        source: source,
+      ).map((e) => getSourcePreferenceEntry(e.key!, source.id!)).toList();
       return data
           .map(
             (p) => s.SourcePreference.fromJson(p.toJson())..type = getType(p),
@@ -159,8 +161,8 @@ class MangayomiSourceMethods implements SourceMethods {
     var data = SourcePreference.fromJson(pref.toJson())
       ..sourceId = extractSourceId(source.id!);
     if (data.listPreference != null) {
-      data.listPreference?.valueIndex =
-          data.listPreference?.entryValues?.indexOf(value ?? '');
+      data.listPreference?.valueIndex = data.listPreference?.entryValues
+          ?.indexOf(value ?? '');
     } else if (data.checkBoxPreference != null) {
       data.checkBoxPreference?.value = value;
     } else if (data.switchPreferenceCompat != null) {

@@ -1,0 +1,38 @@
+[versions]
+ireader = "1.5.1"
+ktor = "3.3.2"
+ksoup = "0.2.6"
+kotlinx-datetime = "0.7.1"
+serialization = "1.9.0"
+
+[libraries]
+# IReader
+ireader-core = { module = "io.github.ireaderorg:source-api", version.ref = "ireader" }
+
+# Ktor
+ktor-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+
+# Serialization
+serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+
+# Kotlinx DateTime
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+
+# Ksoup
+ksoup = { module = "io.github.ireaderorg:ksoup", version.ref = "ksoup" }
+dataStore = "androidx.datastore:datastore-preferences:1.2.1"
+[bundles]
+common = [
+    "ksoup",
+    "ireader-core",
+    "ktor-core",
+    "kotlinx-datetime",
+    "serialization-json",
+    "dataStore",
+]
+
+jvm = [
+    "ktor-cio",
+]
+

@@ -21,17 +21,15 @@ class KvStore {
   static final Isar _isar = DartotsuExtensionBridge.context.isar;
 
   static void setSync(String key, dynamic value) {
-    _isar.writeTxn(() async {
-      final existing = await _isar.kvEntrys
-          .filter()
-          .keyEqualTo(key)
-          .findFirst();
+    final existing = _isar.kvEntrys.filter().keyEqualTo(key).findFirstSync();
 
+    _isar.writeTxnSync(() {
       final entry = existing ?? KvEntry();
+
       entry.key = key;
       entry.value = _encode(value);
 
-      await _isar.kvEntrys.put(entry);
+      _isar.kvEntrys.putSync(entry);
     });
   }
 

@@ -4,39 +4,41 @@ interface ExtensionApi {
 
     fun initializeAndroid(context: Any){}
     fun initializeDesktop(basePath: String){}
-    suspend fun getInstalledAnimeExtensions(path: String?): String
+    suspend fun getInstalledAnimeExtensions(path: String?): String = ""
 
-    suspend fun getInstalledMangaExtensions(path: String?): String
+    suspend fun getInstalledMangaExtensions(path: String?): String = ""
+
+    suspend fun getInstalledNovelExtensions(path: String?): String = ""
 
     suspend fun getPopular(
         sourceId: String, isAnime: Boolean, page: Int
-    ): String
+    ): String = ""
 
     suspend fun getLatestUpdates(
         sourceId: String, isAnime: Boolean, page: Int
-    ): String
+    ): String = ""
 
     suspend fun search(
         sourceId: String, isAnime: Boolean, query: String, page: Int
-    ): String
+    ): String = ""
 
     suspend fun getDetail(
         sourceId: String, isAnime: Boolean, media: String
-    ): String
+    ): String = ""
 
     suspend fun getVideoList(
         sourceId: String, isAnime: Boolean, episode: String
-    ): String
+    ): String = ""
 
     suspend fun getPageList(
         sourceId: String, isAnime: Boolean, episode: String
-    ): String
+    ): String = ""
 
     suspend fun getPreference(
         sourceId: String, isAnime: Boolean
-    ): String
+    ): String = ""
 
     suspend fun saveSourcePreference(
         sourceId: String, key: String, value: String?
-    ): Boolean
+    ): Boolean = false
 }

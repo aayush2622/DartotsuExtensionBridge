@@ -16,13 +16,9 @@ import kotlin.jvm.java
 @SuppressLint("StaticFieldLeak")
 actual object ExtensionLoader {
 
-    data class LoadedPlugin(
-        val plugin: BasePlugin,
-        val manifest: BasePlugin.Manifest
-    )
     val context = CloudStreamApp.context ?: error("Context is null")
-    var plugins = mutableMapOf<String, LoadedPlugin>()
-    fun loadExtensions(path: String) {
+    actual var plugins = mutableMapOf<String, LoadedPlugin>()
+    actual fun loadExtensions(path: String) {
         val privateDir = File(context.filesDir, "cloudstream-plugins")
         val externalDir = File(path)
 
@@ -141,7 +137,7 @@ actual object ExtensionLoader {
         }
     }
 
-    fun unloadExtensions() {
+    actual fun unloadExtensions() {
         APIHolder.allProviders.clear()
         APIHolder.apis.clear()
 

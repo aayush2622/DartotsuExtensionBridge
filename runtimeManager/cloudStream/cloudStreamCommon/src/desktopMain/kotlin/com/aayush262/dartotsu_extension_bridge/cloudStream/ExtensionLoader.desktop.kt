@@ -14,14 +14,11 @@ import kotlin.collections.set
 import kotlin.getValue
 
 actual object ExtensionLoader {
-    data class LoadedPlugin(
-        val plugin: BasePlugin,
-        val manifest: BasePlugin.Manifest
-    )
 
-    var plugins = mutableMapOf<String, LoadedPlugin>()
 
-    fun loadExtensions(path: String) {
+    actual var plugins = mutableMapOf<String, LoadedPlugin>()
+
+    actual fun loadExtensions(path: String) {
 
         val dir = File(path)
 
@@ -34,7 +31,7 @@ actual object ExtensionLoader {
 
         pluginFiles.forEach { file ->
             try {
-                loadPlugin(file)
+                loadExtension(file)
             } catch (e: Throwable) {
                 Logger.log("Failed to load ${file.name}: ${e.message}\n${e.stackTraceToString()}")
             }
@@ -45,7 +42,7 @@ actual object ExtensionLoader {
     }
 
 
-    fun loadPlugin(file: File): Boolean {
+    fun loadExtension(file: File): Boolean {
         if (!file.exists()) {
             Logger.log("Plugin file does not exist: ${file.absolutePath}")
             return false
@@ -149,76 +146,9 @@ actual object ExtensionLoader {
             return false
         }
     }
-/*    fun loadPlugin(context: Context, file: File): Boolean {
-        val pluginPath = file.absolutePath
-
-        if (!file.exists()) {
-             Logger.log( "Plugin file ${file.absolutePath} does not exist.")
-            return false
-        }
-        val filePath = file.absolutePath
-
-        val pluginData = getPluginsOnline().firstOrNull { it.filePath == filePath }
-        if (pluginData?.isDisabled == true || pluginData?.isDownloaded == false) {
-             Logger.log( "Plugin ${file.absolutePath} is disabled or not fully downloaded.")
-            return false
-        }
-
-        try {
-            Logger.log( "Loading plugin from ${file.absolutePath}")
-            val loader = PathClassLoader(filePath, PluginManager::class.java.classLoader)
-
-            val manifestUrl = loader.getResource("manifest.json")
-            if (manifestUrl == null) {
-                 Logger.log( "Plugin ${file.name} does not contain manifest.json")
-                return false
-            }
-
-            val manifestText = manifestUrl.openStream().bufferedReader().use { it.readText() }
-            val manifest = parseJson<BasePlugin.Manifest>(manifestText)
-
-             Logger.log( "Parsed manifest: ${manifest.name} v${manifest.version}")
-
-            @Suppress("UNCHECKED_CAST")
-            val pluginClass = loader.loadClass(manifest.pluginClassName) as Class<out BasePlugin?>
-            val pluginInstance: BasePlugin = pluginClass.getDeclaredConstructor().newInstance() as BasePlugin
-
-            plugins[filePath] = pluginInstance
-            pluginInstance.filename = filePath
-
-            if (pluginInstance is Plugin) {
-                pluginInstance.load(context)
-            } else {
-                pluginInstance.load() // For BasePlugin
-            }
-
-            if (pluginData == null) {
-                // Was not tracked yet, store data
-                updatePluginData(
-                    PluginData(
-                        internalName = manifest.name,
-                        name = manifest.name,
-                        tvTypes = manifest.tvTypes,
-                        version = manifest.version,
-                        url = "",
-                        iconUrl = "",
-                        filePath = filePath,
-                        isDisabled = false,
-                        isDownloaded = true
-                    )
-                )
-            }
-
-            return true
-
-        } catch (e: Exception) {
-             Logger.log( "Error loading plugin ${file.absolutePath}", e)
-            return false
-        }
-    }*/
 
 
-    fun unloadExtensions() {
+    actual fun unloadExtensions() {
         APIHolder.allProviders.clear()
         APIHolder.apis.clear()
 

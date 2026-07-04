@@ -1,0 +1,16 @@
+output:
+  dart:
+    path: lib/Services/IReaderDesktop/Generated/
+
+classes:
+  - com.aayush262.dartotsu_extension_bridge.IReaderExtensionApi
+
+class_path:
+  - runtimeManager/builds/ireaderDesktop/ireaderDesktop-plugin.jar
+
+summarizer:
+  backend: asm
+
+
+
+#dart run jnigen --config jnigen_ireader.yaml

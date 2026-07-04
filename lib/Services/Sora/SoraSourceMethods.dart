@@ -50,7 +50,8 @@ class SoraSourceMethods extends SourceMethods {
         final res = await client.get(Uri.parse(source.sourceCodeUrl!));
         if (res.statusCode != 200) {
           throw Exception(
-              "Failed to fetch source code from ${source.sourceCodeUrl}: ${res.statusCode}");
+            "Failed to fetch source code from ${source.sourceCodeUrl}: ${res.statusCode}",
+          );
         }
         code = res.body;
       }
@@ -143,7 +144,8 @@ class SoraSourceMethods extends SourceMethods {
     void add(Map e, {String? fallback}) {
       episodes.add(
         DEpisode(
-          episodeNumber: e["number"]?.toString() ??
+          episodeNumber:
+              e["number"]?.toString() ??
               e["chapter"]?.toString() ??
               fallback ??
               "",
@@ -336,7 +338,7 @@ class SoraSourceMethods extends SourceMethods {
 
         if (!body.contains("#EXT-X-STREAM-INF")) {
           return [
-            Video(title, url, "auto", headers: headers, subtitles: subtitles)
+            Video(title, url, "auto", headers: headers, subtitles: subtitles),
           ];
         }
 
@@ -367,13 +369,18 @@ class SoraSourceMethods extends SourceMethods {
 
         return parsed.isEmpty
             ? [
-                Video(title, url, "auto",
-                    headers: headers, subtitles: subtitles)
+                Video(
+                  title,
+                  url,
+                  "auto",
+                  headers: headers,
+                  subtitles: subtitles,
+                ),
               ]
             : parsed;
       } catch (_) {
         return [
-          Video(title, url, "auto", headers: headers, subtitles: subtitles)
+          Video(title, url, "auto", headers: headers, subtitles: subtitles),
         ];
       }
     }
@@ -418,11 +425,7 @@ class SoraSourceMethods extends SourceMethods {
       if (map.containsKey("stream")) {
         final subs = parseSubs(map["subtitles"]);
 
-        await addVideo(
-          "Video",
-          map["stream"].toString(),
-          subtitles: subs,
-        );
+        await addVideo("Video", map["stream"].toString(), subtitles: subs);
       } else if (data["streams"] is List) {
         final list = data["streams"] as List;
 
@@ -474,7 +477,7 @@ class SoraSourceMethods extends SourceMethods {
   Future<List<SourcePreference>> getPreference() => Future.value([]);
 
   @override
-  Future<String?> getNovelContent(String chapterTitle, String chapterId) {
+  Future<String?> getNovelContent(DEpisode episode) {
     throw UnimplementedError();
   }
 

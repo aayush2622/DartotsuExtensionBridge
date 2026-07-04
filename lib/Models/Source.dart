@@ -40,18 +40,18 @@ class Source {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'baseUrl': baseUrl,
-        'lang': lang,
-        'iconUrl': iconUrl,
-        'isNsfw': isNsfw,
-        'version': version,
-        'versionLast': versionLast,
-        'itemType': itemType?.index ?? 0,
-        'repo': repo,
-        'hasUpdate': hasUpdate,
-      };
+    'id': id,
+    'name': name,
+    'baseUrl': baseUrl,
+    'lang': lang,
+    'iconUrl': iconUrl,
+    'isNsfw': isNsfw,
+    'version': version,
+    'versionLast': versionLast,
+    'itemType': itemType?.index ?? 0,
+    'repo': repo,
+    'hasUpdate': hasUpdate,
+  };
 }
 
 enum ItemType {

@@ -11,7 +11,5 @@ export './Models/Pages.dart';
 export './Models/Source.dart';
 export './Models/SourcePreference.dart';
 export './Models/Video.dart';
-export './Screen/ExtensionList.dart';
-export './Screen/ExtensionManagerScreen.dart';
 // maybe needed sometimes
 export './Services/Mangayomi/Models/Source.dart';

@@ -4,11 +4,6 @@ import 'dart:convert';
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-
-import '../../AddonManager.dart';
-import 'LibTorrentAddon.dart';
 
 // ─── Opaque native types ──────────────────────────────────────────────────────
 final class LtSessionOpaque extends Opaque {}
@@ -439,13 +434,5 @@ class TorrentBridgeBindings {
     version = _lib
         .lookup<NativeFunction<_VersionN>>('lt_version')
         .asFunction<LtVersion>();
-  }
-
-  static Future<TorrentBridgeBindings?> open() async {
-    final lib = await Get.find<AddonManager>().get<LibtorrentAddon>().open();
-
-    if (lib == null) return null;
-
-    return TorrentBridgeBindings(lib);
   }
 }

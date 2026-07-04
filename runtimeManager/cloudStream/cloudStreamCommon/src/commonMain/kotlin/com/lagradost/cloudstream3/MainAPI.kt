@@ -688,8 +688,8 @@ class Score private constructor(
         )
         fun fromOld(value: Int?): Score? {
             if (value == null) return null
-            if (value < 0 || value > 10000) {
-                com.lagradost.cloudstream3.Log.w(TAG, "old: $value ∉ [0, 10000]")
+            if (value !in 0..10000) {
+                Log.w(TAG, "old: $value ∉ [0, 10000]")
                 return null
             }
             return Score(value * 100_000)
@@ -700,8 +700,8 @@ class Score private constructor(
             if (value == null) {
                 return null
             }
-            if (value < 0 || value > maxScore) {
-                com.lagradost.cloudstream3.Log.w(TAG, "fromInt: $value ∉ [0, $maxScore]")
+            if (value !in 0..maxScore) {
+                Log.w(TAG, "fromInt: $value ∉ [0, $maxScore]")
                 return null
             }
             return Score((MAX / maxScore) * value)
@@ -713,7 +713,7 @@ class Score private constructor(
                 return null
             }
             if (value < 0.0 || value > maxScore) {
-                com.lagradost.cloudstream3.Log.w(TAG, "fromDouble: $value ∉ [0.0, $maxScore]")
+               Log.w(TAG, "fromDouble: $value ∉ [0.0, $maxScore]")
                 return null
             }
             return Score(((MAX / maxScore).toDouble() * value).roundToInt())
@@ -725,7 +725,7 @@ class Score private constructor(
                 return null
             }
             if (value < 0.0 || value > maxScore) {
-                com.lagradost.cloudstream3.Log.w(TAG, "fromFloat: $value ∉ [0.0f, $maxScore]")
+                Log.w(TAG, "fromFloat: $value ∉ [0.0f, $maxScore]")
                 return null
             }
             return Score(((MAX / maxScore).toFloat() * value).roundToInt())
@@ -856,7 +856,6 @@ fun TvType.isAnimeOp(): Boolean {
  * @property url Subtitle file url to download/load the file.
  * @see newSubtitleFile
  * */
-@ConsistentCopyVisibility
 data class SubtitleFile(
     var lang: String,
     var url: String,
@@ -891,9 +890,7 @@ suspend fun newSubtitleFile(
 }
 
 /** Data class for the Audio file/track info.
- * @property lang Audio track language.
  * @property url Audio file url to download/load the file.
- * @property label Optional label to display (e.g., "English 5.1", "Japanese Stereo").
  * @property headers Optional headers for the audio file request.
  * @see newAudioFile
  * */

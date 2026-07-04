@@ -38,6 +38,9 @@ dependencyResolutionManagement {
         create("cloudStreamAndroid") {
             from(files("gradle/cloudStreamAndroid-lib.toml"))
         }
+        create("ireaderCommon") {
+            from(files("ireader/ireaderCommon/libs/ireaderCommon-lib.toml"))
+        }
         create("libs") {
             from(files("gradle/libs.version.toml"))
         }
@@ -55,4 +58,10 @@ include(
     ":cloudStream:cloudStreamCommon",
     ":cloudStream:cloudStreamAndroid",
     ":cloudStream:cloudStreamDesktop",
+    ":kotatsu:kotatsuCommon",
+    ":kotatsu:kotatsuAndroid",
+    ":kotatsu:kotatsuDesktop",
+    ":ireader:ireaderCommon",
+    ":ireader:ireaderAndroid",
+    ":ireader:ireaderDesktop"
 )

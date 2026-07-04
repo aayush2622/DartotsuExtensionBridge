@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:d4rt/d4rt.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
+import '../Logger.dart';
 import '../Models/Source.dart';
 import '../Settings/KvStore.dart';
 import 'DownloadablePlugin.dart';
@@ -13,10 +13,24 @@ import 'SourceMethods.dart';
 
 enum InitState { idle, success, failed }
 
+class ExtensionState {
+  final installed = Rx<List<Source>>([]);
+  final available = Rx<List<Source>>([]);
+  final rawAvailable = Rx<List<Source>>([]);
+  final repos = Rx<List<Repo>>([]);
+  final activeRepo = Rxn<Repo>();
+  final loadingAvailable = false.obs;
+  final loadingInstalled = false.obs;
+  bool installedInitialized = false;
+  bool availableInitialized = false;
+}
+
 abstract class Extension {
   String get id;
 
   String get name;
+
+  String get icon;
 
   bool get supportsAnime => true;
 
@@ -41,30 +55,6 @@ abstract class Extension {
       plugin?.installed.value = true;
     }
   }
-
-  final Map<ItemType, Rx<List<Source>>> _installed = {
-    ItemType.anime: Rx<List<Source>>([]),
-    ItemType.manga: Rx<List<Source>>([]),
-    ItemType.novel: Rx<List<Source>>([]),
-  };
-
-  final Map<ItemType, Rx<List<Source>>> _available = {
-    ItemType.anime: Rx<List<Source>>([]),
-    ItemType.manga: Rx<List<Source>>([]),
-    ItemType.novel: Rx<List<Source>>([]),
-  };
-
-  final Map<ItemType, Rx<List<Source>>> _availableRaw = {
-    ItemType.anime: Rx<List<Source>>([]),
-    ItemType.manga: Rx<List<Source>>([]),
-    ItemType.novel: Rx<List<Source>>([]),
-  };
-
-  final Map<ItemType, Rx<List<Repo>>> _repos = {
-    ItemType.anime: Rx<List<Repo>>([]),
-    ItemType.manga: Rx<List<Repo>>([]),
-    ItemType.novel: Rx<List<Repo>>([]),
-  };
 
   @protected
   Future<bool> onInitialize() async => true;
@@ -95,6 +85,16 @@ abstract class Extension {
     return _initCompleter!.future;
   }
 
+  final _states = <ItemType, ExtensionState>{};
+
+  ExtensionState state(ItemType type) =>
+      _states.putIfAbsent(type, ExtensionState.new);
+
+  ExtensionState get anime => state(ItemType.anime);
+
+  ExtensionState get manga => state(ItemType.manga);
+
+  ExtensionState get novel => state(ItemType.novel);
   void dispose() async {}
 
   Future<bool> ensureInitialized() async {
@@ -110,58 +110,73 @@ abstract class Extension {
     return fn();
   }
 
-  bool _isInstalledInitialized = false;
-
   @mustCallSuper
-  Future<void> initializeInstalled() async {
+  Future<void> initializeInstalled(ItemType type) async {
     if (!await ensureInitialized()) return;
-    if (_isInstalledInitialized) return;
 
-    _isInstalledInitialized = true;
+    final s = state(type);
+
+    if (s.installedInitialized) return;
+    s.installedInitialized = true;
 
     try {
-      if (supportsAnime) unawaited(fetchInstalledAnimeExtensions());
-      if (supportsManga) unawaited(fetchInstalledMangaExtensions());
-      if (supportsNovel) unawaited(fetchInstalledNovelExtensions());
+      switch (type) {
+        case ItemType.anime:
+          if (supportsAnime) {
+            unawaited(fetchInstalledAnimeExtensions());
+          }
+          break;
+
+        case ItemType.manga:
+          if (supportsManga) {
+            unawaited(fetchInstalledMangaExtensions());
+          }
+          break;
+
+        case ItemType.novel:
+          if (supportsNovel) {
+            unawaited(fetchInstalledNovelExtensions());
+          }
+          break;
+      }
     } catch (e, s) {
       Logger.log('Error initializing extension $id: $e\n$s');
     }
   }
 
-  bool _isAvailableInitialized = false;
-
   @mustCallSuper
-  Future<void> initializeAvailable() async {
+  Future<void> initializeAvailable(ItemType type) async {
     if (!await ensureInitialized()) return;
-    if (_isAvailableInitialized) return;
 
-    _isAvailableInitialized = true;
+    final s = state(type);
+
+    if (s.availableInitialized) return;
+    s.availableInitialized = true;
 
     try {
-      if (supportsAnime) unawaited(fetchAnimeExtensions());
-      if (supportsManga) unawaited(fetchMangaExtensions());
-      if (supportsNovel) unawaited(fetchNovelExtensions());
+      switch (type) {
+        case ItemType.anime:
+          if (supportsAnime) {
+            unawaited(fetchAnimeExtensions());
+          }
+          break;
+
+        case ItemType.manga:
+          if (supportsManga) {
+            unawaited(fetchMangaExtensions());
+          }
+          break;
+
+        case ItemType.novel:
+          if (supportsNovel) {
+            unawaited(fetchNovelExtensions());
+          }
+          break;
+      }
     } catch (e, s) {
-      Logger.log('Error initializing extension $id: $e\n$s');
-    }
-  }
-
-  Future<void> addRepo(String repoUrl, ItemType type);
-
-  Future<void> removeRepo(String repoUrl, ItemType type) async {
-    try {
-      final repos = loadRepos(
-        type,
-      ).where((r) => r.url != repoUrl).toList(growable: false);
-
-      saveRepos(repos, type);
-
-      final rx = getAvailableRx(type);
-      rx.value = rx.value.where((s) => s.repo != repoUrl).toList();
-
-      getReposRx(type).value = repos;
-    } catch (e) {
-      Logger.log("Failed to remove repo $repoUrl: $e");
+      Logger.log(
+        'Error initializing available extensions for $id ($type): $e\n$s',
+      );
     }
   }
 
@@ -205,18 +220,66 @@ abstract class Extension {
 
   void handleSchemes(Uri uri) {}
 
-  Rx<List<Source>> getInstalledRx(ItemType type) => _installed[type]!;
-
-  Rx<List<Source>> getAvailableRx(ItemType type) => _available[type]!;
-
-  Rx<List<Source>> getRawAvailableRx(ItemType type) => _availableRaw[type]!;
-
-  Rx<List<Repo>> getReposRx(ItemType type) => _repos[type]!;
-
   List<ExtensionSetting> settings(BuildContext context) => [];
 
   Future<void> setInstalled(ItemType type, List<Source> sources) async {
-    getInstalledRx(type).value = sources;
+    state(type).installed.value = sources;
+  }
+
+  Future<List<Source>> fetchExtensions(ItemType type) async {
+    var s = state(type);
+    s.loadingAvailable.value = true;
+    s.available.value = [];
+    final repos = loadRepos(type);
+    s.repos.value = repos;
+
+    if (repos.isEmpty) {
+      s.rawAvailable.value = const [];
+      s.loadingAvailable.value = false;
+      return const [];
+    }
+
+    final active = loadActiveRepo(type) ?? repos.first;
+    s.activeRepo.value = active;
+    saveActiveRepo(type, active);
+
+    final all = await fetchRepo(active, type);
+
+    final installed = s.installed.value;
+    final installedIds = installed.map((e) => e.id).toSet();
+
+    detectUpdates(all, type);
+
+    s.rawAvailable.value = List.unmodifiable(all);
+    s.loadingAvailable.value = false;
+    return List.unmodifiable(all.where((s) => !installedIds.contains(s.id)));
+  }
+
+  void detectUpdates(List<Source> available, ItemType type);
+
+  Future<List<Source>> fetchRepo(Repo repo, ItemType type);
+
+  Future<void> updateRepoExtensionCount(
+    Repo repo,
+    ItemType type,
+    int count,
+  ) async {
+    repo.extensions = count.toString();
+
+    final repos = loadRepos(type);
+    final index = repos.indexWhere((r) => r.url == repo.url);
+
+    if (index != -1) {
+      repos[index] = repo;
+      saveRepos(repos, type);
+      state(type).repos.value = List.unmodifiable(repos);
+    }
+  }
+
+  String repoNameFromUrl(String url) {
+    final uri = Uri.parse(url);
+    final segments = uri.pathSegments.where((e) => e.isNotEmpty).toList();
+    return segments.isNotEmpty ? segments.first : uri.host;
   }
 
   int compareVersions(String v1, String v2) {
@@ -253,22 +316,71 @@ abstract class Extension {
     );
   }
 
-  Future<void> updateRepoExtensionCount(
-    Repo repo,
-    ItemType type,
-    int count,
-  ) async {
-    repo.extensions = count.toString();
+  Future<void> addRepo(String repoUrl, ItemType type);
 
-    final repos = loadRepos(type);
-    final index = repos.indexWhere((r) => r.url == repo.url);
+  Future<void> removeRepo(String repoUrl, ItemType type) async {
+    try {
+      final previousActive = loadActiveRepo(type);
 
-    if (index != -1) {
-      repos[index] = repo;
+      final repos = loadRepos(
+        type,
+      ).where((r) => r.url != repoUrl).toList(growable: false);
+
       saveRepos(repos, type);
-      getReposRx(type).value = List.unmodifiable(repos);
+      state(type).repos.value = List.unmodifiable(repos);
+
+      if (previousActive?.url == repoUrl) {
+        if (repos.isNotEmpty) {
+          saveActiveRepo(type, repos.first);
+          state(type).activeRepo.value = repos.first;
+        } else {
+          setVal("$id${type.name}ActiveRepo", null);
+          state(type).activeRepo.value = null;
+        }
+
+        await fetchExtension(type);
+      }
+    } catch (e, s) {
+      Logger.log("Failed to remove repo $repoUrl: $e\n$s");
     }
   }
+
+  Repo? loadActiveRepo(ItemType type) {
+    final url = getVal<String>("$id${type.name}ActiveRepo");
+    if (url == null) return null;
+
+    final repos = loadRepos(type);
+    return repos.where((e) => e.url == url).firstOrNull;
+  }
+
+  void saveActiveRepo(ItemType type, Repo repo) async {
+    final key = "$id${type.name}ActiveRepo";
+
+    setVal(key, repo.url);
+  }
+
+  Future<void> selectRepo(Repo repo, ItemType type) async {
+    saveActiveRepo(type, repo);
+    state(type).activeRepo.value = repo;
+    await fetchExtension(type);
+  }
+
+  bool supports(ItemType type) => switch (type) {
+    ItemType.anime => supportsAnime,
+    ItemType.manga => supportsManga,
+    ItemType.novel => supportsNovel,
+  };
+  Future<void> fetchExtension(ItemType type) => switch (type) {
+    ItemType.anime => fetchAnimeExtensions(),
+    ItemType.manga => fetchMangaExtensions(),
+    ItemType.novel => fetchNovelExtensions(),
+  };
+
+  Future<void> fetchInstalledExtensions(ItemType type) => switch (type) {
+    ItemType.anime => fetchInstalledAnimeExtensions(),
+    ItemType.manga => fetchInstalledMangaExtensions(),
+    ItemType.novel => fetchInstalledNovelExtensions(),
+  };
 }
 
 class Repo {

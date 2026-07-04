@@ -22,91 +22,52 @@ class MangayomiExtensions extends Extension {
   String get name => 'Mangayomi';
 
   @override
+  String get icon =>
+      "packages/dartotsu_extension_bridge/assets/images/mangayomi.png";
+  @override
   (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
       (MSource, (source) => MangayomiSourceMethods(source as MSource));
 
   @override
   Future<void> fetchAnimeExtensions() async {
     await super.fetchAnimeExtensions();
-    final res = await _fetchExtensions(ItemType.anime);
-    getAvailableRx(ItemType.anime).value = res;
+    anime.available.value = await fetchExtensions(ItemType.anime);
   }
 
   @override
   Future<void> fetchMangaExtensions() async {
     await super.fetchMangaExtensions();
-    final res = await _fetchExtensions(ItemType.manga);
-    getAvailableRx(ItemType.manga).value = res;
+    manga.available.value = await fetchExtensions(ItemType.manga);
   }
 
   @override
   Future<void> fetchNovelExtensions() async {
     await super.fetchNovelExtensions();
-    final res = await _fetchExtensions(ItemType.novel);
-    getAvailableRx(ItemType.novel).value = res;
-  }
-
-  Future<List<Source>> _fetchExtensions(ItemType type) async {
-    final repos = loadRepos(type);
-    if (repos.isEmpty) return const [];
-
-    getReposRx(type).value = repos;
-
-    final results = await Future.wait(repos.map((r) => _fetchRepo(r, type)));
-
-    final all = results.expand((e) => e).toList(growable: false);
-
-    final installed = _loadInstalled(type);
-    final installedIds = installed.map((e) => e.id).toSet();
-
-    _detectUpdates(all, type);
-
-    getRawAvailableRx(type).value = List.unmodifiable(all);
-
-    return List.unmodifiable(all.where((s) => !installedIds.contains(s.id)));
-  }
-
-  Future<List<Source>> _fetchRepo(Repo repo, ItemType type) async {
-    final indexUrl = repo.url;
-    final res = await _client
-        .get(Uri.parse(indexUrl))
-        .timeout(const Duration(seconds: 10));
-
-    if (res.statusCode == 200) {
-      var extensions = await compute(_parseExtensions, (
-        res.body,
-        indexUrl,
-        type,
-      ));
-      await updateRepoExtensionCount(repo, type, extensions.length);
-
-      return extensions;
-    }
-    return [];
+    novel.available.value = await fetchExtensions(ItemType.novel);
   }
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
     await super.fetchInstalledAnimeExtensions();
-    getInstalledRx(ItemType.anime).value = _loadInstalled(ItemType.anime);
+    anime.installed.value = _loadInstalled(ItemType.anime);
   }
 
   @override
   Future<void> fetchInstalledMangaExtensions() async {
     await super.fetchInstalledMangaExtensions();
-    getInstalledRx(ItemType.manga).value = _loadInstalled(ItemType.manga);
+    manga.installed.value = _loadInstalled(ItemType.manga);
   }
 
   @override
   Future<void> fetchInstalledNovelExtensions() async {
     await super.fetchInstalledNovelExtensions();
-    getInstalledRx(ItemType.novel).value = _loadInstalled(ItemType.novel);
+    novel.installed.value = _loadInstalled(ItemType.novel);
   }
 
   @override
   Future<void> installSource(Source source) async {
     final m = source as MSource;
-
+    final type = m.itemType!;
     try {
       final res = await _client.get(Uri.parse(m.sourceCodeUrl!));
 
@@ -118,17 +79,19 @@ class MangayomiExtensions extends Extension {
         ..sourceCode = res.body
         ..headers = jsonEncode(getExtensionService(m).getHeaders());
 
-      final list = _loadInstalled(m.itemType!);
+      final list = _loadInstalled(type);
 
       list.removeWhere((e) => e.id == m.id);
       list.add(installed);
 
-      _saveInstalled(list, m.itemType!);
+      _saveInstalled(list, type);
 
-      getInstalledRx(m.itemType!).value = List.unmodifiable(list);
+      state(type).installed.value = List.unmodifiable(list);
 
-      final avail = getAvailableRx(m.itemType!);
+      final avail = state(type).available;
       avail.value = avail.value.where((e) => e.id != m.id).toList();
+      final raw = state(type).rawAvailable.value;
+      detectUpdates(raw, type);
     } catch (e) {
       Logger.log("Install failed ${m.id}: $e");
       rethrow;
@@ -146,14 +109,15 @@ class MangayomiExtensions extends Extension {
       installed.removeWhere((e) => e.id == s.id);
 
       _saveInstalled(installed, type);
-      getInstalledRx(type).value = List.unmodifiable(installed);
+      state(type).installed.value = List.unmodifiable(installed);
 
-      final raw = getRawAvailableRx(type).value;
+      final raw = state(type).rawAvailable.value;
       final installedIds = installed.map((e) => e.id).toSet();
 
-      getAvailableRx(type).value = List.unmodifiable(
+      state(type).available.value = List.unmodifiable(
         raw.where((e) => !installedIds.contains(e.id)),
       );
+      detectUpdates(raw, type);
     } catch (e) {
       Logger.log("Uninstall failed ${s.id}: $e");
     }
@@ -161,30 +125,31 @@ class MangayomiExtensions extends Extension {
 
   @override
   Future<void> updateSource(Source source) async {
-    final m = source as MSource;
-
-    final res = await _client.get(Uri.parse(m.sourceCodeUrl!));
+    final s = source as MSource;
+    final type = s.itemType!;
+    final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
 
     if (res.statusCode != 200) {
       throw Exception("Update download failed");
     }
 
-    final installed = _loadInstalled(m.itemType!);
+    final installed = _loadInstalled(type);
 
-    final index = installed.indexWhere((e) => e.id == m.id);
+    final index = installed.indexWhere((e) => e.id == s.id);
     if (index == -1) return;
 
     installed[index] = installed[index]
       ..sourceCode = res.body
-      ..version = m.version
+      ..version = s.version
       ..hasUpdate = false;
 
-    _saveInstalled(installed, m.itemType!);
+    _saveInstalled(installed, type);
 
-    getInstalledRx(m.itemType!).value = List.unmodifiable(installed);
+    state(type).installed.value = List.unmodifiable(installed);
   }
 
-  void _detectUpdates(List<Source> available, ItemType type) {
+  @override
+  void detectUpdates(List<Source> available, ItemType type) {
     final installed = _loadInstalled(type);
 
     final repoMap = {for (var s in available) s.id: s};
@@ -207,7 +172,7 @@ class MangayomiExtensions extends Extension {
 
     if (changed) {
       _saveInstalled(installed, type);
-      getInstalledRx(type).value = List.unmodifiable(installed);
+      state(type).installed.value = List.unmodifiable(installed);
     }
   }
 
@@ -230,26 +195,36 @@ class MangayomiExtensions extends Extension {
         throw Exception("Failed to fetch repo");
       }
 
-      final repo = Repo(url: repoUrl);
+      final repo = Repo(name: repoNameFromUrl(repoUrl), url: repoUrl);
       final updatedRepos = List<Repo>.from(repos)..add(repo);
 
       saveRepos(updatedRepos, type);
-      final parsed = await compute(_parseExtensions, (res.body, repoUrl, type));
-
-      final rx = getAvailableRx(type);
-      final existing = rx.value;
-
-      final merged = {
-        for (final s in existing) s.id: s,
-        for (final s in parsed) s.id: s,
-      }.values.toList(growable: false);
-
-      rx.value = List.unmodifiable(merged);
-      getReposRx(type).value = updatedRepos;
+      state(type).repos.value = updatedRepos;
+      await selectRepo(repo, type);
     } catch (e) {
       Logger.log("Failed to add repo $repoUrl: $e");
       rethrow;
     }
+  }
+
+  @override
+  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
+    final indexUrl = repo.url;
+    final res = await _client
+        .get(Uri.parse(indexUrl))
+        .timeout(const Duration(seconds: 10));
+
+    if (res.statusCode == 200) {
+      var extensions = await compute(_parseExtensions, (
+        res.body,
+        indexUrl,
+        type,
+      ));
+      await updateRepoExtensionCount(repo, type, extensions.length);
+
+      return extensions;
+    }
+    return [];
   }
 
   static List<Source> _parseExtensions(
@@ -284,27 +259,6 @@ class MangayomiExtensions extends Extension {
       '$id-Installed-${type.name}',
       list.map((e) => jsonEncode(e.toJson())).toList(),
     );
-  }
-
-  String _convertLang(String lang) {
-    switch (lang) {
-      case "English":
-        return "en";
-      case "Français":
-        return "fr";
-      case "Español":
-        return "es";
-      case "Português":
-        return "pt";
-      case "Русский":
-        return "ru";
-      case "日本語":
-        return "ja";
-      case "中文, 汉语, 漢語":
-        return "zh";
-      default:
-        return "all";
-    }
   }
 
   @override

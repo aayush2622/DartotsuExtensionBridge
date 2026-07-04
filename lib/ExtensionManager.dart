@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:get/get.dart';
@@ -5,10 +6,10 @@ import 'package:get/get.dart';
 import 'Extensions/Extensions.dart';
 import 'Extensions/SourceMethods.dart';
 import 'Models/Source.dart';
-import 'Services/Aniyomi/AniyomiExtensions.dart';
-import 'Services/AniyomiDesktop/AniyomiDesktopExtensions.dart';
-import 'Services/CloudStream/CloudStreamExtensions.dart';
-import 'Services/CloudStreamDesktop/ClousStreamDesktopExtensions.dart';
+import 'Services/Aniyomi/AniyomiAndroid/AniyomiExtensions.dart';
+import 'Services/Aniyomi/AniyomiDesktop/AniyomiDesktopExtensions.dart';
+import 'Services/CloudStream/CloudStreamAndroid/CloudStreamExtensions.dart';
+import 'Services/CloudStream/CloudStreamDesktop/CloudStreamDesktopExtensions.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
 import 'Services/Sora/SoraExtensions.dart';
 import 'Settings/KvStore.dart';
@@ -16,15 +17,15 @@ import 'Settings/KvStore.dart';
 class ExtensionManager extends GetxController {
   final List<Extension> managers = [];
 
-  late final Rx<Extension> current;
+  final current = <ItemType, Extension>{}.obs;
 
-  final key = 'currentManager';
+  final Map<Type, SourceMethods Function(Source)> _factories = {};
 
-  final Map<Type, SourceMethods Function(Source source)> _factories = {};
+  Extension operator [](ItemType type) => current[type]!;
 
   List<Extension> get _extensionManagers => [
-    SoraExtensions(),
     MangayomiExtensions(),
+    SoraExtensions(),
     if (Platform.isAndroid) AniyomiExtensions(),
     if (Platform.isAndroid) CloudStreamExtensions(),
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
@@ -39,52 +40,95 @@ class ExtensionManager extends GetxController {
 
     managers.addAll(_extensionManagers);
 
-    managers.forEach(
-      (ext) => _factories[ext.sourceMethodFactories.$1] =
-          ext.sourceMethodFactories.$2,
-    );
-    current = Rx(_findById(getVal(key)) ?? managers.first);
+    for (final ext in managers) {
+      _factories[ext.sourceMethodFactories.$1] = ext.sourceMethodFactories.$2;
+    }
 
-    current.value.initializeInstalled();
+    for (final type in ItemType.values) {
+      current[type] = _resolveManager(type, getVal("${type.name}Manager"));
+    }
+
+    _forEachCurrent((extension, type) {
+      return extension.initializeInstalled(type);
+    });
   }
 
-  void switchManager(String id) {
+  Future<void> _forEachCurrent(
+    Future<void> Function(Extension extension, ItemType type) action,
+  ) async {
+    await Future.wait(
+      current.entries.map((entry) => action(entry.value, entry.key)),
+    );
+  }
+
+  void initializeAvailable() {
+    _forEachCurrent((extension, type) {
+      return extension.initializeAvailable(type);
+    });
+  }
+
+  void switchManager(ItemType type, String id) {
     final next = _findById(id);
-    if (next == null || next == current.value) return;
-    next.initializeInstalled();
-    current.value = next;
-    setVal(key, id);
+
+    if (next == null) return;
+    if (!next.supports(type)) return;
+    if (current[type]! == next) return;
+
+    current[type] = next;
+
+    setVal("${type.name}Manager", id);
+
+    unawaited(next.initializeInstalled(type));
+    unawaited(next.initializeAvailable(type));
+  }
+
+  Extension _resolveManager(ItemType type, String? id) {
+    final saved = _findById(id);
+
+    if (saved != null && saved.supports(type)) {
+      return saved;
+    }
+
+    return managers.firstWhere((e) => e.supports(type));
   }
 
   @override
   void dispose() {
+    for (final manager in managers) {
+      manager.dispose();
+    }
     super.dispose();
-    managers.forEach((m) => m.dispose());
   }
 
   T? find<T extends Extension>() {
     for (final manager in managers) {
-      if (manager is T) return manager;
+      if (manager is T) {
+        return manager;
+      }
     }
     return null;
   }
 
   T get<T extends Extension>() {
     final result = find<T>();
+
     if (result == null) {
       throw Exception(
         'Extension manager of type $T not registered\n'
         'Perhaps $T is not supported on ${Platform.operatingSystem}?',
       );
     }
+
     return result;
   }
 
   Extension? _findById(String? id) {
     if (id == null) return null;
 
-    for (final m in managers) {
-      if (m.id == id) return m;
+    for (final manager in managers) {
+      if (manager.id == id) {
+        return manager;
+      }
     }
 
     return null;
@@ -110,10 +154,10 @@ class ExtensionManager extends GetxController {
 
 extension SourceExecution on Source {
   SourceMethods get methods {
-    if (this is SourceMethods) return this as SourceMethods;
+    if (this is SourceMethods) {
+      return this as SourceMethods;
+    }
 
-    final manager = Get.find<ExtensionManager>();
-
-    return manager.createSourceMethods(this);
+    return Get.find<ExtensionManager>().createSourceMethods(this);
   }
 }
