@@ -14,7 +14,7 @@ dependencies:
   isar_community_flutter_libs: ^3.3.2
   d4rt: ^0.2.2
   get: ^4.7.3
-  path_provider: ^2.1.5
+  path_provider: ^2.1.6
   path: ^1.9.1
   http_interceptor: ^3.0.0
   html: ^0.15.6
@@ -58,11 +58,7 @@ flutter:
       android:
         package: com.aayush262.dartotsu_extension_bridge
         pluginClass: DartotsuExtensionBridgePlugin
-      ios:
-        pluginClass: DartotsuExtensionBridgePlugin
       linux:
-        pluginClass: DartotsuExtensionBridgePlugin
-      macos:
         pluginClass: DartotsuExtensionBridgePlugin
       windows:
         pluginClass: DartotsuExtensionBridgePluginCApi

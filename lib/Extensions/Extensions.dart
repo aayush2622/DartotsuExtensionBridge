@@ -21,6 +21,9 @@ class ExtensionState {
   final activeRepo = Rxn<Repo>();
   final loadingAvailable = false.obs;
   final loadingInstalled = false.obs;
+
+  final selectedLanguages = <String>{}.obs;
+
   bool installedInitialized = false;
   bool availableInitialized = false;
 }
@@ -102,6 +105,7 @@ abstract class Extension {
     if (_initState == InitState.failed) return false;
 
     await initialize();
+
     return _initState == InitState.success;
   }
 
@@ -139,6 +143,7 @@ abstract class Extension {
           }
           break;
       }
+      loadSelectedLanguages(type);
     } catch (e, s) {
       Logger.log('Error initializing extension $id: $e\n$s');
     }
@@ -253,6 +258,41 @@ abstract class Extension {
     s.rawAvailable.value = List.unmodifiable(all);
     s.loadingAvailable.value = false;
     return List.unmodifiable(all.where((s) => !installedIds.contains(s.id)));
+  }
+
+  List<String> getLanguages(ItemType type) {
+    final s = state(type);
+
+    return {
+      ...s.installed.value
+          .map((e) => e.lang?.toLowerCase())
+          .whereType<String>(),
+      ...s.rawAvailable.value
+          .map((e) => e.lang?.toLowerCase())
+          .whereType<String>(),
+    }.toList()..sort();
+  }
+
+  String _languageKey(ItemType type) => '$id${type.name}Languages';
+
+  Set<String> loadSelectedLanguages(ItemType type) {
+    final languages = (getVal<List<String>>(_languageKey(type)) ?? const [])
+        .map((e) => e.toLowerCase())
+        .toSet();
+
+    state(type).selectedLanguages
+      ..clear()
+      ..addAll(languages);
+
+    return languages;
+  }
+
+  void saveSelectedLanguages(ItemType type, Set<String> languages) {
+    state(type).selectedLanguages
+      ..clear()
+      ..addAll(languages);
+
+    setVal(_languageKey(type), languages.toList(growable: false));
   }
 
   void detectUpdates(List<Source> available, ItemType type);
