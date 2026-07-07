@@ -18,13 +18,13 @@ kotlin {
         getByName("androidMain") {
             dependencies {
                 api(projects.libraries.commonLib)
-                api(cloudStreamAndroid.preference.ktx)
+                api(cloudStreamCommon.preference.ktx)
             }
         }
 
         getByName("commonMain") {
             dependencies {
-                api(cloudStreamAndroid.bundles.common)
+                api(cloudStreamCommon.bundles.common)
                 val isAndroidBuild = gradle.startParameter.taskNames.any {
                     it.contains("android", true)
 

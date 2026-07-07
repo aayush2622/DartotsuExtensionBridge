@@ -6,6 +6,7 @@ import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../Extensions/Addon.dart';
 import '../../Logger.dart';
@@ -13,6 +14,7 @@ import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'LibtorrentFlutter.dart';
+import 'Models.dart';
 
 class LibtorrentAddon extends Addon {
   final _client = MClient.init();
@@ -21,7 +23,8 @@ class LibtorrentAddon extends Addon {
   }
 
   Future<void> init() async {
-    if (!(await isInstalled())) return;
+    installed.value = await isInstalled();
+    if (!installed.value) return;
     await LibtorrentFlutter.init(
       defaultSavePath: (await _directory).path,
       torrentLib: await open(),
@@ -30,6 +33,7 @@ class LibtorrentAddon extends Addon {
 
   DynamicLibrary? _library;
 
+  int? _activeTorrent;
   @override
   String get id => "libtorrent";
 
@@ -59,6 +63,96 @@ class LibtorrentAddon extends Addon {
     await dir.create(recursive: true);
 
     return dir;
+  }
+
+  Future<StreamInfo> startStream({
+    required String url,
+    int maxCacheBytes = 500 * 1024 * 1024,
+  }) async {
+    await stopStream();
+
+    final saveDir = await _mediaDirectory;
+
+    late final int torrentId;
+    final engine = LibtorrentFlutter.instance;
+    if (url.startsWith("magnet:")) {
+      torrentId = engine.addMagnet(url, saveDir.path);
+    } else if (url.startsWith("http://") || url.startsWith("https://")) {
+      final torrentFile = await downloadTorrent(url);
+
+      try {
+        torrentId = engine.addTorrentFile(torrentFile.path, saveDir.path);
+      } finally {
+        if (await torrentFile.exists()) {
+          await torrentFile.delete();
+        }
+      }
+    } else {
+      torrentId = engine.addTorrentFile(url, saveDir.path);
+    }
+
+    _activeTorrent = torrentId;
+
+    await engine.waitForMetadata(torrentId);
+    final files = engine.getFiles(torrentId);
+
+    FileInfo? selected;
+
+    for (final file in files) {
+      if (!file.isStreamable) continue;
+
+      if (selected == null || file.size > selected.size) {
+        selected = file;
+      }
+    }
+
+    if (selected == null) {
+      Logger.log("No streamable file found in torrent", show: true);
+      throw Exception("No streamable file found.");
+    }
+
+    return engine.startStream(
+      torrentId,
+      fileIndex: selected.index,
+      maxCacheBytes: maxCacheBytes,
+    );
+  }
+
+  Future<Directory> get _mediaDirectory async {
+    final dir = Directory(p.join((await _directory).path, "media"));
+
+    await dir.create(recursive: true);
+
+    return dir;
+  }
+
+  Future<File> downloadTorrent(String url) async {
+    final dir = await getTemporaryDirectory();
+    final file = File(
+      '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.torrent',
+    );
+
+    final response = await MClient.init().get(Uri.parse(url));
+
+    await file.writeAsBytes(response.bodyBytes);
+
+    return file;
+  }
+
+  Future<void> stopStream() async {
+    final engine = LibtorrentFlutter.instance;
+    if (_activeTorrent != null) {
+      engine.removeTorrent(_activeTorrent!, deleteFiles: true);
+      _activeTorrent = null;
+    }
+
+    final dir = await _mediaDirectory;
+
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
+    }
+
+    await dir.create(recursive: true);
   }
 
   String get _assetName {

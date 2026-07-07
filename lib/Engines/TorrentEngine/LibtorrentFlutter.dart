@@ -349,6 +349,18 @@ class LibtorrentFlutter {
     }
   }
 
+  Future<void> waitForMetadata(
+    int torrentId, {
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    final info = _torrents[torrentId];
+    if (info?.hasMetadata == true) return;
+
+    await torrentUpdates
+        .firstWhere((torrents) => torrents[torrentId]?.hasMetadata == true)
+        .timeout(timeout);
+  }
+
   /// Get the current info for a specific stream, or null if not found.
   StreamInfo? getStreamInfo(int streamId) => _streams[streamId];
 
