@@ -353,12 +353,37 @@ class LibtorrentFlutter {
     int torrentId, {
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    final info = _torrents[torrentId];
-    if (info?.hasMetadata == true) return;
+    final existing = _torrents[torrentId];
+    if (existing?.hasMetadata == true) return;
 
-    await torrentUpdates
-        .firstWhere((torrents) => torrents[torrentId]?.hasMetadata == true)
-        .timeout(timeout);
+    final completer = Completer<void>();
+    StreamSubscription<Map<int, TorrentInfo>>? sub;
+
+    void complete() {
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+      sub?.cancel();
+    }
+
+    sub = torrentUpdates.listen((torrents) {
+      final info = torrents[torrentId];
+      if (info?.hasMetadata == true) {
+        complete();
+      }
+    });
+
+    if (_torrents[torrentId]?.hasMetadata == true) {
+      complete();
+    }
+
+    await completer.future.timeout(
+      timeout,
+      onTimeout: () {
+        sub?.cancel();
+        throw TimeoutException('Metadata fetch timed out', timeout);
+      },
+    );
   }
 
   /// Get the current info for a specific stream, or null if not found.

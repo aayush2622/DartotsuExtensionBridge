@@ -76,23 +76,22 @@ class LibtorrentAddon extends Addon {
     late final int torrentId;
     final engine = LibtorrentFlutter.instance;
     if (url.startsWith("magnet:")) {
-      torrentId = engine.addMagnet(url, saveDir.path);
+      torrentId = engine.addMagnet(url, saveDir.path, true);
     } else if (url.startsWith("http://") || url.startsWith("https://")) {
       final torrentFile = await downloadTorrent(url);
 
       try {
-        torrentId = engine.addTorrentFile(torrentFile.path, saveDir.path);
+        torrentId = engine.addTorrentFile(torrentFile.path, saveDir.path, true);
       } finally {
         if (await torrentFile.exists()) {
           await torrentFile.delete();
         }
       }
     } else {
-      torrentId = engine.addTorrentFile(url, saveDir.path);
+      torrentId = engine.addTorrentFile(url, saveDir.path, true);
     }
 
     _activeTorrent = torrentId;
-
     await engine.waitForMetadata(torrentId);
     final files = engine.getFiles(torrentId);
 
@@ -190,7 +189,7 @@ class LibtorrentAddon extends Addon {
 
   String get _libraryName {
     if (Platform.isWindows) {
-      return "libtorrent_flutter.dll";
+      return "liblibtorrent_flutter.dll";
     }
 
     if (Platform.isLinux || Platform.isAndroid) {
@@ -292,10 +291,13 @@ class LibtorrentAddon extends Addon {
   }
 
   Future<(String, String)> _latestRelease() async {
-    final response = await _client.get(
-      Uri.parse("https://api.github.com/repos/$_owner/$_repo/releases/latest"),
-    );
+    const version = "v1.8.5";
 
+    final response = await _client.get(
+      Uri.parse(
+        "https://api.github.com/repos/$_owner/$_repo/releases/tags/$version",
+      ),
+    );
     if (response.statusCode != 200) {
       throw Exception("Unable to fetch GitHub release");
     }
