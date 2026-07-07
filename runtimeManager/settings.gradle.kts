@@ -35,8 +35,8 @@ dependencyResolutionManagement {
         create("aniyomiAndroid") {
             from(files("aniyomi/aniyomiCommon/libs/aniyomiAndroid-lib.toml"))
         }
-        create("cloudStreamAndroid") {
-            from(files("gradle/cloudStreamAndroid-lib.toml"))
+        create("cloudStreamCommon") {
+            from(files("cloudStream/cloudStreamCommon/libs/cloudStreamCommon-lib.toml"))
         }
         create("ireaderCommon") {
             from(files("ireader/ireaderCommon/libs/ireaderCommon-lib.toml"))

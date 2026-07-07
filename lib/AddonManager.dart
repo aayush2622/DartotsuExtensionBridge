@@ -18,10 +18,11 @@ class AddonManager extends GetxService {
   }
 
   T get<T extends Addon>() {
-    for (final addon in addons) {
-      if (addon is T) return addon;
-    }
-    throw Exception("Addon $T not registered.");
+    return addons.firstWhere(
+          (addon) => addon is T,
+          orElse: () => throw StateError("Addon $T not registered."),
+        )
+        as T;
   }
 
   Addon? byId(String id) {
