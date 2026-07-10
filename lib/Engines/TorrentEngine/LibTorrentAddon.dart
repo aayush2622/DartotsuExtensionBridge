@@ -131,7 +131,7 @@ class LibtorrentAddon extends Addon {
       '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.torrent',
     );
 
-    final response = await MClient.init().get(Uri.parse(url));
+    final response = await _client.get(Uri.parse(url));
 
     await file.writeAsBytes(response.bodyBytes);
 
@@ -189,7 +189,7 @@ class LibtorrentAddon extends Addon {
 
   String get _libraryName {
     if (Platform.isWindows) {
-      return "liblibtorrent_flutter.dll";
+      return "libtorrent_flutter.dll";
     }
 
     if (Platform.isLinux || Platform.isAndroid) {
@@ -240,8 +240,9 @@ class LibtorrentAddon extends Addon {
       final release = await _latestRelease();
 
       await _download(release.$1, release.$2);
+      _library?.close();
 
-      installed.value = true;
+      await init();
 
       Logger.log("Installed libtorrent", show: true);
     } finally {
@@ -256,7 +257,7 @@ class LibtorrentAddon extends Addon {
     if (await dir.exists()) {
       await dir.delete(recursive: true);
     }
-
+    _library?.close();
     _library = null;
 
     installed.value = false;
