@@ -31,6 +31,9 @@ class SidecarBridge implements JavaBridge {
     if (javaPath == null) throw Exception('Java runtime not found');
 
     _process = await Process.start(javaPath, [
+      '-Dfile.encoding=UTF-8',
+      '-Dsun.stdout.encoding=UTF-8',
+      '-Dsun.stderr.encoding=UTF-8',
       '-Xms128m',
       '-Xmx512m',
       '-jar',
