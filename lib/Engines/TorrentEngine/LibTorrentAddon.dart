@@ -140,15 +140,18 @@ class LibtorrentAddon extends Addon {
 
   Future<void> stopStream() async {
     final engine = LibtorrentFlutter.instance;
+
     if (_activeTorrent != null) {
       engine.removeTorrent(_activeTorrent!, deleteFiles: true);
       _activeTorrent = null;
     }
 
-    final dir = await _mediaDirectory;
+    final dir = Directory(p.join((await _directory).path, "media"));
 
-    if (await dir.exists()) {
+    try {
       await dir.delete(recursive: true);
+    } on PathNotFoundException {
+      // Already deleted.
     }
 
     await dir.create(recursive: true);
@@ -202,9 +205,18 @@ class LibtorrentAddon extends Addon {
   Future<File?> get _libraryFile async {
     final dir = await _directory;
 
-    final file = await _findLibrary(dir);
+    if (Platform.isWindows) {
+      final arch =
+      Abi.current() == Abi.windowsArm64 ? "arm64" : "x64";
 
-    return file;
+      final file = File(
+        p.join(dir.path, arch, "libtorrent_flutter.dll"),
+      );
+
+      return await file.exists() ? file : null;
+    }
+
+    return _findLibrary(dir);
   }
 
   @override
