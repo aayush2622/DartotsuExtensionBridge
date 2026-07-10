@@ -25,6 +25,8 @@ class DartotsuExtensionBridge {
   ///
   /// [isarInstance] provides your Isar client and must include [isarSchema].
   /// If omitted, a new instance will be initialized internally.
+  /// [network] is an optional network interface for DNS, proxy, and cookie management.
+  /// [onLog] is a callback for logging messages, defaulting to printing to the console.
   static Future<void> init({
     required GetDirectory getDirectory,
     Client? http,
@@ -45,9 +47,7 @@ class DartotsuExtensionBridge {
     );
 
     Get.put(ExtensionManager());
-    Get.put(AddonManager());
-
-    await Get.find<AddonManager>().checkForUpdates();
+    await Get.put(AddonManager()).checkForUpdates();
 
     _initialized = true;
   }

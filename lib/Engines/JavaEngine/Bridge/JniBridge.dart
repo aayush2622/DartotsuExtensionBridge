@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi' as ffi;
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -172,7 +172,7 @@ class JniBridge implements JavaBridge {
 
     try {
       if (jvmPath != null) {
-        ffi.DynamicLibrary.open(jvmPath);
+        DynamicLibrary.open(jvmPath);
         debugPrint("Loaded JVM: $jvmPath");
       }
 

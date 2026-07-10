@@ -8,6 +8,10 @@ environment:
   flutter: ">=3.44.0"
 
 dependencies:
+  flutter:
+    sdk: flutter
+  ffi: ^2.2.0
+  archive: ^4.0.9
   plugin_platform_interface: ^2.1.8
   http: ^1.6.0
   isar_community: ^3.3.2
@@ -18,7 +22,7 @@ dependencies:
   path: ^1.9.1
   http_interceptor: ^3.0.0
   html: ^0.15.6
-  intl: ^0.20.2
+  intl: any
   flutter_inappwebview: ^6.2.0-beta.2
   pseudom: ^1.0.1
   encrypt: ^5.0.3
