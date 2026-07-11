@@ -188,12 +188,9 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
         }
 
         val mediaSource = media(sourceId, isAnime)
-
-        val details = mediaSource.getDetails(anime)
-
-        val episodes = if (isAnime) mediaSource.getEpisodeList(anime)
-        else mediaSource.getChapterList(anime)
-
+        val data = mediaSource.getDetails(anime)
+        val details = data.first
+        val episodes = data.second
         val result = mapOf(
             "title" to anime.title,
             "url" to anime.url,

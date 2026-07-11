@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.extension.manga.model
 
 import android.graphics.drawable.Drawable
-import eu.kanade.tachiyomi.source.MangaSource
+import eu.kanade.tachiyomi.source.Source
 
 sealed class MangaExtension {
 
@@ -27,7 +27,7 @@ sealed class MangaExtension {
         override val hasReadme: Boolean,
         override val hasChangelog: Boolean,
         val pkgFactory: String?,
-        val sources: List<MangaSource>,
+        val sources: List<Source>,
         override val iconUrl: String?,
         val hasUpdate: Boolean = false,
         val isObsolete: Boolean = false,

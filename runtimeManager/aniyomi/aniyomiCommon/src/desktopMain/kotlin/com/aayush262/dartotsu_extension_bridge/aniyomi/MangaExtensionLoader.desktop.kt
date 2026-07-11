@@ -4,7 +4,7 @@ import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.aayush262.dartotsu_extension_bridge.util.PackageTools
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.source.CatalogueSource
-import eu.kanade.tachiyomi.source.MangaSource
+import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import java.io.File
 import kotlin.collections.first
@@ -20,7 +20,7 @@ actual object MangaExtensionLoader {
 
     const val LIB_VERSION_MIN = 1.3
 
-    const val LIB_VERSION_MAX = 1.5
+    const val LIB_VERSION_MAX = 1.6
     actual fun loadExtensions(path: String): Map<MangaExtension.Installed, String> {
         val dir = File(path)
 
@@ -117,11 +117,11 @@ actual object MangaExtensionLoader {
             }
         }
 
-        val sources = mutableListOf<MangaSource>()
+        val sources = mutableListOf<Source>()
 
         classNames.forEach { className ->
             val result = when (val instance = PackageTools.loadExtensionSources(jarFile.absolutePath, className)) {
-                is MangaSource -> listOf(instance)
+                is Source -> listOf(instance)
                 is SourceFactory -> instance.createSources()
                 else -> error("Unknown source type: ${instance.javaClass}")
             }

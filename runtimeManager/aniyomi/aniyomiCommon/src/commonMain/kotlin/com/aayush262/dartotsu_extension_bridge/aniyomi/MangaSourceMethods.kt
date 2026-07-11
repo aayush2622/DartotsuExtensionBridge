@@ -18,6 +18,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.sourcePreferences
+import kotlinx.serialization.json.JsonObject
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.regex.Matcher
@@ -66,12 +67,15 @@ class MangaSourceMethods(sourceID: String) : AniyomiSourceMethods {
         )
     }
 
-    override suspend fun getDetails(media: SAnime): SAnime {
-        return source.getMangaDetails(media.toSManga()).toSAnime()
-    }
+    override suspend fun getDetails(media: SAnime): Pair<SAnime, List<SEpisode>> {
+        val data = source.getMangaUpdate(
+            media.toSManga(),
+            emptyList(),
+            fetchDetails = true,
+            fetchChapters = true
+        )
 
-    override suspend fun getChapterList(media: SAnime): List<SEpisode> {
-        return source.getChapterList(media.toSManga()).map { it.toSEpisode() }
+        return data.manga.toSAnime() to data.chapters.map { it.toSEpisode() }
     }
 
     override suspend fun getPageList( chapter: SChapter): List<Page> {
@@ -79,16 +83,13 @@ class MangaSourceMethods(sourceID: String) : AniyomiSourceMethods {
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
-        if (source is ConfigurableSource) {
+       if (source is ConfigurableSource) {
             source.setupPreferenceScreen(screen)
         } else {
             throw NoPreferenceScreenException("This source does not support preferences.")
         }
     }
 
-    override suspend fun getEpisodeList(media: SAnime): List<SEpisode> {
-        throw UnsupportedOperationException()
-    }
 
     override suspend fun getVideoList(episode: SEpisode): List<Video> {
         throw UnsupportedOperationException()
@@ -133,6 +134,7 @@ class MangaSourceMethods(sourceID: String) : AniyomiSourceMethods {
             override var thumbnail_url: String? = anime.thumbnail_url
             override var update_strategy: UpdateStrategy = UpdateStrategy.ALWAYS_UPDATE
             override var initialized: Boolean = anime.initialized
+            override var memo: JsonObject  =JsonObject(emptyMap());
         }
     }
 

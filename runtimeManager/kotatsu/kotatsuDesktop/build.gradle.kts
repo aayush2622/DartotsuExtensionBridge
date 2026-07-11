@@ -31,7 +31,7 @@ tasks.shadowJar {
     isZip64 = true
 }
 
-apply(from = "$rootDir/plugin-build.gradle.kts")
+//apply(from = "$rootDir/plugin-build.gradle.kts")
 
 tasks.jar { enabled = false }
 

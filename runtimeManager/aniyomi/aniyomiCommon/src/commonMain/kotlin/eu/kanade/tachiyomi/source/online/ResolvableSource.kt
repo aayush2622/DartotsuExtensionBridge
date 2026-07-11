@@ -1,6 +1,6 @@
 package eu.kanade.tachiyomi.source.online
 
-import eu.kanade.tachiyomi.source.MangaSource
+import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 
@@ -9,7 +9,7 @@ import eu.kanade.tachiyomi.source.model.SManga
  *
  * @since extensions-lib 1.5
  */
-interface ResolvableSource : MangaSource {
+interface ResolvableSource : Source {
 
     /**
      * Returns what the given URI may open.

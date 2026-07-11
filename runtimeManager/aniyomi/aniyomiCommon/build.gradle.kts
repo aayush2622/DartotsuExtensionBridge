@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -43,7 +44,7 @@ kotlin {
 
     jvmToolchain( libs.versions.java.get().toInt())
     compilerOptions {
-        freeCompilerArgs.addAll("-Xcontext-receivers","-Xexpect-actual-classes")
+        freeCompilerArgs.addAll("-Xcontext-parameters","-Xexpect-actual-classes")
 
     }
 }
