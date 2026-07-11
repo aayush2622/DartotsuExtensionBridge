@@ -1,13 +1,13 @@
 {
   "name": "ireaderDesktop",
-  "versionCode": 2,
-  "versionName": "1.0.1",
+  "versionCode": 3,
+  "versionName": "1.0.2",
   "description": "A plugin that allows you to run ireader extensions on desktop",
   "author": "aayush262",
-  "createdAt": 1783199229986,
+  "createdAt": 1783790062213,
   "type": "jar",
   "fileName": "ireaderDesktop-plugin.jar",
-  "fileSize": 61030593,
+  "fileSize": 61032409,
   "downloadUrl": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/ireaderDesktop/ireaderDesktop-plugin.jar",
   "platform": "desktop"
 }

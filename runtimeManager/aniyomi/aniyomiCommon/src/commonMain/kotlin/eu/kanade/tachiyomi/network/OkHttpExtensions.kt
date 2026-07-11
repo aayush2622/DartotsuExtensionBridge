@@ -58,7 +58,9 @@ fun Call.asObservable(): Observable<Response> {
     }
 }
 
+@Deprecated("Use suspend APIs instead")
 fun Call.asObservableSuccess(): Observable<Response> {
+    @Suppress("DEPRECATION")
     return asObservable().doOnNext { response ->
         if (!response.isSuccessful) {
             response.close()
@@ -68,34 +70,29 @@ fun Call.asObservableSuccess(): Observable<Response> {
 }
 
 // Based on https://github.com/gildor/kotlin-coroutines-okhttp
-@OptIn(ExperimentalCoroutinesApi::class)
 private suspend fun Call.await(callStack: Array<StackTraceElement>): Response {
     return suspendCancellableCoroutine { continuation ->
-        val callback =
-            object : Callback {
-                override fun onResponse(call: Call, response: Response) {
-                    continuation.resume(response) {
-                        response.body.close()
-                    }
-                }
-
-                override fun onFailure(call: Call, e: IOException) {
-                    // Don't bother with resuming the continuation if it is already cancelled.
-                    if (continuation.isCancelled) return
-                    val exception = IOException(e.message, e).apply { stackTrace = callStack }
-                    continuation.resumeWithException(exception)
-                }
-            }
-
-        enqueue(callback)
-
         continuation.invokeOnCancellation {
             try {
-                cancel()
-            } catch (ex: Throwable) {
-                // Ignore cancel exception
+                this.cancel()
+            } catch (_: Throwable) {
+                // ignore
             }
         }
+
+        this.enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                if (continuation.isCancelled) return
+                val exception = IOException(e.message, e).apply { stackTrace = callStack }
+                continuation.resumeWithException(exception)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                continuation.resume(response) { _, value, _ ->
+                    value.close()
+                }
+            }
+        })
     }
 }
 
@@ -117,14 +114,27 @@ suspend fun Call.awaitSuccess(): Response {
     return response
 }
 
-fun OkHttpClient.newCachelessCallWithProgress(request: Request, listener: ProgressListener): Call {
+
+fun OkHttpClient.newCachelessCallWithProgress(
+    request: Request,
+    listener: ProgressListener,
+    existingSize: Long = 0L,
+): Call {
     val progressClient = newBuilder()
         .cache(null)
-        .callTimeout(30, java.util.concurrent.TimeUnit.HOURS)
         .addNetworkInterceptor { chain ->
-            val originalResponse = chain.proceed(chain.request())
+            val request = chain.request()
+                .newBuilder()
+                .apply {
+                    if (existingSize > 0 && request.header("Range") == null) {
+                        header("Range", "bytes=$existingSize-")
+                    }
+                }
+                .build()
+
+            val originalResponse = chain.proceed(request)
             originalResponse.newBuilder()
-                .body(ProgressResponseBody(originalResponse.body, listener))
+                .body(ProgressResponseBody(originalResponse.body, listener, existingSize))
                 .build()
         }
         .build()
@@ -132,21 +142,21 @@ fun OkHttpClient.newCachelessCallWithProgress(request: Request, listener: Progre
     return progressClient.newCall(request)
 }
 
-context(Json)
+
+context(_: Json)
 inline fun <reified T> Response.parseAs(): T {
     return decodeFromJsonResponse(serializer(), this)
 }
 
-context(Json)
+context(json: Json)
 fun <T> decodeFromJsonResponse(
     deserializer: DeserializationStrategy<T>,
     response: Response,
 ): T {
     return response.body.source().use {
-        decodeFromBufferedSource(deserializer, it)
+        json.decodeFromBufferedSource(deserializer, it)
     }
 }
-
 /**
  * Exception that handles HTTP codes considered not successful by OkHttp.
  * Use it to have a standardized error message in the app across the extensions.

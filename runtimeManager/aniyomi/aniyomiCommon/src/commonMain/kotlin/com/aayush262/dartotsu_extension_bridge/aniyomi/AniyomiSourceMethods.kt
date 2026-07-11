@@ -43,15 +43,8 @@ interface AniyomiSourceMethods {
      * @param media The [SAnime] object containing the identifier of the anime.
      * @return An [SAnime] object with the details of the anime.
      */
-    suspend fun getDetails(media: SAnime): SAnime
+    suspend fun getDetails(media: SAnime): Pair<SAnime, List<SEpisode>>
 
-    /**
-     * Fetches a list of episodes for a specific anime.
-     *
-     * @param media The [SAnime] object containing the identifier of the anime.
-     * @return A list of [SEpisode] objects representing the episodes of the anime.
-     */
-    suspend fun getEpisodeList(media: SAnime): List<SEpisode>
 
     /**
      * Fetches a list of videos for a specific episode.
@@ -61,13 +54,6 @@ interface AniyomiSourceMethods {
      */
     suspend fun getVideoList(episode: SEpisode): List<Video>
 
-    /**
-     * Fetches a list of chapters for a specific manga.
-     *
-     * @param media The [SManga] object containing the identifier of the manga.
-     * @return A list of [SChapter] objects representing the chapters of the manga.
-     */
-    suspend fun getChapterList(media: SAnime): List<SEpisode>
 
     /**
      * Fetches a list of pages for a specific chapter.

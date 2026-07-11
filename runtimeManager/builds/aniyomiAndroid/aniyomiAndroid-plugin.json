@@ -1,13 +1,13 @@
 {
   "name": "aniyomiAndroid",
-  "versionCode": 11,
-  "versionName": "1.0.10",
+  "versionCode": 12,
+  "versionName": "1.0.11",
   "description": "A plugin that allows you to run Aniyomi extensions on android",
   "author": "aayush262",
-  "createdAt": 1783199230082,
+  "createdAt": 1783790061565,
   "type": "apk",
   "fileName": "aniyomiAndroid-plugin.apk",
-  "fileSize": 6882833,
+  "fileSize": 6884925,
   "downloadUrl": "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiAndroid/aniyomiAndroid-plugin.apk",
   "platform": "android"
 }

@@ -40,7 +40,7 @@ extra.apply {
     set("pluginDescription", "A plugin that allows you to run kotatsu extensions on android")
 }
 
-apply(from = "$rootDir/plugin-build.gradle.kts")
+//apply(from = "$rootDir/plugin-build.gradle.kts")
 
 tasks.register("buildAndInstall") {
     dependsOn(":kotatsu:kotatsuAndroid:assembleDebug")

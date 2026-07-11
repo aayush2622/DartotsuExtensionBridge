@@ -57,8 +57,10 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
         page = page, query = query, filters = source.getFilterList()
     )
 
-    override suspend fun getDetails(media: SAnime): SAnime = source.getAnimeDetails(media)
-    override suspend fun getEpisodeList(media: SAnime): List<SEpisode> {
+    override suspend fun getDetails(media: SAnime): Pair<SAnime, List<SEpisode>> = source.getAnimeDetails(media) to getEpisodeList(media)
+
+
+    suspend fun getEpisodeList(media: SAnime): List<SEpisode> {
         runCatching {
             return (source as? AnimeHttpSource? ?: source).getEpisodeList(media)
 
@@ -155,8 +157,6 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
         }
     }
 
-
-    override suspend fun getChapterList(media: SAnime): List<SEpisode> = throw UnsupportedOperationException("Chapters are not supported in anime sources.")
 
     override suspend fun getPageList(chapter: SChapter): List<Page> = throw UnsupportedOperationException("Pages are not supported in anime sources.")
 

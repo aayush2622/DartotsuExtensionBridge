@@ -17,7 +17,7 @@ import dalvik.system.PathClassLoader
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
 import eu.kanade.tachiyomi.source.CatalogueSource
-import eu.kanade.tachiyomi.source.MangaSource
+import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
 import uy.kohesive.injekt.Injekt
@@ -34,7 +34,7 @@ actual object MangaExtensionLoader {
     private const val METADATA_SOURCE_FACTORY = "tachiyomi.extension.factory"
     private const val METADATA_NSFW = "tachiyomi.extension.nsfw"
     const val LIB_VERSION_MIN = 1.4
-    const val LIB_VERSION_MAX = 1.5
+    const val LIB_VERSION_MAX = 1.6
 
     @Suppress("DEPRECATION")
     private val PACKAGE_FLAGS =
@@ -180,7 +180,7 @@ actual object MangaExtensionLoader {
         }.flatMap {
             try {
                 when (val obj = Class.forName(it, false, classLoader).getDeclaredConstructor().newInstance()) {
-                    is MangaSource -> listOf(obj)
+                    is Source -> listOf(obj)
                     is SourceFactory -> obj.createSources()
                     else -> throw Exception("Unknown source class type: ${obj.javaClass}")
                 }
@@ -192,7 +192,7 @@ actual object MangaExtensionLoader {
                         false,
                         fallBackClassLoader,
                     ).getDeclaredConstructor().newInstance()) {
-                        is MangaSource -> {
+                        is Source -> {
                             listOf(obj)
                         }
 

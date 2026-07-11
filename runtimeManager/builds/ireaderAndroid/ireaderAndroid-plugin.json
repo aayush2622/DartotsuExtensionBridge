@@ -1,10 +1,10 @@
 {
   "name": "ireaderAndroid",
-  "versionCode": 2,
-  "versionName": "1.0.1",
+  "versionCode": 3,
+  "versionName": "1.0.2",
   "description": "A plugin that allows you to run ireader extensions on android",
   "author": "aayush262",
-  "createdAt": 1783199229842,
+  "createdAt": 1783790061306,
   "type": "apk",
   "fileName": "ireaderAndroid-plugin.apk",
   "fileSize": 5022708,

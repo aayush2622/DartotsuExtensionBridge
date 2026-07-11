@@ -206,16 +206,24 @@ class LibtorrentAddon extends Addon {
     final dir = await _directory;
 
     if (Platform.isWindows) {
-      final arch =
-      Abi.current() == Abi.windowsArm64 ? "arm64" : "x64";
+      final arch = Abi.current() == Abi.windowsArm64 ? "arm64" : "x64";
 
-      final file = File(
-        p.join(dir.path, arch, "libtorrent_flutter.dll"),
-      );
+      final file = File(p.join(dir.path, arch, "libtorrent_flutter.dll"));
 
       return await file.exists() ? file : null;
     }
 
+    if (Platform.isLinux) {
+      final arch = switch (Abi.current()) {
+        Abi.linuxArm64 => "arm64",
+        Abi.linuxX64 => "x64",
+        _ => throw UnsupportedError("Unsupported Linux ABI: ${Abi.current()}"),
+      };
+
+      final file = File(p.join(dir.path, arch, "liblibtorrent_flutter.so"));
+
+      return await file.exists() ? file : null;
+    }
     return _findLibrary(dir);
   }
 
