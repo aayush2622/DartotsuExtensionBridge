@@ -96,13 +96,13 @@ import 'package:get/get.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 
 final extensionManager = Get.find<ExtensionManager>();
-final currentManager = extensionManager.current.value;
+final currentManager = manager[type].state(type);
 ```
 
 Use a source:
 
 ```dart
-final installed = currentManager.getInstalledRx(ItemType.anime).value;
+final installed = currentManager.installed.value;
 
 if (installed.isNotEmpty) {
   final source = installed.first;
@@ -117,15 +117,6 @@ if (installed.isNotEmpty) {
   print(results.list.length);
 }
 ```
-
-## Optional UI helpers
-
-The plugin exports ready-to-use widgets:
-- `ExtensionManagerScreen`
-- `ExtensionList`
-
-These are useful if you want a quick extension settings / management screen without building one from scratch.
-
 ---
 
 # Android host project setup
@@ -201,46 +192,7 @@ android {
     }
 }
 ```
-
-## 3) Update `android/settings.gradle` for plugin loading
-
-Because this bridge may need Android plugin projects discovered from Flutter's plugin dependency file, add the following to your Android `settings.gradle`.
-
-```gradle
-import groovy.json.JsonSlurper
-
-flutterProjectRoot = rootDir.parentFile
-def pluginsFile = new File(flutterProjectRoot, ".flutter-plugins-dependencies")
-
-if (pluginsFile.exists()) {
-
-    def json = new JsonSlurper().parse(pluginsFile)
-    def androidPlugins = json.plugins.android
-
-    androidPlugins.each { plugin ->
-
-        def name = plugin.name
-        def pluginDirectory = new File(plugin.path, "android")
-        def settingsFile = new File(pluginDirectory, "settings.gradle")
-
-        include ":$name"
-        project(":$name").projectDir = pluginDirectory
-
-        if (settingsFile.exists()) {
-            apply from: settingsFile
-        }
-    }
-}
-```
-
-### Where to put it
-
-Usually in:
-- `android/settings.gradle`
-
-If your project already has custom plugin-loading logic, merge this carefully instead of duplicating plugin includes.
-
-## 4) Sync and rebuild
+## 3) Sync and rebuild
 
 After making the Android changes above, run:
 
@@ -262,7 +214,6 @@ Before reporting a bug, make sure your host app has all of these:
 - `DartotsuExtensionBridge.init(...)` called before use,
 - Android manifest permissions added,
 - packaging exclude added,
-- `settings.gradle` plugin loading snippet added,
 - app rebuilt after making Gradle changes.
 
 ## Public exports
