@@ -13,6 +13,11 @@ class CloudStreamSourceMethods<T extends Source>
   }
 
   @override
+  Future<String?> getNovelContent(DEpisode episode) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<List<SourcePreference>> getPreference() async => const [];
 
   @override

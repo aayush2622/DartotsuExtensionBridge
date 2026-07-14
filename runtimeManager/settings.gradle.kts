@@ -1,4 +1,8 @@
 @file:Suppress("UnstableApiUsage")
+
+
+
+
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "DartotsuRuntimePlugins"
 
@@ -63,5 +67,6 @@ include(
     ":kotatsu:kotatsuDesktop",
     ":ireader:ireaderCommon",
     ":ireader:ireaderAndroid",
-    ":ireader:ireaderDesktop"
+    ":ireader:ireaderDesktop",
+    ":tsundoku:tsundokuCommon",
 )

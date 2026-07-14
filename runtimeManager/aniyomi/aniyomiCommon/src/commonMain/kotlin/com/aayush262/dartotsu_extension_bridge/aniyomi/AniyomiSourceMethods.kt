@@ -63,7 +63,7 @@ interface AniyomiSourceMethods {
      */
     suspend fun getPageList(chapter: SChapter): List<Page>
 
-
+    suspend fun fetchPageText(page: Page): String = ""
     fun setupPreferenceScreen(screen: PreferenceScreen)
 
     fun getSourcePreferences(): SharedPreferences

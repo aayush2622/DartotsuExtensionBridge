@@ -40,7 +40,7 @@ actual object MangaExtensionLoader {
     private val PACKAGE_FLAGS =
         PackageManager.GET_CONFIGURATIONS or PackageManager.GET_META_DATA or PackageManager.GET_SIGNATURES or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else 0)
 
-    @SuppressLint("QueryPermissionsNeeded")
+    @SuppressLint("QueryPermissionsNeeded", "WrongConstant")
     actual fun loadExtensions(path: String):  Map<MangaExtension.Installed, String> {
         val context = Injekt.get<Context>()
         val pkgManager = context.packageManager
@@ -57,10 +57,9 @@ actual object MangaExtensionLoader {
 
         try {
             Logger.log(
-                "Path for private extensions: ${path ?: "default internal storage"}", LogLevel.INFO
+                "Path for private extensions: $path", LogLevel.INFO
             )
-            val defaultDir = File(context.filesDir, "aniyomi-extensions/Manga")
-            val externalDir = path?.let { File(it) } ?: defaultDir
+            val externalDir = File(path)
             val privateDir = File(context.filesDir, "aniyomi-extensions/Manga")
 
             if (!privateDir.exists()) {
@@ -139,7 +138,7 @@ actual object MangaExtensionLoader {
         val appInfo = pkgInfo.applicationInfo!!
         val pkgName = pkgInfo.packageName
 
-        val extName = pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Aniyomi: ")
+        val extName = pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Tachiyomi: ")
         val versionName = pkgInfo.versionName
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
 

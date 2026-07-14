@@ -62,10 +62,7 @@ abstract class DownloadablePlugin {
     try {
       final remote = await fetchRemote();
 
-      await _download(
-        remote["downloadUrl"],
-        remote["versionCode"] ?? 0,
-      );
+      await _download(remote["downloadUrl"], remote["versionCode"] ?? 0);
 
       installed.value = true;
     } catch (e) {
@@ -155,38 +152,79 @@ abstract class DownloadablePlugin {
   }
 
   Future<void> _download(String url, int version) async {
-    final request = http.Request("GET", Uri.parse(url));
-    final response = await _client.send(request);
-
-    if (response.statusCode != 200) {
-      throw Exception("Download failed");
-    }
-
     final file = await _file;
     final temp = File("${file.path}.tmp");
 
-    final sink = temp.openWrite();
+    int retries = 0;
+    const maxRetries = 10;
 
-    int received = 0;
-    final total = response.contentLength;
+    while (true) {
+      final downloaded = await temp.exists() ? await temp.length() : 0;
 
-    await for (final chunk in response.stream) {
-      received += chunk.length;
-      sink.add(chunk);
+      final request = http.Request("GET", Uri.parse(url));
 
-      if (total != null && total > 0) {
-        progress.value = received / total;
+      if (downloaded > 0) {
+        request.headers["Range"] = "bytes=$downloaded-";
+        Logger.log("Resuming $name from ${formatSize(downloaded)}");
+      }
+
+      try {
+        final response = await _client.send(request);
+
+        if (response.statusCode != 200 && response.statusCode != 206) {
+          throw Exception("Download failed (${response.statusCode})");
+        }
+
+        final sink = temp.openWrite(
+          mode: downloaded > 0 ? FileMode.append : FileMode.write,
+        );
+
+        int received = downloaded;
+
+        int? total;
+        if (response.statusCode == 206) {
+          total = response.contentLength == null
+              ? null
+              : downloaded + response.contentLength!;
+        } else {
+          total = response.contentLength;
+        }
+
+        await for (final chunk in response.stream) {
+          sink.add(chunk);
+          received += chunk.length;
+
+          if (total != null && total > 0) {
+            progress.value = received / total;
+          }
+        }
+
+        await sink.flush();
+        await sink.close();
+
+        if (total != null && received < total) {
+          throw Exception("Incomplete download");
+        }
+
+        await temp.copy(file.path);
+        await temp.delete();
+
+        setVal(_versionKey, version);
+        progress.value = 1.0;
+
+        Logger.log("$name:v$version installed", show: true);
+        return;
+      } catch (e) {
+        retries++;
+
+        Logger.log("$name download interrupted ($retries/$maxRetries): $e");
+
+        if (retries >= maxRetries) {
+          rethrow;
+        }
+
+        await Future.delayed(Duration(seconds: retries.clamp(1, 5)));
       }
     }
-
-    await sink.flush();
-    await sink.close();
-    await temp.copy(file.path);
-    await temp.delete();
-
-    setVal(_versionKey, version);
-    progress.value = 1.0;
-
-    Logger.log("$name:v$version installed", show: true);
   }
 }

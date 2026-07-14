@@ -131,12 +131,12 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
 
   @override
   Future<String?> getNovelContent(DEpisode episode) async {
-    await bridge.call<List<dynamic>>('getPageList', {
+    final pages = await bridge.call<List<dynamic>>('getPageList', {
       'sourceId': source.id,
-      'isAnime': isAnime,
       'episode': jsonEncode(_episodeToJson(episode)),
     });
-    return null;
+
+    return pages.join('\n');
   }
 
   static List<Video> parseVideos(List<dynamic> list) =>

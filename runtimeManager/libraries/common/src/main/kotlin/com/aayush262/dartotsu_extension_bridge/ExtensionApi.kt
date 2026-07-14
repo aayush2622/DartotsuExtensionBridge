@@ -34,6 +34,10 @@ interface ExtensionApi {
         sourceId: String, isAnime: Boolean, episode: String
     ): String = ""
 
+    suspend fun getNovelContent(
+        sourceId: String, episode: String
+    ): String = ""
+
     suspend fun getPreference(
         sourceId: String, isAnime: Boolean
     ): String = ""

@@ -1,0 +1,346 @@
+package com.aayush262.dartotsu_extension_bridge.tsundoku
+
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.os.Build
+import androidx.core.content.pm.PackageInfoCompat
+import androidx.core.graphics.createBitmap
+import com.aayush262.dartotsu_extension_bridge.logger.LogLevel
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
+import dalvik.system.PathClassLoader
+import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
+import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
+import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.SourceFactory
+import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+
+actual object NovelExtensionLoader {
+    private const val METADATA_HAS_README = "tachiyomi.novelextension.hasReadme"
+    private const val METADATA_HAS_CHANGELOG = "tachiyomi.novelextension.hasChangelog"
+
+    private const val EXTENSION_FEATURE_NOVEL = "tachiyomi.novelextension"
+    private const val METADATA_SOURCE_CLASS = "tachiyomi.novelextension.class"
+    private const val METADATA_SOURCE_FACTORY = "tachiyomi.novelextension.factory"
+    private const val METADATA_NSFW = "tachiyomi.novelextension.nsfw"
+    const val LIB_VERSION_MIN = 1.3
+    const val LIB_VERSION_MAX = 1.6
+
+    @Suppress("DEPRECATION")
+    private val PACKAGE_FLAGS =
+        PackageManager.GET_CONFIGURATIONS or PackageManager.GET_META_DATA or PackageManager.GET_SIGNATURES or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else 0)
+
+    @SuppressLint("QueryPermissionsNeeded", "WrongConstant")
+    actual fun loadExtensions(path: String):  Map<MangaExtension.Installed, String> {
+        val context = Injekt.get<Context>()
+        val pkgManager = context.packageManager
+
+        val installedPkgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pkgManager.getInstalledPackages(
+                PackageManager.PackageInfoFlags.of(PACKAGE_FLAGS.toLong())
+            )
+        } else {
+            pkgManager.getInstalledPackages(PACKAGE_FLAGS)
+        }
+
+        val sharedExtPkgs = installedPkgs.asSequence().filter(::isPackageAnExtension).map { MangaExtensionInfo(it, isShared = true) }.toList()
+
+        try {
+            Logger.log(
+                "Path for private extensions: $path", LogLevel.INFO
+            )
+            val externalDir = File(path)
+            val privateDir = File(context.filesDir, "aniyomi-extensions/Manga")
+
+            if (!privateDir.exists()) {
+                privateDir.mkdirs()
+            }
+
+            Logger.log(
+                "Looking for private extensions in ${externalDir.absolutePath}",
+                LogLevel.INFO
+            )
+
+            val externalFiles = externalDir.listFiles()
+                ?.filter { it.isFile && it.extension == "apk" }
+                ?: emptyList()
+
+            val privateFiles = privateDir.listFiles()
+                ?.associateBy { it.name }
+                ?: emptyMap()
+
+            externalFiles.forEach { src ->
+                val dst = File(privateDir, src.name)
+
+                val shouldCopy = !dst.exists() || src.length() != dst.length()
+
+                if (shouldCopy) {
+                    val tmp = File(privateDir, "${src.name}.tmp")
+
+                    tmp.outputStream().use { out ->
+                        src.inputStream().use { it.copyTo(out) }
+                    }
+
+                    if (!tmp.renameTo(dst)) {
+                        tmp.delete()
+                        throw IOException("Failed to finalize ${dst.name}")
+                    }
+
+                    dst.setReadOnly()
+                }
+            }
+            privateFiles.forEach { (name, file) ->
+                val stillExists = externalFiles.any { it.name == name }
+                if (!stillExists) {
+                    file.delete()
+                }
+            }
+
+            val privateExtPkgs = privateDir.listFiles()?.asSequence()?.filter { it.isFile && it.extension == "apk" }?.mapNotNull { apk ->
+                pkgManager.getPackageArchiveInfo(apk.absolutePath, PACKAGE_FLAGS)?.apply { applicationInfo?.fixBasePaths(apk.absolutePath) }
+            }?.filter(::isPackageAnExtension)?.map { MangaExtensionInfo(it, isShared = false) }?.toList() ?: emptyList()
+
+            val privateByPkg = privateExtPkgs.associateBy { it.packageInfo.packageName }
+
+            val extPkgs = (sharedExtPkgs + privateExtPkgs).distinctBy { it.packageInfo.packageName }.mapNotNull { shared ->
+                selectExtensionPackage(shared, privateByPkg[shared.packageInfo.packageName])
+            }
+
+
+            val extensions = extPkgs.map { loadExtension(context, it) }.filterIsInstance<MangaLoadResult.Success>().map { it.extension }
+
+            Logger.log(
+                "Found ${privateExtPkgs.size} private and ${sharedExtPkgs.size} shared extensions, loaded ${extensions.size}", LogLevel.INFO
+            )
+
+            return extensions.associateWith { "" }
+        } catch (e: Exception) {
+            Logger.log("Extension load failed: ${e.message}", LogLevel.ERROR)
+            return emptyMap()
+        }
+    }
+
+
+    private fun loadExtension(context: Context, extensionInfo: MangaExtensionInfo): MangaLoadResult {
+        val pkgManager = context.packageManager
+
+        val pkgInfo = extensionInfo.packageInfo
+        val appInfo = pkgInfo.applicationInfo!!
+        val pkgName = pkgInfo.packageName
+
+        val extName = pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Tsundoku: ")
+        val versionName = pkgInfo.versionName
+        val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
+
+        if (versionName.isNullOrEmpty()) {
+            return MangaLoadResult.Error
+        }
+
+        // Validate lib version
+        val libVersion = versionName.substringBeforeLast('.').toDoubleOrNull()
+        if (libVersion == null || libVersion < LIB_VERSION_MIN || libVersion > LIB_VERSION_MAX) {
+
+            return MangaLoadResult.Error
+        }
+
+
+        val isNsfw = appInfo.metaData.getInt(METADATA_NSFW) == 1
+        val hasReadme = appInfo.metaData.getInt(METADATA_HAS_README, 0) == 1
+        val hasChangelog = appInfo.metaData.getInt(METADATA_HAS_CHANGELOG, 0) == 1
+
+        val parent = context.classLoader!!
+
+        val classLoader = try {
+            ChildFirstPathClassLoader(appInfo.sourceDir, null, parent)
+        } catch (e: Throwable) {
+            Logger.log(
+                "Failed to create class loader for extension ${appInfo.packageName}: ${e.message}\n${e.stackTraceToString()}", LogLevel.ERROR
+            )
+            return MangaLoadResult.Error
+        }
+
+        val sources = appInfo.metaData.getString(METADATA_SOURCE_CLASS)!!.split(";").map {
+            val sourceClass = it.trim()
+            if (sourceClass.startsWith(".")) {
+                pkgInfo.packageName + sourceClass
+            } else {
+                sourceClass
+            }
+        }.flatMap { className ->
+            val classesToTry = mutableListOf(className)
+
+            if (className.startsWith("app.tsundoku.extension.")) {
+                classesToTry += className.replace(
+                    "app.tsundoku.extension.",
+                    "eu.kanade.tachiyomi.extension."
+                )
+            }
+
+            var lastError: Throwable? = null
+
+            for (classToTry in classesToTry) {
+                try {
+                    val obj = Class.forName(classToTry, false, classLoader)
+                        .getDeclaredConstructor()
+                        .newInstance()
+
+                    return@flatMap when (obj) {
+                        is Source -> listOf(obj)
+                        is SourceFactory -> obj.createSources()
+                        else -> throw Exception("Unknown source class type: ${obj.javaClass}")
+                    }
+                } catch (_: LinkageError) {
+                    try {
+                        val fallBackClassLoader = PathClassLoader(
+                            appInfo.sourceDir,
+                            null,
+                            parent,
+                        )
+
+                        val obj = Class.forName(
+                            classToTry,
+                            false,
+                            fallBackClassLoader,
+                        ).getDeclaredConstructor().newInstance()
+
+                        return@flatMap when (obj) {
+                            is Source -> listOf(obj)
+                            is SourceFactory -> obj.createSources()
+                            else -> throw Exception("Unknown source class type: ${obj.javaClass}")
+                        }
+                    } catch (e: ClassNotFoundException) {
+                        lastError = e
+                        // Try the next possible class name
+                    } catch (e: Throwable) {
+                        Logger.log(
+                            "Failed to load source class $classToTry from extension ${appInfo.packageName}: ${e.message}\n${e.stackTraceToString()}",
+                            LogLevel.ERROR,
+                        )
+                        return MangaLoadResult.Error
+                    }
+                } catch (e: ClassNotFoundException) {
+                    lastError = e
+                    // Try the next possible class name
+                } catch (e: Throwable) {
+                    Logger.log(
+                        "Failed to load source class $classToTry from extension ${appInfo.packageName}: ${e.message}\n${e.stackTraceToString()}",
+                        LogLevel.ERROR,
+                    )
+                    return MangaLoadResult.Error
+                }
+            }
+
+            Logger.log(
+                "Failed to load source class ${classesToTry.joinToString(" or ")} from extension ${appInfo.packageName}: ${lastError?.message}",
+                LogLevel.ERROR,
+            )
+            return MangaLoadResult.Error
+        }
+
+
+        val langs = sources.map { it.lang }.toSet()
+        val lang = when (langs.size) {
+            0 -> ""
+            1 -> langs.first()
+            else -> "all"
+        }
+
+        val extension = MangaExtension.Installed(
+            name = extName,
+            pkgName = pkgName,
+            versionName = versionName,
+            versionCode = versionCode,
+            libVersion = libVersion,
+            lang = lang,
+            isNsfw = isNsfw,
+            hasReadme = hasReadme,
+            hasChangelog = hasChangelog,
+            sources = sources,
+            pkgFactory = appInfo.metaData.getString(METADATA_SOURCE_FACTORY),
+            isUnofficial = true,
+            iconUrl = context.getApplicationIcon(pkgInfo),
+            isShared = extensionInfo.isShared,
+        )
+        return MangaLoadResult.Success(extension)
+    }
+
+    private fun selectExtensionPackage(shared: MangaExtensionInfo?, private: MangaExtensionInfo?): MangaExtensionInfo? {
+        when {
+            private == null && shared != null -> return shared
+            shared == null && private != null -> return private
+            shared == null && private == null -> return null
+        }
+
+        return if (PackageInfoCompat.getLongVersionCode(shared!!.packageInfo) >= PackageInfoCompat.getLongVersionCode(private!!.packageInfo)) {
+            shared
+        } else {
+            private
+        }
+    }
+
+    private fun isPackageAnExtension(pkgInfo: PackageInfo): Boolean = pkgInfo.reqFeatures.orEmpty().any { it.name == EXTENSION_FEATURE_NOVEL }
+
+
+    /**
+     * On Android 13+ the ApplicationInfo generated by getPackageArchiveInfo doesn't
+     * have sourceDir which breaks assets loading (used for getting icon here).
+     */
+    private fun ApplicationInfo.fixBasePaths(apkPath: String) {
+        if (sourceDir == null) {
+            sourceDir = apkPath
+        }
+        if (publicSourceDir == null) {
+            publicSourceDir = apkPath
+        }
+    }
+
+    private data class MangaExtensionInfo(
+        val packageInfo: PackageInfo,
+        val isShared: Boolean,
+    )
+
+
+    fun Context.getApplicationIcon(
+        packageInfo: PackageInfo
+    ): String? {
+        return try {
+            val appInfo = packageInfo.applicationInfo ?: return null
+
+            appInfo.fixBasePaths(appInfo.sourceDir)
+
+            val bitmap = when (val drawable = appInfo.loadIcon(packageManager)) {
+                is BitmapDrawable -> drawable.bitmap
+                else -> {
+                    val bmp = createBitmap(drawable.intrinsicWidth.coerceAtLeast(1), drawable.intrinsicHeight.coerceAtLeast(1))
+                    val canvas = Canvas(bmp)
+                    drawable.setBounds(0, 0, canvas.width, canvas.height)
+                    drawable.draw(canvas)
+                    bmp
+                }
+            }
+
+            val file = File(cacheDir, "${packageInfo.packageName}_icon.png")
+            FileOutputStream(file).use {
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+
+            file.absolutePath
+        } catch (e: Exception) {
+            Logger.log(
+                "Error extracting icon for ${packageInfo.packageName}: ${e.message}", LogLevel.ERROR
+            )
+            null
+        }
+    }
+}
+
