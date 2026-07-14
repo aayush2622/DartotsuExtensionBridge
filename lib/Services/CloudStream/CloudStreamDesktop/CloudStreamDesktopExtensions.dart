@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
@@ -18,7 +17,6 @@ import '../../../Extensions/SourceMethods.dart';
 import '../../../Logger.dart';
 import '../../../Models/Source.dart';
 import '../../../NetworkClient.dart';
-import '../../../Settings/KvStore.dart';
 import '../../Network.dart';
 import '../CloudStreamSourceMethods.dart';
 import 'CloudStreamService.dart';
@@ -51,16 +49,7 @@ class CloudStreamDesktopExtensions extends Extension {
   @override
   DownloadablePlugin plugin = CloudStreamDesktopPlugin();
 
-  final JavaBridge jni = (() {
-    final useSidecar = getVal("cloudStreamDesktopUseSidecar") ?? false;
-
-    final bridge = Platform.isMacOS || useSidecar
-        ? SidecarBridge()
-        : JniBridge();
-
-    Logger.log("Using ${bridge.runtimeType}");
-    return bridge;
-  })();
+  final JavaBridge jni = SidecarBridge();
 
   final _client = MClient.init();
 
@@ -366,24 +355,7 @@ class CloudStreamDesktopExtensions extends Extension {
   }
 
   @override
-  List<ExtensionSetting> settings(context) => [
-    ExtensionSetting(
-      type: ExtensionSettingType.switchType,
-      name: "Use Sidecar",
-      description:
-          "Use the Sidecar bridge instead of JNI. Requires a restart and the Sidecar runtime to be installed. May improve stability but can cause issues on some systems.",
-      icon: Icons.settings_ethernet_rounded,
-      isChecked: getVal("cloudStreamDesktopUseSidecar") ?? false,
-      isVisible: Platform.isWindows || Platform.isLinux,
-      onSwitchChange: (v) async {
-        setVal("cloudStreamDesktopUseSidecar", v);
-        Logger.log(
-          "Set useSidecar to $v. Restart the app for changes to take effect.",
-          show: true,
-        );
-      },
-    ),
-  ];
+  List<ExtensionSetting> settings(context) => [];
 }
 
 class CloudStreamDesktopPlugin extends DownloadablePlugin {

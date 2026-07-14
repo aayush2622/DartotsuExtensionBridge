@@ -1,0 +1,112 @@
+name: Build Plugins
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "plugins.json"
+
+# Needed to create/delete releases and tags.
+permissions:
+  contents: write
+
+concurrency:
+  group: build-plugins-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # gradlew, plugin.gradle.kts, scripts/, and builds/ all live under
+    # runtimeManager/ — not at the repo root — so every `run:` step below
+    # executes from there by default. Steps that need the true repo root
+    # (like committing plugins.json) override this explicitly.
+    defaults:
+      run:
+        working-directory: runtimeManager
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build all plugins
+        run: ./gradlew buildAllPlugins
+
+      - name: Download previous release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p previous-release
+          gh release download latest \
+            --repo "${{ github.repository }}" \
+            --dir previous-release \
+            --clobber \
+          || echo "No previous 'latest' release found — treating every plugin as new."
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compare artifacts and bump versions
+        id: release-prep
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/prepare_release.py
+
+      - name: Publish plugins.json to repo root
+        working-directory: ${{ github.workspace }}
+        run: |
+          cp runtimeManager/builds/plugins.json plugins.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add plugins.json
+
+          if git diff --cached --quiet; then
+            echo "plugins.json unchanged — nothing to commit."
+          else
+            git commit -m "chore: update plugins.json"
+            git push
+          fi
+
+      - name: Delete previous release and tag
+        if: steps.release-prep.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest \
+            --repo "${{ github.repository }}" \
+            --yes \
+            --cleanup-tag \
+          || echo "No previous release to delete."
+
+      - name: Create release and upload artifacts
+        if: steps.release-prep.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mapfile -t assets < <(find builds -type f \( -name '*.apk' -o -name '*.jar' -o -name '*.json' \))
+          gh release create latest \
+            --repo "${{ github.repository }}" \
+            --title "Latest Build" \
+            --notes "Automated build from ${{ github.sha }}" \
+            "${assets[@]}"
+
+      - name: No changes detected
+        if: steps.release-prep.outputs.changed != 'true'
+        run: echo "All plugin artifacts are unchanged — skipping release."

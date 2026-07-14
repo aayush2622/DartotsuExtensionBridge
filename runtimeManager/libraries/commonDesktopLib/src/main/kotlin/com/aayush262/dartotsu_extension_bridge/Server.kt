@@ -117,7 +117,12 @@ object Server {
                                 params["episode"].asString,
                             )
                         }
-
+                        "getNovelContent" -> {
+                            api.getNovelContent(
+                                params["sourceId"].asString,
+                                params["episode"].asString,
+                            )
+                        }
                         "getPreference" -> {
                             api.getPreference(
                                 params["sourceId"].asString,

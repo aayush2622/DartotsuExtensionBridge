@@ -28,6 +28,7 @@ abstract class JavaBridge {
   void dispose();
 }
 
+// useless if they dont add multiple jni instances
 class JniBridge implements JavaBridge {
   SendPort? _sendPort;
   Isolate? _isolate;

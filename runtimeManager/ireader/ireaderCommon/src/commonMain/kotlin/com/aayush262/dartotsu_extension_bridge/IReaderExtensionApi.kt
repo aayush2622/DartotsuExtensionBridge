@@ -194,10 +194,7 @@ class IReaderExtensionApi : ExtensionApi, ExtensionBridgeApi {
         encode(result)
     }
 
-    override suspend fun getPageList(
-        sourceId: String, isAnime: Boolean, episode: String
-    ): String {
-
+    override suspend fun getNovelContent(sourceId: String, episode: String): String {
         val ep = decode(episode)
 
         val chapter = ChapterInfo(
@@ -214,11 +211,7 @@ class IReaderExtensionApi : ExtensionApi, ExtensionBridgeApi {
             )
         }
 
-        return encode(
-            mapOf(
-                "html" to toHtml(pages)
-            )
-        )
+        return encode(listOf(toHtml(pages)))
     }
     fun toHtml(pages: List<Page>): String =
         buildString {

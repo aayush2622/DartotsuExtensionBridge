@@ -245,12 +245,11 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
             name = epMap["name"] as String
             url = epMap["url"] as String
         }
+        val source = media(sourceId, isAnime)
 
         val pages = withContext(Dispatchers.IO) {
-            media(sourceId, isAnime).getPageList(chapter)
+            source.getPageList(chapter)
         }
-
-        val source = media(sourceId, isAnime)
 
         return encode(
             pages.map { it.toPayload(source.baseUrl ?: "") })

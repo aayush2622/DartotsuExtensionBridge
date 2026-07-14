@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
@@ -14,7 +13,6 @@ import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Extensions/ExtensionSettings.dart';
 import '../../../Logger.dart';
 import '../../../NetworkClient.dart';
-import '../../../Settings/KvStore.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
 import '../AniyomiSourceMethods.dart';
@@ -44,16 +42,7 @@ class AniyomiDesktopExtensions extends Extension {
   @override
   DownloadablePlugin plugin = AniyomiDesktopPlugin();
 
-  final JavaBridge jni = (() {
-    final useSidecar = getVal("aniyomiDesktopUseSidecar") ?? true;
-
-    final bridge = Platform.isMacOS || useSidecar
-        ? SidecarBridge()
-        : JniBridge();
-
-    Logger.log("Using ${bridge.runtimeType}");
-    return bridge;
-  })();
+  final JavaBridge jni = SidecarBridge();
 
   final _client = MClient.init();
   final _context = DartotsuExtensionBridge.context;
@@ -302,24 +291,7 @@ class AniyomiDesktopExtensions extends Extension {
   void handleSchemes(Uri uri) {}
 
   @override
-  List<ExtensionSetting> settings(context) => [
-    ExtensionSetting(
-      type: ExtensionSettingType.switchType,
-      name: "Use Sidecar",
-      description:
-          "Use the Sidecar bridge instead of JNI. Requires a restart and the Sidecar runtime to be installed. May improve stability but can cause issues on some systems.",
-      icon: Icons.settings_ethernet_rounded,
-      isChecked: getVal("aniyomiDesktopUseSidecar") ?? false,
-      isVisible: Platform.isWindows || Platform.isLinux,
-      onSwitchChange: (v) async {
-        setVal("aniyomiDesktopUseSidecar", v);
-        Logger.log(
-          "Set useSidecar to $v. Restart the app for changes to take effect.",
-          show: true,
-        );
-      },
-    ),
-  ];
+  List<ExtensionSetting> settings(context) => [];
   static List<AdSource> _parseExtensions(
     (String body, String repoUrl, ItemType itemType) args,
   ) {
