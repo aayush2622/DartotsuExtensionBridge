@@ -2,7 +2,7 @@ name: Build Plugins
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths-ignore:
       - "plugins.json"
 
