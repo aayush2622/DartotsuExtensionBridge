@@ -1,0 +1,80 @@
+[
+  {
+    "name": "aniyomiAndroid",
+    "versionCode": 1,
+    "versionName": "1.0.1",
+    "description": "A plugin that allows you to run Aniyomi extensions on android",
+    "author": "aayush262",
+    "createdAt": 1784058761467,
+    "platform": "android",
+    "type": "apk",
+    "fileName": "aniyomiAndroid-plugin.apk",
+    "fileSize": 6885265,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiAndroid-plugin.apk"
+  },
+  {
+    "name": "aniyomiDesktop",
+    "versionCode": 1,
+    "versionName": "1.0.1",
+    "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
+    "author": "aayush262",
+    "createdAt": 1784058749575,
+    "platform": "desktop",
+    "type": "jar",
+    "fileName": "aniyomiDesktop-plugin.jar",
+    "fileSize": 54111016,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiDesktop-plugin.jar"
+  },
+  {
+    "name": "cloudStreamAndroid",
+    "versionCode": 1,
+    "versionName": "1.0.1",
+    "description": "A plugin that allows you to run cloudstream extensions on android",
+    "author": "aayush262/Ryan",
+    "createdAt": 1784058791297,
+    "platform": "android",
+    "type": "apk",
+    "fileName": "cloudStreamAndroid-plugin.apk",
+    "fileSize": 7622314,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/cloudStreamAndroid-plugin.apk"
+  },
+  {
+    "name": "cloudStreamDesktop",
+    "versionCode": 1,
+    "versionName": "1.0.1",
+    "description": "A plugin that allows you to run cloudstream extensions on desktop",
+    "author": "aayush262/Ryan",
+    "createdAt": 1784058771030,
+    "platform": "desktop",
+    "type": "jar",
+    "fileName": "cloudStreamDesktop-plugin.jar",
+    "fileSize": 60757042,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/cloudStreamDesktop-plugin.jar"
+  },
+  {
+    "name": "ireaderAndroid",
+    "versionCode": 1,
+    "versionName": "1.0.1",
+    "description": "A plugin that allows you to run ireader extensions on android",
+    "author": "aayush262",
+    "createdAt": 1784058805401,
+    "platform": "android",
+    "type": "apk",
+    "fileName": "ireaderAndroid-plugin.apk",
+    "fileSize": 5022708,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/ireaderAndroid-plugin.apk"
+  },
+  {
+    "name": "ireaderDesktop",
+    "versionCode": 1,
+    "versionName": "1.0.1",
+    "description": "A plugin that allows you to run ireader extensions on desktop",
+    "author": "aayush262",
+    "createdAt": 1784058804735,
+    "platform": "desktop",
+    "type": "jar",
+    "fileName": "ireaderDesktop-plugin.jar",
+    "fileSize": 61032789,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/ireaderDesktop-plugin.jar"
+  }
+]
