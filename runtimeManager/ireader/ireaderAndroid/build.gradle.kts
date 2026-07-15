@@ -7,11 +7,11 @@ plugins {
 android {
     namespace = "com.aayush262.plugin"
 
-    compileSdk = 37
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.aayush262.dartotsu_extension_bridge.ireader_plugin"
-        minSdk = 26
+        minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
