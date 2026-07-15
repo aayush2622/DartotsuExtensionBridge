@@ -187,7 +187,15 @@ class IReaderExtensionApi : ExtensionApi, ExtensionBridgeApi {
             "status" to details.status,
             "episodes" to chapters.map {
                 mapOf(
-                    "name" to it.name, "url" to it.key, "date_upload" to it.dateUpload, "episode_number" to it.number, "scanlator" to it.scanlator
+                    "name" to it.name,
+                    "url" to it.key,
+                    "date_upload" to it.dateUpload,
+                    "episode_number" to if (it.number == -1f) {
+                        ChapterInfo.extractChapterNumber(it.name)
+                    } else {
+                        it.number
+                    },
+                    "scanlator" to it.scanlator
                 )
             })
 
@@ -213,36 +221,28 @@ class IReaderExtensionApi : ExtensionApi, ExtensionBridgeApi {
 
         return encode(listOf(toHtml(pages)))
     }
-    fun toHtml(pages: List<Page>): String =
-        buildString {
-            for (page in pages) {
-                when (page) {
-                    is Text ->
-                        append("<p>${escapeHtml(page.text)}</p>\n")
 
-                    is ImageUrl ->
-                        append("<img src=\"${page.url}\" />\n")
+    fun toHtml(pages: List<Page>): String = buildString {
+        for (page in pages) {
+            when (page) {
+                is Text -> append("<p>${escapeHtml(page.text)}</p>\n")
 
-                    is ImageBase64 ->
-                        append("<img src=\"data:image/png;base64,${page.data}\" />\n")
+                is ImageUrl -> append("<img src=\"${page.url}\" />\n")
 
-                    is MovieUrl ->
-                        append("<video controls src=\"${page.url}\"></video>\n")
+                is ImageBase64 -> append("<img src=\"data:image/png;base64,${page.data}\" />\n")
 
-                    is Subtitle -> {
-                        // optional
-                    }
+                is MovieUrl -> append("<video controls src=\"${page.url}\"></video>\n")
 
-                    is PageUrl ->
-                        append("<img src=\"${page.url}\" />\n")
+                is Subtitle -> {
+                    // optional
                 }
+
+                is PageUrl -> append("<img src=\"${page.url}\" />\n")
             }
         }
-    fun escapeHtml(text: String): String =
-        text.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\"", "&quot;")
+    }
+
+    fun escapeHtml(text: String): String = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
 
     override suspend fun getPreference(sourceId: String, isAnime: Boolean): String {
         TODO("Not yet implemented")
@@ -253,7 +253,7 @@ class IReaderExtensionApi : ExtensionApi, ExtensionBridgeApi {
     }
 
     override fun initClient(data: String) {
-        TODO("Not yet implemented")
+
     }
 
 }

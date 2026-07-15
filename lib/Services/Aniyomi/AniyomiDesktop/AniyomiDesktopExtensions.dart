@@ -16,7 +16,6 @@ import '../../../NetworkClient.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
 import '../AniyomiSourceMethods.dart';
-import 'AniyomiService.dart';
 import 'Models/Source.dart';
 
 class AniyomiDesktopExtensions extends Extension {
@@ -58,7 +57,7 @@ class AniyomiDesktopExtensions extends Extension {
 
     await BridgeChannels.init();
 
-    await jni.init(pluginJarPath: filePath, handler: AniyomiService());
+    await jni.init(pluginJarPath: filePath);
 
     var file = await _context.getDirectory(subPath: 'bridge/aniyomi');
 

@@ -7,10 +7,7 @@ import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 class TsundokuExtensionManager {
 
-
     lateinit var installedNovelExtensions: Map<MangaExtension.Installed, String>
-
-
 
     fun fetchInstalledNovelExtensions(
         path: String

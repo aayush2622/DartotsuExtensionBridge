@@ -27,7 +27,7 @@ class CdSource extends Source {
           json['name']?.toString().toLowerCase() ??
           '',
       name: json['name'],
-      baseUrl: json['url'],
+      baseUrl: json['baseUrl'],
       lang: json['language'] ?? json['lang'],
       iconUrl: json['iconUrl'],
       isNsfw: json['isNsfw'] ?? false,

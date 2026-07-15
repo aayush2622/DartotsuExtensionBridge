@@ -22,6 +22,9 @@ import uy.kohesive.injekt.injectLazy
 import xyz.nulldev.androidcompat.androidimpl.CustomContext
 import xyz.nulldev.androidcompat.xyz.nulldev.androidcompat.androidCompatModule
 import java.io.File
+import java.net.CookieHandler
+import java.net.CookieManager
+import java.net.CookiePolicy
 import kotlin.collections.set
 import kotlin.getValue
 

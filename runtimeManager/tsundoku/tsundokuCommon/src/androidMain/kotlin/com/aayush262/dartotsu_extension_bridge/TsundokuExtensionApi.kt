@@ -5,7 +5,6 @@ import android.app.Application
 import android.content.Context
 import androidx.preference.*
 import com.google.gson.Gson
-import com.aayush262.dartotsu_extension_bridge.aniyomi.*
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.network.NetworkHelper
 import kotlinx.coroutines.Dispatchers
@@ -15,9 +14,10 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
 import androidx.core.content.edit
+import com.aayush262.dartotsu_extension_bridge.tsundoku.NovelSourceMethods
 import com.aayush262.dartotsu_extension_bridge.tsundoku.TsundokuExtensionManager
 
-actual object PlatformInit {
+actual object TsundokuPlatformInit {
     actual fun initializeAndroid(context: Any) {
         val ctx = context as? Context ?: return
         Injekt.addSingletonFactory<Application> { ctx as Application }
@@ -38,9 +38,6 @@ actual object PlatformInit {
     }
 
     actual fun initializeDesktop(basePath: String) {}
-
-    private fun media(sourceId: String, isAnime: Boolean) = if (isAnime) AnimeSourceMethods(sourceId)
-    else MangaSourceMethods(sourceId)
 
     private val gson = Gson()
 
@@ -65,7 +62,7 @@ actual object PlatformInit {
 
         val screen = prefManager.createPreferenceScreen(context)
 
-        media(sourceId, isAnime).setupPreferenceScreen(screen)
+        NovelSourceMethods(sourceId).setupPreferenceScreen(screen)
 
         return encode(screen.toDynamicMap(sourceId))
     }

@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -40,11 +41,16 @@ kotlin {
             }
         }
     }
-
+    sourceSets {
+        commonMain {
+            kotlin.srcDir("src/commonMain/kotlin")
+            kotlin.exclude("**/AniyomiExtensionApi.kt")
+        }
+    }
     jvmToolchain( 21)
 
     compilerOptions {
-        freeCompilerArgs.addAll("-Xexpect-actual-classes","-Xannotation-default-target=param-property")
+        freeCompilerArgs.addAll("-XXLanguage:+NestedTypeAliases","-Xexpect-actual-classes","-Xannotation-default-target=param-property")
 
     }
 }

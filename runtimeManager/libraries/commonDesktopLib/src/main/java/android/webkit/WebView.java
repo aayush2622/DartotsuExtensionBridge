@@ -117,7 +117,7 @@ public class WebView extends AbsoluteLayout
 
     public interface FindListener {
         public void onFindResultReceived(int activeMatchOrdinal, int numberOfMatches,
-            boolean isDoneCounting);
+                                         boolean isDoneCounting);
     }
 
     public static abstract class VisualStateCallback {
@@ -173,25 +173,25 @@ public class WebView extends AbsoluteLayout
     }
 
     public WebView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                   int defStyleRes) {
         this(context, attrs, defStyleAttr, defStyleRes, null, false);
     }
 
     @Deprecated
     public WebView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            boolean privateBrowsing) {
+                   boolean privateBrowsing) {
         this(context, attrs, defStyleAttr, 0, null, privateBrowsing);
     }
 
     protected WebView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            @Nullable Map<String, Object> javaScriptInterfaces, boolean privateBrowsing) {
+                      @Nullable Map<String, Object> javaScriptInterfaces, boolean privateBrowsing) {
         this(context, attrs, defStyleAttr, 0, javaScriptInterfaces, privateBrowsing);
     }
 
     @SuppressWarnings("deprecation")  // for super() call into deprecated base class constructor.
     protected WebView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            int defStyleRes, @Nullable Map<String, Object> javaScriptInterfaces,
-            boolean privateBrowsing) {
+                      int defStyleRes, @Nullable Map<String, Object> javaScriptInterfaces,
+                      boolean privateBrowsing) {
         super(context, attrs, defStyleAttr, defStyleRes);
 
         if (context == null) {
@@ -199,7 +199,7 @@ public class WebView extends AbsoluteLayout
         }
         if (mWebViewThread == null) {
             throw new RuntimeException(
-                "WebView cannot be initialized on a thread that has no Looper.");
+                    "WebView cannot be initialized on a thread that has no Looper.");
         }
         sEnforceThreadChecking = true;
         checkThread();
@@ -258,7 +258,7 @@ public class WebView extends AbsoluteLayout
 
     @Deprecated
     public void setHttpAuthUsernamePassword(String host, String realm,
-            String username, String password) {
+                                            String username, String password) {
         checkThread();
         mProvider.setHttpAuthUsernamePassword(host, realm, username, password);
     }
@@ -338,13 +338,13 @@ public class WebView extends AbsoluteLayout
     }
 
     public void loadData(@NonNull String data, @Nullable String mimeType,
-            @Nullable String encoding) {
+                         @Nullable String encoding) {
         checkThread();
         mProvider.loadData(data, mimeType, encoding);
     }
 
     public void loadDataWithBaseURL(@Nullable String baseUrl, @NonNull String data,
-            @Nullable String mimeType, @Nullable String encoding, @Nullable String historyUrl) {
+                                    @Nullable String mimeType, @Nullable String encoding, @Nullable String historyUrl) {
         checkThread();
         mProvider.loadDataWithBaseURL(baseUrl, data, mimeType, encoding, historyUrl);
     }
@@ -361,7 +361,7 @@ public class WebView extends AbsoluteLayout
     }
 
     public void saveWebArchive(@NonNull String basename, boolean autoname,
-            @Nullable ValueCallback<String> callback) {
+                               @Nullable ValueCallback<String> callback) {
         checkThread();
         mProvider.saveWebArchive(basename, autoname, callback);
     }
@@ -586,12 +586,12 @@ public class WebView extends AbsoluteLayout
 
     @Deprecated
     public static void startSafeBrowsing(@NonNull Context context,
-            @Nullable ValueCallback<Boolean> callback) {
+                                         @Nullable ValueCallback<Boolean> callback) {
         throw new RuntimeException("Stub!");
     }
 
     public static void setSafeBrowsingWhitelist(@NonNull List<String> hosts,
-            @Nullable ValueCallback<Boolean> callback) {
+                                                @Nullable ValueCallback<Boolean> callback) {
         throw new RuntimeException("Stub!");
     }
 
@@ -768,12 +768,14 @@ public class WebView extends AbsoluteLayout
     @Override
     // Cannot add @hide as this can always be accessed via the interface.
     @Deprecated
-    public void onChildViewAdded(View parent, View child) {}
+    public void onChildViewAdded(View parent, View child) {
+    }
 
     @Override
     // Cannot add @hide as this can always be accessed via the interface.
     @Deprecated
-    public void onChildViewRemoved(View p, View child) {}
+    public void onChildViewRemoved(View p, View child) {
+    }
 
     @Override
     // Cannot add @hide as this can always be accessed via the interface.
@@ -843,9 +845,12 @@ public class WebView extends AbsoluteLayout
         return mProvider.findHierarchyView(className, hashCode);
     }
 
-    /** @hide */
+    /**
+     * @hide
+     */
     @Retention(RetentionPolicy.SOURCE)
-    public @interface RendererPriority {}
+    public @interface RendererPriority {
+    }
 
     public static final int RENDERER_PRIORITY_IMPORTANT = 2;
 
@@ -921,7 +926,7 @@ public class WebView extends AbsoluteLayout
 
         @Override
         public void onFindResultReceived(int activeMatchOrdinal, int numberOfMatches,
-                boolean isDoneCounting) {
+                                         boolean isDoneCounting) {
             if (mFindDialogFindListener != null) {
                 mFindDialogFindListener.onFindResultReceived(activeMatchOrdinal, numberOfMatches,
                         isDoneCounting);
@@ -933,6 +938,7 @@ public class WebView extends AbsoluteLayout
             }
         }
     }
+
     private FindListenerDistributor mFindListener;
 
     private void setupFindListenerIfNeeded() {
@@ -961,10 +967,10 @@ public class WebView extends AbsoluteLayout
         if (mWebViewThread != null && Looper.myLooper() != mWebViewThread) {
             Throwable throwable = new Throwable(
                     "A WebView method was called on thread '" +
-                    Thread.currentThread().getName() + "'. " +
-                    "All WebView methods must be called on the same thread. " +
-                    "(Expected Looper " + mWebViewThread + " called on " + Looper.myLooper() +
-                    ", FYI main Looper is " + Looper.getMainLooper() + ")");
+                            Thread.currentThread().getName() + "'. " +
+                            "All WebView methods must be called on the same thread. " +
+                            "(Expected Looper " + mWebViewThread + " called on " + Looper.myLooper() +
+                            ", FYI main Looper is " + Looper.getMainLooper() + ")");
             Log.w(LOGTAG, Log.getStackTraceString(throwable));
 
             if (sEnforceThreadChecking) {
@@ -992,7 +998,9 @@ public class WebView extends AbsoluteLayout
     //     super.onDetachedFromWindowInternal();
     // }
 
-    /** @hide */
+    /**
+     * @hide
+     */
     public void onMovedToDisplay(int displayId, Configuration config) {
         mProvider.getViewDelegate().onMovedToDisplay(displayId, config);
     }
@@ -1134,7 +1142,7 @@ public class WebView extends AbsoluteLayout
     }
 
     @Override
-    public void autofill(SparseArray<AutofillValue>values) {
+    public void autofill(SparseArray<AutofillValue> values) {
         mProvider.getViewDelegate().autofill(values);
     }
 
@@ -1177,14 +1185,18 @@ public class WebView extends AbsoluteLayout
     //     mProvider.getViewDelegate().onInitializeAccessibilityEvent(event);
     // }
 
-    /** @hide */
+    /**
+     * @hide
+     */
     public boolean performAccessibilityActionInternal(int action, Bundle arguments) {
         return mProvider.getViewDelegate().performAccessibilityAction(action, arguments);
     }
 
-    /** @hide */
+    /**
+     * @hide
+     */
     protected void onDrawVerticalScrollBar(Canvas canvas, Drawable scrollBar,
-            int l, int t, int r, int b) {
+                                           int l, int t, int r, int b) {
         mProvider.getViewDelegate().onDrawVerticalScrollBar(canvas, scrollBar, l, t, r, b);
     }
 
@@ -1245,7 +1257,9 @@ public class WebView extends AbsoluteLayout
         super.onFocusChanged(focused, direction, previouslyFocusedRect);
     }
 
-    /** @hide */
+    /**
+     * @hide
+     */
     protected boolean setFrame(int left, int top, int right, int bottom) {
         return mProvider.getViewDelegate().setFrame(left, top, right, bottom);
     }

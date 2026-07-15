@@ -11,6 +11,8 @@ import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 import org.koin.mp.KoinPlatformTools
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import xyz.nulldev.androidcompat.androidimpl.CustomContext
 import xyz.nulldev.androidcompat.xyz.nulldev.androidcompat.androidCompatModule
 import java.io.File
@@ -44,7 +46,6 @@ actual object PlatformInit {
                 preferences, "global"
             )
         )
-        val customContext: CustomContext = KoinPlatformTools.defaultContext().get().get()
         startKoin {
             modules(
                 module {
@@ -55,7 +56,8 @@ actual object PlatformInit {
                 androidCompatModule(root),
             )
         }
-        application.attach(customContext)
+        val app: CustomContext by KoinPlatformTools.defaultContext().get().inject()
+        application.attach(app)
         application.onCreate()
     }
 }

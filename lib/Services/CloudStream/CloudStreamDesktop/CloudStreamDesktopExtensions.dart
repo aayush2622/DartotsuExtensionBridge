@@ -19,7 +19,6 @@ import '../../../Models/Source.dart';
 import '../../../NetworkClient.dart';
 import '../../Network.dart';
 import '../CloudStreamSourceMethods.dart';
-import 'CloudStreamService.dart';
 import 'Models/Source.dart';
 
 class CloudStreamDesktopExtensions extends Extension {
@@ -66,7 +65,7 @@ class CloudStreamDesktopExtensions extends Extension {
 
     await BridgeChannels.init();
 
-    await jni.init(pluginJarPath: filePath, handler: CloudStreamService());
+    await jni.init(pluginJarPath: filePath);
 
     var file = await _context.getDirectory(subPath: 'bridge/aniyomi');
 
@@ -361,10 +360,6 @@ class CloudStreamDesktopExtensions extends Extension {
 class CloudStreamDesktopPlugin extends DownloadablePlugin {
   @override
   String get name => "cloudStreamDesktop";
-
-  @override
-  String get remoteUrl =>
-      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/cloudStreamDesktop/cloudStreamDesktop-plugin.json";
 
   @override
   String get fileName => "cloudStreamDesktop-plugin.jar";

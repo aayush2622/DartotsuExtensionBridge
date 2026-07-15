@@ -11,9 +11,20 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+
     }
 }
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
 
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://jitpack.io")
+        maven("https://jogamp.org/deployment/maven")
+        maven("https://packages.jetbrains.team/maven/p/ij/intellij-dependencies")
+    }
+}
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
@@ -69,4 +80,6 @@ include(
     ":ireader:ireaderAndroid",
     ":ireader:ireaderDesktop",
     ":tsundoku:tsundokuCommon",
+    ":tsundoku:tsundokuAndroid",
+    ":tsundoku:tsundokuDesktop",
 )

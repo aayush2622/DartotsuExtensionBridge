@@ -12,7 +12,8 @@ asm = "9.9.1"
 apk-parser = "2.6.10"
 xmlpull = "1.1.3.4a"
 rxjava = "1.3.8"
-
+jcef = "144.0.15-g72717cf-chromium-144.0.7559.172-api-1.21-262-b37"
+serialization = "1.11.0"
 [libraries]
 
 # Kotlin
@@ -58,7 +59,8 @@ settings-core = { module = "com.russhwolf:multiplatform-settings-jvm", version.r
 settings-serialization = { module = "com.russhwolf:multiplatform-settings-serialization-jvm", version.ref = "settings" }
 #
 rxjava = { module = "io.reactivex:rxjava", version.ref = "rxjava" }
-
+jcef = { module = "org.jetbrains.intellij.deps.jcef:jcef", version.ref = "jcef" }
+serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
 [bundles]
 
@@ -80,4 +82,6 @@ desktop = [
     "asm",
     "injekt",
     "rxjava",
+    "jcef",
+    "serialization-json"
 ]

@@ -2,7 +2,7 @@
   {
     "name": "aniyomiAndroid",
     "versionCode": 1,
-    "versionName": "1.0.1",
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run Aniyomi extensions on android",
     "author": "aayush262",
     "createdAt": 1784058761467,
@@ -15,7 +15,7 @@
   {
     "name": "aniyomiDesktop",
     "versionCode": 1,
-    "versionName": "1.0.1",
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
     "createdAt": 1784058749575,
@@ -28,7 +28,7 @@
   {
     "name": "cloudStreamAndroid",
     "versionCode": 1,
-    "versionName": "1.0.1",
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run cloudstream extensions on android",
     "author": "aayush262/Ryan",
     "createdAt": 1784058791297,
@@ -41,7 +41,7 @@
   {
     "name": "cloudStreamDesktop",
     "versionCode": 1,
-    "versionName": "1.0.1",
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run cloudstream extensions on desktop",
     "author": "aayush262/Ryan",
     "createdAt": 1784058771030,
@@ -54,7 +54,7 @@
   {
     "name": "ireaderAndroid",
     "versionCode": 1,
-    "versionName": "1.0.1",
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run ireader extensions on android",
     "author": "aayush262",
     "createdAt": 1784058805401,
@@ -67,7 +67,7 @@
   {
     "name": "ireaderDesktop",
     "versionCode": 1,
-    "versionName": "1.0.1",
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run ireader extensions on desktop",
     "author": "aayush262",
     "createdAt": 1784058804735,

@@ -1,23 +1,34 @@
 package eu.kanade.tachiyomi.network
 
 import android.content.Context
+import eu.kanade.tachiyomi.network.interceptor.CloudflareInterceptor
 import eu.kanade.tachiyomi.network.interceptor.IgnoreGzipInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UncaughtExceptionInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UserAgentInterceptor
+import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.brotli.BrotliInterceptor
-import okhttp3.logging.HttpLoggingInterceptor
 import java.io.File
+import java.net.CookieHandler
+import java.net.CookieManager
+import java.net.CookiePolicy
 import java.util.concurrent.TimeUnit
 
 class NetworkHelper(
     context: Context
 ) {
-    val cookieJar = AndroidCookieJar()
+    val cookieStore = PersistentCookieStore(context)
+
+    init {
+        CookieHandler.setDefault(
+            CookieManager(cookieStore, CookiePolicy.ACCEPT_ALL),
+        )
+    }
+
     var client: OkHttpClient = run {
         val builder = OkHttpClient.Builder()
-            .cookieJar(cookieJar)
+            .cookieJar(PersistentCookieJar(cookieStore))
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .callTimeout(2, TimeUnit.MINUTES)
@@ -31,8 +42,12 @@ class NetworkHelper(
             .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
             .addNetworkInterceptor(IgnoreGzipInterceptor())
             .addNetworkInterceptor(BrotliInterceptor)
+            .addInterceptor(
+                CloudflareInterceptor(setUserAgent = { userAgent.value = it }),
+            )
         builder.build()
     }
+
 
     /**
      * @deprecated Since extension-lib 1.5
@@ -40,8 +55,12 @@ class NetworkHelper(
     @Deprecated("The regular client handles Cloudflare by default")
     @Suppress("UNUSED")
     val cloudflareClient: OkHttpClient = client
+    private val userAgent =
+        MutableStateFlow(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        )
 
-
-    fun defaultUserAgentProvider() = "Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36"
+    fun defaultUserAgentProvider(): String = userAgent.value
 
 }

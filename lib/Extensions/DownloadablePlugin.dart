@@ -12,10 +12,10 @@ import '../dartotsu_extension_bridge.dart';
 
 abstract class DownloadablePlugin {
   String get name;
-  String get remoteUrl;
   String get fileName;
 
   final RxBool installed = false.obs;
+  final RxBool availableInRepo = false.obs;
   final _client = MClient.init();
 
   String get _versionKey => "${name}_version";
@@ -23,6 +23,52 @@ abstract class DownloadablePlugin {
 
   final RxDouble progress = 0.0.obs;
   final RxBool downloading = false.obs;
+
+  static const _indexUrlKey = "plugin_index_url";
+
+  static const _defaultIndexUrl = "";
+
+  static String? _indexUrl;
+  static List<Map<String, dynamic>>? _cachedIndex;
+
+  static String get indexUrl => _indexUrl ??=
+      (getVal<String>(_indexUrlKey, defaultValue: _defaultIndexUrl) ??
+      _defaultIndexUrl);
+
+  static void setIndexUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty || trimmed == indexUrl) return;
+
+    _indexUrl = trimmed;
+    setVal(_indexUrlKey, trimmed);
+
+    _cachedIndex = null;
+  }
+
+  static Future<List<Map<String, dynamic>>> _loadIndex(
+    http.Client client,
+  ) async {
+    if (_cachedIndex != null) return _cachedIndex!;
+
+    final url = indexUrl;
+    if (url.isEmpty) {
+      throw Exception("No plugin index URL set");
+    }
+
+    final res = await client.get(Uri.parse(url));
+    if (res.statusCode != 200) {
+      throw Exception("Failed to fetch plugin index (${res.statusCode})");
+    }
+
+    final decoded = jsonDecode(res.body);
+    if (decoded is! List) {
+      throw Exception("Plugin index is not a JSON array");
+    }
+
+    return _cachedIndex = decoded.cast<Map<String, dynamic>>();
+  }
+
+  // ---------------------------------------------------------------------
 
   Future<Directory> get _dir async {
     final dir = await DartotsuExtensionBridge.context.getDirectory(
@@ -51,8 +97,46 @@ abstract class DownloadablePlugin {
 
   bool get hasUpdate => getVal(_updateKey, defaultValue: false) ?? false;
 
+  Map<String, dynamic>? _cachedMeta;
+
+  Future<Map<String, dynamic>?> fetchRemote({bool forceRefresh = false}) async {
+    if (forceRefresh) _cachedMeta = null;
+    if (_cachedMeta != null) return _cachedMeta;
+
+    try {
+      final entries = await DownloadablePlugin._loadIndex(_client);
+      final entry = entries.firstWhere(
+        (e) => e["name"] == name,
+        orElse: () => const {},
+      );
+
+      if (entry.isEmpty) {
+        availableInRepo.value = false;
+        return _cachedMeta = null;
+      }
+
+      availableInRepo.value = true;
+      return _cachedMeta = entry;
+    } catch (e) {
+      Logger.log("$name index lookup failed: $e");
+      availableInRepo.value = false;
+      return _cachedMeta = null;
+    }
+  }
+
+  Future<bool> checkAvailability() async {
+    final remote = await fetchRemote(forceRefresh: true);
+    return remote != null;
+  }
+
   Future<void> download() async {
     if (await isInstalled() || downloading.value) return;
+
+    final remote = await fetchRemote();
+    if (remote == null) {
+      Logger.log("$name not found in plugin index", show: true);
+      return;
+    }
 
     downloading.value = true;
     progress.value = 0;
@@ -60,10 +144,7 @@ abstract class DownloadablePlugin {
     Logger.log("Downloading $name plugin", show: true);
 
     try {
-      final remote = await fetchRemote();
-
       await _download(remote["downloadUrl"], remote["versionCode"] ?? 0);
-
       installed.value = true;
     } catch (e) {
       Logger.log("$name download failed: $e");
@@ -89,6 +170,7 @@ abstract class DownloadablePlugin {
     if (!await isInstalled()) return false;
 
     final remote = await fetchRemote();
+    if (remote == null) return false;
 
     final remoteVersion = remote["versionCode"] ?? 0;
     final localVersion = getVal<int>(_versionKey) ?? 0;
@@ -104,6 +186,7 @@ abstract class DownloadablePlugin {
     if (!await isInstalled()) return;
 
     final remote = await fetchRemote();
+    if (remote == null) return;
 
     final remoteVersion = remote["versionCode"] ?? 0;
     final localVersion = getVal<int>(_versionKey) ?? 0;
@@ -127,19 +210,6 @@ abstract class DownloadablePlugin {
     } catch (e) {
       Logger.log("$name autoUpdate failed: $e");
     }
-  }
-
-  Map<String, dynamic>? _cachedMeta;
-
-  Future<Map<String, dynamic>> fetchRemote() async {
-    if (_cachedMeta != null) return _cachedMeta!;
-
-    final res = await _client.get(Uri.parse(remoteUrl));
-    if (res.statusCode != 200) {
-      throw Exception("Failed to fetch metadata");
-    }
-
-    return _cachedMeta = jsonDecode(res.body);
   }
 
   String formatSize(int bytes) {
