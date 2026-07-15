@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../../Logger.dart';
-import '../JavaHandler.dart';
 import '../JavaInstaller.dart';
 import 'JniBridge.dart';
 
@@ -19,10 +18,7 @@ class SidecarBridge implements JavaBridge {
   bool _initialized = false;
 
   @override
-  Future<void> init({
-    required String pluginJarPath,
-    required JavaHandler handler,
-  }) async {
+  Future<void> init({required String pluginJarPath}) async {
     if (_initialized) return;
 
     Logger.log('Starting sidecar: $pluginJarPath');

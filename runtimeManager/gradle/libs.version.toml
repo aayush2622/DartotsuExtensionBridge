@@ -5,7 +5,7 @@ android-gradle = "9.2.1"
 
 compileSdk = "37"
 targetSdk = "36"
-minSdk = "21"
+minSdk = "29"
 
 java = "17"
 jvmTarget = "17"

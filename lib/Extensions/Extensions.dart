@@ -47,6 +47,16 @@ abstract class Extension {
 
   Extension() {
     unawaited(_isInstalled());
+    unawaited(_checkAvailableInRepo());
+  }
+  Future<void> _checkAvailableInRepo() async {
+    try {
+      if (plugin == null) return;
+      await plugin!.checkAvailability();
+    } catch (e, s) {
+      Logger.log('Error checking repo availability for extension $id: $e\n$s');
+      plugin?.availableInRepo.value = false;
+    }
   }
 
   Future<void> _isInstalled() async {
@@ -55,7 +65,7 @@ abstract class Extension {
       plugin!.installed.value = await plugin!.isInstalled();
     } catch (e, s) {
       Logger.log('Error checking if extension $id is installed: $e\n$s');
-      plugin?.installed.value = true;
+      plugin?.installed.value = false;
     }
   }
 

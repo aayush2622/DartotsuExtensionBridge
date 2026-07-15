@@ -17,11 +17,6 @@ class IReaderSourceMethods<T extends Source> extends BridgeSourceMethods<T> {
   }
 
   @override
-  Stream<Video>? getVideoListStream(DEpisode episode) {
-    throw UnimplementedError();
-  }
-
-  @override
   Future<List<SourcePreference>> getPreference() async => const [];
 
   @override

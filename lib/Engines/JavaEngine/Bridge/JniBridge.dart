@@ -14,10 +14,7 @@ import '../JavaHandler.dart';
 import '../JavaInstaller.dart';
 
 abstract class JavaBridge {
-  Future<void> init({
-    required String pluginJarPath,
-    required JavaHandler handler,
-  });
+  Future<void> init({required String pluginJarPath});
 
   Future<T> call<T>(
     String method, [
@@ -30,15 +27,15 @@ abstract class JavaBridge {
 
 // useless if they dont add multiple jni instances
 class JniBridge implements JavaBridge {
+  final JavaHandler handler;
+
+  JniBridge({required this.handler});
   SendPort? _sendPort;
   Isolate? _isolate;
   bool _initialized = false;
 
   @override
-  Future<void> init({
-    required String pluginJarPath,
-    required JavaHandler handler,
-  }) async {
+  Future<void> init({required String pluginJarPath}) async {
     if (_initialized) return;
 
     final receivePort = ReceivePort();

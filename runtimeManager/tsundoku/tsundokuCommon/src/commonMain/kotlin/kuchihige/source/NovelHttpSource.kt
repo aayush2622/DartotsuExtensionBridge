@@ -17,7 +17,7 @@ abstract class NovelHttpSource :
     typealias NovelsPage = MangasPage
     typealias SNovel = SManga
 
-    override suspend fun fetchPageText(page: eu.kanade.tachiyomi.source.model.Page): String = throw UnsupportedOperationException("fetchPageText must be overridden")
+    override suspend fun fetchPageText(page: Page): String = throw UnsupportedOperationException("fetchPageText must be overridden")
 
     override fun imageUrlParse(response: Response): String {
         TODO("Not yet implemented")

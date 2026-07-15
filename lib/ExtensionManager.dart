@@ -10,8 +10,11 @@ import 'Services/Aniyomi/AniyomiAndroid/AniyomiExtensions.dart';
 import 'Services/Aniyomi/AniyomiDesktop/AniyomiDesktopExtensions.dart';
 import 'Services/CloudStream/CloudStreamAndroid/CloudStreamExtensions.dart';
 import 'Services/CloudStream/CloudStreamDesktop/CloudStreamDesktopExtensions.dart';
+import 'Services/IReader/IreaderDesktop/IReaderDesktopExtensions.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
 import 'Services/Sora/SoraExtensions.dart';
+import 'Services/Tsundoku/TsundokuAndroid/TsundokuExtensions.dart';
+import 'Services/Tsundoku/TsundokuDesktop/TsundokuDesktopExtensions.dart';
 import 'Settings/KvStore.dart';
 
 class ExtensionManager extends GetxController {
@@ -28,10 +31,15 @@ class ExtensionManager extends GetxController {
     SoraExtensions(),
     if (Platform.isAndroid) AniyomiExtensions(),
     if (Platform.isAndroid) CloudStreamExtensions(),
+    if (Platform.isAndroid) TsundokuExtensions(),
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
       AniyomiDesktopExtensions(),
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
       CloudStreamDesktopExtensions(),
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+      IreaderDesktopExtensions(),
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+      TsundokuDesktopExtensions(),
   ];
 
   @override

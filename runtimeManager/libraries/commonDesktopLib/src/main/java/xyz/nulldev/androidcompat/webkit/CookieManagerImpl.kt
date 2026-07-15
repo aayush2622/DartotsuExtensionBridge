@@ -10,6 +10,7 @@ import java.net.URI
 @Suppress("DEPRECATION")
 class CookieManagerImpl : CookieManager() {
     private val cookieHandler = CookieHandler.getDefault() as java.net.CookieManager
+
     private var acceptCookie = true
     private var acceptThirdPartyCookies = true
     private var allowFileSchemeCookies = false

@@ -10,6 +10,8 @@ import androidx.preference.MultiSelectListPreference
 import androidx.preference.SwitchPreferenceCompat
 import com.aayush262.dartotsu_extension_bridge.aniyomi.*
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
+import com.aayush262.dartotsu_extension_bridge.tsundoku.NovelSourceMethods
+import com.aayush262.dartotsu_extension_bridge.tsundoku.TsundokuExtensionManager
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.network.NetworkHelper
@@ -25,7 +27,7 @@ import java.io.File
 import kotlin.collections.set
 import kotlin.getValue
 
-actual object PlatformInit {
+actual object TsundokuPlatformInit {
     actual fun initializeAndroid(context: Any) {}
 
     actual fun initializeDesktop(basePath: String) {
@@ -50,7 +52,7 @@ actual object PlatformInit {
                         single<Application> { context }
                         single { NetworkHelper(context) }
                         single { Json { ignoreUnknownKeys = true } }
-                        single { TsundokuExtensionApi() }
+                        single { TsundokuExtensionManager() }
                     },
                     androidCompatModule(root),
                 )
@@ -60,9 +62,6 @@ actual object PlatformInit {
         context.attach(app)
         context.onCreate()
     }
-
-    private fun media(sourceId: String, isAnime: Boolean) = if (isAnime) AnimeSourceMethods(sourceId)
-    else MangaSourceMethods(sourceId)
 
     private val gson = Gson()
 
@@ -77,7 +76,7 @@ actual object PlatformInit {
     @SuppressLint("RestrictedApi")
 
     actual suspend fun getPreference(sourceId: String, isAnime: Boolean): String {
-        val source = media(sourceId, isAnime)
+        val source = NovelSourceMethods(sourceId)
 
         val prefs = source.getSourcePreferences()
 

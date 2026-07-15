@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:isar_community/isar.dart';
@@ -19,44 +20,58 @@ class KvEntry {
 
 class KvStore {
   static final Isar _isar = DartotsuExtensionBridge.context.isar;
+  static final Map<String, dynamic> _pendingWrites = {};
+  static Future<void> _writeQueue = Future.value();
 
-  static void setSync(String key, dynamic value) {
-    final existing = _isar.kvEntrys.filter().keyEqualTo(key).findFirstSync();
+  static Future<void> set(String key, dynamic value) {
+    _pendingWrites[key] = value;
 
-    _isar.writeTxnSync(() {
-      final entry = existing ?? KvEntry();
+    return _writeQueue = _writeQueue.then((_) async {
+      final latest = _pendingWrites[key];
 
-      entry.key = key;
-      entry.value = _encode(value);
+      await _isar.writeTxn(() async {
+        final existing = await _isar.kvEntrys
+            .filter()
+            .keyEqualTo(key)
+            .findFirst();
 
-      _isar.kvEntrys.putSync(entry);
+        final entry = existing ?? KvEntry();
+
+        entry.key = key;
+        entry.value = _encode(latest);
+
+        await _isar.kvEntrys.put(entry);
+      });
+
+      if (identical(_pendingWrites[key], latest)) {
+        _pendingWrites.remove(key);
+      }
     });
   }
 
   static T? get<T>(String key) {
-    final entry = _isar.kvEntrys.filter().keyEqualTo(key).findFirstSync();
+    if (_pendingWrites.containsKey(key)) {
+      final value = _pendingWrites[key];
+      if (value == null) return null;
+      if (value is T) return value;
+    }
 
+    final entry = _isar.kvEntrys.filter().keyEqualTo(key).findFirstSync();
     if (entry == null) return null;
 
     final decoded = _decode(entry.value);
 
-    // Direct match
+    // <-- Add this
+    if (decoded == null) return null;
+
     if (decoded is T) return decoded;
 
     // Handle List<T>
     if (decoded is List) {
-      if (T.toString() == 'List<String>') {
-        return List<String>.from(decoded) as T;
-      }
-      if (T.toString() == 'List<int>') {
-        return List<int>.from(decoded) as T;
-      }
-      if (T.toString() == 'List<double>') {
-        return List<double>.from(decoded) as T;
-      }
-      if (T.toString() == 'List<bool>') {
-        return List<bool>.from(decoded) as T;
-      }
+      if (T == List<String>) return List<String>.from(decoded) as T;
+      if (T == List<int>) return List<int>.from(decoded) as T;
+      if (T == List<double>) return List<double>.from(decoded) as T;
+      if (T == List<bool>) return List<bool>.from(decoded) as T;
     }
 
     throw StateError(
@@ -127,7 +142,7 @@ T? getVal<T>(String key, {T? defaultValue}) {
 
 void setVal(String key, dynamic value) async {
   try {
-    KvStore.setSync(key, value);
+    unawaited(KvStore.set(key, value));
   } catch (e) {
     Logger.log('Failed to set value for key "$key": $e');
   }

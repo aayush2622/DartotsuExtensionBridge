@@ -44,8 +44,22 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
     }
 
     override fun initClient(data: String) {
-        val client = Injekt.get<NetworkHelper>()
-        client.client = enableNetworking(data)
+        val helper = Injekt.get<NetworkHelper>()
+        val base = helper.client
+        val custom = enableNetworking(data)
+
+        val builder = custom.newBuilder()
+
+        base.cache?.let { builder.cache(it) }
+
+        base.networkInterceptors.forEach {
+            builder.addNetworkInterceptor(it)
+        }
+        base.interceptors.forEach {
+            builder.addInterceptor(it)
+        }
+        builder.cookieJar(base.cookieJar)
+        helper.client = builder.build()
     }
 
     private fun media(sourceId: String, isAnime: Boolean) = if (isAnime) AnimeSourceMethods(sourceId)

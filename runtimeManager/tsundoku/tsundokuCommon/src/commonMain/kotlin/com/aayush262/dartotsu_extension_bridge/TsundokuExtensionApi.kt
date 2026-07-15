@@ -2,6 +2,7 @@ package com.aayush262.dartotsu_extension_bridge
 
 
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.aayush262.dartotsu_extension_bridge.network.Network.enableNetworking
 import com.aayush262.dartotsu_extension_bridge.tsundoku.NovelSourceMethods
 import com.aayush262.dartotsu_extension_bridge.tsundoku.TsundokuExtensionManager
@@ -21,7 +22,7 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.plus
 
-expect object PlatformInit {
+expect object TsundokuPlatformInit {
     fun initializeAndroid(context: Any)
     fun initializeDesktop(basePath: String)
 
@@ -33,10 +34,10 @@ expect object PlatformInit {
 class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
 
 
-    override fun initializeAndroid(context: Any) = PlatformInit.initializeAndroid(context)
+    override fun initializeAndroid(context: Any) = TsundokuPlatformInit.initializeAndroid(context)
 
     override fun initializeDesktop(basePath: String) {
-        PlatformInit.initializeDesktop(basePath)
+        TsundokuPlatformInit.initializeDesktop(basePath)
         initialize(CustomMethods())
     }
 
@@ -69,7 +70,7 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
                         "version" to ext.versionName,
                         "pkgName" to ext.pkgName,
                         "apkPath" to apkPath,
-                        "itemType" to 0
+                        "itemType" to 2
                     )
                 }
             }
@@ -175,26 +176,44 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
             url = epMap["url"] as String
         }
 
+        val methods = NovelSourceMethods(sourceId)
+
         val pages = withContext(Dispatchers.IO) {
-            NovelSourceMethods(sourceId).getPageList(chapter)
+            methods.getPageList(chapter)
         }
+
         val pageText = withContext(Dispatchers.IO) {
             coroutineScope {
-                pages.map { page ->
-                    async { NovelSourceMethods(sourceId).fetchPageText(page) }
+                pages.mapIndexed { index, page ->
+                    async {
+                        try {
+
+                            val text = methods.fetchPageText(page)
+                            text
+                        } catch (e: Exception) {
+
+                            throw e
+                        }
+                    }
                 }.awaitAll()
             }
         }
 
-        return encode(pageText)
+        Logger.log("Fetched all pages. Total=${pageText.size}")
+
+        val encoded = encode(pageText)
+
+        Logger.log("Encoded result size=${encoded.length}")
+
+        return encoded
     }
 
     override suspend fun saveSourcePreference(sourceId: String, key: String, value: String?): Boolean {
-        return PlatformInit.saveSourcePreference(sourceId, key, value)
+        return TsundokuPlatformInit.saveSourcePreference(sourceId, key, value)
     }
 
     override suspend fun getPreference(sourceId: String, isAnime: Boolean): String {
-        return PlatformInit.getPreference(sourceId, isAnime)
+        return TsundokuPlatformInit.getPreference(sourceId, isAnime)
     }
 
     fun SAnime.toMap() = mapOf(

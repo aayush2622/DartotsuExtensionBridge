@@ -61,7 +61,6 @@ object Network {
 
                     chain.proceed(request)
                 }
-                .cookieJar(WebviewCookieJar())
                 .addInterceptor(CookieInterceptor())
                 .addInterceptor(LogInterceptor())
                 .build()
