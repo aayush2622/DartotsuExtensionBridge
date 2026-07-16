@@ -1,28 +1,28 @@
 [
   {
     "name": "aniyomiAndroid",
-    "versionCode": 3,
-    "versionName": "1.0.3",
+    "versionCode": 4,
+    "versionName": "1.0.4",
     "description": "A plugin that allows you to run Aniyomi extensions on android",
     "author": "aayush262",
-    "createdAt": 1784203996165,
+    "createdAt": 1784233820861,
     "platform": "android",
     "type": "apk",
     "fileName": "aniyomiAndroid-plugin.apk",
-    "fileSize": 16842796,
+    "fileSize": 16859180,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiAndroid-plugin.apk"
   },
   {
     "name": "aniyomiDesktop",
-    "versionCode": 3,
-    "versionName": "1.0.3",
+    "versionCode": 4,
+    "versionName": "1.0.4",
     "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1784203985634,
+    "createdAt": 1784233820529,
     "platform": "desktop",
     "type": "jar",
     "fileName": "aniyomiDesktop-plugin.jar",
-    "fileSize": 60340607,
+    "fileSize": 60347120,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiDesktop-plugin.jar"
   },
   {
@@ -79,28 +79,28 @@
   },
   {
     "name": "tsundokuAndroid",
-    "versionCode": 2,
-    "versionName": "1.0.2",
+    "versionCode": 3,
+    "versionName": "1.0.3",
     "description": "A plugin that allows you to run Tsundoku extensions on android",
     "author": "aayush262",
-    "createdAt": 1784204035452,
+    "createdAt": 1784233862286,
     "platform": "android",
     "type": "apk",
     "fileName": "tsundokuAndroid-plugin.apk",
-    "fileSize": 16924712,
+    "fileSize": 16941096,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/tsundokuAndroid-plugin.apk"
   },
   {
     "name": "tsundokuDesktop",
-    "versionCode": 2,
-    "versionName": "1.0.2",
+    "versionCode": 3,
+    "versionName": "1.0.3",
     "description": "A plugin that allows you to run Tsundoku extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1784204035189,
+    "createdAt": 1784233862229,
     "platform": "desktop",
     "type": "jar",
     "fileName": "tsundokuDesktop-plugin.jar",
-    "fileSize": 60470792,
+    "fileSize": 60476993,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/tsundokuDesktop-plugin.jar"
   }
 ]
