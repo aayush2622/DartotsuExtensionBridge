@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -47,7 +48,7 @@ class DartotsuExtensionBridge {
     );
 
     Get.put(ExtensionManager());
-    await Get.put(AddonManager()).checkForUpdates();
+    unawaited(Get.put(AddonManager()).checkForUpdates());
 
     _initialized = true;
   }

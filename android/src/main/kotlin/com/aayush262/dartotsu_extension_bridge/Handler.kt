@@ -37,7 +37,7 @@ class Handler(
 
                 if (debug) {
                     loadApi(context)
-                }else {
+                } else {
                     loadApiFromPath(path, hasUpdate)
                 }
                 result.success(null)
@@ -60,6 +60,10 @@ class Handler(
 
                 "getInstalledMangaExtensions" -> launch(call, result) {
                     api.getInstalledMangaExtensions(call.arguments as String?)
+                }
+
+                "getInstalledNovelExtensions" -> launch(call, result) {
+                    api.getInstalledNovelExtensions(call.arguments as String?)
                 }
 
                 "getPopular" -> launch(call, result) {
@@ -110,6 +114,14 @@ class Handler(
                     )
                 }
 
+                "getNovelContent" -> launch (call, result) {
+                    val args = call.arguments as Map<*, *>
+
+                    api.getNovelContent(
+                        args["sourceId"] as String,  args["episode"] as String
+                    )
+                }
+
                 "getPreference" -> launch(call, result) {
                     val args = call.arguments as Map<*, *>
 
@@ -150,6 +162,7 @@ class Handler(
             result.error("INVALID_ARGS", it.message, null)
         }
     }
+
     @Suppress("UNUSED")
     private fun loadApi(context: Context) {
         try {
@@ -211,6 +224,7 @@ class Handler(
             )
         }
     }
+
     @SuppressLint("SetWorldReadable")
     private fun loadApiFromPath(path: String, hasUpdate: Boolean) {
 

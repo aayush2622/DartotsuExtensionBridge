@@ -46,29 +46,36 @@ abstract class DownloadablePlugin {
     _cachedIndex = null;
   }
 
-  static Future<List<Map<String, dynamic>>> _loadIndex(
-    http.Client client,
-  ) async {
-    if (_cachedIndex != null) return _cachedIndex!;
+  static Future<List<Map<String, dynamic>>>? _loadingIndex;
 
-    final url = indexUrl;
-    if (url.isEmpty) {
-      throw Exception("No plugin index URL set");
+  static Future<List<Map<String, dynamic>>> _loadIndex(http.Client client) {
+    if (_cachedIndex != null) {
+      return Future.value(_cachedIndex!);
     }
 
-    final res = await client.get(Uri.parse(url));
-    if (res.statusCode != 200) {
-      throw Exception("Failed to fetch plugin index (${res.statusCode})");
-    }
+    return _loadingIndex ??=
+        () async {
+          final url = indexUrl;
+          if (url.isEmpty) {
+            throw Exception("No plugin index URL set");
+          }
 
-    final decoded = jsonDecode(res.body);
-    if (decoded is! List) {
-      throw Exception("Plugin index is not a JSON array");
-    }
+          final res = await client.get(Uri.parse(url));
+          if (res.statusCode != 200) {
+            throw Exception("Failed to fetch plugin index (${res.statusCode})");
+          }
 
-    return _cachedIndex = decoded.cast<Map<String, dynamic>>();
+          final decoded = jsonDecode(res.body);
+          if (decoded is! List) {
+            throw Exception("Plugin index is not a JSON array");
+          }
+
+          _cachedIndex = decoded.cast<Map<String, dynamic>>();
+          return _cachedIndex!;
+        }().whenComplete(() {
+          _loadingIndex = null;
+        });
   }
-
   // ---------------------------------------------------------------------
 
   Future<Directory> get _dir async {
