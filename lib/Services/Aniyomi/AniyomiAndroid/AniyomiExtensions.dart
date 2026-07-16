@@ -253,7 +253,7 @@ class AniyomiExtensions extends Extension {
           case ItemType.novel:
             break;
         }
-
+        detectUpdates(raw, type);
         return;
       }
 
@@ -602,11 +602,7 @@ class AniyomiExtensions extends Extension {
 
 class AniyomiPlugin extends DownloadablePlugin {
   @override
-  String get name => "aniyomi";
-
-  @override
-  String get remoteUrl =>
-      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiAndroid/aniyomiAndroid-plugin.json";
+  String get name => "aniyomiAndroid";
 
   @override
   String get fileName => "aniyomiAndroid-plugin.apk";

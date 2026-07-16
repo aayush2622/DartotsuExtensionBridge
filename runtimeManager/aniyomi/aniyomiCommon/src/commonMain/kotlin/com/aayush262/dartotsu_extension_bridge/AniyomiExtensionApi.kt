@@ -88,7 +88,8 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
                             "version" to ext.versionName,
                             "pkgName" to ext.pkgName,
                             "apkPath" to apkPath,
-                            "itemType" to 1
+                            "itemType" to 1,
+                            "isShared" to ext.isShared
                         )
                     }
                 }
@@ -126,7 +127,8 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
                             "version" to ext.versionName,
                             "pkgName" to ext.pkgName,
                             "apkPath" to apkPath,
-                            "itemType" to 0
+                            "itemType" to 0,
+                            "isShared" to ext.isShared
                         )
                     }
                 }

@@ -60,8 +60,7 @@ actual object NovelExtensionLoader {
                 "Path for private extensions: $path", LogLevel.INFO
             )
             val externalDir = File(path)
-            val privateDir = File(context.filesDir, "aniyomi-extensions/Manga")
-
+            val privateDir = File(context.filesDir, "tsundoku-extensions/Novel")
             if (!privateDir.exists()) {
                 privateDir.mkdirs()
             }

@@ -16,4 +16,5 @@ data class LoadedExtension(
     val icon: String,
     val description: String,
     val apkPath: String,
+    val isShared: Boolean,
 )

@@ -2,7 +2,6 @@ package com.aayush262.dartotsu_extension_bridge
 
 import android.annotation.SuppressLint
 import android.content.Context
-import com.aayush262.dartotsu_extension_bridge.CustomMethods
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
 import dalvik.system.BaseDexClassLoader
 import io.flutter.plugin.common.MethodCall

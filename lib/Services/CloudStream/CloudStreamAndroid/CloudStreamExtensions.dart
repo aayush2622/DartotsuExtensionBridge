@@ -355,11 +355,7 @@ class CloudStreamExtensions extends Extension {
 
 class CloudStreamPlugin extends DownloadablePlugin {
   @override
-  String get name => "cloudStream";
-
-  @override
-  String get remoteUrl =>
-      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/cloudStreamAndroid/cloudStreamAndroid-plugin.json";
+  String get name => "cloudStreamAndroid";
 
   @override
   String get fileName => "cloudStreamAndroid-plugin.apk";
