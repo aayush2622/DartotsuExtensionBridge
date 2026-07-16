@@ -16,6 +16,7 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.NovelSource
+import eu.kanade.tachiyomi.source.isNovelSource
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -85,11 +86,14 @@ class NovelSourceMethods(sourceID: String) : AniyomiSourceMethods {
     }
 
     override suspend fun getPageList( chapter: SChapter): List<Page> {
+        if (source.isNovelSource()) {
+            return listOf(Page(0, chapter.url))
+        }
         return (source).getPageList(chapter)
     }
 
     override suspend fun fetchPageText(page: Page): String {
-        if (source is NovelSource) {
+        if (source.isNovelSource()) {
             return source.fetchPageText(page)
         }
         return super.fetchPageText(page)

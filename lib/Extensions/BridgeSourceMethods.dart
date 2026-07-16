@@ -135,7 +135,6 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
       'sourceId': source.id,
       'episode': jsonEncode(_episodeToJson(episode)),
     });
-
     return pages.join('\n');
   }
 

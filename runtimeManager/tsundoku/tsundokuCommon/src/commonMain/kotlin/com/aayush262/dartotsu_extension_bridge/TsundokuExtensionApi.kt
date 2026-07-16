@@ -175,6 +175,7 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
         val chapter = SChapter.create().apply {
             name = epMap["name"] as String
             url = epMap["url"] as String
+            chapter_number = (epMap["episode_number"]?.toString()?.toFloat()) ?: 0f
         }
 
         val methods = NovelSourceMethods(sourceId)
@@ -188,11 +189,9 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
                 pages.mapIndexed { index, page ->
                     async {
                         try {
-
                             val text = methods.fetchPageText(page)
                             text
                         } catch (e: Exception) {
-
                             throw e
                         }
                     }

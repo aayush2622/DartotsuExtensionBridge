@@ -1,22 +1,18 @@
 package eu.kanade.tachiyomi.source
 
 /**
- * A marker interface for sources that provide novels.
- * Sources implementing this interface should return text content in their page lists.
+ * Marker interface for novel (text-based) sources.
+ *
+ * Detection is via the [Source.isNovelSource] property and the text API is [Source.fetchPageText];
+ * neither requires this interface. It is kept only for source compatibility with existing
+ * extensions that declare `: HttpSource(), NovelSource`. New sources just set
+ * `isNovelSource = true` and override [Source.fetchPageText].
  */
-interface NovelSource {
-    /**
-     * Whether this source provides novel (text-based) content.
-     * Always true for NovelSource implementations.
-     * This property is used by HttpPageLoader to determine how to load pages.
-     */
-    val isNovelSource: Boolean
-        get() = true
+@Deprecated("Detection is via Source.isNovelSource; fetchPageText is on Source")
+interface NovelSource : Source
 
-    /**
-     * Fetches the text content for a page.
-     * @param page The page to fetch text for
-     * @return The text content of the page
-     */
-    suspend fun fetchPageText(page: eu.kanade.tachiyomi.source.model.Page): String
-}
+/**
+ * Checks if this source is a novel source. Backed solely by the [Source.isNovelSource] property,
+ * which lives on the shared [Source] interface and is virtual-dispatched across classloaders.
+ */
+fun Source.isNovelSource(): Boolean = isNovelSource
