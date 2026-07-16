@@ -26,7 +26,8 @@ abstract class DownloadablePlugin {
 
   static const _indexUrlKey = "plugin_index_url";
 
-  static const _defaultIndexUrl = "";
+  static const _defaultIndexUrl =
+      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/refs/heads/master/plugins.json";
 
   static String? _indexUrl;
   static List<Map<String, dynamic>>? _cachedIndex;

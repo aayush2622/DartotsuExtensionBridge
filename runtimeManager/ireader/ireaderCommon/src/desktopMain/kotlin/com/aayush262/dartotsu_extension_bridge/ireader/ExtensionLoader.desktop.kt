@@ -11,12 +11,14 @@ import ireader.core.source.CatalogSource
 import ireader.core.source.Dependencies
 import ireader.core.source.HttpSource
 import net.dongliu.apk.parser.ApkFile
+import net.dongliu.apk.parser.ApkParsers
 import org.koin.mp.KoinPlatform.getKoin
+import xyz.nulldev.androidcompat.pm.toPackageInfo
 import java.io.File
 import java.lang.reflect.Modifier
 
 actual object ExtensionLoader {
-
+    private const val EXTENSION_FEATURE = "ireader.extension"
     actual val plugins = mutableMapOf<Long, CatalogSource>()
 
     actual fun loadExtensions(path: String): List<LoadedExtension> {
@@ -56,11 +58,16 @@ actual object ExtensionLoader {
                 jarFile.absolutePath
             )
         }
+        val apkPath = apk.absolutePath
 
-        val apkInfo = ApkFile(apk)
-
+        val apkInfo = PackageTools.getPackageInfo(apkPath)
+        val packageInfo = apkInfo.packageInfo
+        val apkParser = apkInfo.apkFile
+        require(packageInfo.reqFeatures.orEmpty().any { it.name == EXTENSION_FEATURE }) {
+            "Not an extension: ${apk.name}"
+        }
         val metadata = Ksoup.parse(
-            apkInfo.manifestXml,
+            apkParser.manifestXml,
             Parser.xmlParser()
         )
             .select("application")
@@ -69,8 +76,7 @@ actual object ExtensionLoader {
                 it.attr("android:name") to it.attr("android:value")
             }
 
-        val packageName = apkInfo.apkMeta.packageName
-
+        val packageName = apkParser.apkMeta.packageName
         val sourceClass = metadata["source.class"]
             ?: error("Missing source.class metadata")
 
@@ -116,12 +122,13 @@ actual object ExtensionLoader {
         return LoadedExtension(
             source = instance,
             packageName = packageName,
-            versionName = apkInfo.apkMeta.versionName ?: "",
-            versionCode = apkInfo.apkMeta.versionCode.toLong(),
+            versionName = apkParser.apkMeta.versionName ?: "",
+            versionCode = apkParser.apkMeta.versionCode.toLong(),
             apkPath = apk.absolutePath,
             baseUrl = (instance as? HttpSource)?.baseUrl.orEmpty(),
             icon = metadata["source.icon"].orEmpty(),
             description = metadata["source.description"].orEmpty(),
+            isShared = false
         )
     }
 }

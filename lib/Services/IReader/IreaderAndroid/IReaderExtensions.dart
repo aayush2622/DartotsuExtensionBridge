@@ -552,7 +552,7 @@ class IReaderExtensions extends Extension {
 
 class IReaderPlugin extends DownloadablePlugin {
   @override
-  String get name => "ireader";
+  String get name => "ireaderAndroid";
 
   @override
   String get fileName => "ireaderAndroid-plugin.apk";

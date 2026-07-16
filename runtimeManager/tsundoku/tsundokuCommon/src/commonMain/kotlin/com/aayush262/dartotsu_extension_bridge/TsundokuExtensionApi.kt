@@ -70,7 +70,8 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
                         "version" to ext.versionName,
                         "pkgName" to ext.pkgName,
                         "apkPath" to apkPath,
-                        "itemType" to 2
+                        "itemType" to 2,
+                        "isShared" to ext.isShared
                     )
                 }
             }

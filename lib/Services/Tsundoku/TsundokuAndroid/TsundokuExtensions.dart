@@ -216,7 +216,7 @@ class TsundokuExtensions extends Extension {
         );
 
         await fetchInstalledExtensions(type);
-
+        detectUpdates(raw, type);
         return;
       }
 
@@ -552,7 +552,7 @@ class TsundokuExtensions extends Extension {
 
 class TsundokuPlugin extends DownloadablePlugin {
   @override
-  String get name => "tsundoku";
+  String get name => "tsundokuAndroid";
 
   @override
   String get fileName => "tsundokuAndroid-plugin.apk";
