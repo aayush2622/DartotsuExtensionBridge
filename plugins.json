@@ -1,15 +1,15 @@
 [
   {
     "name": "aniyomiAndroid",
-    "versionCode": 4,
-    "versionName": "1.0.4",
+    "versionCode": 5,
+    "versionName": "1.0.5",
     "description": "A plugin that allows you to run Aniyomi extensions on android",
     "author": "aayush262",
-    "createdAt": 1784233820861,
+    "createdAt": 1784371339587,
     "platform": "android",
     "type": "apk",
     "fileName": "aniyomiAndroid-plugin.apk",
-    "fileSize": 16859180,
+    "fileSize": 8607660,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiAndroid-plugin.apk"
   },
   {
@@ -27,15 +27,15 @@
   },
   {
     "name": "cloudStreamAndroid",
-    "versionCode": 2,
-    "versionName": "1.0.2",
+    "versionCode": 3,
+    "versionName": "1.0.3",
     "description": "A plugin that allows you to run cloudstream extensions on android",
     "author": "aayush262/Ryan",
-    "createdAt": 1784150293843,
+    "createdAt": 1784371356379,
     "platform": "android",
     "type": "apk",
     "fileName": "cloudStreamAndroid-plugin.apk",
-    "fileSize": 19013005,
+    "fileSize": 7594441,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/cloudStreamAndroid-plugin.apk"
   },
   {
@@ -53,15 +53,15 @@
   },
   {
     "name": "ireaderAndroid",
-    "versionCode": 3,
-    "versionName": "1.0.3",
+    "versionCode": 4,
+    "versionName": "1.0.4",
     "description": "A plugin that allows you to run ireader extensions on android",
     "author": "aayush262",
-    "createdAt": 1784204023926,
+    "createdAt": 1784371356399,
     "platform": "android",
     "type": "apk",
     "fileName": "ireaderAndroid-plugin.apk",
-    "fileSize": 13935604,
+    "fileSize": 5022708,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/ireaderAndroid-plugin.apk"
   },
   {
@@ -79,15 +79,15 @@
   },
   {
     "name": "tsundokuAndroid",
-    "versionCode": 3,
-    "versionName": "1.0.3",
+    "versionCode": 4,
+    "versionName": "1.0.4",
     "description": "A plugin that allows you to run Tsundoku extensions on android",
     "author": "aayush262",
-    "createdAt": 1784233862286,
+    "createdAt": 1784371368204,
     "platform": "android",
     "type": "apk",
     "fileName": "tsundokuAndroid-plugin.apk",
-    "fileSize": 16941096,
+    "fileSize": 8624044,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/tsundokuAndroid-plugin.apk"
   },
   {
