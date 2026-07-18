@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.aayush262.dartotsu_extension_bridge.ireader_plugin"
-        minSdk = libs.versions.minSdk.get().toInt()
+        minSdk = 26
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"

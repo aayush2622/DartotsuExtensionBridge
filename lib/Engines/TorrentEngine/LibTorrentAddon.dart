@@ -18,8 +18,27 @@ import 'Models.dart';
 
 class LibtorrentAddon extends Addon {
   final _client = MClient.init();
-  LibtorrentAddon() {
-    init();
+  LibtorrentAddon();
+
+  bool _initialized = false;
+  Future<void>? _initFuture;
+
+  Future<void> ensureInitialized() {
+    return _initFuture ??= _init();
+  }
+
+  Future<void> _init() async {
+    if (_initialized) return;
+
+    installed.value = await isInstalled();
+    if (!installed.value) return;
+
+    await LibtorrentFlutter.init(
+      defaultSavePath: (await _directory).path,
+      torrentLib: await open(),
+    );
+
+    _initialized = true;
   }
 
   Future<void> init() async {
@@ -69,6 +88,7 @@ class LibtorrentAddon extends Addon {
     required String url,
     int maxCacheBytes = 500 * 1024 * 1024,
   }) async {
+    await ensureInitialized();
     await stopStream();
 
     final saveDir = await _mediaDirectory;
@@ -139,6 +159,8 @@ class LibtorrentAddon extends Addon {
   }
 
   Future<void> stopStream() async {
+    if (!_initialized) return;
+
     final engine = LibtorrentFlutter.instance;
 
     if (_activeTorrent != null) {
@@ -262,7 +284,15 @@ class LibtorrentAddon extends Addon {
       await _download(release.$1, release.$2);
       _library?.close();
 
-      await init();
+      await _download(release.$1, release.$2);
+
+      _library?.close();
+      _library = null;
+
+      _initialized = false;
+      _initFuture = null;
+
+      await ensureInitialized();
 
       Logger.log("Installed libtorrent", show: true);
     } finally {
@@ -280,7 +310,12 @@ class LibtorrentAddon extends Addon {
     _library?.close();
     _library = null;
 
+    _initialized = false;
+    _initFuture = null;
+    _activeTorrent = null;
+
     installed.value = false;
+    hasUpdate.value = false;
 
     setVal(_versionKey, "");
     setVal(_updateKey, false);
