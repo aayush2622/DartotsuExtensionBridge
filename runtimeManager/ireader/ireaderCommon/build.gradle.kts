@@ -11,7 +11,7 @@ kotlin {
     jvm("desktop")
     android {
         compileSdk = libs.versions.compileSdk.get().toInt()
-        minSdk = libs.versions.minSdk.get().toInt()
+        minSdk = 26
         namespace = "com.aayush262.ireader.shared"
     }
     sourceSets {
