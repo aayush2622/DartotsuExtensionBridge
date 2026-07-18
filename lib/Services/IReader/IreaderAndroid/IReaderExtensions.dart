@@ -23,8 +23,6 @@ import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
 
 class IReaderExtensions extends Extension {
-  final _client = MClient.init();
-
   @override
   String get id => 'ireader';
 
@@ -47,7 +45,7 @@ class IReaderExtensions extends Extension {
     (source) =>
         IReaderSourceMethods(source as ISource, MethodChannelBridge(platform)),
   );
-
+  final _client = MClient.init();
   @override
   DownloadablePlugin plugin = IReaderPlugin();
   final platform = const MethodChannel('ireaderExtensionBridge');
@@ -188,9 +186,7 @@ class IReaderExtensions extends Extension {
   Future<void> uninstallSource(Source source) async {
     final s = source as ISource;
     final type = source.itemType!;
-    final packageName =
-        s.pkgName ?? s.apkUrl!.split('/').last.replaceAll('.apk', '');
-    final apkFileName = '$packageName.apk';
+
     try {
       if (s.isShared == false) {
         final baseDir = await DartotsuExtensionBridge.context.getDirectory(
@@ -198,6 +194,7 @@ class IReaderExtensions extends Extension {
           useSystemPath: false,
           useCustomPath: true,
         );
+        final apkFileName = path.basename(s.apkPath!);
 
         final file = File(path.join(baseDir!.path, apkFileName));
 

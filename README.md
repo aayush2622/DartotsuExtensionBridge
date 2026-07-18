@@ -38,7 +38,7 @@ The bridge doesn't enable every extension source on every platform — each sour
 | Aniyomi | ✅ | ❌ | ✅ |
 | CloudStream | ✅ | ❌ | ✅ |
 | Tsundoku | ✅ | ❌ | ✅ |
-| iReader | ❌ | ❌ | ✅ |
+| iReader | ✅ | ❌ | ✅ |
 
 A few things fall out of this:
 
@@ -253,8 +253,6 @@ import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 | `Pages` | Page/content result model |
 | `Video` | Video stream model |
 | `SourcePreference` | Per-source configuration/preferences |
-| `ExtensionManagerScreen` | Prebuilt UI for browsing/installing extensions |
-| `ExtensionList` | Prebuilt UI for listing extensions |
 
 ## License
 

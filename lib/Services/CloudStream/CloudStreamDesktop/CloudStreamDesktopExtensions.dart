@@ -212,6 +212,12 @@ class CloudStreamDesktopExtensions extends Extension {
   }
 
   @override
+  void dispose() async {
+    super.dispose();
+    jni.dispose();
+  }
+
+  @override
   Future<void> uninstallSource(Source source) async {
     final s = source as CdSource;
     final type = source.itemType!;

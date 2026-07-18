@@ -18,7 +18,7 @@ import '../../Network.dart';
 import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
 
-class IreaderDesktopExtensions extends Extension {
+class IReaderDesktopExtensions extends Extension {
   @override
   String get id => 'ireader_desktop';
 
