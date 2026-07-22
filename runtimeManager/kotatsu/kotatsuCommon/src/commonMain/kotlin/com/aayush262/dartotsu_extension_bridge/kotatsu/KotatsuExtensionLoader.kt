@@ -36,6 +36,8 @@ import okhttp3.Interceptor
 import org.json.JSONArray
 import org.json.JSONObject
 import org.koitharu.kotatsu.parsers.InternalParsersApi
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -206,6 +208,7 @@ object KotatsuExtensionLoader {
             return loadedParsers.values.map { it.source }
         }
 
+        @Deprecated("Provide a base url")
         override suspend fun evaluateJs(script: String): String? = null
         override suspend fun evaluateJs(baseUrl: String, script: String): String? = null
 
@@ -260,7 +263,8 @@ object KotatsuExtensionLoader {
         }
     }
 
-    suspend fun loadExtensions(context: Context, folderPath: String?): List<Map<String, Any?>> {
+    suspend fun loadExtensions(folderPath: String?): List<Map<String, Any?>> {
+        val context = Injekt.get<Context>()
         return scanMutex.withLock {
             initialize(context)
             val path = folderPath ?: context.filesDir.absolutePath
@@ -668,8 +672,8 @@ object KotatsuExtensionLoader {
 
             val headers = try {
                 parser.getRequestHeaders().names().associateWith { parser.getRequestHeaders()[it] ?: "" }
-            } catch (e: Exception) {
-                emptyMap<String, String>()
+            } catch (_: Exception) {
+                emptyMap()
             }
 
             pageUrls.map { pUrl ->

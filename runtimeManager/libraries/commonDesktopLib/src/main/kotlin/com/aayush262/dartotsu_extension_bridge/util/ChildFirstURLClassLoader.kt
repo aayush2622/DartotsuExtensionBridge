@@ -12,35 +12,33 @@ class ChildFirstURLClassLoader(
 ) : URLClassLoader(urls, parent) {
     private val systemClassLoader: ClassLoader? = getSystemClassLoader()
 
-    override fun loadClass(name: String?, resolve: Boolean): Class<*> {
+    override fun loadClass(
+        name: String?,
+        resolve: Boolean,
+    ): Class<*> {
+        var c = findLoadedClass(name)
 
-        val c = findLoadedClass(name)
-
-        if (c != null) {
-            return c
-        }
-
-        if (systemClassLoader != null) {
+        if (c == null && systemClassLoader != null) {
             try {
-                val sys = systemClassLoader.loadClass(name)
-
-                return sys
+                c = systemClassLoader.loadClass(name)
             } catch (_: ClassNotFoundException) {
             }
         }
 
-        try {
-            val local = findClass(name)
-            return local
-        } catch (_: ClassNotFoundException) {
+        if (c == null) {
+            c =
+                try {
+                    findClass(name)
+                } catch (_: ClassNotFoundException) {
+                    super.loadClass(name, resolve)
+                }
         }
 
-        try {
-            val parentLoaded = super.loadClass(name, resolve)
-            return parentLoaded
-        } catch (e: ClassNotFoundException) {
-            throw e
+        if (resolve) {
+            resolveClass(c)
         }
+
+        return c
     }
 
     override fun getResource(name: String?): URL? =

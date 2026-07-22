@@ -115,10 +115,9 @@ object PackageTools {
         className: String,
     ): Any {
         try {
-            val parent = this.javaClass.classLoader
             val classLoader = jarLoaderMap[jarPath] ?: ChildFirstURLClassLoader(
                 arrayOf(Path(jarPath).toUri().toURL()),
-                parent
+
             )
             val classToLoad = Class.forName(className, false, classLoader)
 

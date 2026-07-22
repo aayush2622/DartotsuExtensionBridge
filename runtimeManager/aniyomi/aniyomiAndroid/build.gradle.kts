@@ -41,7 +41,7 @@ extra.apply {
 
 apply(from = "$rootDir/plugin-build.gradle.kts")
 
-tasks.register("build AndInstall") {
+tasks.register("buildAndInstallAniyomi") {
     dependsOn(":aniyomi:aniyomiAndroid:assembleDebug")
     finalizedBy(":aniyomi:aniyomiAndroid:installDebug")
 }

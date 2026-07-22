@@ -27,7 +27,7 @@ kotlin {
                     it.contains("android", true)
 
                 }
-
+                implementation("androidx.collection:collection:1.6.0")
 
                 if (!isAndroidBuild) {
                     compileOnly(projects.libraries.commonDesktopLib)
@@ -36,16 +36,23 @@ kotlin {
         }
 
         getByName("desktopMain") {
-            dependencies{
+            dependencies {
                 api(projects.libraries.commonDesktopLib)
             }
         }
     }
 
-    jvmToolchain( libs.versions.java.get().toInt())
+    jvmToolchain(libs.versions.java.get().toInt())
 
     compilerOptions {
-        freeCompilerArgs.addAll("-Xexpect-actual-classes","-Xannotation-default-target=param-property")
+        freeCompilerArgs.addAll(
+            "-Xexpect-actual-classes",
+            "-Xannotation-default-target=param-property",
+            "-opt-in=kotlin.RequiresOptIn",
+            "-opt-in=kotlin.contracts.ExperimentalContracts",
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+            "-opt-in=org.koitharu.kotatsu.parsers.InternalParsersApi"
+        )
 
     }
 }
