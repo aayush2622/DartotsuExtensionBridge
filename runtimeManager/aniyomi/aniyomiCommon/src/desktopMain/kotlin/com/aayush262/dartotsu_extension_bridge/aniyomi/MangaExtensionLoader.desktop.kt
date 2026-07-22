@@ -9,12 +9,17 @@ import eu.kanade.tachiyomi.source.SourceFactory
 import java.io.File
 import kotlin.collections.first
 import kotlin.collections.orEmpty
+
 actual object MangaExtensionLoader {
 
-    private const val EXTENSION_FEATURE = "tachiyomi.extension"
-    private const val METADATA_SOURCE_CLASS = "tachiyomi.extension.class"
-    private const val METADATA_SOURCE_FACTORY = "tachiyomi.extension.factory"
-    private const val METADATA_NSFW = "tachiyomi.extension.nsfw"
+    const val EXTENSION_FEATURE = "tachiyomi.extension"
+    const val METADATA_SOURCE_CLASS = "tachiyomi.extension.class"
+    const val METADATA_SOURCE_FACTORY = "tachiyomi.extension.factory"
+    const val METADATA_NSFW = "tachiyomi.extension.nsfw"
+
+    const val METADATA_NAME = "tachiyomix.name"
+    const val METADATA_EXTENSION_LIB = "tachiyomix.extensionLib"
+    const val METADATA_CONTENT_WARNING = "tachiyomix.contentWarning"
     private const val METADATA_HAS_README = "tachiyomi.extension.hasReadme"
     private const val METADATA_HAS_CHANGELOG = "tachiyomi.extension.hasChangelog"
 
@@ -53,6 +58,7 @@ actual object MangaExtensionLoader {
 
         return byPackage.values.associate { it.first to it.second }
     }
+
     private fun loadExtensionInternal(apkFile: File): MangaExtension.Installed {
         val apkPath = apkFile.absolutePath
         val apkInfo = PackageTools.getPackageInfo(apkPath)
@@ -64,7 +70,7 @@ actual object MangaExtensionLoader {
         }
         val iconDir = File(apkFile.parentFile, "icons")
 
-        val iconFile =  PackageTools.extractIcon(
+        val iconFile = PackageTools.extractIcon(
             apkParser,
             apkFile,
             iconDir,
@@ -83,16 +89,23 @@ actual object MangaExtensionLoader {
 
         val meta = packageInfo.applicationInfo.metaData
 
+
         val isNsfw = meta.getString(METADATA_NSFW) == "1"
         val hasReadme = meta.getString(METADATA_HAS_README) == "1"
         val hasChangelog = meta.getString(METADATA_HAS_CHANGELOG) == "1"
 
-        val baseClass = meta.getString(METADATA_SOURCE_CLASS)
-            ?: error("Missing source class")
+        val sourceClass =
+            meta
+                .getString(METADATA_SOURCE_CLASS)!!
+                .trim()
 
-        val classNames = baseClass.split(";").map {
-            if (it.startsWith(".")) packageInfo.packageName + it else it
-        }
+        val className =
+            if (sourceClass.startsWith(".")) {
+                packageInfo.packageName + sourceClass
+            } else {
+                sourceClass
+            }
+
 
         val jarDir = File(apkFile.parentFile, "jar")
         if (!jarDir.exists()) {
@@ -119,15 +132,15 @@ actual object MangaExtensionLoader {
 
         val sources = mutableListOf<Source>()
 
-        classNames.forEach { className ->
-            val result = when (val instance = PackageTools.loadExtensionSources(jarFile.absolutePath, className)) {
-                is Source -> listOf(instance)
-                is SourceFactory -> instance.createSources()
-                else -> error("Unknown source type: ${instance.javaClass}")
-            }
 
-            sources += result
+        val result = when (val instance = PackageTools.loadExtensionSources(jarFile.absolutePath, className)) {
+            is Source -> listOf(instance)
+            is SourceFactory -> instance.createSources()
+            else -> error("Unknown source type: ${instance.javaClass}")
         }
+
+        sources += result
+
 
         val catalogueSources = sources.filterIsInstance<CatalogueSource>()
         val langs = catalogueSources.map { it.lang }.toSet()
@@ -137,7 +150,6 @@ actual object MangaExtensionLoader {
             1 -> langs.first()
             else -> "all"
         }
-
         val name =
             packageInfo.applicationInfo.nonLocalizedLabel
                 ?.toString()

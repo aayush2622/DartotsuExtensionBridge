@@ -10,7 +10,6 @@ version = "1.0"
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_17
-        freeCompilerArgs.add("-Xcontext-receivers")
     }
 }
 

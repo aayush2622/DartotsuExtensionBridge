@@ -2,6 +2,8 @@ package com.aayush262.dartotsu_extension_bridge
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.os.Build
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
 import dalvik.system.BaseDexClassLoader
 import io.flutter.plugin.common.MethodCall
@@ -12,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.zip.ZipFile
 
 
 class Handler(
@@ -196,11 +199,9 @@ class Handler(
             val optimizedDir = File(context.codeCacheDir, "plugin_opt")
             optimizedDir.mkdirs()
 
-            addDexPath.invoke(
-                pathList,
-                apkPath,
-                optimizedDir
-            )
+            preloadNativeLibraries(context, File(appInfo.sourceDir))
+
+            addDexPath.invoke(pathList, apkPath, optimizedDir)
 
             val clazz = classLoader.loadClass(apiClassName)
 
@@ -224,7 +225,42 @@ class Handler(
             )
         }
     }
+    @SuppressLint("UnsafeDynamicallyLoadedCode")
+    private fun preloadNativeLibraries(
+        context: Context,
+        apkFile: File,
+    ) {
+        val abi = Build.SUPPORTED_ABIS.first()
+        val outDir = File(context.codeCacheDir, "plugin_libs").apply {
+            mkdirs()
+        }
 
+        ZipFile(apkFile).use { zip ->
+            zip.entries().asSequence()
+                .filter {
+                    it.name.startsWith("lib/$abi/") &&
+                            it.name.endsWith(".so")
+                }
+                .forEach { entry ->
+                    val out = File(outDir, entry.name.substringAfterLast('/'))
+
+                    if (!out.exists()) {
+                        zip.getInputStream(entry).use { input ->
+                            out.outputStream().use(input::copyTo)
+                        }
+                        out.setReadable(true)
+                        out.setExecutable(true)
+                    }
+
+                    try {
+                        System.load(out.absolutePath)
+                        Logger.log("Loaded ${out.name}", LogLevel.INFO)
+                    } catch (_: UnsatisfiedLinkError) {
+                        // Already loaded
+                    }
+                }
+        }
+    }
     @SuppressLint("SetWorldReadable")
     private fun loadApiFromPath(path: String, hasUpdate: Boolean) {
 
@@ -277,8 +313,9 @@ class Handler(
             val optimizedDir = File(context.codeCacheDir, "plugin_opt")
             if (!optimizedDir.exists()) optimizedDir.mkdirs()
 
-            val classLoader = context.classLoader
+            preloadNativeLibraries(context, dst)
 
+            val classLoader = context.classLoader
             val pathListField = BaseDexClassLoader::class.java.getDeclaredField("pathList").apply { isAccessible = true }
 
             val pathList = pathListField[classLoader]

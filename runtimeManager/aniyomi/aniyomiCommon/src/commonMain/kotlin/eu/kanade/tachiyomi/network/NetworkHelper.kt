@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.network
 
 import android.content.Context
 import eu.kanade.tachiyomi.network.interceptor.CloudflareInterceptor
-import eu.kanade.tachiyomi.network.interceptor.IgnoreGzipInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UncaughtExceptionInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UserAgentInterceptor
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,8 +39,6 @@ class NetworkHelper(
             )
             .addInterceptor(UncaughtExceptionInterceptor())
             .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
-            .addNetworkInterceptor(IgnoreGzipInterceptor())
-            .addNetworkInterceptor(BrotliInterceptor)
             .addInterceptor(
                 CloudflareInterceptor(setUserAgent = { userAgent.value = it }),
             )
