@@ -93,7 +93,14 @@ class PersistentCookieStore(
             cookieMap.remove(url.host)
         }
     }
-
+    fun remove(uri:  HttpUrl,cookies: List<String>) {
+        lock.withLock {
+            val cookiesForDomain = cookieMap[uri.host].orEmpty().toMutableList()
+            val newList = cookiesForDomain.filterNot { it.name in cookies }
+            cookieMap[uri.host] = newList
+            saveToDisk(setOf(uri.host))
+        }
+    }
     override fun get(uri: URI): List<HttpCookie> {
         val url = uri.toURL()
         return get(url.toHttpUrlOrNull()!!).map {
