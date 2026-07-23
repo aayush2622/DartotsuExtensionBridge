@@ -35,13 +35,12 @@ class Handler(
                 val args = call.arguments as Map<*, *>
 
                 val path = args["path"] as String
-                val hasUpdate = args["hasUpdate"] as? Boolean ?: false
                 val debug = args["debug"] as? Boolean ?: false
 
                 if (debug) {
                     loadApi(context)
                 } else {
-                    loadApiFromPath(path, hasUpdate)
+                    loadApiFromPath(path)
                 }
                 result.success(null)
             }.onFailure {
@@ -262,7 +261,7 @@ class Handler(
         }
     }
     @SuppressLint("SetWorldReadable")
-    private fun loadApiFromPath(path: String, hasUpdate: Boolean) {
+    private fun loadApiFromPath(path: String) {
 
         if (api != null) {
             Logger.log("API already initialized, skipping load", LogLevel.INFO)
@@ -283,26 +282,30 @@ class Handler(
             if (!privateDir.exists()) privateDir.mkdirs()
 
             val dst = File(privateDir, externalFile.name)
+            val shouldCopy =
+                !dst.exists() ||
+                        externalFile.length() != dst.length() ||
+                        externalFile.lastModified() != dst.lastModified()
 
-            if (!hasUpdate && dst.exists()) {
-                Logger.log("Plugin already exists, skipping copy", LogLevel.INFO)
-            } else {
-                Logger.log("Copying plugin to internal storage...", LogLevel.INFO)
+            if (shouldCopy) {
+                Logger.log("Copying plugin", LogLevel.INFO)
 
                 val tmp = File(privateDir, "${externalFile.name}.tmp")
 
-                tmp.outputStream().use { out ->
-                    externalFile.inputStream().use { input ->
-                        input.copyTo(out)
+                externalFile.inputStream().use { input ->
+                    tmp.outputStream().use { output ->
+                        input.copyTo(output)
                     }
                 }
 
+                tmp.setLastModified(externalFile.lastModified())
+
                 if (!tmp.renameTo(dst)) {
                     tmp.delete()
-                    throw RuntimeException("Failed to finalize ${dst.name}")
+                    throw RuntimeException("Failed to replace plugin")
                 }
-
-                Logger.log("Plugin copied/updated", LogLevel.INFO)
+            } else {
+                Logger.log("Plugin unchanged", LogLevel.INFO)
             }
 
             dst.setReadable(true, false)

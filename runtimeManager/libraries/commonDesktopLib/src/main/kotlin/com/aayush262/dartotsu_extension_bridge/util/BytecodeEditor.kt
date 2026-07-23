@@ -1,7 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge.util
 
-import com.aayush262.dartotsu_extension_bridge.logger.LogLevel
-import com.aayush262.dartotsu_extension_bridge.logger.Logger
+
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
@@ -13,7 +12,6 @@ import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import kotlin.io.path.Path
 import kotlin.streams.asSequence
 
 object BytecodeEditor {
@@ -69,7 +67,7 @@ object BytecodeEditor {
                 null
             }
         } catch (e: Exception) {
-            Logger.log ("Error loading class from Path: $path: ${e.message}", LogLevel.ERROR)
+            println{ "Error loading class from Path: $path" }
             null
         }
     }
@@ -126,30 +124,14 @@ object BytecodeEditor {
     private fun transform(pair: Pair<Path, ByteArray>): Pair<Path, ByteArray> {
         // Read the class and prepare to modify it
         val cr = ClassReader(pair.second)
-        val cw = object : ClassWriter(COMPUTE_FRAMES or COMPUTE_MAXS) {
-            override fun getCommonSuperClass(type1: String, type2: String): String {
-                return try {
-                    val c1 = Class.forName(type1.replace('/', '.'))
-                    val c2 = Class.forName(type2.replace('/', '.'))
-
-                    when {
-                        c1.isAssignableFrom(c2) -> type1
-                        c2.isAssignableFrom(c1) -> type2
-                        else -> "java/lang/Object"
-                    }
-                } catch (_: Throwable) {
-                    "java/lang/Object"
-                }
-            }
-        }
+        val cw = ClassWriter(cr, 0)
         // Modify the class
         cr.accept(
-            object : ClassVisitor(Opcodes.ASM9, cw) {
+            object : ClassVisitor(Opcodes.ASM5, cw) {
                 // Modify field descriptor, for example
                 // class MangaYes {
                 //     val format = SimpleDateFormat("YYYY-MM-dd")
                 // }
-
                 override fun visitField(
                     access: Int,
                     name: String?,
@@ -157,7 +139,7 @@ object BytecodeEditor {
                     signature: String?,
                     cst: Any?,
                 ): FieldVisitor? {
-                   //Logger.log("Visiting field $name: ${desc.replaceIndirectly()}: $signature: ${cst?.let { "${it::class.java.simpleName}: $it" }}", LogLevel.DEBUG)
+                    println { "CLass Field" to "${desc.replaceIndirectly()}: ${cst?.let { it::class.java.simpleName }}: $cst" }
                     return super.visitField(access, name, desc.replaceIndirectly(), signature, cst)
                 }
 
@@ -169,7 +151,7 @@ object BytecodeEditor {
                     superName: String?,
                     interfaces: Array<out String>?,
                 ) {
-                    //Logger.log("Visiting class $name: $signature: $superName", LogLevel.DEBUG)
+                    println { "Visiting $name: $signature: $superName" }
                     super.visit(version, access, name, signature, superName, interfaces)
                 }
 
@@ -186,8 +168,7 @@ object BytecodeEditor {
                     signature: String?,
                     exceptions: Array<String?>?,
                 ): MethodVisitor {
-                    //Logger.log("Visiting method $name: ${desc.replaceIndirectly()}: $signature", LogLevel.DEBUG)
-
+                    println { "Processing method $name: ${desc.replaceIndirectly()}: $signature" }
                     val mv: MethodVisitor? =
                         super.visitMethod(
                             access,
@@ -196,9 +177,9 @@ object BytecodeEditor {
                             signature,
                             exceptions,
                         )
-                    return object : MethodVisitor(Opcodes.ASM9, mv) {
+                    return object : MethodVisitor(Opcodes.ASM5, mv) {
                         override fun visitLdcInsn(cst: Any?) {
-                            //Logger.log("Visiting Ldc: ${cst?.let { "${it::class.java.simpleName}: $it" }}", LogLevel.DEBUG)
+                            println { "Ldc" to "${cst?.let { "${it::class.java.simpleName}: $it" }}" }
                             super.visitLdcInsn(cst)
                         }
 
@@ -211,8 +192,9 @@ object BytecodeEditor {
                             opcode: Int,
                             type: String?,
                         ) {
-                            //Logger.log("Visiting Type: $opcode: ${type.replaceDirectly()}", LogLevel.DEBUG)
-
+                            println {
+                                "Type" to "$opcode: ${type.replaceDirectly()}"
+                            }
                             super.visitTypeInsn(
                                 opcode,
                                 type.replaceDirectly(),
@@ -230,30 +212,15 @@ object BytecodeEditor {
                             desc: String?,
                             itf: Boolean,
                         ) {
-                            val newOwner = owner.replaceDirectly()
-                            val newDesc = desc.replaceIndirectly()
-
-                            val loader = Thread.currentThread().contextClassLoader
-
-                            val isInterface = try {
-                                val clazz = Class.forName(
-                                    newOwner!!.replace('/', '.'),
-                                    false,
-                                    loader
-                                )
-                                clazz.isInterface
-                            } catch (_: Throwable) {
-                                itf
+                            println {
+                                "Method" to "$opcode: ${owner.replaceDirectly()}: $name: ${desc.replaceIndirectly()}"
                             }
-
-                            //Logger.log("FIXED Method: $opcode: $newOwner: $name: $newDesc | itf=$isInterface", LogLevel.DEBUG )
-
                             super.visitMethodInsn(
                                 opcode,
-                                newOwner,
+                                owner.replaceDirectly(),
                                 name,
-                                newDesc,
-                                isInterface
+                                desc.replaceIndirectly(),
+                                itf,
                             )
                         }
 
@@ -268,7 +235,7 @@ object BytecodeEditor {
                             name: String?,
                             desc: String?,
                         ) {
-                            //Logger.log("Visiting Field: $opcode: ${owner.replaceDirectly()}: $name: ${desc.replaceIndirectly()}", LogLevel.DEBUG)
+                            println { "Field" to "$opcode: $owner: $name: ${desc.replaceIndirectly()}" }
                             super.visitFieldInsn(opcode, owner, name, desc.replaceIndirectly())
                         }
 
@@ -278,13 +245,13 @@ object BytecodeEditor {
                             bsm: Handle?,
                             vararg bsmArgs: Any?,
                         ) {
-                            //Logger.log("Visiting InvokeDynamic: ${name.replaceIndirectly()}: ${desc.replaceIndirectly()}", LogLevel.DEBUG)
+                            println { "InvokeDynamic" to "$name: $desc" }
                             super.visitInvokeDynamicInsn(name, desc, bsm, *bsmArgs)
                         }
                     }
                 }
             },
-            ClassReader.EXPAND_FRAMES
+            0,
         )
         return pair.first to cw.toByteArray()
     }
