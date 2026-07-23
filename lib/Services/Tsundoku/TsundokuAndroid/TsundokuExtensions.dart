@@ -60,12 +60,8 @@ class TsundokuExtensions extends Extension {
     unawaited(plugin.autoUpdate());
 
     final filePath = await plugin.getPath();
-    final hasUpdate = plugin.hasUpdate;
 
-    await platform.invokeMethod('loadPlugin', {
-      "path": filePath,
-      "hasUpdate": hasUpdate,
-    });
+    await platform.invokeMethod('loadPlugin', {"path": filePath});
     await BridgeChannels.init();
     var context = DartotsuExtensionBridge.context;
     if (context.network != null) {

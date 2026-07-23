@@ -19,7 +19,6 @@ abstract class DownloadablePlugin {
   final _client = MClient.init();
 
   String get _versionKey => "${name}_version";
-  String get _updateKey => "${name}_has_update";
 
   final RxDouble progress = 0.0.obs;
   final RxBool downloading = false.obs;
@@ -103,8 +102,6 @@ abstract class DownloadablePlugin {
     return file.path;
   }
 
-  bool get hasUpdate => getVal(_updateKey, defaultValue: false) ?? false;
-
   Map<String, dynamic>? _cachedMeta;
 
   Future<Map<String, dynamic>?> fetchRemote({bool forceRefresh = false}) async {
@@ -170,7 +167,6 @@ abstract class DownloadablePlugin {
     }
 
     setVal(_versionKey, 0);
-    setVal(_updateKey, false);
     installed.value = false;
   }
 
@@ -184,8 +180,6 @@ abstract class DownloadablePlugin {
     final localVersion = getVal<int>(_versionKey) ?? 0;
 
     final hasUpdate = remoteVersion > localVersion;
-
-    setVal(_updateKey, hasUpdate);
 
     return hasUpdate;
   }
@@ -204,7 +198,6 @@ abstract class DownloadablePlugin {
     Logger.log("$name updating → v$remoteVersion", show: true);
 
     await _download(remote["downloadUrl"], remoteVersion);
-    setVal(_updateKey, true);
   }
 
   Future<void> autoUpdate() async {
