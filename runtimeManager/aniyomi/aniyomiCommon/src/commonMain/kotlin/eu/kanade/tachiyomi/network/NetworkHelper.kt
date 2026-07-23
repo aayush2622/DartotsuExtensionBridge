@@ -40,7 +40,10 @@ class NetworkHelper(
             .addInterceptor(UncaughtExceptionInterceptor())
             .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
             .addInterceptor(
-                CloudflareInterceptor(setUserAgent = { userAgent.value = it }),
+                CloudflareInterceptor(
+                    cookieManager = cookieStore,
+                    defaultUserAgentProvider = ::defaultUserAgentProvider
+                ),
             )
         builder.build()
     }
