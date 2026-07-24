@@ -21,4 +21,11 @@ object AppInfo {
      */
     fun getVersionName(): String = ""
 
+    /**
+     * A list of supported image MIME types by the reader.
+     * e.g. ["image/jpeg", "image/png", ...]
+     *
+     * @since extension-lib 1.5
+     */
+    fun getSupportedImageMimeTypes(): List<String> = emptyList()
 }
