@@ -55,9 +55,10 @@ object PackageTools {
             .skipExceptions(false)
             .dontSanitizeNames(true)
             .to(jarFilePath)
-        if (!handler.hasException()) {
-            BytecodeEditor.fixAndroidClasses(jarFilePath)
+        if (handler.hasException()) {
+            Logger.log("dex2jar reported exceptions while converting $dexFile; running bytecode fixups anyway", LogLevel.ERROR)
         }
+        BytecodeEditor.fixAndroidClasses(jarFilePath)
     }
 
     fun getPackageInfo(apkFilePath: String): ApkInfo {

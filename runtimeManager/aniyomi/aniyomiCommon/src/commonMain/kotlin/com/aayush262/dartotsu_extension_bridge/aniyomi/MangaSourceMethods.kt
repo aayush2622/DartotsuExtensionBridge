@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.ConfigurableSource
+import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
@@ -62,7 +63,7 @@ class MangaSourceMethods(sourceID: String) : AniyomiSourceMethods {
             source.getSearchManga(
                 page = page,
                 query = query,
-                filters = source.getFilterList()
+                filters = FilterList()
             )
         )
     }
