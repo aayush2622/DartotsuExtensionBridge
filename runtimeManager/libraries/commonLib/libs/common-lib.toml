@@ -1,5 +1,5 @@
 [versions]
-coroutines = "1.10.2"
+coroutines = "1.11.0"
 okhttp = "5.4.0"
 gson = "2.13.2"
 jsoup = "1.22.1"

@@ -37,9 +37,6 @@ object PackageTools {
         dexFile: String,
         jarFile: String,
     ) {
-        // adopted from com.googlecode.dex2jar.tools.Dex2jarCmd.doCommandLine
-        // source at: https://github.com/DexPatcher/dex2jar/tree/v2.1-20190905-lanchon/dex-tools/src/main/java/com/googlecode/dex2jar/tools/Dex2jarCmd.java
-
         val jarFilePath = File(jarFile).toPath()
         val reader = MultiDexFileReader.open(Files.readAllBytes(File(dexFile).toPath()))
         val handler = BaksmaliBaseDexExceptionHandler()
@@ -58,7 +55,7 @@ object PackageTools {
         if (handler.hasException()) {
             Logger.log("dex2jar reported exceptions while converting $dexFile; running bytecode fixups anyway", LogLevel.ERROR)
         }
-        BytecodeEditor.fixAndroidClasses(jarFilePath)
+        BytecodeEditor.fixAndroidClasses(jarFilePath, File(dexFile).toPath())  // <-- only change here
     }
 
     fun getPackageInfo(apkFilePath: String): ApkInfo {
