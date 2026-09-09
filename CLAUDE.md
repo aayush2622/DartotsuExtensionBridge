@@ -17,7 +17,13 @@ Tsundoku, …). Consumers `init()` once, then work through `Extension` + `Source
 
 ## Entry point & lifecycle
 
-`lib/dartotsu_extension_bridge.dart` — `DartotsuExtensionBridge`
+`lib/dartotsu_extension_bridge.dart` is just the barrel file (`library;` + `export`s).
+The `DartotsuExtensionBridge` class, `BridgeContext`, `BridgeNetwork` and `GetDirectory`
+actually live in **`lib/ExtensionBridge.dart`** (re-exported from the barrel). Note this
+is a *different* file from `lib/Extensions/ExtensionBridge.dart` (the `abstract class
+ExtensionBridge` transport) — same base name, different directory.
+
+`DartotsuExtensionBridge` (`lib/ExtensionBridge.dart`)
 - `init({getDirectory, http?, isarInstance?, network?, onLog})` — idempotent. Builds the
   global `BridgeContext`, opens Isar if not supplied, registers `ExtensionManager` and
   `AddonManager` in GetX.
@@ -33,12 +39,11 @@ Tsundoku, …). Consumers `init()` once, then work through `Extension` + `Source
 |---|---|
 | `ExtensionManager.dart` | GetX controller. Holds all `Extension` managers, the `current` map (`ItemType -> Extension`), and a `Source.runtimeType -> SourceMethods` factory table. `switchManager`, `createSourceMethods`, `get<T>()`/`find<T>()`. Adds `Source.methods` extension getter. |
 | `AddonManager.dart` | GetX service for `Addon`s (currently only `LibtorrentAddon`). Update checks. |
-| `Extensions/Extensions.dart` | `abstract class Extension` — the per-ecosystem manager. Per-`ItemType` `ExtensionState` (installed/available/repos/languages as Rx). Repo CRUD, language filtering, version compare, init state machine (`InitState`, `ensureInitialized`). Also defines `Repo`. `enum ItemType { anime, manga, novel }` lives in `Models/Source.dart`. |
+| `Extensions/Extensions.dart` | `abstract class Extension` — the per-ecosystem manager. Per-`ItemType` `ExtensionState` (installed/available/repos/languages as Rx). Repo CRUD, language filtering, version compare, init state machine (`InitState`, `ensureInitialized`). Also defines `Repo`. `enum ItemType { manga, anime, novel }` (that order — `anime.index == 1`) lives in `Models/Source.dart`. |
 | `Extensions/SourceMethods.dart` | `abstract class SourceMethods` — the uniform per-source API: `getPopular`, `getLatestUpdates`, `search`, `getDetail`, `getPageList`, `getVideoList`, `getNovelContent`, `getPreference`, `setPreference`. |
 | `Extensions/BridgeSourceMethods.dart` | `SourceMethods` base for backends that call across an `ExtensionBridge` (JSON marshalling of `DMedia`/`DEpisode`). Used by CloudStream + Aniyomi. |
 | `Extensions/ExtensionBridge.dart` | `abstract ExtensionBridge` + `MethodChannelBridge` (Android platform channel) and `JniExtensionBridge` (desktop JNI). |
-| `Extensions/DownloadablePlugin.dart` | Base for downloadable helper plugins pulled from `plugins.json`; tracks `installed`, `availableInRepo`, download `progress`. |
-| `Extensions/PluginManager.dart` | Downloads/updates standalone helper APKs (`androidExtensionManagers/builds/...`). |
+| `Extensions/DownloadablePlugin.dart` | Base for downloadable helper plugins (JAR/APK) resolved from `plugins.json`; resumable download with retry, tracks `installed`, `availableInRepo`, download `progress`. Each desktop backend subclasses it. |
 | `Extensions/ExtensionSettings.dart` | `ExtensionSetting` UI-model (`normal`/`switchType`/`slider`/`inputBox`) returned by `Extension.settings(context)`. |
 | `Extensions/Addon.dart` | `abstract class Addon` (install/uninstall/update/checkForUpdate). |
 
@@ -65,7 +70,7 @@ used as the factory key.
 | **CloudStream** | `CloudStreamExtensions` / `CloudStreamDesktopExtensions` | Android + desktop | `CloudStreamSourceMethods` extends `BridgeSourceMethods`; video-only (page list / prefs unimplemented). |
 | **iReader** | `IReaderExtensions` / `IReaderDesktopExtensions` | Android + desktop | Novels. |
 | **Tsundoku** | `TsundokuExtensions` / `TsundokuDesktopExtensions` | Android + desktop | |
-| **LnReader** | (no `Extension` subclass) | — | JS runtime + polyfills (`http`, `cheerio`, `htmlparser`) under `Services/Lnreader/` & `Services/LnReader/JsEngine/`. |
+| **LnReader** | (no `Extension` subclass) | — | JS runtime + polyfills (`http`, `cheerio`, `htmlparser`) under `Services/LnReader/` (+ `JsEngine/`). Driven through Mangayomi's `Util/lib.dart`. |
 | **Kotatsu** | `Services/Kotatsu/` | — | directories only, currently empty. |
 
 Platform gating is in `ExtensionManager._extensionManagers` via `Platform.isAndroid` /
@@ -76,8 +81,8 @@ Platform gating is in `ExtensionManager._extensionManagers` via `Platform.isAndr
 - `Eval/dart/` — runs Dart-based sources through the **`d4rt`** interpreter
   (`Eval/dart/service.dart` = `DartExtensionService`; `bridge/` registers host classes,
   `model/` = interpreter-visible model classes).
-- `Eval/javascript/` + `Eval/JavaScript/` — JS-based sources via `flutter_qjs`
-  (`JsEngine.dart`, `BridgeRegister.dart`, polyfills for http/dom/preferences/extractors).
+- `Eval/javascript/` — JS-based sources via `flutter_qjs`: polyfills for
+  http / dom / preferences / extractors (`service.dart` is the entry).
 - `anime_extractors/` — ~16 host-video extractors (filemoon, streamwish, voe, dood, okru, …).
 - `cryptoaes/` — `crypto_aes.dart`, `deobfuscator.dart`, `js_unpacker.dart`.
 - `Util/` — `ChapterRecognition`, xpath/dom helpers, preference providers, `lib.dart`.
@@ -100,7 +105,7 @@ Platform gating is in `ExtensionManager._extensionManagers` via `Platform.isAndr
 
 ## Conventions
 
-- Directories and most files are **PascalCase** (`Extensions/`, `SourceMethods.dart`); the Mangayomi `Eval/` sub-tree is snake_case. Two case-variant dirs coexist (`Eval/javascript` vs `Eval/JavaScript`, `Services/Lnreader` vs `Services/LnReader`) — check the exact path.
+- Directories and most files are **PascalCase** (`Extensions/`, `SourceMethods.dart`); the Mangayomi `Eval/` sub-tree (`Eval/dart`, `Eval/javascript`) is snake_case. New code should follow the PascalCase norm outside `Eval/`.
 - New backend = new `Services/<Name>/` with an `Extension` subclass + `SourceMethods` + `Models/Source.dart` subtype, then add it to `ExtensionManager._extensionManagers` and it self-registers its factory via `sourceMethodFactories`.
 - Async init is guarded by `Completer`s and `InitState`; call `ensureInitialized()` / `runIfReady()` rather than assuming readiness.
 - Persist through `getVal`/`setVal`, never touch Isar directly.
