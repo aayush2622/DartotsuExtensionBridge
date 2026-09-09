@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import '../../Logger.dart';
+import 'package:flutter/foundation.dart';
+
 import '../../Models/Source.dart';
 
 /// Helpers shared by every backend that consumes a Tachiyomi-style
@@ -141,7 +142,9 @@ List<T> parseTachiyomiRepoIndex<T extends Source>({
 
     return List.unmodifiable(sources);
   } catch (e) {
-    Logger.log('Failed to parse Tachiyomi repo index from $repoUrl: $e');
+    // Runs inside compute(): DartotsuExtensionBridge.context isn't available in
+    // the worker isolate, so log via debugPrint rather than Logger.
+    debugPrint('Failed to parse Tachiyomi repo index from $repoUrl: $e');
     return const [];
   }
 }
