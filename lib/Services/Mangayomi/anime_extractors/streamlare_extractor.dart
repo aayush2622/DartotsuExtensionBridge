@@ -58,8 +58,9 @@ class StreamlareExtractor {
       } else {
         const separator = '"label":"';
         List<Video> videoList = [];
-        List<String> values =
-            playlist.substringAfter(separator).split(separator);
+        List<String> values = playlist
+            .substringAfter(separator)
+            .split(separator);
         for (var value in values) {
           final quality = value.substringAfter(separator).substringBefore('",');
           final apiUrl = value

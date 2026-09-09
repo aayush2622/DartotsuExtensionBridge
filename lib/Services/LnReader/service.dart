@@ -106,39 +106,41 @@ const extension = exports.default;
 
   @override
   Future<MPages> getPopular(int page) async {
-    final items = ((await _extensionCallAsync(
-      'popularNovels($page, {showLatestNovels: false, filters: extension.filters})',
-      [],
-    )))
-        .map((e) => NovelItem.fromJson(e))
-        .map(
-          (e) => MManga(
-            name: e.name,
-            imageUrl: e.cover,
-            link: e.path,
-            chapters: [],
-          ),
-        )
-        .toList();
+    final items =
+        ((await _extensionCallAsync(
+              'popularNovels($page, {showLatestNovels: false, filters: extension.filters})',
+              [],
+            )))
+            .map((e) => NovelItem.fromJson(e))
+            .map(
+              (e) => MManga(
+                name: e.name,
+                imageUrl: e.cover,
+                link: e.path,
+                chapters: [],
+              ),
+            )
+            .toList();
     return MPages(list: items, hasNextPage: true);
   }
 
   @override
   Future<MPages> getLatestUpdates(int page) async {
-    final items = ((await _extensionCallAsync(
-      'popularNovels($page, {showLatestNovels: true, filters: extension.filters})',
-      [],
-    )))
-        .map((e) => NovelItem.fromJson(e))
-        .map(
-          (e) => MManga(
-            name: e.name,
-            imageUrl: e.cover,
-            link: e.path,
-            chapters: [],
-          ),
-        )
-        .toList();
+    final items =
+        ((await _extensionCallAsync(
+              'popularNovels($page, {showLatestNovels: true, filters: extension.filters})',
+              [],
+            )))
+            .map((e) => NovelItem.fromJson(e))
+            .map(
+              (e) => MManga(
+                name: e.name,
+                imageUrl: e.cover,
+                link: e.path,
+                chapters: [],
+              ),
+            )
+            .toList();
     return MPages(list: items, hasNextPage: true);
   }
 
@@ -169,21 +171,21 @@ const extension = exports.default;
     );
     final chaps =
         ((chapters.chapters.isNotEmpty ? chapters.chapters : item.chapters)
-                ?.map(
-                  (e) => MChapter(
-                    name: e.name,
-                    url: e.path,
-                    dateUpload: e.releaseTime != null
-                        ? DateTime.tryParse(
-                              e.releaseTime!,
-                            )?.millisecondsSinceEpoch.toString() ??
-                            int.tryParse(e.releaseTime!)?.toString() ??
-                            DateTime.now().millisecondsSinceEpoch.toString()
-                        : DateTime.now().millisecondsSinceEpoch.toString(),
-                  ),
-                )
-                .toList() ??
-            []);
+            ?.map(
+              (e) => MChapter(
+                name: e.name,
+                url: e.path,
+                dateUpload: e.releaseTime != null
+                    ? DateTime.tryParse(
+                            e.releaseTime!,
+                          )?.millisecondsSinceEpoch.toString() ??
+                          int.tryParse(e.releaseTime!)?.toString() ??
+                          DateTime.now().millisecondsSinceEpoch.toString()
+                    : DateTime.now().millisecondsSinceEpoch.toString(),
+              ),
+            )
+            .toList() ??
+        []);
     return MManga(
       name: item.name,
       imageUrl: item.cover,
@@ -218,8 +220,7 @@ const extension = exports.default;
       await runtime.evaluateAsync(
         'jsonStringify(() => extension.parseChapter(`$url`))',
       ),
-    ))
-        .stringResult;
+    )).stringResult;
     return res;
   }
 
@@ -243,12 +244,12 @@ const extension = exports.default;
 
   @override
   List<SourcePreference> getSourcePreferences() {
-    return _extensionCall(
-      'pluginSettings',
-      [],
-    )
-        .map((e) => SourcePreference.fromJson(e)
-          ..sourceId = extractSourceId(source.id!))
+    return _extensionCall('pluginSettings', [])
+        .map(
+          (e) =>
+              SourcePreference.fromJson(e)
+                ..sourceId = extractSourceId(source.id!),
+        )
         .toList();
   }
 

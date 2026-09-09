@@ -97,9 +97,9 @@ class GogoCdnExtractor {
       } else if (array != null && array is List) {
         for (var it in array) {
           final label = it["label"].toString().toLowerCase().trim().replaceAll(
-                " ",
-                "",
-              );
+            " ",
+            "",
+          );
           final fileURL = it["file"].toString().trim();
           final videoHeaders = {"Referer": serverUrl};
           if (label == "auto") {

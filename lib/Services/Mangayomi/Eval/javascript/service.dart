@@ -160,8 +160,7 @@ var extention = new DefaultExtension();
       await runtime.evaluateAsync(
         'jsonStringify(() => extention.getHtmlContent(`$name`, `$url`))',
       ),
-    ))
-        .stringResult;
+    )).stringResult;
     return res;
   }
 
@@ -172,8 +171,7 @@ var extention = new DefaultExtension();
       await runtime.evaluateAsync(
         'jsonStringify(() => extention.cleanHtmlContent(`$html`))',
       ),
-    ))
-        .stringResult;
+    )).stringResult;
     return res;
   }
 
@@ -192,12 +190,12 @@ var extention = new DefaultExtension();
 
   @override
   List<SourcePreference> getSourcePreferences() {
-    return _extensionCall(
-      'getSourcePreferences()',
-      [],
-    )
-        .map((e) => SourcePreference.fromJson(e)
-          ..sourceId = extractSourceId(source.id!))
+    return _extensionCall('getSourcePreferences()', [])
+        .map(
+          (e) =>
+              SourcePreference.fromJson(e)
+                ..sourceId = extractSourceId(source.id!),
+        )
         .toList();
   }
 

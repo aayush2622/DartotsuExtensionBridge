@@ -19,8 +19,9 @@ class OkruExtractor {
   }) async {
     final response = await client.get(Uri.parse(url));
     final document = parse(response.body);
-    final videoString =
-        document.selectFirst('div[data-options]')?.attr("data-options");
+    final videoString = document
+        .selectFirst('div[data-options]')
+        ?.attr("data-options");
 
     if (videoString == null) {
       return [];

@@ -25,8 +25,9 @@ class YourUploadExtractor {
           .queryXPath('//script[contains(text(), "jwplayerOptions")]/text()')
           .attrs;
       if (baseData.isNotEmpty) {
-        final basicUrl =
-            baseData.first!.substringAfter("file: '").substringBefore("',");
+        final basicUrl = baseData.first!
+            .substringAfter("file: '")
+            .substringBefore("',");
         final quality = prefix + name;
         return [Video(basicUrl, quality, basicUrl, headers: newHeaders)];
       } else {

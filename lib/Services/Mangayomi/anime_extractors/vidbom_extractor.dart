@@ -17,8 +17,9 @@ class VidBomExtractor {
         response.body,
       ).queryXPath('//script[contains(text(), "sources")]/text()').attrs;
 
-      final data =
-          script.first!.substringAfter('sources: [').substringBefore('],');
+      final data = script.first!
+          .substringAfter('sources: [')
+          .substringBefore('],');
 
       return data.split('file:"').skip(1).map((source) {
         final src = source.substringBefore('"');
