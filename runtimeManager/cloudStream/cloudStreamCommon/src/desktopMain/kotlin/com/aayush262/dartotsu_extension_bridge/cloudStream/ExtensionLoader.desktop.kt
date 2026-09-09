@@ -158,7 +158,7 @@ actual object ExtensionLoader {
             } catch (_: Exception) {
             }
         }
-
+        extractorApis.clear()
         plugins.clear()
 
         Logger.log("Unloaded all plugins")

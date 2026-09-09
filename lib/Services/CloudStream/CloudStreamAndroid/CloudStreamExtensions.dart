@@ -173,9 +173,11 @@ class CloudStreamExtensions extends Extension {
     );
 
     final file = File(
-      path.join(dir!.path, path.basename(Uri.parse(s.pluginUrl!).path)),
+      path.join(
+        dir!.path,
+        "${s.name}${path.extension(Uri.parse(s.pluginUrl!).path)}",
+      ),
     );
-
     if (s.pluginUrl == null) {
       throw Exception("APK URL missing");
     }
@@ -220,8 +222,8 @@ class CloudStreamExtensions extends Extension {
 
     await for (final entity in dir!.list()) {
       if (entity is! File) continue;
-
-      if (path.basenameWithoutExtension(entity.path) == s.internalName) {
+      var baseName = path.basenameWithoutExtension(entity.path);
+      if (baseName.toLowerCase() == s.name?.toLowerCase()) {
         pluginFile = entity;
         break;
       }
@@ -297,11 +299,13 @@ class CloudStreamExtensions extends Extension {
   void detectUpdates(List<Source> available, ItemType type) {
     final installed = state(type).installed.value.cast<CSource>();
 
-    final repoMap = {for (var s in available.cast<CSource>()) s.id: s};
+    final repoMap = {
+      for (var s in available.cast<CSource>()) s.id?.toLowerCase(): s,
+    };
 
     for (var i = 0; i < installed.length; i++) {
       final inst = installed[i];
-      final repo = repoMap[inst.id];
+      final repo = repoMap[inst.id?.toLowerCase()];
 
       if (repo == null) continue;
 
@@ -330,7 +334,7 @@ class CloudStreamExtensions extends Extension {
           final json = e as Map<String, dynamic>;
 
           return CSource(
-            id: (json["internalName"] ?? json["name"]).toString().toLowerCase(),
+            id: (json["name"] ?? json["internalName"]).toString().toLowerCase(),
             name: json["name"],
             baseUrl: json["url"],
             lang: json["language"],

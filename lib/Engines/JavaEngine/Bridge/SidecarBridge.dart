@@ -123,8 +123,8 @@ class SidecarBridge implements JavaBridge {
       }
 
       return decoded as T;
-    } catch (e) {
-      Logger.log('[SIDECAR] Call failed: $e', show: true);
+    } catch (e, c) {
+      Logger.log('[SIDECAR] Call failed: $e\n$c', show: true);
 
       if (throwError) {
         rethrow;
