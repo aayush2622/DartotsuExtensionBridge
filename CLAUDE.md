@@ -76,6 +76,20 @@ used as the factory key.
 Platform gating is in `ExtensionManager._extensionManagers` via `Platform.isAndroid` /
 `isWindows||isLinux||isMacOS`.
 
+### `Services/Shared/` — cross-backend helpers
+
+- `PackagedSource.dart` — `abstract PackagedSource extends Source` holding the
+  `pkgName` / `apkName` pair common to every APK/JAR-delivered source. `ASource`,
+  `AdSource`, `TSource`, `TdSource`, `ISource`, `IdSource` all extend it.
+- `TachiyomiRepo.dart` — for backends that read a Tachiyomi `index.min.json`
+  (Aniyomi, IReader, Tsundoku — Android + desktop):
+  `tachiyomiIndexUrl`, `tachiyomiFallbackRepoUrl` (jsDelivr mirror),
+  `parseTachiyomiRepoIndex<T>({prefixes, factory, …})` (compute-safe), and
+  `detectTachiyomiUpdates(ext, available, type)`. Each backend's
+  `_parseExtensions` / `detectUpdates` is now a thin delegate.
+  CloudStream and IReader-desktop use their own repo formats and don't go
+  through this.
+
 ### Mangayomi sub-tree (`lib/Services/Mangayomi/`)
 
 - `Eval/dart/` — runs Dart-based sources through the **`d4rt`** interpreter
@@ -110,12 +124,17 @@ Platform gating is in `ExtensionManager._extensionManagers` via `Platform.isAndr
 - Async init is guarded by `Completer`s and `InitState`; call `ensureInitialized()` / `runIfReady()` rather than assuming readiness.
 - Persist through `getVal`/`setVal`, never touch Isar directly.
 - `*.g.dart` and `Services/**/Generated/**` (jnigen) are generated — don't hand-edit.
+- `_parseExtensions` static methods are passed to `compute()` — keep them (and
+  anything they call) isolate-safe: no `DartotsuExtensionBridge.context`, so log
+  with `debugPrint`, not `Logger`.
 
-## Build / codegen
+## Build / codegen / test
 
 ```
 dart run build_runner build --delete-conflicting-outputs   # KvStore.g.dart
 dart run jnigen --config jnigen_aniyomi.yaml                # + jnigen_cloud_stream.yaml, jnigen_ireader.yaml
+flutter test                                                # test/ — pure-Dart model + helper unit tests
+dart analyze lib test
 ```
 
 `analysis_options.yaml` uses `flutter_lints`.

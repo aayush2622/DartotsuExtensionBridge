@@ -143,7 +143,6 @@ class QuarkUcExtractor {
 
   Future<void> getShareToken(Map<String, String> shareData) async {
     if (!shareTokenCache.containsKey(shareData['shareId'])) {
-      shareTokenCache.remove(shareData['shareId']);
       final shareToken = await api('share/sharepage/token?$pr', {
         'pwd_id': shareData['shareId'],
         'passcode': shareData['sharePwd'] ?? '',
