@@ -428,34 +428,8 @@ class TsundokuExtensions extends Extension {
   }
 
   @override
-  void detectUpdates(List<Source> available, ItemType type) {
-    final installed = state(type).installed.value.cast<TSource>();
-
-    final repoMap = {for (var s in available.cast<TSource>()) s.id: s};
-
-    bool changed = false;
-
-    for (var i = 0; i < installed.length; i++) {
-      final inst = installed[i];
-      final repo = repoMap[inst.id];
-
-      if (repo == null) continue;
-
-      if (compareVersions(repo.version ?? "0", inst.version ?? "0") > 0) {
-        installed[i] = inst
-          ..hasUpdate = true
-          ..apkName = repo.apkName
-          ..iconUrl = repo.iconUrl
-          ..versionLast = repo.version;
-
-        changed = true;
-      }
-    }
-
-    if (changed) {
-      state(type).installed.value = List.unmodifiable(installed);
-    }
-  }
+  void detectUpdates(List<Source> available, ItemType type) =>
+      detectTachiyomiUpdates(this, available, type);
 
   @override
   Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {

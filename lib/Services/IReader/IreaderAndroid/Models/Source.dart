@@ -1,10 +1,9 @@
 import '../../../../Models/Source.dart';
+import '../../../Shared/PackagedSource.dart';
 
-class ISource extends Source {
-  String? apkName;
+class ISource extends PackagedSource {
   String? apkUrl;
   String? apkPath;
-  String? pkgName;
   bool? isShared;
 
   ISource({
@@ -19,10 +18,10 @@ class ISource extends Source {
     super.itemType,
     super.repo,
     super.hasUpdate,
-    this.apkName,
+    super.apkName,
     this.apkUrl,
     this.apkPath,
-    this.pkgName,
+    super.pkgName,
     this.isShared,
   });
 

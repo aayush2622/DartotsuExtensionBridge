@@ -1,8 +1,7 @@
 import '../../../../Models/Source.dart';
+import '../../../Shared/PackagedSource.dart';
 
-class AdSource extends Source {
-  String? pkgName;
-  String? apkName;
+class AdSource extends PackagedSource {
   String? apkPath;
   AdSource({
     super.id,
@@ -16,8 +15,8 @@ class AdSource extends Source {
     super.itemType,
     super.repo,
     super.hasUpdate,
-    this.pkgName,
-    this.apkName,
+    super.pkgName,
+    super.apkName,
     this.apkPath,
   });
   factory AdSource.fromJson(Map<String, dynamic> json) {
