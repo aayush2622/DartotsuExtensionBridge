@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../../Extensions/Extensions.dart';
 import '../../Models/Source.dart';
+import 'PackagedSource.dart';
 
 /// Helpers shared by every backend that consumes a Tachiyomi-style
 /// `index.min.json` repository (Aniyomi, IReader, Tsundoku — both the Android
@@ -146,5 +148,45 @@ List<T> parseTachiyomiRepoIndex<T extends Source>({
     // the worker isolate, so log via debugPrint rather than Logger.
     debugPrint('Failed to parse Tachiyomi repo index from $repoUrl: $e');
     return const [];
+  }
+}
+
+/// Flags installed [PackagedSource]s that have a newer version in [available],
+/// copying the fresh `apkName` / `iconUrl` / `version` across and bumping the
+/// [Extension]'s installed list so listeners refresh.
+///
+/// Shared by every Tachiyomi-style backend; the per-class `detectUpdates`
+/// override is now a one-line delegate to this.
+void detectTachiyomiUpdates(
+  Extension ext,
+  List<Source> available,
+  ItemType type,
+) {
+  final repoById = <String?, PackagedSource>{
+    for (final s in available)
+      if (s is PackagedSource) s.id: s,
+  };
+
+  final installed = ext.state(type).installed.value;
+  var changed = false;
+
+  for (final inst in installed) {
+    if (inst is! PackagedSource) continue;
+
+    final repo = repoById[inst.id];
+    if (repo == null) continue;
+
+    if (ext.compareVersions(repo.version ?? '0', inst.version ?? '0') > 0) {
+      inst
+        ..hasUpdate = true
+        ..apkName = repo.apkName
+        ..iconUrl = repo.iconUrl
+        ..versionLast = repo.version;
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    ext.state(type).installed.value = List.unmodifiable(installed);
   }
 }

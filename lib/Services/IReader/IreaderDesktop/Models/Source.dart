@@ -1,10 +1,9 @@
 import '../../../../Models/Source.dart';
+import '../../../Shared/PackagedSource.dart';
 
-class IdSource extends Source {
-  String? apkName;
+class IdSource extends PackagedSource {
   String? apkUrl;
   String? apkPath;
-  String? pkgName;
   IdSource({
     super.id,
     super.name,
@@ -17,10 +16,10 @@ class IdSource extends Source {
     super.itemType,
     super.repo,
     super.hasUpdate,
-    this.apkName,
+    super.apkName,
     this.apkUrl,
     this.apkPath,
-    this.pkgName,
+    super.pkgName,
   });
 
   factory IdSource.fromJson(Map<String, dynamic> json) {

@@ -1,8 +1,7 @@
 import '../../../../Models/Source.dart';
+import '../../../Shared/PackagedSource.dart';
 
-class TdSource extends Source {
-  String? pkgName;
-  String? apkName;
+class TdSource extends PackagedSource {
   String? apkPath;
   TdSource({
     super.id,
@@ -16,8 +15,8 @@ class TdSource extends Source {
     super.itemType,
     super.repo,
     super.hasUpdate,
-    this.pkgName,
-    this.apkName,
+    super.pkgName,
+    super.apkName,
     this.apkPath,
   });
   factory TdSource.fromJson(Map<String, dynamic> json) {
