@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.extractorApis
 import java.io.File
 import java.io.IOException
 import kotlin.jvm.java
@@ -147,7 +148,7 @@ actual object ExtensionLoader {
             } catch (_: Exception) {
             }
         }
-
+        extractorApis.clear()
         plugins.clear()
 
         Logger.log("Unloaded all plugins")

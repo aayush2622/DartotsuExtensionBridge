@@ -9,31 +9,51 @@ package xyz.nulldev.androidcompat.io.sharedprefs
 
 import android.content.SharedPreferences
 import com.aayush262.dartotsu_extension_bridge.CommonDesktopApi
-import com.aayush262.dartotsu_extension_bridge.logger.LogLevel
-import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.russhwolf.settings.ExperimentalSettingsApi
 import com.russhwolf.settings.PropertiesSettings
-import com.russhwolf.settings.Settings
 import com.russhwolf.settings.serialization.decodeValue
 import com.russhwolf.settings.serialization.decodeValueOrNull
 import com.russhwolf.settings.serialization.encodeValue
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.SetSerializer
 import kotlinx.serialization.builtins.serializer
 import xyz.nulldev.androidcompat.util.SafePath
 import java.util.Properties
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.io.path.Path
+import kotlin.io.path.copyTo
 import kotlin.io.path.createParentDirectories
+import kotlin.io.path.deleteExisting
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.exists
 import kotlin.io.path.inputStream
+import kotlin.io.path.name
 import kotlin.io.path.outputStream
 
 @OptIn(ExperimentalSerializationApi::class, ExperimentalSettingsApi::class)
 class JavaSharedPreferences(
-    key: String,
+    private val key: String,
 ) : SharedPreferences {
+
+
+    sealed class Action {
+        data class Add(
+            val key: String,
+            val value: Any,
+        ) : Action()
+
+        data class Remove(
+            val key: String,
+        ) : Action()
+
+        data object Clear : Action()
+    }
 
     private val file =
         Path(
@@ -49,27 +69,11 @@ class JavaSharedPreferences(
                     file.inputStream().use { properties.loadFromXML(it) }
                 }
             } catch (e: Exception) {
-                Logger.log("Error loading settings in $key: ${e.message}", LogLevel.ERROR)
+                // logger.error(e) { "Error loading settings from $key" }
             }
         }
-    private val preferences =
-        PropertiesSettings(
-            properties,
-            onModify = { properties ->
-                try {
-                    if (properties.isEmpty) {
-                        file.deleteIfExists()
-                    } else {
-                        file.createParentDirectories()
-                        file.outputStream().use {
-                            properties.storeToXML(it, null)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Logger.log("Error saving settings in $key: ${e.message}", LogLevel.ERROR)
-                }
-            },
-        )
+    private val preferences = PropertiesSettings(properties)
+
     private val listeners = mutableMapOf<SharedPreferences.OnSharedPreferenceChangeListener, (String) -> Unit>()
 
     // TODO: 2021-05-29 Need to find a way to get this working with all pref types
@@ -122,31 +126,144 @@ class JavaSharedPreferences(
 
     override fun contains(key: String): Boolean = key in preferences.keys
 
-    override fun edit(): SharedPreferences.Editor =
-        Editor(preferences) { key ->
-            listeners.forEach { (_, listener) ->
-                listener(key)
+    private fun notify(key: String) {
+        listeners.forEach { (_, listener) ->
+            listener(key)
+        }
+    }
+
+    private fun saveActions(actions: List<Action>) =
+        synchronized(properties) {
+            actions.forEach {
+                @Suppress("UNCHECKED_CAST")
+                when (it) {
+                    is Action.Add -> {
+                        when (val value = it.value) {
+                            is Set<*> -> preferences.encodeValue(SetSerializer(String.serializer()), it.key, value as Set<String>)
+                            is String -> preferences.putString(it.key, value)
+                            is Int -> preferences.putInt(it.key, value)
+                            is Long -> preferences.putLong(it.key, value)
+                            is Float -> preferences.putFloat(it.key, value)
+                            is Double -> preferences.putDouble(it.key, value)
+                            is Boolean -> preferences.putBoolean(it.key, value)
+                        }
+                        notify(it.key)
+                    }
+
+                    is Action.Remove -> {
+                        preferences.remove(it.key)
+                        /*
+                         Set<String> are stored like
+                         key.0 = value1
+                         key.1 = value2
+                         key.size = 2
+                         */
+                        preferences.keys.forEach { key ->
+                            if (key.startsWith(it.key + ".")) {
+                                preferences.remove(key)
+                            }
+                        }
+
+                        notify(it.key)
+                    }
+
+                    Action.Clear -> {
+                        preferences.clear()
+                    }
+                }
             }
         }
 
+    private fun getSnapshot(): Properties =
+        synchronized(properties) {
+            Properties().apply { putAll(properties) }
+        }
+
+    @OptIn(ExperimentalAtomicApi::class)
+    private var dirty = AtomicBoolean(false)
+
+    @OptIn(ExperimentalAtomicApi::class)
+    private var pendingAsyncSave = AtomicBoolean(false)
+
+    private fun save(properties: Properties): Boolean =
+        synchronized(file) {
+            try {
+                if (properties.isEmpty) {
+                    file.deleteIfExists()
+                } else {
+                    file.createParentDirectories()
+
+                    val tempFile = file.resolveSibling("${file.name}.tmp")
+
+                    tempFile.outputStream().use {
+                        properties.storeToXML(it, null)
+                    }
+
+                    file.deleteIfExists()
+                    tempFile.copyTo(file)
+                    tempFile.deleteExisting()
+                }
+
+                return true
+            } catch (e: Exception) {
+                // logger.error(e) { "Error saving settings $key" }
+                return false
+            }
+        }
+
+    private fun save(actions: List<Action>): Boolean {
+        val snapshot =
+            synchronized(properties) {
+                saveActions(actions)
+                getSnapshot()
+            }
+
+        return save(snapshot)
+    }
+
+    private fun save(): Boolean = save(getSnapshot())
+
+    @OptIn(DelicateCoroutinesApi::class, ExperimentalAtomicApi::class)
+    private fun startAsyncSaver() {
+        if (!pendingAsyncSave.compareAndSet(false, true)) {
+            return
+        }
+
+        GlobalScope.launch(Dispatchers.IO) {
+            while (true) {
+                dirty.store(false)
+
+                save(getSnapshot())
+
+                if (!dirty.load()) {
+                    pendingAsyncSave.store(false)
+
+                    if (dirty.load() && pendingAsyncSave.compareAndSet(false, true)) {
+                        continue
+                    }
+
+                    break
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalAtomicApi::class)
+    private fun saveAsync(actions: List<Action>) {
+        saveActions(actions)
+
+        dirty.store(true)
+
+        startAsyncSaver()
+    }
+
+    override fun edit(): SharedPreferences.Editor = Editor(::save, ::saveAsync)
+
     class Editor(
-        private val preferences: Settings,
-        private val notify: (String) -> Unit,
+        private val save: (actions: List<Action>) -> Boolean,
+        private val saveAsync: (actions: List<Action>) -> Unit,
     ) : SharedPreferences.Editor {
         private val actions = mutableListOf<Action>()
-
-        private sealed class Action {
-            data class Add(
-                val key: String,
-                val value: Any,
-            ) : Action()
-
-            data class Remove(
-                val key: String,
-            ) : Action()
-
-            data object Clear : Action()
-        }
 
         override fun putString(
             key: String,
@@ -216,54 +333,10 @@ class JavaSharedPreferences(
             return this
         }
 
-        override fun commit(): Boolean {
-            addToPreferences()
-            return true
-        }
+        override fun commit(): Boolean = save(actions)
 
         override fun apply() {
-            addToPreferences()
-        }
-
-        private fun addToPreferences() {
-            actions.forEach {
-                @Suppress("UNCHECKED_CAST")
-                when (it) {
-                    is Action.Add -> {
-                        when (val value = it.value) {
-                            is Set<*> -> preferences.encodeValue(SetSerializer(String.serializer()), it.key, value as Set<String>)
-                            is String -> preferences.putString(it.key, value)
-                            is Int -> preferences.putInt(it.key, value)
-                            is Long -> preferences.putLong(it.key, value)
-                            is Float -> preferences.putFloat(it.key, value)
-                            is Double -> preferences.putDouble(it.key, value)
-                            is Boolean -> preferences.putBoolean(it.key, value)
-                        }
-                        notify(it.key)
-                    }
-
-                    is Action.Remove -> {
-                        preferences.remove(it.key)
-                        /*
-                         Set<String> are stored like
-                         key.0 = value1
-                         key.1 = value2
-                         key.size = 2
-                         */
-                        preferences.keys.forEach { key ->
-                            if (key.startsWith(it.key + ".")) {
-                                preferences.remove(key)
-                            }
-                        }
-
-                        notify(it.key)
-                    }
-
-                    Action.Clear -> {
-                        preferences.clear()
-                    }
-                }
-            }
+            saveAsync(actions)
         }
     }
 
