@@ -57,11 +57,13 @@ class VoeExtractor {
       final scriptContent = script.text;
       String playlistUrl = "";
       if (scriptContent.contains('sources')) {
-        final link =
-            scriptContent.substringAfter("hls': '").substringBefore("'");
+        final link = scriptContent
+            .substringAfter("hls': '")
+            .substringBefore("'");
 
-        playlistUrl =
-            linkRegex.hasMatch(link) ? link : utf8.decode(base64.decode(link));
+        playlistUrl = linkRegex.hasMatch(link)
+            ? link
+            : utf8.decode(base64.decode(link));
       } else if (scriptContent.contains('wc0') || alternativeScript != null) {
         final base64Match = base64Regex.firstMatch(scriptContent)!.group(0)!;
         final decoded = utf8.decode(base64.decode(base64Match));

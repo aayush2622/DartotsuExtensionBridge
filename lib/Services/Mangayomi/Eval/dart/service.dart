@@ -35,8 +35,9 @@ class DartExtensionService implements ExtensionService {
       headers = _executeLib().invoke('headers', []) as Map<String, String>;
     } catch (_) {
       try {
-        headers = _executeLib().invoke('getHeader', [source.baseUrl!])
-            as Map<String, String>;
+        headers =
+            _executeLib().invoke('getHeader', [source.baseUrl!])
+                as Map<String, String>;
       } catch (_) {}
     }
     return headers;

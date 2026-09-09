@@ -24,15 +24,16 @@ class Video {
       headers: (json['headers'] as Map?)?.cast<String, String>(),
       subtitles: json['subtitles'] != null
           ? (json['subtitles'] as List)
-              .map((e) => Track.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .map((e) => Track.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : [],
       audios: json['audios'] != null
           ? (json['audios'] as List)
-              .map((e) => Track.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .map((e) => Track.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : [],
-      timeStamps: (json['timeStamps'] as List?)
+      timeStamps:
+          (json['timeStamps'] as List?)
               ?.map((e) => TimeStamp.fromJson(Map<String, dynamic>.from(e)))
               .toList() ??
           [],
@@ -40,14 +41,14 @@ class Video {
   }
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'url': url,
-        'quality': quality,
-        'headers': headers,
-        'subtitles': subtitles?.map((e) => e.toJson()).toList(),
-        'audios': audios?.map((e) => e.toJson()).toList(),
-        'timeStamps': timeStamps?.map((e) => e.toJson()).toList(),
-      };
+    'title': title,
+    'url': url,
+    'quality': quality,
+    'headers': headers,
+    'subtitles': subtitles?.map((e) => e.toJson()).toList(),
+    'audios': audios?.map((e) => e.toJson()).toList(),
+    'timeStamps': timeStamps?.map((e) => e.toJson()).toList(),
+  };
 }
 
 class TimeStamp {
@@ -55,11 +56,7 @@ class TimeStamp {
   double startTime;
   double endTime;
 
-  TimeStamp({
-    this.name,
-    required this.startTime,
-    required this.endTime,
-  });
+  TimeStamp({this.name, required this.startTime, required this.endTime});
 
   factory TimeStamp.fromJson(Map<String, dynamic> json) {
     return TimeStamp(
@@ -70,10 +67,10 @@ class TimeStamp {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'startTime': startTime,
-        'endTime': endTime,
-      };
+    'name': name,
+    'startTime': startTime,
+    'endTime': endTime,
+  };
 }
 
 class Track {

@@ -40,7 +40,8 @@ class FilemoonExtractor {
         return [];
       }
       List<Track> subtitleTracks = [];
-      final subUrl = Uri.parse(url).queryParameters["sub.info"] ??
+      final subUrl =
+          Uri.parse(url).queryParameters["sub.info"] ??
           unpacked.substringAfter("""fetch('", """).substringBefore("""').""");
       if (subUrl.isNotEmpty) {
         try {

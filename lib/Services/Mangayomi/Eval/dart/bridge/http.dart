@@ -14,7 +14,7 @@ class HttpBridge {
         return MClient.init(
           reqcopyWith: positionalArgs.length > 1
               ? (jsonDecode(positionalArgs[1] as String) as Map)
-                  .cast<String, dynamic>()
+                    .cast<String, dynamic>()
               : null,
         );
       },

@@ -22,7 +22,7 @@ class DEpisode {
   factory DEpisode.fromJson(Map<String, dynamic> json) {
     double? episodeNum =
         double.tryParse(json['episodeNumber']?.toString() ?? '') ??
-            double.tryParse(json['episode_number']?.toString() ?? '');
+        double.tryParse(json['episode_number']?.toString() ?? '');
 
     String episodeStr;
     if (episodeNum != null) {
@@ -46,13 +46,13 @@ class DEpisode {
   }
 
   Map<String, dynamic> toJson() => {
-        'url': url,
-        'name': name,
-        'dateUpload': dateUpload,
-        'scanlator': scanlator,
-        'thumbnail': thumbnail,
-        'description': description,
-        'filler': filler,
-        'episodeNumber': episodeNumber,
-      };
+    'url': url,
+    'name': name,
+    'dateUpload': dateUpload,
+    'scanlator': scanlator,
+    'thumbnail': thumbnail,
+    'description': description,
+    'filler': filler,
+    'episodeNumber': episodeNumber,
+  };
 }

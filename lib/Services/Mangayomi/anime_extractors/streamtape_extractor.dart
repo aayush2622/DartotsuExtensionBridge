@@ -15,8 +15,9 @@ class StreamTapeExtractor {
     );
     try {
       const baseUrl = "https://streamtape.com/e/";
-      final newUrl =
-          !url.startsWith(baseUrl) ? "$baseUrl${url.split("/")[4]}" : url;
+      final newUrl = !url.startsWith(baseUrl)
+          ? "$baseUrl${url.split("/")[4]}"
+          : url;
 
       final response = await client.get(Uri.parse(newUrl));
       final document = parse(response.body);
