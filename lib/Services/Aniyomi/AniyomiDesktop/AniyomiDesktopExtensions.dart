@@ -458,9 +458,5 @@ class AniyomiDesktopPlugin extends DownloadablePlugin {
   String get name => "aniyomiDesktop";
 
   @override
-  String get remoteUrl =>
-      "https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/runtimeManager/builds/aniyomiDesktop/aniyomiDesktop-plugin.json";
-
-  @override
   String get fileName => "aniyomiDesktop-plugin.jar";
 }
