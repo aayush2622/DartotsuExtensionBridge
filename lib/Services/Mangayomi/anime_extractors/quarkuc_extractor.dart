@@ -22,7 +22,6 @@ class QuarkUcExtractor {
   Map<String, String> saveFileIdCaches = {};
   String? saveDirId;
   final String saveDirName = 'TV';
-  String _lastCookie = "";
 
   Future<void> initCloudDrive(
     String cookie,
@@ -36,7 +35,6 @@ class QuarkUcExtractor {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) quark-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch";
       refererUrl = "https://pan.quark.cn/";
       host = "https://quark.cn";
-      _lastCookie = "https://quarkcookie.last";
     } else {
       apiUrl = "https://pc-api.uc.cn/1/clouddrive/";
       pr = "pr=UCBrowser&fr=pc";
@@ -44,11 +42,9 @@ class QuarkUcExtractor {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) uc-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch";
       refererUrl = "https://drive.uc.cn/";
       host = "https://uc.cn";
-      _lastCookie = "https://uccookie.last";
     }
     if (cookie.isNotEmpty && getLastCookie() != cookie) {
       //MClient.setCookie(host, ua, null, cookie: cookie);
-      //MClient.setCookie(_lastCookie, ua, null, cookie: cookie);
     }
   }
 
