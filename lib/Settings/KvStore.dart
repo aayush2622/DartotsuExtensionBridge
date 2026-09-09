@@ -140,10 +140,8 @@ T? getVal<T>(String key, {T? defaultValue}) {
   }
 }
 
-void setVal(String key, dynamic value) async {
-  try {
-    unawaited(KvStore.set(key, value));
-  } catch (e) {
+void setVal(String key, dynamic value) {
+  KvStore.set(key, value).catchError((Object e) {
     Logger.log('Failed to set value for key "$key": $e');
-  }
+  });
 }

@@ -20,7 +20,7 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
 
   BridgeSourceMethods(this.source, this.bridge);
 
-  bool get isAnime => source.itemType?.index == 1;
+  bool get isAnime => source.itemType == ItemType.anime;
 
   Map<String, dynamic> _mediaToJson(DMedia media) => {
     'title': media.title,
