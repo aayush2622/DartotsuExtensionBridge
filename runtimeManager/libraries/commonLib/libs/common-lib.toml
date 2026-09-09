@@ -1,9 +1,9 @@
 [versions]
 coroutines = "1.11.0"
-okhttp = "5.4.0"
-gson = "2.13.2"
-jsoup = "1.22.1"
-okio = "3.17.0"
+okhttp = "5.5.0"
+gson = "2.14.0"
+jsoup = "1.23.2"
+okio = "3.18.2"
 [libraries]
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 

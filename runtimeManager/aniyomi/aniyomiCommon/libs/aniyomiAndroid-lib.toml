@@ -1,10 +1,10 @@
 [versions]
 injekt = "1.16.1"
-androidx-core = "1.16.0"
+androidx-core = "1.19.0"
 compose-runtime = "1.8.3"
 preference = "1.2.1"
 quickjs = "0.9.2"
-commons-text = "1.11.0"
+commons-text = "1.15.0"
 rxandroid = "1.2.1"
 
 [libraries]
