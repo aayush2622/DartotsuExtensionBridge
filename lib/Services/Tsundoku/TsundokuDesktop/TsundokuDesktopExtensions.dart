@@ -15,6 +15,7 @@ import '../../../Logger.dart';
 import '../../../NetworkClient.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
+import '../../Shared/TachiyomiRepo.dart';
 import '../TsundokuSourceMethods.dart';
 import 'Models/Source.dart';
 
@@ -232,7 +233,7 @@ class TsundokuDesktopExtensions extends Extension {
       } catch (e) {
         Logger.log("Primary repo failed: $indexUrl → $e");
 
-        final fallback = fallbackRepoUrl(normalizedUrl);
+        final fallback = tachiyomiFallbackRepoUrl(normalizedUrl);
         if (fallback == null) {
           throw Exception("Invalid repo & no fallback available");
         }
@@ -285,72 +286,24 @@ class TsundokuDesktopExtensions extends Extension {
   ) {
     final (body, repoUrl, targetType) = args;
 
-    try {
-      final decoded = jsonDecode(body);
-      if (decoded is! List) return const [];
-
-      final baseIconUrl = repoUrl.endsWith('/index.min.json')
-          ? repoUrl.substring(0, repoUrl.length - '/index.min.json'.length)
-          : repoUrl;
-
-      final sources = <TdSource>[];
-
-      for (final item in decoded) {
-        final map = item as Map<String, dynamic>;
-        final name = map['name'] as String? ?? '';
-
-        final detectedType = name.startsWith('Tsundoku: ')
-            ? ItemType.novel
-            : null;
-
-        if (detectedType != targetType) continue;
-
-        sources.add(
-          TdSource(
-            id:
-                map["sources"] != null &&
-                    map["sources"] is List &&
-                    (map["sources"] as List).isNotEmpty
-                ? (map["sources"] as List).first['id']?.toString() ?? ''
-                : '',
-            name: name.substring(10),
-            pkgName: map['pkg'],
-            apkName: map['apk'],
-            lang: map['lang'],
-            version: map['version'],
-            isNsfw: map['nsfw'] == 1,
-            itemType: detectedType,
-            repo: repoUrl,
-            iconUrl: "$baseIconUrl/icon/${map['pkg']}.png",
-          ),
-        );
-      }
-      return List.unmodifiable(sources);
-    } catch (e) {
-      debugPrint("Failed to parse extensions from $repoUrl: $e");
-      return const [];
-    }
-  }
-
-  String? fallbackRepoUrl(String repoUrl) {
-    try {
-      var stripped = repoUrl
-          .replaceFirst(RegExp(r'^https?://'), '')
-          .replaceAll(RegExp(r'/+$'), '')
-          .replaceAll('/index.min.json', '');
-
-      final parts = stripped.split('/');
-
-      if (parts.length < 3) return null;
-
-      final owner = parts[1];
-      final repo = parts[2];
-      final branch = parts.length > 3 ? parts[3] : 'main';
-
-      return "https://gcore.jsdelivr.net/gh/$owner/$repo@$branch";
-    } catch (_) {
-      return null;
-    }
+    return parseTachiyomiRepoIndex<TdSource>(
+      body: body,
+      repoUrl: repoUrl,
+      targetType: targetType,
+      prefixes: const {'Tsundoku: ': ItemType.novel},
+      factory: (e) => TdSource(
+        id: e.id,
+        name: e.name,
+        pkgName: e.pkgName,
+        apkName: e.apkName,
+        lang: e.lang,
+        version: e.version,
+        isNsfw: e.isNsfw,
+        itemType: e.itemType,
+        repo: e.repo,
+        iconUrl: e.iconUrl,
+      ),
+    );
   }
 
   @override
@@ -409,7 +362,7 @@ class TsundokuDesktopExtensions extends Extension {
     } catch (e) {
       Logger.log("Primary repo failed: $indexUrl → $e");
 
-      final fallback = fallbackRepoUrl(repo.url);
+      final fallback = tachiyomiFallbackRepoUrl(repo.url);
       if (fallback == null) return const [];
 
       final fallbackUrl = "$fallback/index.min.json";
