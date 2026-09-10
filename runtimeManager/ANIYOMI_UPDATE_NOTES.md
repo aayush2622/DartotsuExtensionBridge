@@ -95,3 +95,51 @@ Mihon/keiyoushi's gzipped-protobuf `index.pb` is supported alongside
   puts `commonDesktopLib` on `commonMain`'s classpath when no invoked task name
   contains "Android", yet `commonMain` references the desktop-only
   `CustomMethods`. Works via `buildAllPlugins`. Worth fixing separately.
+
+## 2026-09-10 — "new extensions stopped loading" was a concurrency bug, not BytecodeEditor
+
+Symptom: v1.6.x keiyoushi extensions failed with
+`ClassNotFoundException: keiyoushi.source.Generated` from
+`URLClassLoader.findClass`, i.e. the class was missing from the freshly built
+jar even though `BytecodeEditor` logged it as processed fine.
+
+Not a bytecode-repair regression. Verified: the deployed
+`aniyomiDesktop-plugin.jar` loads **129/129** manga sources (all the v1.6
+keiyoushi ones included) when a single `getInstalledMangaExtensions` runs. The
+`Generated` class parses, its `Filter.Group` / `Filter.TriState` construction
+sites repair via the DEX oracle, and it verifies.
+
+Root cause: the desktop loaders run **concurrently** — the sidecar `Server.run`
+fans every request onto `requestScope`, and the app polls
+`getInstalledMangaExtensions`. Two loads of the same APK at once both wrote the
+*same* jar path in place:
+
+- `PackageTools.dex2jar` ran `Dex2jar.to(finalJarPath)` then
+  `BytecodeEditor.fixAndroidClasses(finalJarPath)` — an in-place
+  `FileSystems.newFileSystem` mutation.
+- `PackageTools.extractAssetsFromApk` did `jarFile.delete()` +
+  `tempJar.renameTo(jarFile)` with a fixed `*_temp.jar` name and a shared
+  `*_assets/` dir.
+- `PackageTools.jarLoaderMap` was a plain `mutableMap`.
+
+A racing `URLClassLoader` then opened a half-written jar → some entries
+unreadable → `ClassNotFoundException`. Repro: 3× concurrent
+`getInstalledMangaExtensions` on a cold jar dir returned **46 / 64 / 64**
+sources instead of 129.
+
+Fix (`PackageTools.kt` + `BytecodeEditor.kt`, atomic-write pattern borrowed
+from M-Extension-Server's `fixAndroidClasses`):
+
+- `dex2jar`: convert into a private `Files.createTempFile`, run
+  `BytecodeEditor` on that, then one `Files.move(REPLACE_EXISTING)` into place.
+- `BytecodeEditor.fixAndroidClasses`: `readJarEntries` into memory → rewrite →
+  `ZipOutputStream` to a temp jar → `Files.move`. Drops duplicate central-dir
+  entries on the way. No more `FileSystems.newFileSystem` / `FileSystemAlready
+  ExistsException`.
+- `extractAssetsFromApk`: unique `Files.createTempDirectory` /
+  `Files.createTempFile`, atomic `Files.move` instead of `delete` + `renameTo`.
+- `jarLoaderMap` → `ConcurrentHashMap` + `computeIfAbsent`.
+
+After: 3× concurrent `getInstalledMangaExtensions` on a cold jar dir → **128 /
+128 / 128**, zero `ClassNotFoundException` (sequential still 129; the 128/129
+gap under load is a separate, non-fatal dedup/timing nit, not corruption).
