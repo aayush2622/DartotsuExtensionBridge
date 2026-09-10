@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as path;
 
 import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
 import '../../../Engines/JavaEngine/Bridge/SidecarBridge.dart';
@@ -15,11 +13,13 @@ import '../../../Logger.dart';
 import '../../../NetworkClient.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
+import '../../Shared/TachiyomiJniDesktopExtension.dart';
 import '../../Shared/TachiyomiRepo.dart';
 import '../AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
 
-class AniyomiDesktopExtensions extends Extension with TachiyomiRepoBackend {
+class AniyomiDesktopExtensions extends Extension
+    with TachiyomiRepoBackend, TachiyomiJniDesktopExtension {
   @override
   String get id => 'aniyomi_desktop';
 
@@ -45,9 +45,13 @@ class AniyomiDesktopExtensions extends Extension with TachiyomiRepoBackend {
   final JavaBridge jni = SidecarBridge();
 
   final _client = MClient.init();
+  final _context = DartotsuExtensionBridge.context;
 
   @override
   http.Client get repoClient => _client;
+
+  @override
+  String get jniDataDir => 'aniyomi';
 
   @override
   List<Source> Function((Uint8List body, String repoUrl, ItemType type))
@@ -55,7 +59,6 @@ class AniyomiDesktopExtensions extends Extension with TachiyomiRepoBackend {
 
   @override
   bool get refreshExtensionCountOnFetch => true;
-  final _context = DartotsuExtensionBridge.context;
 
   @override
   Future<bool> onInitialize() async {
@@ -143,91 +146,6 @@ class AniyomiDesktopExtensions extends Extension with TachiyomiRepoBackend {
       return [];
     }
   }
-
-  @override
-  Future<void> installSource(Source source) async {
-    final s = source as AdSource;
-    final type = source.itemType!;
-
-    final downloadUrl = s.apkUrl;
-    if (downloadUrl == null || downloadUrl.isEmpty) {
-      throw Exception("APK URL missing");
-    }
-
-    final fileName =
-        s.apkName ?? s.pkgName ?? path.basename(Uri.parse(downloadUrl).path);
-    if (fileName.isEmpty) {
-      throw Exception("Can't determine a file name for ${s.name}");
-    }
-
-    final dir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'bridge/aniyomi/extensions/${s.itemType.toString()}',
-      useSystemPath: false,
-      useCustomPath: true,
-    );
-
-    final file = File(path.join(dir!.path, fileName));
-
-    // Capture the path of the version currently on disk (if any) before we
-    // overwrite the field, so a rename between versions doesn't orphan a jar.
-    final oldApkPath = s.apkPath;
-
-    await downloadPackageFile(_client, downloadUrl, file.path);
-    s.apkPath = file.path;
-
-    if (oldApkPath != null && oldApkPath != file.path) {
-      final oldFile = File(oldApkPath);
-      if (await oldFile.exists()) {
-        await oldFile.delete();
-        Logger.log('Deleted old extension: ${oldFile.path}');
-      }
-    }
-
-    final avail = state(type).available;
-
-    avail.value = avail.value.where((e) => e.id != s.id).toList();
-    await fetchInstalledExtensions(type);
-    final raw = state(type).rawAvailable.value;
-    detectUpdates(raw, type);
-  }
-
-  @override
-  Future<void> uninstallSource(Source source) async {
-    final s = source as AdSource;
-    final type = source.itemType!;
-
-    final apkFileName = s.apkPath != null
-        ? path.basename(s.apkPath!)
-        : (s.apkName ?? '${s.pkgName ?? s.id}.jar');
-
-    final baseDir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'bridge/aniyomi/extensions/${type.toString()}',
-      useSystemPath: false,
-      useCustomPath: true,
-    );
-
-    final file = File(path.join(baseDir!.path, apkFileName));
-
-    if (await file.exists()) {
-      await file.delete();
-      Logger.log('Deleted private extension: ${s.name}');
-    } else {
-      Logger.log('Private extension file not found: ${s.name}');
-    }
-
-    final raw = state(type).rawAvailable.value;
-    final installed = state(type).installed.value;
-    final installedIds = installed.map((e) => e.id).toSet();
-    state(type).available.value = List.unmodifiable(
-      raw.where((e) => !installedIds.contains(e.id)),
-    );
-    await fetchInstalledExtensions(type);
-
-    detectUpdates(raw, type);
-  }
-
-  @override
-  Future<void> updateSource(Source source) async => await installSource(source);
 
   @override
   Set<String> get schemes => {"aniyomi", "tachiyomi"};

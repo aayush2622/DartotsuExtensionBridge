@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as path;
+import 'package:http/http.dart' as http;
 
 import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
 import '../../../Engines/JavaEngine/Bridge/SidecarBridge.dart';
@@ -14,11 +13,12 @@ import '../../../Logger.dart';
 import '../../../NetworkClient.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
-import '../../Shared/TachiyomiRepo.dart';
+import '../../Shared/TachiyomiJniDesktopExtension.dart';
 import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
 
-class IReaderDesktopExtensions extends Extension {
+class IReaderDesktopExtensions extends Extension
+    with TachiyomiJniDesktopExtension {
   @override
   String get id => 'ireader_desktop';
 
@@ -48,6 +48,12 @@ class IReaderDesktopExtensions extends Extension {
 
   final _client = MClient.init();
   final _context = DartotsuExtensionBridge.context;
+
+  @override
+  http.Client get repoClient => _client;
+
+  @override
+  String get jniDataDir => 'ireader';
 
   @override
   Future<bool> onInitialize() async {
@@ -121,89 +127,6 @@ class IReaderDesktopExtensions extends Extension {
       return [];
     }
   }
-
-  @override
-  Future<void> installSource(Source source) async {
-    final s = source as IdSource;
-    final type = source.itemType!;
-
-    final downloadUrl = s.apkUrl;
-    if (downloadUrl == null || downloadUrl.isEmpty) {
-      throw Exception("APK URL missing");
-    }
-
-    final fileName =
-        s.apkName ?? s.pkgName ?? path.basename(Uri.parse(downloadUrl).path);
-    if (fileName.isEmpty) {
-      throw Exception("Can't determine a file name for ${s.name}");
-    }
-
-    final dir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'bridge/ireader/extensions/${s.itemType.toString()}',
-      useSystemPath: false,
-      useCustomPath: true,
-    );
-
-    final file = File(path.join(dir!.path, fileName));
-
-    final oldApkPath = s.apkPath;
-
-    await downloadPackageFile(_client, downloadUrl, file.path);
-    s.apkPath = file.path;
-
-    if (oldApkPath != null && oldApkPath != file.path) {
-      final oldFile = File(oldApkPath);
-      if (await oldFile.exists()) {
-        await oldFile.delete();
-        Logger.log('Deleted old extension: ${oldFile.path}');
-      }
-    }
-
-    final avail = state(type).available;
-
-    avail.value = avail.value.where((e) => e.id != s.id).toList();
-    await fetchInstalledExtensions(type);
-    final raw = state(type).rawAvailable.value;
-    detectUpdates(raw, type);
-  }
-
-  @override
-  Future<void> uninstallSource(Source source) async {
-    final s = source as IdSource;
-    final type = source.itemType!;
-
-    final apkFileName = s.apkPath != null
-        ? path.basename(s.apkPath!)
-        : (s.apkName ?? '${s.pkgName ?? s.id}.jar');
-
-    final baseDir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'bridge/ireader/extensions/${type.toString()}',
-      useSystemPath: false,
-      useCustomPath: true,
-    );
-
-    final file = File(path.join(baseDir!.path, apkFileName));
-
-    if (await file.exists()) {
-      await file.delete();
-      Logger.log('Deleted private extension: ${s.name}');
-    } else {
-      Logger.log('Private extension file not found: ${s.name}');
-    }
-
-    final raw = state(type).rawAvailable.value;
-    final installed = state(type).installed.value;
-    final installedIds = installed.map((e) => e.id).toSet();
-    state(type).available.value = List.unmodifiable(
-      raw.where((e) => !installedIds.contains(e.id)),
-    );
-    await fetchInstalledExtensions(type);
-
-    detectUpdates(raw, type);
-  }
-
-  @override
-  Future<void> updateSource(Source source) async => await installSource(source);
 
   @override
   Future<void> addRepo(String repoUrl, ItemType type) async {
@@ -281,7 +204,7 @@ class IReaderDesktopExtensions extends Extension {
             repo: repoUrl,
 
             apkName: apkName,
-            apkUrl: apkName == null ? null : '${baseRepo}apk/$apkName',
+            apkUrlOverride: apkName == null ? null : '${baseRepo}apk/$apkName',
             pkgName: json["pkg"],
 
             iconUrl: iconName == null ? null : '${baseRepo}icon/$iconName.png',
@@ -309,7 +232,7 @@ class IReaderDesktopExtensions extends Extension {
           ..hasUpdate = true
           ..versionLast = repo.version
           ..apkName = repo.apkName
-          ..apkUrl = repo.apkUrl
+          ..apkUrlOverride = repo.apkUrlOverride
           ..pkgName = repo.pkgName
           ..iconUrl = repo.iconUrl
           ..repo = repo.repo;
