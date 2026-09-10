@@ -18,6 +18,7 @@ actual object ExtensionLoader {
 
     actual var plugins = mutableMapOf<String, LoadedPlugin>()
 
+    @Synchronized  // two concurrent getInstalled* polls raced APK->jar conversion
     actual fun loadExtensions(path: String) {
 
         val dir = File(path)
