@@ -5,13 +5,25 @@ import eu.kanade.tachiyomi.animesource.model.SerializableVideo.Companion.toVideo
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 
 open class Hoster(
     val hosterUrl: String = "",
     val hosterName: String = "",
     val videoList: List<Video>? = null,
+    /**
+     * Superseded by [memo] in extensions-lib 17. Still honoured so extensions built against
+     * lib 16 and earlier keep working.
+     */
     val internalData: String = "",
     val lazy: Boolean = false,
+    /**
+     * Extra metadata associated with the hoster. Not visible to users; intended for internal or
+     * source-specific purposes.
+     *
+     * @since extensions-lib 17
+     */
+    val memo: JsonObject = JsonObject(emptyMap()),
 ) {
     @Transient
     @Volatile
@@ -30,8 +42,9 @@ open class Hoster(
         videoList: List<Video>? = this.videoList,
         internalData: String = this.internalData,
         lazy: Boolean = this.lazy,
+        memo: JsonObject = this.memo,
     ): Hoster {
-        return Hoster(hosterUrl, hosterName, videoList, internalData, lazy)
+        return Hoster(hosterUrl, hosterName, videoList, internalData, lazy, memo)
     }
 
     companion object {

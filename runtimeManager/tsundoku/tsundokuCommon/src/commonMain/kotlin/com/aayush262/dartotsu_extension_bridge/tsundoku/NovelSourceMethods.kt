@@ -123,63 +123,71 @@ class NovelSourceMethods(sourceID: String) : AniyomiSourceMethods {
             mangaPage.hasNextPage
         )
     }
+    // Built through the SXxx.create() factories rather than anonymous `object :` bodies so that
+    // adding a field to the source-api (as extensions-lib 17 / tachiyomix 1.7 did) doesn't break
+    // this file.
+
     fun SChapter.toSEpisode(): SEpisode {
         val chapter = this
-        return object : SEpisode {
-            override var url: String = chapter.url
-            override var name: String = chapter.name
-            override var date_upload: Long = chapter.date_upload
-            override var episode_number: Float = findChapterNumber(chapter.name) ?: chapter.chapter_number
-            override var fillermark: Boolean = false
-            override var scanlator: String? = chapter.scanlator
-            override var summary: String?= null
-            override var preview_url: String? = null
+        return SEpisode.create().apply {
+            url = chapter.url
+            name = chapter.name
+            date_upload = chapter.date_upload
+            episode_number = findChapterNumber(chapter.name)
+                ?: chapter.number?.toFloatOrNull()
+                ?: -1f
+            fillermark = false
+            scanlator = chapter.scanlators.takeIf { it.isNotEmpty() }?.joinToString(", ")
+            summary = chapter.note
+            preview_url = null
+            memo = chapter.memo
         }
     }
 
     fun SAnime.toSManga(): SManga {
         val anime = this
-        return object : SManga {
-            override var url: String = anime.url
-            override var title: String = anime.title
-            override var artist: String? = anime.artist
-            override var author: String? = anime.author
-            override var description: String? = anime.description
-            override var genre: String? = anime.genre
-            override var status: Int = anime.status
-            override var thumbnail_url: String? = anime.thumbnail_url
-            override var update_strategy: UpdateStrategy = UpdateStrategy.ALWAYS_UPDATE
-            override var initialized: Boolean = anime.initialized
-            override var memo: JsonObject  =JsonObject(emptyMap());
+        return SManga.create().apply {
+            url = anime.url
+            title = anime.title
+            artist = anime.artist
+            author = anime.author
+            description = anime.description
+            genres = anime.getGenres() ?: emptyList()
+            status = anime.status
+            thumbnail_url = anime.thumbnail_url
+            banner = anime.background_url
+            update_strategy = UpdateStrategy.ALWAYS_UPDATE
+            initialized = anime.initialized
+            memo = anime.memo
         }
     }
 
     fun SManga.toSAnime(): SAnime {
         val manga = this
 
-        return object : SAnime {
-            override var url: String = runCatching { manga.url }.getOrElse {
+        return SAnime.create().apply {
+            url = runCatching { manga.url }.getOrElse {
                 Logger.log("Uninitialized URL for SManga: ${safeUrl(manga)}")
                 "[UNINITIALIZED_URL]"
             }
 
-            override var title: String = runCatching { manga.title }.getOrElse {
-                Logger.log( "Uninitialized title for SManga: ${safeTitle(manga)}")
+            title = runCatching { manga.title }.getOrElse {
+                Logger.log("Uninitialized title for SManga: ${safeTitle(manga)}")
                 "[UNINITIALIZED_TITLE]"
             }
 
-            override var artist: String? = runCatching { manga.artist }.getOrNull()
-            override var author: String? = runCatching { manga.author }.getOrNull()
-            override var description: String? = runCatching { manga.description }.getOrNull()
-            override var genre: String? = runCatching { manga.genre }.getOrNull()
-            override var status: Int = runCatching { manga.status }.getOrDefault(SAnime.UNKNOWN)
-            override var thumbnail_url: String? = runCatching { manga.thumbnail_url }.getOrNull()
-            override var background_url: String? = null
-            override var update_strategy: AnimeUpdateStrategy =
-                runCatching { AnimeUpdateStrategy.ALWAYS_UPDATE }.getOrDefault(AnimeUpdateStrategy.ALWAYS_UPDATE)
-            override var fetch_type: FetchType = runCatching { FetchType.Episodes }.getOrDefault(FetchType.Episodes)
-            override var season_number: Double = runCatching { 1.0 }.getOrDefault(0.0)
-            override var initialized: Boolean = runCatching { manga.initialized }.getOrDefault(false)
+            artist = runCatching { manga.artist }.getOrNull()
+            author = runCatching { manga.author }.getOrNull()
+            description = runCatching { manga.description }.getOrNull()
+            genre = runCatching { manga.genres.takeIf { g -> g.isNotEmpty() }?.joinToString(", ") }.getOrNull()
+            status = runCatching { manga.status }.getOrDefault(SAnime.UNKNOWN)
+            thumbnail_url = runCatching { manga.thumbnail_url }.getOrNull()
+            background_url = runCatching { manga.banner }.getOrNull()
+            update_strategy = AnimeUpdateStrategy.ALWAYS_UPDATE
+            fetch_type = FetchType.Episodes
+            season_number = 1.0
+            initialized = runCatching { manga.initialized }.getOrDefault(false)
+            memo = runCatching { manga.memo }.getOrDefault(JsonObject(emptyMap()))
         }
     }
     private fun safeTitle(manga: SManga): String =

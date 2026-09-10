@@ -29,6 +29,17 @@ interface Source {
         get() = ""
 
     /**
+     * Primary language of the source as an IETF BCP 47 tag (`"en"`, `"zh-Hant"`, `"mul"`, `"und"`).
+     *
+     * Defaults to [lang] so extensions built against tachiyomix 1.6 and earlier, which only declare
+     * `lang`, keep reporting a sensible value.
+     *
+     * @since tachiyomix 1.7
+     */
+    val language: String
+        get() = lang
+
+    /**
      * Whether this source provides novel (text-based) content instead of manga (image-based).
      * Novel sources should return text content via [NovelSource.fetchPageText].
      *
