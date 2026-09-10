@@ -32,8 +32,24 @@ void main() {
         tachiyomiFallbackRepoUrl(
           'https://raw.githubusercontent.com/owner/repo/master/index.min.json',
         ),
-        'https://gcore.jsdelivr.net/gh/owner/repo@master',
+        'https://gcore.jsdelivr.net/gh/owner/repo@master/index.min.json',
       );
+    });
+
+    test('handles the github.com/<owner>/<repo>/raw/<branch> shape', () {
+      expect(
+        tachiyomiFallbackRepoUrl(
+          'https://github.com/keiyoushi/extensions/raw/repo/index.pb',
+        ),
+        'https://gcore.jsdelivr.net/gh/keiyoushi/extensions@repo/index.pb',
+      );
+    });
+
+    test('keeps a .pb endpoint a .pb endpoint through the fallback', () {
+      const pb = 'https://github.com/keiyoushi/extensions/raw/repo/index.pb';
+      final fallback = tachiyomiFallbackRepoUrl(pb)!;
+      expect(tachiyomiIndexUrl(fallback), endsWith('/index.pb'));
+      expect(tachiyomiIndexFormat(fallback), RepoIndexFormat.protobuf);
     });
 
     test('defaults the branch to main when absent', () {

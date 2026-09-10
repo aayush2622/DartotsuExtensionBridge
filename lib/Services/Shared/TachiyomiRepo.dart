@@ -33,21 +33,31 @@ String tachiyomiIndexUrl(String repoUrl) {
 /// Rewrites a GitHub raw repo URL to a jsDelivr mirror, used as a fallback when
 /// the primary host is unreachable. Returns `null` when the URL doesn't look
 /// like `.../<owner>/<repo>[/<branch>]...`.
+///
+/// Handles both GitHub raw shapes and keeps whatever file the URL pointed at, so
+/// an `index.pb` endpoint doesn't silently fall back to `index.min.json`:
+///
+/// * `raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>`
+/// * `github.com/<owner>/<repo>/raw/<branch>/<path>`
 String? tachiyomiFallbackRepoUrl(String repoUrl) {
   try {
     final stripped = repoUrl
         .replaceFirst(RegExp(r'^https?://'), '')
-        .replaceAll(RegExp(r'/+$'), '')
-        .replaceAll('/index.min.json', '');
+        .replaceAll(RegExp(r'/+$'), '');
 
-    final parts = stripped.split('/');
+    final parts = stripped.split('/').where((p) => p.isNotEmpty).toList();
     if (parts.length < 3) return null;
 
     final owner = parts[1];
     final repo = parts[2];
-    final branch = parts.length > 3 ? parts[3] : 'main';
 
-    return 'https://gcore.jsdelivr.net/gh/$owner/$repo@$branch';
+    // github.com puts a literal `raw` segment before the branch.
+    final branchIndex = (parts.length > 3 && parts[3] == 'raw') ? 4 : 3;
+    final branch = parts.length > branchIndex ? parts[branchIndex] : 'main';
+    final path = parts.skip(branchIndex + 1).join('/');
+
+    final base = 'https://gcore.jsdelivr.net/gh/$owner/$repo@$branch';
+    return path.isEmpty ? base : '$base/$path';
   } catch (_) {
     return null;
   }
