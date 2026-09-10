@@ -76,4 +76,4 @@ class MSource extends Source {
   }
 }
 
-enum SourceCodeLanguage { dart, javascript, lnreader }
+enum SourceCodeLanguage { dart, javascript }

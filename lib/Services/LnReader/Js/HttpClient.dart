@@ -6,7 +6,7 @@ import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_interceptor/http_interceptor.dart';
 
-import '../../NetworkClient.dart';
+import '../../../NetworkClient.dart';
 
 class JsHttpClient {
   late JavascriptRuntime runtime;
@@ -80,6 +80,21 @@ async function fetchApi(url, init) {
     JSON.stringify([url, init?.headers, init?.body])
   );
   return new Response(url, result);
+}
+
+// @libs/fetch also exports fetchText: a `.text()` shortcut that never throws.
+async function fetchText(url, init, _encoding) {
+  try {
+    const res = await fetchApi(url, init);
+    return await res.text();
+  } catch (e) {
+    return "";
+  }
+}
+
+// fetchProto (protobuf responses) is not supported by this runtime.
+async function fetchProto() {
+  throw new Error("fetchProto is not supported");
 }
 ''');
   }

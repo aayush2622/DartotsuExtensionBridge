@@ -31,7 +31,8 @@ ExtensionBridge` transport) — same base name, different directory.
   callback, optional `BridgeNetwork` (dns / proxy / cookies), `onLog`.
 - `GetDirectory` typedef — host app must supply persistent dir resolution
   (`subPath`, `useCustomPath`, `useSystemPath`).
-- `dispose()` — tears down `ExtensionManager` and the LnReader JS engine.
+- `dispose()` — tears down `ExtensionManager` (which disposes every backend,
+  including the LnReader per-source JS runtimes).
 
 ## Core abstractions (`lib/Extensions/`, `lib/Models/`)
 
@@ -70,7 +71,7 @@ used as the factory key.
 | **CloudStream** | `CloudStreamExtensions` / `CloudStreamDesktopExtensions` | Android + desktop | `CloudStreamSourceMethods` extends `BridgeSourceMethods`; video-only (page list / prefs unimplemented). |
 | **iReader** | `IReaderExtensions` / `IReaderDesktopExtensions` | Android + desktop | Novels. |
 | **Tsundoku** | `TsundokuExtensions` / `TsundokuDesktopExtensions` | Android + desktop | |
-| **LnReader** | (no `Extension` subclass) | — | JS runtime + polyfills (`http`, `cheerio`, `htmlparser`) under `Services/LnReader/` (+ `JsEngine/`). Driven through Mangayomi's `Util/lib.dart`. |
+| **LnReader** | `LnReaderExtensions` | all (incl. iOS) | Independent backend for LNReader novel plugins. Reads the LNReader `plugins.min.json` manifest (`Manifest.dart`); each plugin is a JS module run in its own QuickJS runtime via `LnReaderSourceMethods`. Self-contained polyfills under `Services/LnReader/Js/` (`Polyfills`, `Libs`, `HttpClient` = `@libs/fetch`, `Cheerio` + `DomSelector`, `HtmlParser`, `Storage` = `@libs/storage`). Novel-only. No Mangayomi coupling. |
 | **Kotatsu** | `Services/Kotatsu/` | — | directories only, currently empty. |
 
 Platform gating is in `ExtensionManager._extensionManagers` via `Platform.isAndroid` /

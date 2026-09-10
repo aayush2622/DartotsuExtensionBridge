@@ -8,7 +8,6 @@ import 'package:isar_community/isar.dart';
 
 import 'AddonManager.dart';
 import 'ExtensionManager.dart';
-import 'Services/LnReader/JsEngine/JsEngine.dart';
 import 'Settings/KvStore.dart';
 
 class DartotsuExtensionBridge {
@@ -88,7 +87,6 @@ class DartotsuExtensionBridge {
     if (_initialized) {
       _initialized = false;
       Get.find<ExtensionManager>().dispose();
-      JsExtensionEngine.instance.dispose();
     }
   }
 }
