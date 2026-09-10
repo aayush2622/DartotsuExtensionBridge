@@ -12,6 +12,7 @@ import 'Services/CloudStream/CloudStreamAndroid/CloudStreamExtensions.dart';
 import 'Services/CloudStream/CloudStreamDesktop/CloudStreamDesktopExtensions.dart';
 import 'Services/IReader/IreaderAndroid/IReaderExtensions.dart';
 import 'Services/IReader/IreaderDesktop/IReaderDesktopExtensions.dart';
+import 'Services/Legado/LegadoExtensions.dart';
 import 'Services/LnReader/LnReaderExtensions.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
 import 'Services/Sora/SoraExtensions.dart';
@@ -40,6 +41,7 @@ class ExtensionManager extends GetxController {
     MangayomiExtensions(),
     SoraExtensions(),
     LnReaderExtensions(),
+    LegadoExtensions(),
     if (Platform.isAndroid) AniyomiExtensions(),
     if (Platform.isAndroid) CloudStreamExtensions(),
     if (Platform.isAndroid) IReaderExtensions(),

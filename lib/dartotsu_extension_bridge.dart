@@ -14,3 +14,4 @@ export './Models/Video.dart';
 // maybe needed sometimes
 export './Services/Mangayomi/Models/Source.dart';
 export './Services/LnReader/Models/Source.dart';
+export './Services/Legado/Models/LegadoSource.dart';
