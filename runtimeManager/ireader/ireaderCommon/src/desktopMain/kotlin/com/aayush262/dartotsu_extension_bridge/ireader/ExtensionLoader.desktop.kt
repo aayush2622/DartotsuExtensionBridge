@@ -1,6 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.ireader
 
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
+import com.aayush262.dartotsu_extension_bridge.util.ExtensionConvert
 import com.aayush262.dartotsu_extension_bridge.util.PackageTools
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.parser.Parser
@@ -25,21 +26,14 @@ actual object ExtensionLoader {
     actual fun loadExtensions(path: String): List<LoadedExtension> {
         plugins.clear()
 
-        return File(path)
+        val apks = File(path)
             .listFiles()
             .orEmpty()
             .filter { it.isFile && it.extension.equals("apk", true) }
-            .mapNotNull { file ->
-                runCatching {
-                    loadExtension(file).also {
-                        plugins[it.source.id] = it.source
-                    }
-                }.onFailure {
-                    Logger.log(
-                        "Failed to load ${file.name}: ${it.message}\n${it.stackTraceToString()}"
-                    )
-                }.getOrNull()
-            }
+
+        val loaded = ExtensionConvert.parallel(apks, { it.name }) { file -> loadExtension(file) }
+        for (le in loaded) plugins[le.source.id] = le.source
+        return loaded
     }
 
     private fun loadExtension(apk: File): LoadedExtension {

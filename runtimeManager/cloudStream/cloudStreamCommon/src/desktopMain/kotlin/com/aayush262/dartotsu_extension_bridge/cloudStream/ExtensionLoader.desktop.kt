@@ -2,7 +2,9 @@ package com.aayush262.dartotsu_extension_bridge.cloudStream
 
 import android.app.Application
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
+import com.aayush262.dartotsu_extension_bridge.util.ExtensionConvert
 import com.aayush262.dartotsu_extension_bridge.util.PackageTools
+import java.util.concurrent.ConcurrentHashMap
 import com.lagradost.cloudstream3.APIHolder
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.Plugin
@@ -16,7 +18,9 @@ import kotlin.getValue
 actual object ExtensionLoader {
 
 
-    actual var plugins = mutableMapOf<String, LoadedPlugin>()
+    // ConcurrentHashMap: loadExtension writes plugins[...] and the conversion
+    // now runs a few files at a time.
+    actual var plugins: MutableMap<String, LoadedPlugin> = ConcurrentHashMap()
 
     @Synchronized  // two concurrent getInstalled* polls raced APK->jar conversion
     actual fun loadExtensions(path: String) {
@@ -29,14 +33,7 @@ actual object ExtensionLoader {
             ?.filter { it.isFile && (it.extension == "cs3" || it.extension == "jar") }
             ?: emptyList()
 
-
-        pluginFiles.forEach { file ->
-            try {
-                loadExtension(file)
-            } catch (e: Throwable) {
-                Logger.log("Failed to load ${file.name}: ${e.message}\n${e.stackTraceToString()}")
-            }
-        }
+        ExtensionConvert.parallel(pluginFiles, { it.name }) { file -> loadExtension(file) }
 
         Logger.log("Loaded ${plugins.size} plugins")
 
