@@ -17,6 +17,23 @@ import java.io.File
 
 val pluginName = project.name
 
+/*
+ * iOS runtime variant.
+ *
+ * `-PiosRuntime=true` tells the desktop modules to strip Chromium/JCEF/JOGL/JNA
+ * and their native payloads from the shadow JAR (see each `*Desktop`
+ * build.gradle.kts). The resulting JAR is loadable by the interpreter-only
+ * OpenJDK Zero VM the plugin embeds on iOS (`ios/`, `EmbeddedBridge`). This
+ * mirrors M-Extension-Server's own `-PiosRuntime=true` switch.
+ *
+ * A single Gradle invocation only holds one value for a project property, so
+ * building both variants means two runs:
+ *   ./gradlew buildAllPlugins                    # desktop + android
+ *   ./gradlew buildAllPlugins -PiosRuntime=true  # ios
+ */
+val iosRuntime: Boolean =
+    project.findProperty("iosRuntime")?.toString()?.toBoolean() ?: false
+
 data class Artifact(
     val file: File,
     val extension: String,
@@ -41,13 +58,17 @@ fun findArtifact(): Artifact {
         ?.firstOrNull { it.extension == "apk" && it.name.contains("release", true) }
         ?.let { return Artifact(it, "apk", "android", "apk") }
 
+    // -PiosRuntime=true builds the same shadow JAR minus the desktop-only
+    // native stack; it targets the embedded OpenJDK Zero VM, not a desktop.
+    val jarPlatform = if (iosRuntime) "ios" else "desktop"
+
     val shadowJar = layout.buildDirectory
         .file("libs/${project.name}-all.jar")
         .get()
         .asFile
 
     if (shadowJar.exists()) {
-        return Artifact(shadowJar, "jar", "desktop", "jar")
+        return Artifact(shadowJar, "jar", jarPlatform, "jar")
     }
 
     val normalJar = layout.buildDirectory
@@ -56,7 +77,7 @@ fun findArtifact(): Artifact {
         .asFile
 
     if (normalJar.exists()) {
-        return Artifact(normalJar, "jar", "desktop", "jar")
+        return Artifact(normalJar, "jar", jarPlatform, "jar")
     }
 
     throw GradleException("[$pluginName] Could not locate a built APK or JAR.")
@@ -104,8 +125,12 @@ tasks.register("buildPlugin") {
 
         val artifact = findArtifact()
         val outputDir = outputDirectory()
-        val destination = File(outputDir, "$pluginName-plugin.${artifact.extension}")
-        val metadataFile = File(outputDir, "$pluginName-plugin.json")
+        // Keep the ios artifact next to the desktop one instead of overwriting
+        // it: builds/<name>/<name>-plugin-ios.jar + <name>-plugin-ios.json.
+        val suffix = if (iosRuntime) "-ios" else ""
+        val destination =
+            File(outputDir, "$pluginName-plugin$suffix.${artifact.extension}")
+        val metadataFile = File(outputDir, "$pluginName-plugin$suffix.json")
 
         artifact.file.copyTo(destination, overwrite = true)
 

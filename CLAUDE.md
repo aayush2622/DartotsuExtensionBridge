@@ -139,4 +139,10 @@ flutter test                                                # test/ — pure-Dar
 dart analyze lib test
 ```
 
+`runtimeManager/` (the JVM backend JARs, out of scope above) builds via
+`./gradlew buildEverything` (desktop + android + the `embedded-bridge.jar`
+shim) and `./gradlew buildAllPlugins -PiosRuntime=true` for the iOS variant
+(Chromium/JOGL/JNA stripped). `./gradlew printBuildVariants` lists them; see
+`runtimeManager/EMBEDDED_IOS_NOTES.md`.
+
 `analysis_options.yaml` uses `flutter_lints`.

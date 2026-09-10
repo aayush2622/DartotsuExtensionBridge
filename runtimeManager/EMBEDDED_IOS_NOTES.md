@@ -1,4 +1,4 @@
-# iOS embedded-JVM support — what's scaffolded and what's left
+# iOS embedded-JVM support
 
 On iOS the four `*Desktop` backends can't run as a `java -jar` subprocess and
 can't JIT. Instead the plugin embeds an **interpreter-only OpenJDK Zero VM**
@@ -6,95 +6,93 @@ in-process (native side under `ios/`, Dart side
 `lib/Engines/JavaEngine/Bridge/EmbeddedJvmBridge.dart`). The approach — a
 static OpenJDK framework `dlopen`ed lazily, a dedicated JVM-sized bootstrap
 thread, Serial GC, `-Xss8m` — is copied from
-<https://github.com/kodjodevf/m_extension_server>.
+<https://github.com/kodjodevf/m_extension_server>. The transport stays the
+repo's **stdio-sidecar JSON** shape (`{method,args}` → `{success,data|error}`),
+not M-Extension-Server's NanoHTTPD loopback.
 
-## Done in this repo
+## Wired up
 
-- `commonDesktopLib`:
-  - `Server.kt` — the request `when(method)` block is extracted into
-    `Server.handle(api, method, params)`; `Server.run` (the desktop stdio
-    loop) is unchanged behaviourally.
-  - `EmbeddedBridge.kt` — `object` with `@JvmStatic load(jarPath)`,
-    `call(jarPath, requestJson)`, `unload(jarPath)`, `pause()`, `resume()`.
-    `load` attaches the backend fat JAR in a `ChildFirstURLClassLoader`,
-    reflectively calls `Main.api()`, caches it. `call` runs
-    `Server.handle(...)` and returns a `{"success":…,"data"|"error":…}`
-    envelope. The native layer (`ios/Classes/EmbeddedJvm.mm`) looks this class
-    up as `com/aayush262/dartotsu_extension_bridge/EmbeddedBridge` and calls
-    those exact signatures.
-- Each `*ExtensionCli.kt` `Main` gained `@JvmStatic fun api(): ExtensionApi`
-  (desktop `main` now calls it too).
+### Kotlin (`commonDesktopLib`)
 
-## Left to do (needs a macOS + the Gradle build)
+- `Server.kt` — request dispatch extracted into `Server.handle(api, method,
+  params)`; `Server.run` (the desktop stdio loop) is behaviourally unchanged.
+- `EmbeddedBridge.kt` — `object` with `@JvmStatic` `load(jarPath)` /
+  `call(jarPath, requestJson)` / `unload(jarPath)` / `pause()` / `resume()` /
+  `isRunning()`. `load` attaches the backend fat JAR in a
+  `ChildFirstURLClassLoader`, reflectively calls `Main.api()`, caches it.
+  `call` runs `Server.handle(...)` and returns a
+  `{"success":…,"data"|"error":…}` envelope. `pause`/`resume` keep loaded
+  backends + source instances warm across an iOS background cycle (parity with
+  M-Extension-Server's `EmbeddedBridge.pause`). The native layer
+  (`ios/Classes/EmbeddedJvm.mm`) looks this class up as
+  `com/aayush262/dartotsu_extension_bridge/EmbeddedBridge`.
+- Each `*ExtensionCli.kt` `Main` has `@JvmStatic fun api(): ExtensionApi`
+  (desktop `main` calls it too).
 
-### 1. Build the `embedded-bridge.jar` shim
+### Gradle — build variants (`./gradlew printBuildVariants`)
 
-The embedded VM is created with **only this jar** on `-Djava.class.path`
-(`ios/PrepareEmbeddedRuntime.sh` stages it as `Runtime/embedded-bridge.jar`).
-It must contain, and only contain:
+| command | output |
+|---|---|
+| `./gradlew buildAllPlugins` | desktop + android `builds/<p>/<p>-plugin.jar` |
+| `./gradlew buildAllPlugins -PiosRuntime=true` | `builds/<p>/<p>-plugin-ios.jar` (Chromium/JOGL/JNA + native payloads stripped from the shadow JAR; `platform:"ios"` in the `.json`) |
+| `./gradlew buildEmbeddedBridge` | `libraries/commonDesktopLib/build/libs/embedded-bridge.jar` — the slim JAR the embedded VM boots with (`EmbeddedBridge` + `Server` + `ChildFirstURLClassLoader` + `ExtensionApi` + gson + kotlin/coroutines; the dex2jar / JCEF / GraalVM / apk-parser / icu4j runtime is excluded) |
+| `./gradlew buildEverything` | `buildAllPlugins` + `buildEmbeddedBridge` |
 
-- `com.aayush262.dartotsu_extension_bridge.**` from `commonLib` +
-  `commonDesktopLib` (`EmbeddedBridge`, `Server`, `ExtensionApi`,
-  `ExtensionBridgeApi`, `ChildFirstURLClassLoader`, …)
-- `com.google.gson.**`
-- `kotlin-stdlib` + `kotlinx-coroutines-core`
+A single Gradle invocation only holds one value for the `iosRuntime` project
+property, so the iOS JARs are a second run — same as M-Extension-Server's own
+`-PiosRuntime=true`.
 
-It must **not** contain the backend runtimes (okhttp, kcef, tachiyomi,
-android-compat shims) — every backend fat JAR ships its own and the
-child-first loader must win. A `shadowJar` with `dependencies { … }` narrowed
-to the four artifacts above, or an explicit `include(...)` filter, does it.
+The `-PiosRuntime` excludes live in each `*Desktop/build.gradle.kts`
+`tasks.shadowJar { if (iosRuntime) { … } }` block. If the tuning list needs to
+change, change all four (they're identical).
 
-Sketch (new `commonDesktopLib` task):
+## Still on you (needs macOS + a run of the Gradle build)
 
-```kotlin
-tasks.register<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("embeddedBridgeJar") {
-    archiveFileName.set("embedded-bridge.jar")
-    from(sourceSets.main.get().output)
-    configurations = listOf(project.configurations.runtimeClasspath.get())
-    dependencies {
-        include(dependency("com.google.code.gson:gson"))
-        include(dependency("org.jetbrains.kotlin:kotlin-stdlib.*"))
-        include(dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core.*"))
-    }
-    exclude("META-INF/**")
-}
-```
+1. **Verify the iOS shadow JARs load under Zero.** The excludes make a
+   *loadable* JAR — JCEF/CEF classes stay compiled in and only fault if a
+   Cloudflare challenge actually reaches them. To make that path degrade
+   cleanly instead of `NoClassDefFoundError`, guard the desktop
+   `CloudflareInterceptor` / `KcefWebViewProvider` usage behind a capability
+   check (M-Extension-Server does this in its `CloudflareInterceptor`).
+2. **`DownloadablePlugin` platform filter.** CI (`build.yml`) now builds the
+   iOS variants and `prepare_release.py` picks up `*-plugin-ios.json`, so
+   `builds/plugins.json` gets a second row per backend
+   (`{"name":"aniyomiDesktop","platform":"ios","fileName":
+   "aniyomiDesktop-plugin-ios.jar", …}`). The Dart side still resolves plugin
+   rows by `name` only — teach `DownloadablePlugin` to prefer the row whose
+   `platform` matches (`ios` on iOS, `desktop` otherwise). `EmbeddedJvmBridge`
+   then feeds that jar path to `load` / `call`.
+3. **Publish `embedded-bridge.jar`** — CI stages it into
+   `builds/embeddedBridge/` for the `latest` release. Fill `BRIDGE_JAR_URL` /
+   `BRIDGE_JAR_SHA256` in `ios/PrepareEmbeddedRuntime.sh` to match, or commit
+   the jar under `ios/Runtime/` and leave the download unused.
+4. **Immutable iOS tags.** M-Extension-Server's rule: a changed iOS server JAR
+   needs a fresh, immutable `ios-runtime-v*` tag + checksum (the `latest`
+   rolling release is fine for desktop but not for something a pinned native
+   build depends on).
 
-### 2. Build iOS-flavoured backend JARs
+## What was NOT synced from M-Extension-Server, and why
 
-The current `*Desktop-plugin.jar`s assume a desktop JVM (kcef/CEF webview, AWT
-`Robot`, `ProcessBuilder`). For iOS Zero:
+`M-Extension-Server` is one flat JVM-only `server` module (+ `AndroidCompat`)
+with a NanoHTTPD loopback API. This repo's `runtimeManager` is a KMP
+multi-ecosystem tree (aniyomi / cloudStream / iReader / tsundoku + shared
+`libraries/`) with its own long-diverged copies of the extension-loading core.
+`util/BytecodeEditor.kt` alone differs by ~1950 lines — this repo's is an
+independent `asm.tree` + frame-analysis rewrite, not a stale copy of theirs.
 
-- exclude kcef / CEF and any `java.awt.*` usage (guard `CloudflareInterceptor`
-  and friends behind a capability check that returns "unsupported" instead of
-  loading CEF);
-- keep everything else — okhttp, jsoup, the android-compat shims, gson all run
-  fine under Zero.
+A wholesale replacement of `BytecodeEditor` / `PackageTools` / the loader /
+invoker with M-Extension-Server's would be a regression, not an update, and
+can't be verified without the full Gradle + iOS toolchain. If you do want to
+pull specific fixes across, the candidates are:
 
-Produce e.g. `aniyomiDesktop-plugin-ios.jar` per backend.
+- `PackageTools.doTranslate(stream)` + `writeTranslatedClasses` (dedup on
+  translated class names) instead of dex2jar `.to(path)`.
+- The `LIB_VERSION_MIN/MAX` (1.3 / 1.5) + `EXTENSION_FEATURE` /
+  `METADATA_SOURCE_*` constants and the lib-version gate.
+- `ExtensionInstanceCache` / `MihonMetadataCache` shapes (per-source instance
+  reuse, metadata memoisation).
+- Their `CloudflareInterceptor` capability-gate (point 1 above).
+- `AndroidCompat` module: diff `libraries/commonDesktopLib/src/main/java/
+  xyz/nulldev/androidcompat/**` against their `AndroidCompat/src/main/java/**`.
 
-### 3. Publish + wire `plugins.json`
-
-Add an iOS row per backend, e.g.
-
-```json
-{
-  "name": "aniyomiDesktop",
-  "platform": "ios",
-  "type": "jar",
-  "fileName": "aniyomiDesktop-plugin-ios.jar",
-  "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiDesktop-plugin-ios.jar"
-}
-```
-
-`DownloadablePlugin` already resolves the row by `name` + platform; on iOS it
-should pick the `ios` row. `EmbeddedJvmBridge` then feeds that jar path to
-`load` / `call`.
-
-### 4. Publish the pinned shim jar (optional)
-
-`ios/PrepareEmbeddedRuntime.sh` will download `embedded-bridge.jar` from
-`BRIDGE_JAR_URL` (with a real SHA-256) if it isn't already at
-`ios/Runtime/embedded-bridge.jar`. Either publish it to the
-`embedded-ios-v1` release and fill in `BRIDGE_JAR_SHA256`, or commit the jar
-under `ios/Runtime/` and leave the download unused.
+Do those as individual, compile-checked commits — not in one blind pass.
