@@ -1,17 +1,18 @@
 import '../../../Models/Source.dart';
-import '../Eval/dart/model/m_source.dart' as m;
-import '../Util/string_extensions.dart';
 
-class MSource extends Source {
+/// A single LNReader plugin, as listed in a `plugins.min.json` manifest.
+///
+/// LNReader plugins are self-contained JS modules (one `.js` per source);
+/// [sourceCode] holds the downloaded module once installed, [sourceCodeUrl]
+/// points at it in the repo. [customCss] is an optional stylesheet a few
+/// plugins ship for their reader.
+class LSource extends Source {
   String? sourceCode;
-
   String? sourceCodeUrl;
+  String? customCss;
+  String? customCssUrl;
 
-  String? headers;
-
-  SourceCodeLanguage sourceCodeLanguage = SourceCodeLanguage.dart;
-
-  MSource({
+  LSource({
     super.id,
     super.name,
     super.baseUrl,
@@ -23,16 +24,16 @@ class MSource extends Source {
     super.itemType,
     super.repo,
     super.hasUpdate,
-    this.sourceCodeUrl,
     this.sourceCode,
-    this.headers,
-    this.sourceCodeLanguage = SourceCodeLanguage.dart,
+    this.sourceCodeUrl,
+    this.customCss,
+    this.customCssUrl,
   });
 
-  factory MSource.fromJson(Map<String, dynamic> json) {
+  factory LSource.fromJson(Map<String, dynamic> json) {
     final base = Source.fromJson(json);
 
-    return MSource(
+    return LSource(
       id: base.id,
       name: base.name,
       baseUrl: base.baseUrl,
@@ -46,9 +47,8 @@ class MSource extends Source {
       hasUpdate: base.hasUpdate,
       sourceCode: json['sourceCode'],
       sourceCodeUrl: json['sourceCodeUrl'],
-      headers: json['headers'],
-      sourceCodeLanguage:
-          SourceCodeLanguage.values[json['sourceCodeLanguage'] ?? 0],
+      customCss: json['customCss'],
+      customCssUrl: json['customCssUrl'],
     );
   }
 
@@ -57,23 +57,8 @@ class MSource extends Source {
     final json = super.toJson();
     json['sourceCode'] = sourceCode;
     json['sourceCodeUrl'] = sourceCodeUrl;
-    json['headers'] = headers;
-    json['sourceCodeLanguage'] = sourceCodeLanguage.index;
+    json['customCss'] = customCss;
+    json['customCssUrl'] = customCssUrl;
     return json;
   }
-
-  //bool get isTorrent => (typeSource?.toLowerCase() ?? "") == "torrent";
-
-  m.MSource toMSource() {
-    return m.MSource(
-      id: id!.toInt(),
-      name: name,
-      hasCloudflare: false,
-      isFullData: true,
-      lang: lang,
-      baseUrl: baseUrl,
-    );
-  }
 }
-
-enum SourceCodeLanguage { dart, javascript }

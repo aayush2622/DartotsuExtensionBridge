@@ -12,6 +12,7 @@ import 'Services/CloudStream/CloudStreamAndroid/CloudStreamExtensions.dart';
 import 'Services/CloudStream/CloudStreamDesktop/CloudStreamDesktopExtensions.dart';
 import 'Services/IReader/IreaderAndroid/IReaderExtensions.dart';
 import 'Services/IReader/IreaderDesktop/IReaderDesktopExtensions.dart';
+import 'Services/LnReader/LnReaderExtensions.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
 import 'Services/Sora/SoraExtensions.dart';
 import 'Services/Tsundoku/TsundokuAndroid/TsundokuExtensions.dart';
@@ -30,6 +31,7 @@ class ExtensionManager extends GetxController {
   List<Extension> get _extensionManagers => [
     MangayomiExtensions(),
     SoraExtensions(),
+    LnReaderExtensions(),
     if (Platform.isAndroid) AniyomiExtensions(),
     if (Platform.isAndroid) CloudStreamExtensions(),
     if (Platform.isAndroid) IReaderExtensions(),
