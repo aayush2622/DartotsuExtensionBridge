@@ -1,108 +1,97 @@
-# Aniyomi / Tachiyomi runtime — update status & plan
+# Aniyomi / Tachiyomi runtime — update status
 
-Session date: 2026-09-10. Scope: `runtimeManager/aniyomi/**`.
+Scope: `runtimeManager/aniyomi/**` and the Dart repo layer.
 
-## TL;DR
+## Done
 
-- **Done now (safe, build-verified):** dependency version bumps for the Aniyomi
-  build (okhttp 5.4→5.5, jsoup 1.22→1.23, gson 2.13→2.14, okio 3.17→3.18,
-  androidx-core 1.16→1.19, commons-text 1.11→1.15). Fresh
-  `aniyomiDesktop-plugin.jar` produced and copied to
-  `~/Documents/Dartotsu/bridge/plugins/` for in-app testing.
-- **Not done (needs a human pass):** syncing the vendored `eu.kanade.tachiyomi.*`
-  source-api to upstream **extensions-lib 17**. This is a real API-version jump,
-  not a copy-paste, because the fork carries deliberate divergences (below).
+### Source API synced to upstream
 
-## How the Aniyomi runtime is structured
+The vendored `eu.kanade.tachiyomi` tree is now level with the **stub repos that
+extensions actually compile against** — not the app monorepos:
 
-`runtimeManager/aniyomi/aniyomiCommon/src/{commonMain,androidMain,desktopMain}` is
-a **KMP fork** of:
-- Aniyomi `source-api` (`eu.kanade.tachiyomi.animesource.*`, `.source.*`)
-- Aniyomi/Mihon `core` networking (`eu.kanade.tachiyomi.network.*`) — NOT in
-  upstream `source-api`, pulled from the app module
-- Aniyomi torrent server bits (`torrentServer/`, `torrentutils/`)
-- glue under `com/aayush262/dartotsu_extension_bridge/**`
+| | upstream | was | now |
+|---|---|---|---|
+| anime | [`aniyomiorg/extensions-lib`](https://github.com/aniyomiorg/extensions-lib) | extensions-lib 16 | **17** |
+| manga | [`mihonapp/tachiyomix`](https://github.com/mihonapp/tachiyomix) | tachiyomix 1.6 | **1.7** |
 
-It is **not** a git submodule and has no recorded upstream base commit.
+**extensions-lib 17**
+- `SAnime`: `memo: JsonObject`, status `UPCOMING = 7`
+- `SEpisode`: `memo: JsonObject`
+- `Hoster`: `memo: JsonObject`
+- new: `AnimeRelation`, `ThumbnailInfo` + `TileInfo`, `SAnimeEpisodeUpdate`, `SAnimeSeasonUpdate`
+- `AnimeSource`: `getAnimeEpisodeUpdate`, `getAnimeSeasonUpdate`,
+  `supportsRelatedAnime`, `getRelatedAnimeList`
 
-## Delta vs upstream `aniyomiorg/aniyomi@main` `source-api` (fetched 2026-09-10)
+**tachiyomix 1.7**
+- `SManga`: `altTitles`, `banner`, `language`, `contentRating`, `score`,
+  `readingMode`, and `genre: String?` → `genres: List<String>`
+- `SChapter`: `volume`, `number`, `scanlators`, `language`, `locked`, `note`,
+  and `chapter_number: Float` → `number: String?`, `scanlator` → `scanlators`
+- `Source`: `language`
 
-`same` (already current): `AnimeSourceFactory`, `AnimeFilter`, `AnimeUpdateStrategy`,
-`FetchType`, `ResolvableAnimeSource`, `animesource/UnmeteredSource`,
-`source/model/Page`, `source/model/UpdateStrategy`, `source/UnmeteredSource`,
-`util/JsonExtensions`, `util/JsoupExtensions`.
+### Backwards compatibility
 
-`NEW upstream files to add` (all small, mostly additive):
-| file | notes |
+Extensions published against the *old* API keep working. Every renamed member is
+retained as a deprecated bridge property with a default get/set that delegates to
+the new field, so old bytecode (`getGenre`, `setChapter_number`, `getScanlator`,
+`lang`) still resolves:
+
+| old | bridges to |
 |---|---|
-| `animesource/model/SAnimeEpisodeUpdate.kt` | `class SAnimeEpisodeUpdate(val anime, val episodes)` |
-| `animesource/model/SAnimeSeasonUpdate.kt`  | `class SAnimeSeasonUpdate(val anime, val seasons)` |
-| `animesource/model/AnimeRelation.kt`       | `class AnimeRelation(name, animes)` — related-anime feature |
-| `animesource/model/ThumbnailInfo.kt`       | `ThumbnailInfo` + `data class TileInfo` — scrubber previews |
-| `animesource/model/HttpServer.kt`          | **pulls `fi.iki.elonen:nanohttpd` + `logcat` + `tachiyomi.core.common...logcat`** — needs infra or a stub |
-| `source/MangaSource.kt`                    | manga counterpart of the reworked `AnimeSource` (still Rx-compat) |
-| `util/VideoInfo.kt`                        | `sealed class Video; data class VideoUrl` (unrelated to `animesource.model.Video`) |
-| `androidMain/.../animesource/PreferenceScreen.kt`, `source/PreferenceScreen.kt`, `util/RxExtension.kt` | `actual` decls — only if we adopt the upstream `expect/actual awaitSingle` |
+| `SManga.genre: String?` | `genres` joined with `", "` |
+| `SChapter.chapter_number: Float` | `number` parsed as float, `-1f` when absent |
+| `SChapter.scanlator: String?` | `scanlators` joined with `", "` |
+| `Source.language` | defaults to `lang` |
 
-`CHANGED` (diff lines), biggest first — each needs a 3-way merge, not overwrite:
-| file | Δ | why not a straight copy |
-|---|---|---|
-| `animesource/online/AnimeHttpSource.kt` | 322 | base class every anime ext extends; extensions-lib 17 method set |
-| `source/online/HttpSource.kt` | 317 | base class every manga ext extends |
-| `torrentutils/TorrentUtils.kt` | 252 | Aniyomi-app code, fork may have local edits |
-| `animesource/AnimeSource.kt` | 158 | **interface redesign**: `getPopularAnime`/`getLatestUpdates`/`getSearchAnime` move here from `AnimeCatalogueSource`; new `getAnimeEpisodeUpdate(anime,episodes,fetchDetails,fetchEpisodes)` + `getAnimeSeasonUpdate(...)` **replace** `getAnimeDetails`/`getEpisodeList`/`getSeasonList` (now deprecated stubs); new `getRelatedAnimeList` + `supportsRelatedAnime` |
-| `source/CatalogueSource.kt` | 123 | mirror of the above on the manga side |
-| `animesource/model/Video.kt` | 95 | adds `memo: JsonObject = JsonObject.EMPTY` (**needs `mihon.core.common.extensions.EMPTY`**), `usesHttpServer()`, `copyHttpServer(port)`, ext-lib-16 compat ctor/copy |
-| `animesource/AnimeCatalogueSource.kt` | 84 | now `override`s the new suspend API with default impls that fan out to the deprecated Rx methods (this is the back-compat shim that keeps old APKs working) |
-| `source/model/Filter.kt` | 65 | ⚠️ upstream is `sealed class`; **fork deliberately made it `open class`** ("Tachidesk adds subclasses for serialization"). Keep the fork's version. |
-| `animesource/online/ParsedAnimeHttpSource.kt` / `source/online/ParsedHttpSource.kt` | 31 / 28 | follow the base-class changes |
-| `animesource/model/Hoster.kt` | 29 | new fields |
-| `animesource/model/SAnime.kt` | 28 | field reorder + `var memo: JsonObject` (`@since extensions-lib 17`) + `UPCOMING = 7` status |
-| `animesource/utils/Preferences.kt` | 38 | |
-| `source/model/SManga.kt` / `SChapter.kt` | 25 / 21 | ⚠️ fork **already has `memo`** (from tachiyomix 1.6); upstream Aniyomi `source/` does *not*. Fork is ahead here — do not regress. |
-| `source/model/MangasPage.kt`, `animesource/model/AnimesPage.kt`, `*Impl.kt`, `FilterList.kt`, `SourceFactory.kt`, `ConfigurableSource.kt`, `ResolvableSource.kt`, `ConfigurableAnimeSource.kt` | 1–18 | mostly formatting / import order / tiny field adds |
+The new `AnimeSource` methods all have default bodies that fan out to
+`getAnimeDetails` / `getEpisodeList` / `getSeasonList`, and `getSeasonList` is no
+longer abstract — so a lib-16 extension satisfies the lib-17 interface unchanged.
 
-## Fork divergences that MUST be preserved through any sync
+`Hoster.internalData` was **not** raised to upstream's `DeprecationLevel.ERROR`,
+because extensions still set it.
 
-1. `source/model/Filter.kt` is `open class`, not `sealed` (serialization).
-2. No `mihon.core.common.*` / `tachiyomi.core.common.*` dependency. The fork
-   supplies its own `eu.kanade.tachiyomi.util.awaitSingle` in
-   `util/RxCoroutineBridge.kt` (direct fun, no `expect/actual`). Upstream files
-   `import tachiyomi.core.common.util.lang.awaitSingle` and use
-   `JsonObject.EMPTY` / `logcat` from Mihon core — rewrite those imports or add
-   local shims (`JsonObject.EMPTY` = `JsonObject(emptyMap())`).
-3. KMP `expect/actual` for platform bits (`network/interceptor/CloudflareInterceptor`,
-   `util/system/ChildFirst*ClassLoader` — desktop classloading).
-4. Non-upstream trees kept as-is: `network/**`, `util/system/**`,
-   `util/lang/CoroutinesExtensions.kt`, `torrentServer/**`, `AppInfo.kt`,
-   top-level `PreferenceScreen.kt`, `source/model/RefreshContext.kt`,
-   `source/model/SMangaUpdate.kt`.
+### index.pb repositories
 
-## Glue call-sites to update after an API bump
+Mihon/keiyoushi's gzipped-protobuf `index.pb` is supported alongside
+`index.min.json`. Paste e.g.
+`https://github.com/keiyoushi/extensions/raw/repo/index.pb` as a repo URL.
 
-`aniyomiCommon/src/commonMain/.../com/aayush262/dartotsu_extension_bridge/`:
-- `aniyomi/AnimeSourceMethods.kt` — calls `source.getAnimeDetails(media)`,
-  `source.getEpisodeList(media)`, `source.getSeasonList(media)`,
-  `source.getVideoList(episode)`, `source.getHosterList(episode)`,
-  `source.getVideoList(hoster)`. With ext-lib 17 the first three become
-  deprecated on `AnimeSource` but remain working on `AnimeHttpSource`, so this
-  likely still compiles; verify against the reworked `AnimeCatalogueSource`
-  shim. Prefer migrating to `getAnimeEpisodeUpdate` / `getAnimeSeasonUpdate`.
-- `AniyomiExtensionApi.kt` — `getVideoList(...)` path.
-- `aniyomi/MangaSourceMethods.kt`, `aniyomi/AniyomiSourceMethods.kt`.
+- `lib/Services/Shared/ProtoReader.dart` — small protobuf wire reader; no
+  `package:protobuf` dependency or codegen
+- `lib/Services/Shared/TachiyomiRepo.dart` — `RepoIndexFormat`,
+  `parseTachiyomiPbIndex`, `tachiyomiPbExtensionListUrl`,
+  `fetchTachiyomiRepoIndex`
+- Field numbers mirror mihon's `NetworkExtensionStore`; `isNsfw` is
+  `contentWarning >= MIXED` and `lang` collapses to `"all"` for multi-language
+  extensions, both matching Mihon
+- `.pb` states the APK URL outright (keiyoushi also ships a desktop jar at field
+  501), so `PackagedSource` gained `apkUrlOverride` / `jarUrl`
 
-## Suggested execution order for the real sync
+## Verification
 
-1. Add the `same`-if-copied new model files (`SAnime*Update`, `AnimeRelation`,
-   `ThumbnailInfo`, `VideoInfo`), `SAnime.memo` + `UPCOMING`.
-2. Port `AnimeSource` + `AnimeCatalogueSource` + `AnimeHttpSource` together
-   (they only make sense as a set); keep the deprecated Rx methods as working
-   overrides so installed APKs keep loading.
-3. `Video.kt`: add `memo` with a local `JsonObject.EMPTY` shim; port
-   `usesHttpServer()` / `copyHttpServer()` only if wiring `HttpServer`.
-4. Rebuild `:aniyomi:aniyomiCommon:compileDesktopMainKotlin`, fix, then
-   `:aniyomi:aniyomiDesktop:shadowJar` and `:aniyomi:aniyomiAndroid:assembleRelease`.
-5. Drop `aniyomi/aniyomiDesktop/build/libs/aniyomiDesktop-all.jar` →
-   `~/Documents/Dartotsu/bridge/plugins/aniyomiDesktop-plugin.jar` and test in app.
-6. Manga side (`MangaSource`, `HttpSource`, `CatalogueSource`) is a separate,
-   smaller follow-up — the fork already tracks tachiyomix 1.6 there.
+- `./gradlew buildAllPlugins` → BUILD SUCCESSFUL (all 8 artifacts)
+- `dart analyze lib test` clean; 37 plugin tests, 12 app tests
+- `flutter build linux --debug` on Dartotsu-rewrite-re → OK
+- `index.pb` decoder checked against the live keiyoushi index: 1383 manga
+  extensions, correct 64-bit source ids / versions / nsfw flags
+- Fresh jar installed at
+  `~/Documents/Dartotsu/bridge/plugins/aniyomiDesktop-plugin.jar`
+  (previous one kept as `*.bak-20260910`)
+
+## Still open
+
+- **`HttpServer` (extensions-lib 17) is not implemented.** It extends
+  `NanoHTTPD`, which the fork doesn't depend on. Extensions that subclass it will
+  fail to load; nothing else is affected. Adding it means pulling in
+  `org.nanohttpd:nanohttpd` and wiring `Video.usesHttpServer()` /
+  `copyHttpServer()`.
+- `Video.memo` (lib 17) not added — `Video` is a `@Serializable` data class in
+  this fork with its own compat constructors, so it needs a more careful pass.
+- Runtime behaviour is unverified: everything here is compile- and unit-verified
+  only. Loading a real extension and calling `getPopular` / `search` /
+  `getVideoList` still needs a manual pass in the app.
+- Building `:aniyomi:aniyomiAndroid` **in isolation** fails with
+  `Unresolved reference 'CustomMethods'` — `aniyomiCommon/build.gradle.kts` only
+  puts `commonDesktopLib` on `commonMain`'s classpath when no invoked task name
+  contains "Android", yet `commonMain` references the desktop-only
+  `CustomMethods`. Works via `buildAllPlugins`. Worth fixing separately.
