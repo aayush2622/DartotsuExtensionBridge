@@ -1,5 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
+import com.aayush262.dartotsu_extension_bridge.util.ExtensionConvert
 import com.aayush262.dartotsu_extension_bridge.util.PackageTools
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
@@ -34,20 +35,15 @@ actual object AnimeExtensionLoader {
             ?.filter { it.isFile && it.extension == "apk" }
             ?: emptyList()
 
+        val loaded = ExtensionConvert.parallel(apks, { it.name }) { apk ->
+            loadExtensionInternal(apk) to apk.absolutePath
+        }
+
         val byPackage = mutableMapOf<String, Pair<AnimeExtension.Installed, String>>()
-
-        apks.forEach { apk ->
-            try {
-                val ext = loadExtensionInternal(apk)
-
-                val existing = byPackage[ext.pkgName]
-
-                if (existing == null || ext.versionCode > existing.first.versionCode) {
-                    byPackage[ext.pkgName] = ext to apk.absolutePath
-                }
-
-            } catch (e: Throwable) {
-                Logger.log("Failed to load ${apk.name}: ${e.message}\n${e.stackTraceToString()}")
+        for ((ext, apkPath) in loaded) {
+            val existing = byPackage[ext.pkgName]
+            if (existing == null || ext.versionCode > existing.first.versionCode) {
+                byPackage[ext.pkgName] = ext to apkPath
             }
         }
 
