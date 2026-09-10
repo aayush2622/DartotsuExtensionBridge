@@ -97,7 +97,9 @@ def main() -> None:
     if not repo:
         sys.exit("GITHUB_REPOSITORY environment variable is required.")
 
-    metadata_files = sorted(BUILDS_DIR.glob("*/*-plugin.json"))
+    # matches both <plugin>-plugin.json and the <plugin>-plugin-ios.json
+    # variant produced by `./gradlew buildAllPlugins -PiosRuntime=true`
+    metadata_files = sorted(BUILDS_DIR.glob("*/*-plugin*.json"))
     if not metadata_files:
         print("No plugin metadata found under builds/ — nothing to release.")
         write_output("changed", "false")

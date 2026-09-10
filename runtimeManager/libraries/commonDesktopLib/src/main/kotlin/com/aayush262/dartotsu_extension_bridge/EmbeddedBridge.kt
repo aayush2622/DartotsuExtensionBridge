@@ -74,7 +74,13 @@ object EmbeddedBridge {
         loaded.remove(jarPath)?.loader?.let { runCatching { it.close() } }
     }
 
-    /** Lifecycle hooks from the app; nothing to trim yet. */
+    /**
+     * App-lifecycle hooks. Like M-Extension-Server's `EmbeddedBridge.pause`,
+     * these deliberately keep every loaded backend + its source instances
+     * warm across an iOS background/resume cycle so a resume does not repeat
+     * APK conversion and source initialization. The JVM shutdown hook still
+     * does full cleanup when the process exits.
+     */
     @JvmStatic
     fun pause() {
     }
@@ -82,6 +88,10 @@ object EmbeddedBridge {
     @JvmStatic
     fun resume() {
     }
+
+    /** Parity with M-Extension-Server; true once any backend JAR is loaded. */
+    @JvmStatic
+    fun isRunning(): Boolean = loaded.isNotEmpty()
 
     private fun failure(e: Throwable): String = gson.toJson(
         mapOf(

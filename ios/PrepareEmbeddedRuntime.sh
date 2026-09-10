@@ -19,7 +19,8 @@ RUNTIME_DIR="${SCRIPT_DIR}/Runtime"
 trap 'rm -rf "${WORK_DIR}"' EXIT
 
 # --- the embedded-bridge shim JAR -------------------------------------------
-# Built by: (cd runtimeManager && ./gradlew :libraries:commonDesktopLib:embeddedBridgeJar)
+# Built by: (cd runtimeManager && ./gradlew buildEmbeddedBridge)
+#   -> runtimeManager/libraries/commonDesktopLib/build/libs/embedded-bridge.jar
 # then published to a GitHub release. Until that release exists, drop the jar
 # at ios/Runtime/embedded-bridge.jar by hand and this download is skipped.
 BRIDGE_JAR="${CACHE_DIR}/embedded-bridge.jar"

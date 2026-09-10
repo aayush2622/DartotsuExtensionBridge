@@ -42,8 +42,17 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build all plugins
-        run: ./gradlew buildAllPlugins
+      - name: Build all plugins (desktop + android + embedded-bridge)
+        run: ./gradlew buildEverything
+
+      - name: Build iOS-runtime plugin variants
+        run: ./gradlew buildAllPlugins -PiosRuntime=true
+
+      - name: Stage embedded-bridge.jar for release
+        run: |
+          mkdir -p builds/embeddedBridge
+          cp libraries/commonDesktopLib/build/libs/embedded-bridge.jar \
+             builds/embeddedBridge/embedded-bridge.jar
 
       - name: Download previous release assets
         env:
