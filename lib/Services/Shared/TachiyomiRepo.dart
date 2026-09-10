@@ -305,6 +305,37 @@ enum RepoIndexFormat {
 RepoIndexFormat tachiyomiIndexFormat(String url) =>
     url.endsWith('.pb') ? RepoIndexFormat.protobuf : RepoIndexFormat.json;
 
+/// Decodes raw index [body] bytes into concrete sources, dispatching on the
+/// wire format ([tachiyomiIndexFormat]) so callers don't have to.
+///
+/// Every Tachiyomi-style backend's `static _parseExtensions` (the function it
+/// hands to `compute()`) was a byte-identical JSON-vs-protobuf `if` around
+/// [parseTachiyomiRepoIndex] / [parseTachiyomiPbIndex]; they now just forward
+/// their [prefixes] and [factory] here. Safe to call inside `compute()`.
+List<T> parseTachiyomiIndexBytes<T extends Source>(
+  Uint8List body,
+  String repoUrl,
+  ItemType targetType, {
+  required Map<String, ItemType> prefixes,
+  required T Function(TachiyomiRepoEntry entry) factory,
+}) {
+  if (tachiyomiIndexFormat(repoUrl) == RepoIndexFormat.protobuf) {
+    return parseTachiyomiPbIndex<T>(
+      body: body,
+      repoUrl: repoUrl,
+      targetType: targetType,
+      factory: factory,
+    );
+  }
+  return parseTachiyomiRepoIndex<T>(
+    body: utf8.decode(body, allowMalformed: true),
+    repoUrl: repoUrl,
+    targetType: targetType,
+    prefixes: prefixes,
+    factory: factory,
+  );
+}
+
 /// `contentWarning` enum from the index.pb schema.
 /// 0 unspecified, 1 safe, 2 mixed, 3 nsfw — Mihon treats `>= mixed` as NSFW.
 const _pbContentWarningMixed = 2;
@@ -476,4 +507,91 @@ Future<RepoIndexResponse> fetchTachiyomiRepoIndex(
       throw Exception('Failed to fetch repo (primary + fallback)');
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Shared backend behaviour
+// ---------------------------------------------------------------------------
+
+/// Repo plumbing shared by every Tachiyomi-style backend (Aniyomi, IReader,
+/// Tsundoku — Android and desktop).
+///
+/// `addRepo`, `fetchRepo` and `detectUpdates` were byte-identical across all of
+/// them save for the concrete `Source` subtype (hidden behind
+/// [parseIndexIsolate]) and whether a desktop backend refreshes the stored
+/// extension count on every fetch ([refreshExtensionCountOnFetch]).
+mixin TachiyomiRepoBackend on Extension {
+  /// HTTP client used for repo index fetches.
+  http.Client get repoClient;
+
+  /// The backend's `static _parseExtensions` — the function handed to
+  /// `compute()`. Kept per-backend so the isolate entry point stays a plain
+  /// static tear-off; this mixin just calls it.
+  List<Source> Function((Uint8List body, String repoUrl, ItemType type))
+  get parseIndexIsolate;
+
+  /// Desktop backends persist the parsed count back onto the [Repo] after every
+  /// fetch; the Android ones only do it when a repo is first added. Defaults to
+  /// the Android behaviour.
+  bool get refreshExtensionCountOnFetch => false;
+
+  @override
+  Future<void> addRepo(String repoUrl, ItemType type) async {
+    try {
+      final uri = Uri.tryParse(repoUrl);
+      if (uri == null || !uri.hasScheme) {
+        throw Exception("Invalid repo URL");
+      }
+
+      final normalizedUrl = repoUrl.replaceAll(RegExp(r'/+$'), '');
+
+      final repos = loadRepos(type);
+      if (repos.any((r) => r.url == normalizedUrl)) {
+        return;
+      }
+
+      final index = await fetchTachiyomiRepoIndex(repoClient, normalizedUrl);
+      final parsed = await compute(parseIndexIsolate, (
+        index.body,
+        index.url,
+        type,
+      ));
+
+      final repo = Repo(
+        name: repoNameFromUrl(repoUrl),
+        url: normalizedUrl,
+        extensions: parsed.length.toString(),
+      );
+      final updatedRepos = List<Repo>.from(repos)..add(repo);
+      saveRepos(updatedRepos, type);
+      state(type).repos.value = updatedRepos;
+      await selectRepo(repo, type);
+    } catch (e) {
+      Logger.log("Failed to add repo $repoUrl: $e");
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
+    try {
+      final index = await fetchTachiyomiRepoIndex(repoClient, repo.url);
+      final extensions = await compute(parseIndexIsolate, (
+        index.body,
+        index.url,
+        type,
+      ));
+      if (refreshExtensionCountOnFetch) {
+        await updateRepoExtensionCount(repo, type, extensions.length);
+      }
+      return extensions;
+    } catch (e) {
+      Logger.log("Failed to fetch repo ${repo.url}: $e");
+      return const [];
+    }
+  }
+
+  @override
+  void detectUpdates(List<Source> available, ItemType type) =>
+      detectTachiyomiUpdates(this, available, type);
 }

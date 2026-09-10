@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
 import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
@@ -18,7 +19,7 @@ import '../../Shared/TachiyomiRepo.dart';
 import '../AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
 
-class AniyomiDesktopExtensions extends Extension {
+class AniyomiDesktopExtensions extends Extension with TachiyomiRepoBackend {
   @override
   String get id => 'aniyomi_desktop';
 
@@ -44,6 +45,16 @@ class AniyomiDesktopExtensions extends Extension {
   final JavaBridge jni = SidecarBridge();
 
   final _client = MClient.init();
+
+  @override
+  http.Client get repoClient => _client;
+
+  @override
+  List<Source> Function((Uint8List body, String repoUrl, ItemType type))
+  get parseIndexIsolate => _parseExtensions;
+
+  @override
+  bool get refreshExtensionCountOnFetch => true;
   final _context = DartotsuExtensionBridge.context;
 
   @override
@@ -219,44 +230,6 @@ class AniyomiDesktopExtensions extends Extension {
   Future<void> updateSource(Source source) async => await installSource(source);
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) async {
-    try {
-      final uri = Uri.tryParse(repoUrl);
-      if (uri == null || !uri.hasScheme) {
-        throw Exception("Invalid repo URL");
-      }
-
-      final normalizedUrl = repoUrl.replaceAll(RegExp(r'/+$'), '');
-
-      final repos = loadRepos(type);
-      if (repos.any((r) => r.url == normalizedUrl)) {
-        return;
-      }
-
-      final index = await fetchTachiyomiRepoIndex(_client, normalizedUrl);
-
-      final parsed = await compute(_parseExtensions, (
-        index.body,
-        index.url,
-        type,
-      ));
-
-      final repo = Repo(
-        name: repoNameFromUrl(repoUrl),
-        url: normalizedUrl,
-        extensions: parsed.length.toString(),
-      );
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
-      saveRepos(updatedRepos, type);
-      state(type).repos.value = updatedRepos;
-      await selectRepo(repo, type);
-    } catch (e) {
-      Logger.log("Failed to add repo $repoUrl: $e");
-      rethrow;
-    }
-  }
-
-  @override
   Set<String> get schemes => {"aniyomi", "tachiyomi"};
 
   @override
@@ -266,29 +239,16 @@ class AniyomiDesktopExtensions extends Extension {
   List<ExtensionSetting> settings(context) => [];
   static List<AdSource> _parseExtensions(
     (Uint8List body, String repoUrl, ItemType itemType) args,
-  ) {
-    final (body, repoUrl, targetType) = args;
-
-    if (tachiyomiIndexFormat(repoUrl) == RepoIndexFormat.protobuf) {
-      return parseTachiyomiPbIndex<AdSource>(
-        body: body,
-        repoUrl: repoUrl,
-        targetType: targetType,
-        factory: _sourceFromEntry,
-      );
-    }
-
-    return parseTachiyomiRepoIndex<AdSource>(
-      body: utf8.decode(body, allowMalformed: true),
-      repoUrl: repoUrl,
-      targetType: targetType,
-      prefixes: const {
-        'Aniyomi: ': ItemType.anime,
-        'Tachiyomi: ': ItemType.manga,
-      },
-      factory: _sourceFromEntry,
-    );
-  }
+  ) => parseTachiyomiIndexBytes<AdSource>(
+    args.$1,
+    args.$2,
+    args.$3,
+    prefixes: const {
+      'Aniyomi: ': ItemType.anime,
+      'Tachiyomi: ': ItemType.manga,
+    },
+    factory: _sourceFromEntry,
+  );
 
   static AdSource _sourceFromEntry(TachiyomiRepoEntry e) => AdSource(
     id: e.id,
@@ -304,27 +264,6 @@ class AniyomiDesktopExtensions extends Extension {
     apkUrlOverride: e.apkUrl,
     jarUrl: e.jarUrl,
   );
-
-  @override
-  void detectUpdates(List<Source> available, ItemType type) =>
-      detectTachiyomiUpdates(this, available, type);
-
-  @override
-  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
-    try {
-      final index = await fetchTachiyomiRepoIndex(_client, repo.url);
-      final extensions = await compute(_parseExtensions, (
-        index.body,
-        index.url,
-        type,
-      ));
-      await updateRepoExtensionCount(repo, type, extensions.length);
-      return extensions;
-    } catch (e) {
-      Logger.log("Failed to fetch repo ${repo.url}: $e");
-      return const [];
-    }
-  }
 }
 
 class AniyomiDesktopPlugin extends DownloadablePlugin {

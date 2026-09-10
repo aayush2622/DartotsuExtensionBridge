@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +22,7 @@ import '../../Shared/TachiyomiRepo.dart';
 import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
 
-class IReaderExtensions extends Extension {
+class IReaderExtensions extends Extension with TachiyomiRepoBackend {
   @override
   String get id => 'ireader';
 
@@ -47,6 +46,13 @@ class IReaderExtensions extends Extension {
         IReaderSourceMethods(source as ISource, MethodChannelBridge(platform)),
   );
   final _client = MClient.init();
+
+  @override
+  http.Client get repoClient => _client;
+
+  @override
+  List<Source> Function((Uint8List body, String repoUrl, ItemType type))
+  get parseIndexIsolate => _parseExtensions;
   @override
   DownloadablePlugin plugin = IReaderPlugin();
   final platform = const MethodChannel('ireaderExtensionBridge');
@@ -285,44 +291,6 @@ class IReaderExtensions extends Extension {
   }
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) async {
-    try {
-      final uri = Uri.tryParse(repoUrl);
-      if (uri == null || !uri.hasScheme) {
-        throw Exception("Invalid repo URL");
-      }
-
-      final normalizedUrl = repoUrl.replaceAll(RegExp(r'/+$'), '');
-
-      final repos = loadRepos(type);
-      if (repos.any((r) => r.url == normalizedUrl)) {
-        return;
-      }
-
-      final index = await fetchTachiyomiRepoIndex(_client, normalizedUrl);
-
-      final parsed = await compute(_parseExtensions, (
-        index.body,
-        index.url,
-        type,
-      ));
-
-      final repo = Repo(
-        name: repoNameFromUrl(repoUrl),
-        url: normalizedUrl,
-        extensions: parsed.length.toString(),
-      );
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
-      saveRepos(updatedRepos, type);
-      state(type).repos.value = updatedRepos;
-      await selectRepo(repo, type);
-    } catch (e) {
-      Logger.log("Failed to add repo $repoUrl: $e");
-      rethrow;
-    }
-  }
-
-  @override
   Set<String> get schemes => {"ireader"};
 
   @override
@@ -377,26 +345,13 @@ class IReaderExtensions extends Extension {
 
   static List<ISource> _parseExtensions(
     (Uint8List body, String repoUrl, ItemType itemType) args,
-  ) {
-    final (body, repoUrl, targetType) = args;
-
-    if (tachiyomiIndexFormat(repoUrl) == RepoIndexFormat.protobuf) {
-      return parseTachiyomiPbIndex<ISource>(
-        body: body,
-        repoUrl: repoUrl,
-        targetType: targetType,
-        factory: _sourceFromEntry,
-      );
-    }
-
-    return parseTachiyomiRepoIndex<ISource>(
-      body: utf8.decode(body, allowMalformed: true),
-      repoUrl: repoUrl,
-      targetType: targetType,
-      prefixes: const {'ireader: ': ItemType.novel},
-      factory: _sourceFromEntry,
-    );
-  }
+  ) => parseTachiyomiIndexBytes<ISource>(
+    args.$1,
+    args.$2,
+    args.$3,
+    prefixes: const {'ireader: ': ItemType.novel},
+    factory: _sourceFromEntry,
+  );
 
   static ISource _sourceFromEntry(TachiyomiRepoEntry e) => ISource(
     id: e.id,
@@ -414,21 +369,6 @@ class IReaderExtensions extends Extension {
     apkUrl: e.apkUrl,
     jarUrl: e.jarUrl,
   );
-
-  @override
-  void detectUpdates(List<Source> available, ItemType type) =>
-      detectTachiyomiUpdates(this, available, type);
-
-  @override
-  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
-    try {
-      final index = await fetchTachiyomiRepoIndex(_client, repo.url);
-      return compute(_parseExtensions, (index.body, index.url, type));
-    } catch (e) {
-      Logger.log("Failed to fetch repo ${repo.url}: $e");
-      return const [];
-    }
-  }
 }
 
 class IReaderPlugin extends DownloadablePlugin {
