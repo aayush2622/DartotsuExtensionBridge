@@ -7,9 +7,56 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 object Server {
     private val outputLock = Any()
     private val requestScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /**
+     * Serializes concurrent RPCs that target the same source.
+     *
+     * Many Mihon/Aniyomi sources keep pagination cursors and other mutable
+     * state on the source object, so overlapping calls to one source corrupt
+     * each other. M-Extension-Server guards this with a per-instance lock in
+     * `ExtensionInstanceCache`; the sidecar (`run`) fans every line out on
+     * `requestScope`, and the embedded bridge can be driven from several native
+     * threads, so both need the same guard. Calls to *different* sources still
+     * run in parallel.
+     */
+    private val sourceLocks = java.util.concurrent.ConcurrentHashMap<String, Mutex>()
+
+    private suspend fun <T> withSourceLock(params: JsonObject, block: suspend () -> T): T {
+        val id = params["sourceId"]?.asString ?: return block()
+        return sourceLocks.getOrPut(id) { Mutex() }.withLock { block() }
+    }
+
+    /**
+     * One request in, envelope JSON out — the entry point the iOS
+     * [EmbeddedBridge] reflects into (`Main.handle`). Runs entirely inside the
+     * backend JAR's own class loader, so `runBlocking` / [Gson] / [handle] are
+     * all the backend's own copies (see [EmbeddedBridge] isolation notes).
+     */
+    @JvmStatic
+    fun handleEmbedded(api: ExtensionApi, requestJson: String): String {
+        val gson = Gson()
+        return try {
+            val req = gson.fromJson(requestJson, JsonObject::class.java)
+            val method = req["method"].asString
+            val params = req["args"]?.asJsonObject ?: JsonObject()
+            val data = runBlocking { withSourceLock(params) { handle(api, method, params) } }
+            gson.toJson(mapOf("success" to true, "data" to data))
+        } catch (e: Throwable) {
+            gson.toJson(
+                mapOf(
+                    "success" to false,
+                    "error" to (e.message ?: e.javaClass.simpleName),
+                    "trace" to e.stackTraceToString(),
+                ),
+            )
+        }
+    }
 
     /**
      * Runs one request against [api] and returns its payload (already a JSON
@@ -123,7 +170,7 @@ object Server {
                     val method = req["method"].asString
                     val params = req["args"]?.asJsonObject ?: JsonObject()
 
-                    val result = handle(api, method, params)
+                    val result = withSourceLock(params) { handle(api, method, params) }
 
                     synchronized(outputLock) {
                         println(

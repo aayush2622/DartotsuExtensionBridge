@@ -477,9 +477,10 @@ void DetachCurrentWorker() {
   }
 }
 
-// Runs `body` on the bootstrap thread with a live JNIEnv, hops the result back
-// to the main queue. `body` returns an NSString result (or nil) and may set
-// *error.
+// Runs `body` on the dedicated 8 MiB-stack bootstrap thread with a live
+// JNIEnv. Used for VM creation and the rare load/unload/lifecycle ops:
+// creating the VM must happen on this big stack (Zero's java.lang bootstrap
+// exhausts a small one), and load/unload just mutate a ConcurrentHashMap.
 void RunOnJvm(void (^body)(JNIEnv *env, NSString **result, NSError **error),
               EmbeddedJvmResultCompletion completion) {
   [EmbeddedJvmThread() enqueueBlock:^{
@@ -498,6 +499,56 @@ void RunOnJvm(void (^body)(JNIEnv *env, NSString **result, NSError **error),
       });
     }
   }];
+}
+
+// Concurrent queue for `call`. The single bootstrap thread would serialize
+// every extension request across all backends (M-Extension-Server gets
+// concurrency from NanoHTTPD's worker pool). Instead each call attaches a
+// fresh JNI thread, runs, and detaches; same-source calls still serialize
+// inside `Server.handleEmbedded` (`withSourceLock`), different sources run in
+// parallel. The VM is never *created* here — `EmbeddedJvmStart` (bootstrap
+// thread) must have run first, which the Dart side awaits.
+dispatch_queue_t EmbeddedJvmCallQueue() {
+  static dispatch_queue_t queue;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    queue = dispatch_queue_create(
+        "com.aayush262.dartotsu_extension_bridge.embedded-jvm.call",
+        DISPATCH_QUEUE_CONCURRENT);
+  });
+  return queue;
+}
+
+void AttachInvokeDetach(void (^body)(JNIEnv *env, NSString **result,
+                                     NSError **error),
+                        EmbeddedJvmResultCompletion completion) {
+  dispatch_async(EmbeddedJvmCallQueue(), ^{
+    @autoreleasepool {
+      NSError *error = nil;
+      NSString *result = nil;
+      JavaVM *vm = gJavaVM;
+      if (vm == nullptr) {
+        error = EmbeddedJvmError(
+            2, @"The embedded Java runtime is not started yet.");
+      } else {
+        JNIEnv *environment = nullptr;
+        jint attach = vm->AttachCurrentThread(
+            reinterpret_cast<void **>(&environment), nullptr);
+        if (attach != JNI_OK || environment == nullptr) {
+          error = EmbeddedJvmError(
+              6, @"The embedded Java runtime could not attach a worker.");
+        } else {
+          body(environment, &result, &error);
+          vm->DetachCurrentThread();
+        }
+      }
+      NSString *captured = result;
+      NSError *capturedError = error;
+      dispatch_async(dispatch_get_main_queue(), ^{
+        completion(captured, capturedError);
+      });
+    }
+  });
 }
 
 }  // namespace
@@ -536,7 +587,7 @@ void EmbeddedJvmLoad(NSString *jarPath, EmbeddedJvmCompletion completion) {
 
 void EmbeddedJvmCall(NSString *jarPath, NSString *requestJson,
                      EmbeddedJvmResultCompletion completion) {
-  RunOnJvm(
+  AttachInvokeDetach(
       ^(JNIEnv *env, NSString **result, NSError **error) {
         jstring path = env->NewStringUTF(jarPath.UTF8String);
         jstring request = env->NewStringUTF(requestJson.UTF8String);

@@ -44,7 +44,7 @@ actual object TsundokuPlatformInit {
                 Looper.loop()
             }
         }
-        mainLoop.start()
+        mainLoop.apply { isDaemon = true }.start()
         startKoin {
             modules(
                 listOf(

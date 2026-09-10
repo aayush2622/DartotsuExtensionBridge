@@ -10,7 +10,14 @@ class ChildFirstURLClassLoader(
     urls: Array<URL>,
     parent: ClassLoader? = null,
 ) : URLClassLoader(urls, parent) {
-    private val systemClassLoader: ClassLoader? = getSystemClassLoader()
+    // The runtime this loader delegates non-extension classes to. On desktop
+    // (`java -jar`) the loader of this class IS the system class loader, so
+    // this is identical to `getSystemClassLoader()`. Under the iOS embedded VM
+    // the backend runtime lives in EmbeddedBridge's per-backend URLClassLoader,
+    // not on the system class path, and `getSystemClassLoader()` would only see
+    // the tiny shim — hence delegate to this class' own loader instead.
+    private val systemClassLoader: ClassLoader? =
+        ChildFirstURLClassLoader::class.java.classLoader ?: getSystemClassLoader()
 
     override fun loadClass(
         name: String?,
