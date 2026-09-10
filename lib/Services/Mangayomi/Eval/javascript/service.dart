@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter_qjs/flutter_qjs.dart';
@@ -14,6 +15,7 @@ import '../dart/model/video.dart';
 import 'dom_selector.dart';
 import 'extractors.dart';
 import 'http.dart';
+import 'js_errors.dart';
 import 'preferences.dart';
 import 'utils.dart';
 
@@ -80,16 +82,25 @@ async function jsonStringify(fn) {
     return JSON.stringify(await fn());
 }
 ''');
-    runtime.evaluate('''${source.sourceCode}
+    // evaluate() reports a failure by returning a result with isError set; it
+    // does not throw. Ignoring that meant a source which failed to evaluate
+    // still set _isInitialized, so `extention` was never created and every
+    // later call answered its default. That is what "Video list is empty"
+    // was: not an empty list from the source, but a source that never loaded.
+    // See kodjodevf/mangayomi#873.
+    _throwIfError(
+      runtime.evaluate('''${source.sourceCode}
 var extention = new DefaultExtension();
-''');
+'''),
+      'loading the source',
+    );
     _isInitialized = true;
   }
 
   @override
   Map<String, String> getHeaders() {
     return _extensionCall<Map>(
-      'getHeaders(`${source.baseUrl ?? ''}`)',
+      'getHeaders(${jsonEncode(source.baseUrl ?? '')})',
       {},
     ).toMapStringString!;
   }
@@ -120,37 +131,56 @@ var extention = new DefaultExtension();
   Future<MPages> search(String query, int page, List<dynamic> filters) async {
     return MPages.fromJson(
       await _extensionCallAsync(
-        'search("$query",$page,${jsonEncode(filterValuesListToJson(filters))})',
+        'search(${jsonEncode(query)},$page,${jsonEncode(filterValuesListToJson(filters))})',
       ),
     );
   }
 
   @override
   Future<MManga> getDetail(String url) async {
-    return MManga.fromJson(await _extensionCallAsync('getDetail(`$url`)'));
+    return MManga.fromJson(
+      await _extensionCallAsync('getDetail(${jsonEncode(url)})'),
+    );
   }
 
   @override
   Future<List<PageUrl>> getPageList(String url) async {
-    return (await _extensionCallAsync<List>('getPageList(`$url`)'))
-        .map(
-          (e) => e is String
-              ? PageUrl(e.trim())
-              : PageUrl.fromJson((e as Map).toMapStringDynamic!),
-        )
-        .toList();
+    final pages = LinkedHashSet<PageUrl>(
+      equals: (a, b) => a.url == b.url,
+      hashCode: (p) => p.url.hashCode,
+    );
+
+    for (final e in await _extensionCallAsync<List>(
+      'getPageList(${jsonEncode(url)})',
+    )) {
+      if (e != null) {
+        final page = e is String
+            ? PageUrl(e.trim())
+            : PageUrl.fromJson((e as Map).toMapStringDynamic!);
+        pages.add(page);
+      }
+    }
+
+    return pages.toList();
   }
 
   @override
   Future<List<Video>> getVideoList(String url) async {
-    return (await _extensionCallAsync<List>('getVideoList(`$url`)'))
-        .where(
-          (element) => element['url'] != null && element['originalUrl'] != null,
-        )
-        .map((e) => Video.fromJson(e))
-        .toList()
-        .toSet()
-        .toList();
+    final videos = LinkedHashSet<Video>(
+      equals: (a, b) => a.url == b.url && a.originalUrl == b.originalUrl,
+      hashCode: (v) => Object.hash(v.url, v.originalUrl),
+    );
+
+    for (final element in await _extensionCallAsync<List>(
+      'getVideoList(${jsonEncode(url)})',
+    )) {
+      if (element != null &&
+          element['url'] != null &&
+          element['originalUrl'] != null) {
+        videos.add(Video.fromJson(element));
+      }
+    }
+    return videos.toList();
   }
 
   @override
@@ -158,7 +188,7 @@ var extention = new DefaultExtension();
     _init();
     final res = (await runtime.handlePromise(
       await runtime.evaluateAsync(
-        'jsonStringify(() => extention.getHtmlContent(`$name`, `$url`))',
+        'jsonStringify(() => extention.getHtmlContent(${jsonEncode(name)}, ${jsonEncode(url)}))',
       ),
     )).stringResult;
     return res;
@@ -169,7 +199,7 @@ var extention = new DefaultExtension();
     _init();
     final res = (await runtime.handlePromise(
       await runtime.evaluateAsync(
-        'jsonStringify(() => extention.cleanHtmlContent(`$html`))',
+        'jsonStringify(() => extention.cleanHtmlContent(${jsonEncode(html)}))',
       ),
     )).stringResult;
     return res;
@@ -202,15 +232,20 @@ var extention = new DefaultExtension();
   T _extensionCall<T>(String call, T def) {
     _init();
 
-    try {
-      final res = runtime.evaluate('JSON.stringify(extention.$call)');
+    final res = runtime.evaluate('JSON.stringify(extention.$call)');
+    if (res.isError) {
+      // A source that simply does not implement an optional method is not a
+      // failure, and falling back is the whole point of `def`. Anything else
+      // is a real error and used to arrive as a JSON parse failure, or as
+      // silence when def was non-null.
+      if (_isNotImplemented(res) && def != null) return def;
+      _throwIfError(res, call);
+    }
 
+    try {
       return jsonDecode(res.stringResult) as T;
     } catch (_) {
-      if (def != null) {
-        return def;
-      }
-
+      if (def != null) return def;
       rethrow;
     }
   }
@@ -218,14 +253,35 @@ var extention = new DefaultExtension();
   Future<T> _extensionCallAsync<T>(String call) async {
     _init();
 
-    try {
-      final promised = await runtime.handlePromise(
-        await runtime.evaluateAsync('jsonStringify(() => extention.$call)'),
-      );
+    final evaluated = await runtime.evaluateAsync(
+      'jsonStringify(() => extention.$call)',
+    );
+    _throwIfError(evaluated, call);
 
-      return jsonDecode(promised.stringResult) as T;
-    } catch (e) {
-      rethrow;
-    }
+    final promised = await runtime.handlePromise(evaluated);
+    _throwIfError(promised, call);
+
+    return jsonDecode(promised.stringResult) as T;
   }
+
+  /// Turns a failed evaluation into an error that says what the source
+  /// actually reported.
+  ///
+  /// Without this the message reaching the reader is either nothing at all or
+  /// a JSON parse failure, neither of which says which source broke or why.
+  void _throwIfError(JsEvalResult result, String what) {
+    if (!result.isError) return;
+    throw Exception(
+      jsExtensionErrorMessage(
+        sourceName: source.name ?? 'unknown',
+        whileDoing: what,
+        reported: result.stringResult,
+      ),
+    );
+  }
+
+  /// Whether this is the base class saying the source does not implement
+  /// something, rather than the source going wrong.
+  bool _isNotImplemented(JsEvalResult result) =>
+      isNotImplementedError(result.stringResult);
 }
