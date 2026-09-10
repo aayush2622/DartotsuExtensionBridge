@@ -215,48 +215,13 @@ class TsundokuDesktopExtensions extends Extension {
         return;
       }
 
-      final indexUrl = normalizedUrl.endsWith("index.min.json")
-          ? normalizedUrl
-          : "$normalizedUrl/index.min.json";
+      final index = await fetchTachiyomiRepoIndex(_client, normalizedUrl);
 
-      http.Response? res;
-      String usedUrl = indexUrl;
-
-      try {
-        res = await _client
-            .get(Uri.parse(indexUrl))
-            .timeout(const Duration(seconds: 10));
-
-        if (res.statusCode != 200) {
-          throw Exception("Primary failed");
-        }
-      } catch (e) {
-        Logger.log("Primary repo failed: $indexUrl → $e");
-
-        final fallback = tachiyomiFallbackRepoUrl(normalizedUrl);
-        if (fallback == null) {
-          throw Exception("Invalid repo & no fallback available");
-        }
-
-        final fallbackUrl = "$fallback/index.min.json";
-
-        try {
-          res = await _client
-              .get(Uri.parse(fallbackUrl))
-              .timeout(const Duration(seconds: 10));
-
-          if (res.statusCode != 200) {
-            throw Exception("Fallback failed");
-          }
-
-          usedUrl = fallbackUrl;
-        } catch (e2) {
-          Logger.log("Fallback failed: $fallbackUrl → $e2");
-          throw Exception("Failed to fetch repo (primary + fallback)");
-        }
-      }
-
-      final parsed = await compute(_parseExtensions, (res.body, usedUrl, type));
+      final parsed = await compute(_parseExtensions, (
+        index.body,
+        index.url,
+        type,
+      ));
 
       final repo = Repo(
         name: repoNameFromUrl(repoUrl),
@@ -282,29 +247,42 @@ class TsundokuDesktopExtensions extends Extension {
   @override
   List<ExtensionSetting> settings(context) => [];
   static List<TdSource> _parseExtensions(
-    (String body, String repoUrl, ItemType itemType) args,
+    (Uint8List body, String repoUrl, ItemType itemType) args,
   ) {
     final (body, repoUrl, targetType) = args;
 
+    if (tachiyomiIndexFormat(repoUrl) == RepoIndexFormat.protobuf) {
+      return parseTachiyomiPbIndex<TdSource>(
+        body: body,
+        repoUrl: repoUrl,
+        targetType: targetType,
+        factory: _sourceFromEntry,
+      );
+    }
+
     return parseTachiyomiRepoIndex<TdSource>(
-      body: body,
+      body: utf8.decode(body, allowMalformed: true),
       repoUrl: repoUrl,
       targetType: targetType,
       prefixes: const {'Tsundoku: ': ItemType.novel},
-      factory: (e) => TdSource(
-        id: e.id,
-        name: e.name,
-        pkgName: e.pkgName,
-        apkName: e.apkName,
-        lang: e.lang,
-        version: e.version,
-        isNsfw: e.isNsfw,
-        itemType: e.itemType,
-        repo: e.repo,
-        iconUrl: e.iconUrl,
-      ),
+      factory: _sourceFromEntry,
     );
   }
+
+  static TdSource _sourceFromEntry(TachiyomiRepoEntry e) => TdSource(
+    id: e.id,
+    name: e.name,
+    pkgName: e.pkgName,
+    apkName: e.apkName,
+    lang: e.lang,
+    version: e.version,
+    isNsfw: e.isNsfw,
+    itemType: e.itemType,
+    repo: e.repo,
+    iconUrl: e.iconUrl,
+    apkUrlOverride: e.apkUrl,
+    jarUrl: e.jarUrl,
+  );
 
   @override
   void detectUpdates(List<Source> available, ItemType type) =>
@@ -312,54 +290,17 @@ class TsundokuDesktopExtensions extends Extension {
 
   @override
   Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
-    final indexUrl = repo.url.endsWith("index.min.json")
-        ? repo.url
-        : "${repo.url.replaceAll(RegExp(r'/+$'), '')}/index.min.json";
-
     try {
-      final res = await _client
-          .get(Uri.parse(indexUrl))
-          .timeout(const Duration(seconds: 10));
-
-      if (res.statusCode == 200) {
-        var extensions = await compute(_parseExtensions, (
-          res.body,
-          indexUrl,
-          type,
-        ));
-        await updateRepoExtensionCount(repo, type, extensions.length);
-
-        return extensions;
-      }
-
-      throw Exception("Primary fetch failed");
+      final index = await fetchTachiyomiRepoIndex(_client, repo.url);
+      final extensions = await compute(_parseExtensions, (
+        index.body,
+        index.url,
+        type,
+      ));
+      await updateRepoExtensionCount(repo, type, extensions.length);
+      return extensions;
     } catch (e) {
-      Logger.log("Primary repo failed: $indexUrl → $e");
-
-      final fallback = tachiyomiFallbackRepoUrl(repo.url);
-      if (fallback == null) return const [];
-
-      final fallbackUrl = "$fallback/index.min.json";
-
-      try {
-        final res = await _client
-            .get(Uri.parse(fallbackUrl))
-            .timeout(const Duration(seconds: 10));
-
-        if (res.statusCode == 200) {
-          var extensions = await compute(_parseExtensions, (
-            res.body,
-            fallbackUrl,
-            type,
-          ));
-          await updateRepoExtensionCount(repo, type, extensions.length);
-
-          return extensions;
-        }
-      } catch (e2) {
-        Logger.log("Fallback failed: $fallbackUrl → $e2");
-      }
-
+      Logger.log("Failed to fetch repo ${repo.url}: $e");
       return const [];
     }
   }
