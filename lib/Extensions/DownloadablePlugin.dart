@@ -47,7 +47,15 @@ abstract class DownloadablePlugin {
 
   static Future<List<Map<String, dynamic>>>? _loadingIndex;
 
-  static Future<List<Map<String, dynamic>>> _loadIndex(http.Client client) {
+  static Future<List<Map<String, dynamic>>> _loadIndex(
+    http.Client client, {
+    bool forceRefresh = false,
+  }) {
+    if (forceRefresh) {
+      _cachedIndex = null;
+      _loadingIndex = null;
+    }
+
     if (_cachedIndex != null) {
       return Future.value(_cachedIndex!);
     }
@@ -109,7 +117,10 @@ abstract class DownloadablePlugin {
     if (_cachedMeta != null) return _cachedMeta;
 
     try {
-      final entries = await DownloadablePlugin._loadIndex(_client);
+      final entries = await DownloadablePlugin._loadIndex(
+        _client,
+        forceRefresh: forceRefresh,
+      );
       final entry = entries.firstWhere(
         (e) => e["name"] == name,
         orElse: () => const {},
@@ -230,13 +241,13 @@ abstract class DownloadablePlugin {
     const maxRetries = 10;
 
     while (true) {
-      final downloaded = await temp.exists() ? await temp.length() : 0;
+      var resumeFrom = await temp.exists() ? await temp.length() : 0;
 
       final request = http.Request("GET", Uri.parse(url));
 
-      if (downloaded > 0) {
-        request.headers["Range"] = "bytes=$downloaded-";
-        Logger.log("Resuming $name from ${formatSize(downloaded)}");
+      if (resumeFrom > 0) {
+        request.headers["Range"] = "bytes=$resumeFrom-";
+        Logger.log("Resuming $name from ${formatSize(resumeFrom)}");
       }
 
       try {
@@ -246,32 +257,37 @@ abstract class DownloadablePlugin {
           throw Exception("Download failed (${response.statusCode})");
         }
 
+        // A 200 means the server ignored our Range header and is streaming the
+        // whole file from byte 0 — appending it to the existing partial would
+        // corrupt the archive. Only a 206 is a genuine resume.
+        final resuming = response.statusCode == 206 && resumeFrom > 0;
+        if (!resuming) resumeFrom = 0;
+
         final sink = temp.openWrite(
-          mode: downloaded > 0 ? FileMode.append : FileMode.write,
+          mode: resuming ? FileMode.append : FileMode.write,
         );
 
-        int received = downloaded;
+        int received = resumeFrom;
 
-        int? total;
-        if (response.statusCode == 206) {
-          total = response.contentLength == null
-              ? null
-              : downloaded + response.contentLength!;
-        } else {
-          total = response.contentLength;
-        }
+        final int? total = resuming
+            ? (response.contentLength == null
+                  ? null
+                  : resumeFrom + response.contentLength!)
+            : response.contentLength;
 
-        await for (final chunk in response.stream) {
-          sink.add(chunk);
-          received += chunk.length;
+        try {
+          await for (final chunk in response.stream) {
+            sink.add(chunk);
+            received += chunk.length;
 
-          if (total != null && total > 0) {
-            progress.value = received / total;
+            if (total != null && total > 0) {
+              progress.value = received / total;
+            }
           }
+          await sink.flush();
+        } finally {
+          await sink.close();
         }
-
-        await sink.flush();
-        await sink.close();
 
         if (total != null && received < total) {
           throw Exception("Incomplete download");

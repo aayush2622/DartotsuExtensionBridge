@@ -162,10 +162,18 @@ class MangayomiExtensions extends Extension {
 
       if (repo == null) continue;
 
-      if (compareVersions(repo.version ?? "0", inst.version ?? "0") > 0) {
+      final hasUpdate =
+          compareVersions(repo.version ?? "0", inst.version ?? "0") > 0;
+
+      if (hasUpdate) {
         installed[i] = inst
           ..hasUpdate = true
           ..versionLast = repo.version;
+        changed = true;
+      } else if (inst.hasUpdate == true) {
+        // Repo caught up (e.g. the extension was updated) — drop the flag so
+        // the UI stops offering an update that would be a no-op.
+        installed[i] = inst..hasUpdate = false;
         changed = true;
       }
     }

@@ -184,6 +184,13 @@ class IReaderExtensions extends Extension {
     final s = source as ISource;
     final type = source.itemType!;
 
+    final privatePkgName =
+        s.pkgName ??
+        s.apkName?.replaceAll('.apk', '') ??
+        s.apkUrl?.split('/').last.replaceAll('.apk', '') ??
+        s.id ??
+        '';
+
     try {
       if (s.isShared == false) {
         final baseDir = await DartotsuExtensionBridge.context.getDirectory(
@@ -191,7 +198,11 @@ class IReaderExtensions extends Extension {
           useSystemPath: false,
           useCustomPath: true,
         );
-        final apkFileName = path.basename(s.apkPath!);
+        // installSource wrote this as `<pkg>.apk`; apkPath isn't persisted on
+        // ISource so don't force-unwrap it.
+        final apkFileName = s.apkPath != null
+            ? path.basename(s.apkPath!)
+            : (s.apkName ?? '$privatePkgName.apk');
 
         final file = File(path.join(baseDir!.path, apkFileName));
 

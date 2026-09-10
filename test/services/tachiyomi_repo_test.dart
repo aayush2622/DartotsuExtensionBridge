@@ -141,6 +141,58 @@ void main() {
       expect(result.single.name, 'Noveler');
     });
 
+    test('derives the apk download url from the fixed repo layout', () {
+      TachiyomiRepoEntry? captured;
+      parseTachiyomiRepoIndex<Source>(
+        body: body([
+          {
+            'name': 'Aniyomi: Foo',
+            'pkg': 'x.foo',
+            'apk': 'tachiyomi-x.foo-v1.4.9.apk',
+            'sources': [
+              {'id': '1'},
+            ],
+          },
+        ]),
+        repoUrl: 'https://host/o/r/index.min.json',
+        targetType: ItemType.anime,
+        prefixes: const {'Aniyomi: ': ItemType.anime},
+        factory: (e) {
+          captured = e;
+          return factory(e);
+        },
+      );
+
+      expect(
+        captured!.apkUrl,
+        'https://host/o/r/apk/tachiyomi-x.foo-v1.4.9.apk',
+      );
+    });
+
+    test('apkUrl is null when the entry has no apk file', () {
+      TachiyomiRepoEntry? captured;
+      parseTachiyomiRepoIndex<Source>(
+        body: body([
+          {
+            'name': 'Aniyomi: Foo',
+            'pkg': 'x.foo',
+            'sources': [
+              {'id': '1'},
+            ],
+          },
+        ]),
+        repoUrl: 'https://host/o/r/index.min.json',
+        targetType: ItemType.anime,
+        prefixes: const {'Aniyomi: ': ItemType.anime},
+        factory: (e) {
+          captured = e;
+          return factory(e);
+        },
+      );
+
+      expect(captured!.apkUrl, isNull);
+    });
+
     test('maps nsfw==1 to isNsfw and derives id from sources[0]', () {
       final result = parseTachiyomiRepoIndex<Source>(
         body: body([

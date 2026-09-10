@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
 import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
@@ -18,6 +17,7 @@ import '../../../Logger.dart';
 import '../../../Models/Source.dart';
 import '../../../NetworkClient.dart';
 import '../../Network.dart';
+import '../../Shared/TachiyomiRepo.dart';
 import '../CloudStreamSourceMethods.dart';
 import 'Models/Source.dart';
 
@@ -67,6 +67,11 @@ class CloudStreamDesktopExtensions extends Extension {
 
     await jni.init(pluginJarPath: filePath);
 
+    // NOTE: every other path in this class is under `bridge/cloudStream`; this
+    // one says `bridge/aniyomi`. Left as-is because the desktop sidecar's
+    // `initializeDesktop` contract (shared JVM with the Aniyomi backend?) isn't
+    // in scope here — see runtimeManager. Revisit if CloudStream desktop state
+    // turns up in the wrong directory.
     var file = await _context.getDirectory(subPath: 'bridge/aniyomi');
 
     await jni.call<void>("initializeDesktop", {"path": file!.path});
@@ -172,6 +177,12 @@ class CloudStreamDesktopExtensions extends Extension {
   Future<void> installSource(Source source) async {
     final s = source as CdSource;
     final type = source.itemType!;
+
+    final pluginUrl = s.pluginUrl;
+    if (pluginUrl == null || pluginUrl.isEmpty) {
+      throw Exception("Plugin URL missing");
+    }
+
     final dir = await DartotsuExtensionBridge.context.getDirectory(
       subPath: 'bridge/cloudStream/extensions/Anime',
       useSystemPath: false,
@@ -181,22 +192,11 @@ class CloudStreamDesktopExtensions extends Extension {
     final file = File(
       path.join(
         dir!.path,
-        "${s.name}${path.extension(Uri.parse(s.pluginUrl!).path)}",
+        "${s.name}${path.extension(Uri.parse(pluginUrl).path)}",
       ),
     );
 
-    if (s.pluginUrl == null) {
-      throw Exception("APK URL missing");
-    }
-
-    final request = http.Request('GET', Uri.parse(s.pluginUrl!));
-    final response = await _client.send(request);
-
-    final bytes = await response.stream.fold<List<int>>(
-      [],
-      (a, b) => a..addAll(b),
-    );
-    await file.writeAsBytes(bytes);
+    await downloadPackageFile(_client, pluginUrl, file.path);
 
     final avail = state(type).available;
 
@@ -316,6 +316,8 @@ class CloudStreamDesktopExtensions extends Extension {
       for (var s in available.cast<CdSource>()) s.id?.toLowerCase(): s,
     };
 
+    var changed = false;
+
     for (var i = 0; i < installed.length; i++) {
       final inst = installed[i];
       final repo = repoMap[inst.id?.toLowerCase()];
@@ -327,12 +329,20 @@ class CloudStreamDesktopExtensions extends Extension {
           ..hasUpdate = true
           ..pluginUrl = repo.pluginUrl
           ..versionLast = repo.version;
+        changed = true;
+      } else if (inst.hasUpdate == true) {
+        installed[i] = inst..hasUpdate = false;
+        changed = true;
       }
       if (repo.iconUrl != inst.iconUrl) {
         installed[i] = inst..iconUrl = repo.iconUrl;
+        changed = true;
       }
     }
-    state(type).installed.value = List.unmodifiable(installed);
+
+    if (changed) {
+      state(type).installed.value = List.unmodifiable(installed);
+    }
   }
 
   static List<Source> _parseExtensions(

@@ -185,9 +185,13 @@ class TsundokuExtensions extends Extension {
   Future<void> uninstallSource(Source source) async {
     final s = source as TSource;
     final type = source.itemType!;
-    final packageName =
-        s.pkgName ?? s.apkUrl!.split('/').last.replaceAll('.apk', '');
-    final apkFileName = '$packageName.apk';
+    // Resolve a package name without dereferencing a possibly-null apkUrl.
+    final fallbackPkg =
+        s.pkgName ??
+        s.apkName?.replaceAll('.apk', '') ??
+        s.apkUrl?.split('/').last.replaceAll('.apk', '') ??
+        s.id ??
+        '';
     try {
       if (s.isShared == false) {
         final baseDir = await DartotsuExtensionBridge.context.getDirectory(
@@ -196,6 +200,7 @@ class TsundokuExtensions extends Extension {
           useCustomPath: true,
         );
 
+        final apkFileName = s.apkName ?? '$fallbackPkg.apk';
         final file = File(path.join(baseDir!.path, apkFileName));
 
         if (await file.exists()) {

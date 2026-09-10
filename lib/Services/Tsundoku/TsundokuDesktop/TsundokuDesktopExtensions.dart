@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
 import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
@@ -127,30 +126,34 @@ class TsundokuDesktopExtensions extends Extension {
   Future<void> installSource(Source source) async {
     final s = source as TdSource;
     final type = source.itemType!;
+
+    final downloadUrl = s.apkUrl;
+    if (downloadUrl == null || downloadUrl.isEmpty) {
+      throw Exception("APK URL missing");
+    }
+
+    final fileName =
+        s.apkName ?? s.pkgName ?? path.basename(Uri.parse(downloadUrl).path);
+    if (fileName.isEmpty) {
+      throw Exception("Can't determine a file name for ${s.name}");
+    }
+
     final dir = await DartotsuExtensionBridge.context.getDirectory(
       subPath: 'bridge/tsundoku/extensions/${s.itemType.toString()}',
       useSystemPath: false,
       useCustomPath: true,
     );
 
-    final file = File(path.join(dir!.path, s.apkName));
+    final file = File(path.join(dir!.path, fileName));
 
-    if (s.apkUrl == null) {
-      throw Exception("APK URL missing");
-    }
-
-    final request = http.Request('GET', Uri.parse(s.apkUrl!));
-    final response = await _client.send(request);
-
-    final bytes = await response.stream.fold<List<int>>(
-      [],
-      (a, b) => a..addAll(b),
-    );
-    await file.writeAsBytes(bytes);
     final oldApkPath = s.apkPath;
-    if (oldApkPath != null) {
+
+    await downloadPackageFile(_client, downloadUrl, file.path);
+    s.apkPath = file.path;
+
+    if (oldApkPath != null && oldApkPath != file.path) {
       final oldFile = File(oldApkPath);
-      if (await oldFile.exists() && oldFile.path != file.path) {
+      if (await oldFile.exists()) {
         await oldFile.delete();
         Logger.log('Deleted old extension: ${oldFile.path}');
       }
@@ -169,7 +172,9 @@ class TsundokuDesktopExtensions extends Extension {
     final s = source as TdSource;
     final type = source.itemType!;
 
-    final apkFileName = path.basename(s.apkPath!);
+    final apkFileName = s.apkPath != null
+        ? path.basename(s.apkPath!)
+        : (s.apkName ?? '${s.pkgName ?? s.id}.jar');
 
     final baseDir = await DartotsuExtensionBridge.context.getDirectory(
       subPath: 'bridge/tsundoku/extensions/${type.toString()}',
