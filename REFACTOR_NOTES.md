@@ -118,3 +118,40 @@ plus `DownloadablePlugin` and `detectUpdates`.
   cleans up `.tmp`, non-200 throws & leaves no file, replaces an existing file).
 - `test/services/tachiyomi_repo_test.dart` — +2 cases for the derived `apkUrl`.
 - `dart analyze lib test` clean · `flutter test` 44 pass.
+
+---
+
+## Second consolidation pass (services)
+
+Building on the install/update/delete bug-fix pass:
+
+- **`parseTachiyomiIndexBytes()`** — the JSON-vs-`index.pb` dispatch that all
+  five Tachiyomi-style `static _parseExtensions` reimplemented is now one shared
+  function; each backend's static is a two-line forward of its `prefixes` +
+  `factory`.
+- **`TachiyomiRepoBackend` mixin** — `addRepo` / `fetchRepo` / `detectUpdates`
+  were byte-identical across Aniyomi, Tsundoku and IReader-Android. They live on
+  the mixin now; desktop backends flip `refreshExtensionCountOnFetch` to keep
+  the stored count fresh on every fetch.
+- **`PackagedSource` absorbed the last per-subtype duplication** — the identical
+  `apkUrl` getter (4 copies) and the `apkPath` / `apkName` / `pkgName` fields
+  now live on the base. `ISource` / `IdSource` stop carrying a separate stored
+  `apkUrl`; a legacy persisted value is folded into `apkUrlOverride` on load.
+- **`TachiyomiJniDesktopExtension` mixin** — `installSource` / `updateSource` /
+  `uninstallSource` for the three desktop (JVM-sidecar) backends were identical
+  bar the `bridge/<name>` data dir (now `jniDataDir`) and the `Source` subtype
+  (now `PackagedSource`). ~280 net lines gone.
+
+Net: `lib/Services` is ~600 lines lighter; the per-backend classes are now
+mostly just IDs, platform gating, `onInitialize` wiring and the `_sourceFromEntry`
+factory.
+
+### Still not done
+
+- The **Android** APK trio (`AniyomiExtensions` / `TsundokuExtensions` /
+  `IReaderExtensions`) still each carry their own `installSource` /
+  `uninstallSource` — they share a shape but the private-vs-shared install split,
+  `install_plugin` / `installed_apps` calls and the per-source `isShared` flag
+  make a safe merge fiddlier than the desktop one. Candidate for a third pass.
+- `lib/ExtensionBridge.dart` vs `lib/Extensions/ExtensionBridge.dart` name
+  collision — still there (needs a coordinated app-side change).
