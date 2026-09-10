@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Index of the **Dart** side of `dartotsu_extension_bridge` (everything under `lib/`).
-The `runtimeManager/`, `android/`, `linux/`, `windows/` Kotlin/Java/native code is out of scope here.
+The `runtimeManager/`, `android/`, `ios/`, `linux/`, `windows/` Kotlin/Java/native code is out of scope here.
 
 ## What this package is
 
@@ -75,7 +75,8 @@ used as the factory key.
 | **Kotatsu** | `Services/Kotatsu/` | — | directories only, currently empty. |
 
 Platform gating is in `ExtensionManager._extensionManagers` via `Platform.isAndroid` /
-`isWindows||isLinux||isMacOS`.
+`_jvmBackends` (`isWindows||isLinux||isMacOS||isIOS` — the desktop backends also run on
+iOS through an embedded JVM, see `JavaEngine/` below).
 
 ### `Services/Shared/` — cross-backend helpers
 
@@ -108,7 +109,7 @@ Platform gating is in `ExtensionManager._extensionManagers` via `Platform.isAndr
 | Dir | Purpose |
 |---|---|
 | `JavaScriptEngine/JsEngine.dart` | `JsEngineEnv` singleton wrapping a shared `flutter_qjs` `QuickJsRuntime2`. |
-| `JavaEngine/` | Talk to a JVM that hosts Aniyomi/CloudStream desktop runtime. `JavaBridgeServer.dart` (localhost HTTP, port 4567), `JavaHandler.dart`, `JavaInstaller.dart`. `Bridge/JniBridge.dart` (in-process JNI via `package:jni`), `Bridge/SidecarBridge.dart` (out-of-process). |
+| `JavaEngine/` | Talk to a JVM that hosts Aniyomi/CloudStream desktop runtime. `JavaBridgeServer.dart` (localhost HTTP, port 4567), `JavaHandler.dart`, `JavaInstaller.dart`. Transports implement `JavaBridge`: `Bridge/JniBridge.dart` (in-process JNI via `package:jni`), `Bridge/SidecarBridge.dart` (out-of-process `java -jar`, desktop), `Bridge/EmbeddedJvmBridge.dart` (iOS — one embedded interpreter-only OpenJDK Zero VM via method channel `dartotsu_extension_bridge/embedded_jvm`; native side in `ios/`, Kotlin entrypoint `EmbeddedBridge` in `runtimeManager/libraries/commonDesktopLib`, and `runtimeManager/EMBEDDED_IOS_NOTES.md`). `Bridge/JavaBridgeFactory.dart` picks per platform. |
 | `TorrentEngine/` | libtorrent via `dart:ffi` (`ffi_bindings.dart`, `LibtorrentFlutter.dart` session + HTTP streaming server + tracker fetch, `LibTorrentAddon.dart` = the `Addon`, `Models.dart`). |
 
 ## Support

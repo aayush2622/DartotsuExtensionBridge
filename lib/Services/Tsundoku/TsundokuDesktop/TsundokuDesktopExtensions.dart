@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
-import '../../../Engines/JavaEngine/Bridge/SidecarBridge.dart';
+import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Extensions/ExtensionSettings.dart';
@@ -45,7 +45,7 @@ class TsundokuDesktopExtensions extends Extension
   @override
   DownloadablePlugin plugin = TsundokuDesktopPlugin();
 
-  final JavaBridge jni = SidecarBridge();
+  final JavaBridge jni = createJavaBridge();
 
   final _client = MClient.init();
   final _context = DartotsuExtensionBridge.context;

@@ -28,6 +28,14 @@ class ExtensionManager extends GetxController {
 
   Extension operator [](ItemType type) => current[type]!;
 
+  /// Platforms that drive the desktop backend JARs through a JVM: a `java`
+  /// subprocess on real desktops, an embedded OpenJDK Zero VM on iOS.
+  static bool get _jvmBackends =>
+      Platform.isWindows ||
+      Platform.isLinux ||
+      Platform.isMacOS ||
+      Platform.isIOS;
+
   List<Extension> get _extensionManagers => [
     MangayomiExtensions(),
     SoraExtensions(),
@@ -36,14 +44,10 @@ class ExtensionManager extends GetxController {
     if (Platform.isAndroid) CloudStreamExtensions(),
     if (Platform.isAndroid) IReaderExtensions(),
     if (Platform.isAndroid) TsundokuExtensions(),
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-      AniyomiDesktopExtensions(),
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-      CloudStreamDesktopExtensions(),
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-      IReaderDesktopExtensions(),
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-      TsundokuDesktopExtensions(),
+    if (_jvmBackends) AniyomiDesktopExtensions(),
+    if (_jvmBackends) CloudStreamDesktopExtensions(),
+    if (_jvmBackends) IReaderDesktopExtensions(),
+    if (_jvmBackends) TsundokuDesktopExtensions(),
   ];
 
   @override

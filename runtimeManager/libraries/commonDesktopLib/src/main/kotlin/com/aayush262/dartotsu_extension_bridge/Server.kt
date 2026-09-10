@@ -11,6 +11,95 @@ object Server {
     private val outputLock = Any()
     private val requestScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /**
+     * Runs one request against [api] and returns its payload (already a JSON
+     * string, or a JSON-encoded scalar). Shared by the desktop stdio loop
+     * ([run]) and the iOS in-process bridge ([EmbeddedBridge]).
+     */
+    suspend fun handle(
+        api: ExtensionApi,
+        method: String,
+        params: JsonObject,
+    ): String = when (method) {
+        "initializeDesktop" -> {
+            api.initializeDesktop(params["path"].asString)
+            """{"success":true}"""
+        }
+
+        "initClient" -> {
+            if (api is ExtensionBridgeApi) {
+                api.initClient(params["data"].asString)
+            }
+            """{"success":true}"""
+        }
+
+        "getInstalledAnimeExtensions" ->
+            api.getInstalledAnimeExtensions(params["path"].asString)
+
+        "getInstalledMangaExtensions" ->
+            api.getInstalledMangaExtensions(params["path"].asString)
+
+        "getInstalledNovelExtensions" ->
+            api.getInstalledNovelExtensions(params["path"].asString)
+
+        "getPopular" -> api.getPopular(
+            params["sourceId"].asString,
+            params["isAnime"].asBoolean,
+            params["page"].asInt,
+        )
+
+        "getLatestUpdates" -> api.getLatestUpdates(
+            params["sourceId"].asString,
+            params["isAnime"].asBoolean,
+            params["page"].asInt,
+        )
+
+        "search" -> api.search(
+            params["sourceId"].asString,
+            params["isAnime"].asBoolean,
+            params["query"].asString,
+            params["page"].asInt,
+        )
+
+        "getDetail" -> api.getDetail(
+            params["sourceId"].asString,
+            params["isAnime"].asBoolean,
+            params["media"].asString,
+        )
+
+        "getVideoList" -> api.getVideoList(
+            params["sourceId"].asString,
+            params["isAnime"].asBoolean,
+            params["episode"].asString,
+        )
+
+        "getPageList" -> api.getPageList(
+            params["sourceId"].asString,
+            params["isAnime"].asBoolean,
+            params["episode"].asString,
+        )
+
+        "getNovelContent" -> api.getNovelContent(
+            params["sourceId"].asString,
+            params["episode"].asString,
+        )
+
+        "getPreference" -> api.getPreference(
+            params["sourceId"].asString,
+            params["isAnime"].asBoolean,
+        )
+
+        "saveSourcePreference" -> api.saveSourcePreference(
+            params["sourceId"].asString,
+            params["key"].asString,
+            params["value"].asString,
+        ).toString()
+
+        "ping" -> "\"pong\""
+
+        else -> throw IllegalArgumentException("Unknown method: $method")
+    }
+
     fun run(api: ExtensionApi) {
 
         val gson = Gson()
@@ -34,120 +123,7 @@ object Server {
                     val method = req["method"].asString
                     val params = req["args"]?.asJsonObject ?: JsonObject()
 
-                    val result = when (method) {
-                        "initializeDesktop" -> {
-                            api.initializeDesktop(
-                                params["path"].asString,
-                            )
-
-                            """{"success":true}"""
-                        }
-
-                        "initClient" -> {
-                            if (api is  ExtensionBridgeApi) {
-                                api.initClient(
-                                    params["data"].asString,
-                                )
-                            }
-                            """{"success":true}"""
-                        }
-
-                        "getInstalledAnimeExtensions" -> {
-                            api.getInstalledAnimeExtensions(
-                                params["path"].asString,
-                            )
-                        }
-
-                        "getInstalledMangaExtensions" -> {
-                            api.getInstalledMangaExtensions(
-                                params["path"].asString,
-                            )
-                        }
-
-                        "getInstalledNovelExtensions" -> {
-                            api.getInstalledNovelExtensions(
-                                params["path"].asString,
-                            )
-                        }
-                        "getPopular" -> {
-                            api.getPopular(
-                                params["sourceId"].asString,
-                                params["isAnime"].asBoolean,
-                                params["page"].asInt,
-                            )
-                        }
-
-                        "getLatestUpdates" -> {
-                            api.getLatestUpdates(
-                                params["sourceId"].asString,
-                                params["isAnime"].asBoolean,
-                                params["page"].asInt,
-                            )
-                        }
-
-                        "search" -> {
-                            api.search(
-                                params["sourceId"].asString,
-                                params["isAnime"].asBoolean,
-                                params["query"].asString,
-                                params["page"].asInt,
-                            )
-                        }
-
-                        "getDetail" -> {
-                            api.getDetail(
-                                params["sourceId"].asString,
-                                params["isAnime"].asBoolean,
-                                params["media"].asString,
-                            )
-                        }
-
-                        "getVideoList" -> {
-                            api.getVideoList(
-                                params["sourceId"].asString,
-                                params["isAnime"].asBoolean,
-                                params["episode"].asString,
-                            )
-                        }
-
-                        "getPageList" -> {
-                            api.getPageList(
-                                params["sourceId"].asString,
-                                params["isAnime"].asBoolean,
-                                params["episode"].asString,
-                            )
-                        }
-                        "getNovelContent" -> {
-                            api.getNovelContent(
-                                params["sourceId"].asString,
-                                params["episode"].asString,
-                            )
-                        }
-                        "getPreference" -> {
-                            api.getPreference(
-                                params["sourceId"].asString,
-                                params["isAnime"].asBoolean,
-                            )
-                        }
-
-                        "saveSourcePreference" -> {
-                            api.saveSourcePreference(
-                                params["sourceId"].asString,
-                                params["key"].asString,
-                                params["value"].asString,
-                            ).toString()
-                        }
-
-                        "ping" -> {
-                            "\"pong\""
-                        }
-
-                        else -> {
-                            throw IllegalArgumentException(
-                                "Unknown method: $method",
-                            )
-                        }
-                    }
+                    val result = handle(api, method, params)
 
                     synchronized(outputLock) {
                         println(

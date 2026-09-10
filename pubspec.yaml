@@ -63,6 +63,8 @@ flutter:
       android:
         package: com.aayush262.dartotsu_extension_bridge
         pluginClass: DartotsuExtensionBridgePlugin
+      ios:
+        pluginClass: DartotsuExtensionBridgePlugin
       linux:
         pluginClass: DartotsuExtensionBridgePlugin
       windows:
