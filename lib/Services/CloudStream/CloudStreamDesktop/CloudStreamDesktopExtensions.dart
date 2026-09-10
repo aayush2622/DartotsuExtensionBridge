@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 
 import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
-import '../../../Engines/JavaEngine/Bridge/SidecarBridge.dart';
+import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../ExtensionBridge.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
@@ -48,7 +48,7 @@ class CloudStreamDesktopExtensions extends Extension {
   @override
   DownloadablePlugin plugin = CloudStreamDesktopPlugin();
 
-  final JavaBridge jni = SidecarBridge();
+  final JavaBridge jni = createJavaBridge();
 
   final _client = MClient.init();
 
