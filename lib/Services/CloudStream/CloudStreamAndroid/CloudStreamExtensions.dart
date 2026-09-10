@@ -303,6 +303,8 @@ class CloudStreamExtensions extends Extension {
       for (var s in available.cast<CSource>()) s.id?.toLowerCase(): s,
     };
 
+    var changed = false;
+
     for (var i = 0; i < installed.length; i++) {
       final inst = installed[i];
       final repo = repoMap[inst.id?.toLowerCase()];
@@ -314,12 +316,20 @@ class CloudStreamExtensions extends Extension {
           ..hasUpdate = true
           ..pluginUrl = repo.pluginUrl
           ..versionLast = repo.version;
+        changed = true;
+      } else if (inst.hasUpdate == true) {
+        installed[i] = inst..hasUpdate = false;
+        changed = true;
       }
       if (repo.iconUrl != inst.iconUrl) {
         installed[i] = inst..iconUrl = repo.iconUrl;
+        changed = true;
       }
     }
-    state(type).installed.value = List.unmodifiable(installed);
+
+    if (changed) {
+      state(type).installed.value = List.unmodifiable(installed);
+    }
   }
 
   static List<Source> _parseExtensions(

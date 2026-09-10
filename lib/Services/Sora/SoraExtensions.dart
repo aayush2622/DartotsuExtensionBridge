@@ -310,6 +310,9 @@ class SoraExtensions extends Extension {
           ..hasUpdate = true
           ..versionLast = repo.version;
         changed = true;
+      } else if (inst.hasUpdate == true) {
+        installed[i] = inst..hasUpdate = false;
+        changed = true;
       }
     }
 

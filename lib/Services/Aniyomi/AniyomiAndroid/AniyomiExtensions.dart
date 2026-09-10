@@ -213,9 +213,15 @@ class AniyomiExtensions extends Extension {
   Future<void> uninstallSource(Source source) async {
     final s = source as ASource;
     final type = source.itemType!;
-    final packageName =
-        s.pkgName ?? s.apkUrl!.split('/').last.replaceAll('.apk', '');
-    final apkFileName = '$packageName.apk';
+    // Resolve a package name without dereferencing a possibly-null apkUrl: an
+    // installed source loaded from the native side may not carry apkUrlOverride,
+    // and the derived getter can be null.
+    final fallbackPkg =
+        s.pkgName ??
+        s.apkName?.replaceAll('.apk', '') ??
+        s.apkUrl?.split('/').last.replaceAll('.apk', '') ??
+        s.id ??
+        '';
     try {
       if (s.isShared == false) {
         final baseDir = await DartotsuExtensionBridge.context.getDirectory(
@@ -224,6 +230,7 @@ class AniyomiExtensions extends Extension {
           useCustomPath: true,
         );
 
+        final apkFileName = s.apkName ?? '$fallbackPkg.apk';
         final file = File(path.join(baseDir!.path, apkFileName));
 
         if (await file.exists()) {

@@ -63,6 +63,52 @@ String? tachiyomiFallbackRepoUrl(String repoUrl) {
   }
 }
 
+/// Downloads an extension package ([url]) to [destPath], atomically.
+///
+/// Every desktop backend used to inline the same three lines — `send`, fold the
+/// stream into a `List<int>`, `writeAsBytes` — with **no status check**, so a
+/// 404 / 500 / Cloudflare HTML page was happily written out as a `.jar` and the
+/// JVM would then fail to load it with an opaque error. This checks the status,
+/// streams straight to disk, and only swaps the real file in once the whole
+/// body has arrived, so an interrupted download can't leave a half-written
+/// archive in the extensions directory.
+Future<void> downloadPackageFile(
+  http.Client client,
+  String url,
+  String destPath,
+) async {
+  final request = http.Request('GET', Uri.parse(url));
+  final response = await client.send(request);
+
+  if (response.statusCode != 200) {
+    // Drain so the connection can be reused.
+    await response.stream.drain<void>();
+    throw Exception(
+      'Extension download failed (${response.statusCode}) for $url',
+    );
+  }
+
+  final dest = File(destPath);
+  await dest.parent.create(recursive: true);
+
+  final temp = File('$destPath.tmp');
+  final sink = temp.openWrite();
+  try {
+    await sink.addStream(response.stream);
+    await sink.flush();
+  } finally {
+    await sink.close();
+  }
+
+  try {
+    await temp.rename(destPath);
+  } on FileSystemException {
+    // Windows won't rename onto an existing file — fall back to replace.
+    await temp.copy(destPath);
+    await temp.delete();
+  }
+}
+
 /// One extension package as described by an `index.min.json` entry, already
 /// resolved against the repo URL. Field names mirror the `Source` constructor
 /// so a backend's factory is a straight field copy.
@@ -150,19 +196,29 @@ List<T> parseTachiyomiRepoIndex<T extends Source>({
           ? (sourcesList.first['id']?.toString() ?? '')
           : '';
 
+      final apkName = map['apk'] as String?;
+
       sources.add(
         factory(
           TachiyomiRepoEntry(
             id: id,
             name: displayName,
             pkgName: map['pkg'] as String?,
-            apkName: map['apk'] as String?,
+            apkName: apkName,
             lang: map['lang'] as String?,
             version: map['version']?.toString(),
             isNsfw: map['nsfw'] == 1,
             itemType: detectedType!,
             repo: repoUrl,
             iconUrl: '$baseIconUrl/icon/${map['pkg']}.png',
+            // The JSON index doesn't state a download URL, but the Tachiyomi
+            // repo layout is fixed: `<repo>/apk/<file>`. Deriving it here means
+            // every backend gets a non-null `apkUrl` regardless of whether its
+            // Source subtype recomputes one — IReader's `ISource` in particular
+            // stores this verbatim and can't derive it.
+            apkUrl: (apkName != null && apkName.isNotEmpty)
+                ? '$baseIconUrl/apk/$apkName'
+                : null,
           ),
         ),
       );
@@ -202,12 +258,26 @@ void detectTachiyomiUpdates(
     final repo = repoById[inst.id];
     if (repo == null) continue;
 
-    if (ext.compareVersions(repo.version ?? '0', inst.version ?? '0') > 0) {
+    final hasUpdate =
+        ext.compareVersions(repo.version ?? '0', inst.version ?? '0') > 0;
+
+    if (hasUpdate) {
+      // Carry every field the install path needs across, not just the name —
+      // `apkUrlOverride` / `jarUrl` in particular encode the version in their
+      // path for `index.pb` repos, so a stale value would re-download the
+      // version already installed.
       inst
         ..hasUpdate = true
         ..apkName = repo.apkName
+        ..apkUrlOverride = repo.apkUrlOverride
+        ..jarUrl = repo.jarUrl
+        ..pkgName = repo.pkgName ?? inst.pkgName
         ..iconUrl = repo.iconUrl
         ..versionLast = repo.version;
+      changed = true;
+    } else if (inst.hasUpdate == true) {
+      // The repo caught up (or rolled back) — drop a now-stale flag.
+      inst.hasUpdate = false;
       changed = true;
     }
   }

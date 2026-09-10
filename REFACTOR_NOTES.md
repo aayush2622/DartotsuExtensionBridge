@@ -59,3 +59,62 @@ is type-/compile-level and covered by the analyzer + build.
 - App: `flutter test` → 12 pass (`test/dartotsu_extension_bridge_models_test.dart`);
   the stale default `widget_test.dart` was removed (it didn't compile).
 - App: `flutter build linux --debug` → OK.
+
+---
+
+## Install / update / delete bug-fix pass
+
+Went through every backend's `installSource` / `updateSource` / `uninstallSource`
+plus `DownloadablePlugin` and `detectUpdates`.
+
+### Crash / total-breakage fixes
+
+- **IReader Android install was dead for `index.min.json` repos.** The shared
+  `parseTachiyomiRepoIndex` never populated `TachiyomiRepoEntry.apkUrl` (only the
+  `.pb` path did), and `ISource` *stores* `apkUrl` as a plain field rather than
+  deriving it, so `installSource` always threw "Source APK URL is required".
+  Fixed by deriving `apkUrl` (`<repo>/apk/<file>`) in the JSON parser — every
+  backend now gets a non-null `apkUrl` / `apkUrlOverride`.
+- **Desktop `installSource` (Aniyomi/Tsundoku/IReader/CloudStream) never checked
+  the HTTP status.** A 404 / 500 / Cloudflare HTML page was written straight out
+  as the `.jar`, then the JVM failed to load it with an opaque error. All four
+  now go through `downloadPackageFile()` — status check, streamed to `.tmp`,
+  atomic rename, so an interrupted download can't leave a half-written archive
+  in the extensions dir.
+- **`uninstallSource` force-unwrapped `s.apkPath!`** on every desktop backend and
+  IReader Android — null for any source whose native metadata lacked it →
+  crash. Now falls back to `apkName` / a derived name.
+- **Aniyomi & Tsundoku Android `uninstallSource` dereferenced `s.apkUrl!`** at
+  the top of the method (before the `try`) — null for an installed source with
+  no stored override → the whole uninstall threw before doing anything. Now
+  resolves the package name null-safely.
+- **CloudStream desktop `installSource` null-checked `pluginUrl` *after* already
+  using `pluginUrl!`.** Reordered.
+
+### Correctness fixes
+
+- **`DownloadablePlugin._download` corrupted files on resume.** It picked
+  `FileMode.append` purely from "a `.tmp` exists", so when the server answered a
+  `Range` request with a full `200` body (common — GitHub / jsDelivr do this) it
+  appended the whole file onto the stale partial. Now only appends on a real
+  `206`; a `200` truncates and restarts.
+- **`detectUpdates` never cleared a stale `hasUpdate`.** Once flagged, a source
+  kept offering an update even after it was applied or the repo rolled back.
+  Every `detectUpdates` (Tachiyomi-shared, Mangayomi, Sora, CloudStream x2,
+  IReader-desktop) now clears the flag when the repo is no longer ahead.
+- **`detectTachiyomiUpdates` only carried `apkName` on an update**, not
+  `apkUrlOverride` / `jarUrl` / `pkgName` — so on desktop a detected `.pb`
+  update would re-download the *installed* version (the URL encodes the
+  version). Now carries all download-relevant fields.
+- **CloudStream `detectUpdates` rebuilt the installed Rx list on every call**
+  even with nothing changed. Added a `changed` guard.
+- **CloudStream desktop `initializeDesktop` uses `bridge/aniyomi`** while every
+  other path in the class is `bridge/cloudStream`. Left as-is with a comment —
+  the desktop sidecar contract is in `runtimeManager`, out of scope here.
+
+### Tests
+
+- `test/services/download_package_file_test.dart` — new, 3 cases (200 writes &
+  cleans up `.tmp`, non-200 throws & leaves no file, replaces an existing file).
+- `test/services/tachiyomi_repo_test.dart` — +2 cases for the derived `apkUrl`.
+- `dart analyze lib test` clean · `flutter test` 44 pass.
