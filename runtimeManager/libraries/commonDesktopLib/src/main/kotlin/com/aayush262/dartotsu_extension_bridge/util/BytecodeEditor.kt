@@ -22,11 +22,12 @@ import org.objectweb.asm.tree.analysis.SourceValue
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.PrintWriter
 import java.io.StringWriter
-import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import kotlin.streams.asSequence
+import java.nio.file.StandardCopyOption
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 /**
  * Repairs invalid JVM bytecode produced by dex2jar when converting Aniyomi
@@ -94,128 +95,134 @@ object BytecodeEditor {
         val dexNewInstances: Map<String, List<String>> =
             dexFile?.let { DexNewInstanceOracle.load(it, jarLabel) } ?: emptyMap()
 
-        FileSystems.newFileSystem(jarFile, null as ClassLoader?)?.use { fs ->
-            val snapshot: List<Pair<Path, ByteArray>> =
-                Files.walk(fs.getPath("/"))
-                    .asSequence()
-                    .filterNotNull()
-                    .filterNot(Files::isDirectory)
-                    .mapNotNull(::getClassBytes)
-                    .toList()
+        // Read every entry into memory, rewrite in place, then write a fresh
+        // jar and swap it in with one atomic move. The desktop loaders run
+        // concurrently (the sidecar fans requests out, the app polls), and the
+        // old in-place `FileSystems.newFileSystem` mutation left the jar
+        // half-formed for a racing reader — `URLClassLoader` then failed with
+        // `ClassNotFoundException` on the source class. Same shape as
+        // M-Extension-Server's `fixAndroidClasses`.
+        val entries = readJarEntries(jarFile)
+        if (entries.isEmpty()) {
+            Logger.log("[$jarLabel] jar had no readable entries — nothing to do", LogLevel.ERROR)
+            return
+        }
 
-            val binaryNameToBytes: Map<String, ByteArray> =
-                snapshot.associate { (path, bytes) -> pathToBinaryName(path) to bytes }
-            val loader = SnapshotClassLoader(
-                binaryNameToBytes,
-                Thread.currentThread().contextClassLoader ?: this::class.java.classLoader,
-            )
+        val classEntries: List<Pair<String, ByteArray>> = entries
+            .filterNot { it.isDirectory }
+            .mapNotNull { e -> getClassBytes(e.name, e.bytes)?.let { e.name to it } }
 
-            val classNodes = LinkedHashMap<String, ClassNode>()
-            val pathByName = HashMap<String, Path>()
-            val originalBytesByName = HashMap<String, ByteArray>()
-            for ((path, bytes) in snapshot) {
+        val binaryNameToBytes: Map<String, ByteArray> =
+            classEntries.associate { (entryName, bytes) -> entryNameToBinaryName(entryName) to bytes }
+        val loader = SnapshotClassLoader(
+            binaryNameToBytes,
+            Thread.currentThread().contextClassLoader ?: this::class.java.classLoader,
+        )
+
+        val classNodes = LinkedHashMap<String, ClassNode>()
+        val entryNameByClass = HashMap<String, String>()
+        val originalBytesByName = HashMap<String, ByteArray>()
+        for ((entryName, bytes) in classEntries) {
+            try {
+                val cn = ClassNode(Opcodes.ASM9)
+                ClassReader(bytes).accept(cn, ClassReader.EXPAND_FRAMES)
+                classNodes[cn.name] = cn
+                entryNameByClass[cn.name] = entryName
+                originalBytesByName[cn.name] = bytes
+            } catch (e: Throwable) {
+                Logger.log(
+                    "[$jarLabel] Failed to parse $entryName: ${e.javaClass.simpleName}: ${e.message}",
+                    LogLevel.ERROR,
+                )
+            }
+        }
+        Logger.log("[$jarLabel] Parsed ${classNodes.size} classes", LogLevel.INFO)
+
+        for (cn in classNodes.values) {
+            rewriteReplacedReferences(cn)
+        }
+
+        for (cn in classNodes.values) {
+            fixSelfInstantiatingSingletons(cn, jarLabel)
+        }
+
+        val constructorsNeeded = LinkedHashSet<Pair<String, String>>() // (owner, desc)
+        for (cn in classNodes.values) {
+            repairMalformedConstructions(cn, classNodes, loader, constructorsNeeded, jarLabel, dexNewInstances)
+        }
+
+        clearErroneousAbstractFlags(classNodes, jarLabel)
+
+        for ((owner, desc) in constructorsNeeded) {
+            val target = classNodes[owner]
+            if (target == null) {
+                Logger.log(
+                    "[$jarLabel] Constructor needed for missing class $owner$desc, skipping",
+                    LogLevel.ERROR,
+                )
+                continue
+            }
+            ensureConstructor(target, desc, target.superName ?: "java/lang/Object", jarLabel)
+        }
+
+        // entry name -> rewritten bytes (absent = keep the original entry bytes)
+        val rewritten = HashMap<String, ByteArray>()
+        for ((name, cn) in classNodes) {
+            val entryName = entryNameByClass[name] ?: continue
+
+            val attempt1Bytes = try {
+                val cw = ClassWriterWithLoader(ClassWriter.COMPUTE_FRAMES or ClassWriter.COMPUTE_MAXS, loader)
+                cn.accept(cw)
+                cw.toByteArray()
+            } catch (e: Throwable) {
+                Logger.log(
+                    "[$jarLabel] Frame computation threw for $name: ${e.javaClass.simpleName}: ${e.message}",
+                    LogLevel.ERROR,
+                )
+                null
+            }
+
+            val attempt1Problems = attempt1Bytes?.let { verify(it, loader) }
+            if (attempt1Bytes != null && attempt1Problems == null) {
+                rewritten[entryName] = attempt1Bytes
+                continue
+            }
+            if (attempt1Bytes != null) {
+                Logger.log(
+                    "[$jarLabel] Pattern-repaired $name still fails verification, " +
+                            "falling back to frame-only recompute of the original class:\n$attempt1Problems",
+                    LogLevel.ERROR,
+                )
+            }
+
+            val originalBytes = originalBytesByName[name]
+            val framesOnly = originalBytes?.let { bytes ->
                 try {
-                    val cn = ClassNode(Opcodes.ASM9)
-                    ClassReader(bytes).accept(cn, ClassReader.EXPAND_FRAMES)
-                    val name = cn.name
-                    classNodes[name] = cn
-                    pathByName[name] = path
-                    originalBytesByName[name] = bytes
+                    val freshNode = ClassNode(Opcodes.ASM9)
+                    ClassReader(bytes).accept(freshNode, ClassReader.EXPAND_FRAMES)
+                    recomputeFramesAndVerify(freshNode, loader, jarLabel)
                 } catch (e: Throwable) {
                     Logger.log(
-                        "[$jarLabel] Failed to parse $path: ${e.javaClass.simpleName}: ${e.message}",
-                        LogLevel.ERROR,
-                    )
-                }
-            }
-            Logger.log("[$jarLabel] Parsed ${classNodes.size} classes", LogLevel.INFO)
-
-            for (cn in classNodes.values) {
-                rewriteReplacedReferences(cn)
-            }
-
-            for (cn in classNodes.values) {
-                fixSelfInstantiatingSingletons(cn, jarLabel)
-            }
-
-            val constructorsNeeded = LinkedHashSet<Pair<String, String>>() // (owner, desc)
-            for (cn in classNodes.values) {
-                repairMalformedConstructions(cn, classNodes, loader, constructorsNeeded, jarLabel, dexNewInstances)
-            }
-
-            clearErroneousAbstractFlags(classNodes, jarLabel)
-
-            for ((owner, desc) in constructorsNeeded) {
-                val target = classNodes[owner]
-                if (target == null) {
-                    Logger.log(
-                        "[$jarLabel] Constructor needed for missing class $owner$desc, skipping",
-                        LogLevel.ERROR,
-                    )
-                    continue
-                }
-                ensureConstructor(target, desc, target.superName ?: "java/lang/Object", jarLabel)
-            }
-
-            for ((name, cn) in classNodes) {
-                val path = pathByName[name] ?: continue
-
-                val attempt1Bytes = try {
-                    val cw = ClassWriterWithLoader(ClassWriter.COMPUTE_FRAMES or ClassWriter.COMPUTE_MAXS, loader)
-                    cn.accept(cw)
-                    cw.toByteArray()
-                } catch (e: Throwable) {
-                    Logger.log(
-                        "[$jarLabel] Frame computation threw for $name: ${e.javaClass.simpleName}: ${e.message}",
+                        "[$jarLabel] Failed to re-parse original bytes for $name: ${e.javaClass.simpleName}: ${e.message}",
                         LogLevel.ERROR,
                     )
                     null
                 }
-
-                val attempt1Problems = attempt1Bytes?.let { verify(it, loader) }
-                if (attempt1Bytes != null && attempt1Problems == null) {
-                    write(path to attempt1Bytes)
-                    continue
-                }
-                if (attempt1Bytes != null) {
-                    Logger.log(
-                        "[$jarLabel] Pattern-repaired $name still fails verification, " +
-                                "falling back to frame-only recompute of the original class:\n$attempt1Problems",
-                        LogLevel.ERROR,
-                    )
-                }
-
-                val originalBytes = originalBytesByName[name]
-                val framesOnly = originalBytes?.let { bytes ->
-                    try {
-                        val freshNode = ClassNode(Opcodes.ASM9)
-                        ClassReader(bytes).accept(freshNode, ClassReader.EXPAND_FRAMES)
-                        recomputeFramesAndVerify(freshNode, loader, jarLabel)
-                    } catch (e: Throwable) {
-                        Logger.log(
-                            "[$jarLabel] Failed to re-parse original bytes for $name: ${e.javaClass.simpleName}: ${e.message}",
-                            LogLevel.ERROR,
-                        )
-                        null
-                    }
-                }
-
-                if (framesOnly != null) {
-                    write(path to framesOnly)
-                    continue
-                }
-
-                Logger.log(
-                    "[$jarLabel] Frame-only recompute also failed for $name; this class likely still has an " +
-                            "unresolved malformed-construction site — keeping untouched original bytes",
-                    LogLevel.ERROR,
-                )
             }
-        } ?: Logger.log(
-            "[$jarLabel] FileSystems.newFileSystem returned null — jar was NOT opened, " +
-                    "nothing in this pass touched it",
-            LogLevel.ERROR,
-        )
+
+            if (framesOnly != null) {
+                rewritten[entryName] = framesOnly
+                continue
+            }
+
+            Logger.log(
+                "[$jarLabel] Frame-only recompute also failed for $name; this class likely still has an " +
+                        "unresolved malformed-construction site — keeping untouched original bytes",
+                LogLevel.ERROR,
+            )
+        }
+
+        writeJarAtomically(jarFile, entries, rewritten, jarLabel)
 
         Logger.log("[$jarLabel] BytecodeEditor finished", LogLevel.INFO)
     }
@@ -224,8 +231,67 @@ object BytecodeEditor {
     // Setup helpers
     // ---------------------------------------------------------------------
 
-    private fun pathToBinaryName(path: Path): String =
-        path.toString().removePrefix("/").removeSuffix(".class").replace('/', '.')
+    private data class JarEntryData(
+        val name: String,
+        val bytes: ByteArray,
+        val isDirectory: Boolean,
+    )
+
+    private fun readJarEntries(jarFile: Path): List<JarEntryData> {
+        val out = ArrayList<JarEntryData>()
+        try {
+            ZipInputStream(Files.newInputStream(jarFile).buffered()).use { input ->
+                while (true) {
+                    val entry = input.nextEntry ?: break
+                    out += JarEntryData(
+                        name = entry.name,
+                        bytes = if (entry.isDirectory) ByteArray(0) else input.readBytes(),
+                        isDirectory = entry.isDirectory,
+                    )
+                    input.closeEntry()
+                }
+            }
+        } catch (e: Throwable) {
+            Logger.log(
+                "[${jarFile.fileName}] Failed to read jar: ${e.javaClass.simpleName}: ${e.message}",
+                LogLevel.ERROR,
+            )
+        }
+        return out
+    }
+
+    private fun writeJarAtomically(
+        jarFile: Path,
+        entries: List<JarEntryData>,
+        rewritten: Map<String, ByteArray>,
+        jarLabel: String,
+    ) {
+        val parent = jarFile.parent ?: java.nio.file.Paths.get("")
+        val tmp = Files.createTempFile(parent, "dartotsu-bce-", ".jar")
+        try {
+            ZipOutputStream(Files.newOutputStream(tmp).buffered()).use { out ->
+                val seen = HashSet<String>()
+                for (e in entries) {
+                    if (!seen.add(e.name)) continue // drop duplicate central-dir entries
+                    out.putNextEntry(ZipEntry(e.name))
+                    if (!e.isDirectory) out.write(rewritten[e.name] ?: e.bytes)
+                    out.closeEntry()
+                }
+            }
+            Files.move(tmp, jarFile, StandardCopyOption.REPLACE_EXISTING)
+        } catch (e: Throwable) {
+            Logger.log(
+                "[$jarLabel] Failed to write rewritten jar: ${e.javaClass.simpleName}: ${e.message} — " +
+                        "leaving the pre-rewrite jar in place",
+                LogLevel.ERROR,
+            )
+        } finally {
+            Files.deleteIfExists(tmp)
+        }
+    }
+
+    private fun entryNameToBinaryName(entryName: String): String =
+        entryName.removePrefix("/").removeSuffix(".class").replace('/', '.')
 
     private class SnapshotClassLoader(
         private val classes: Map<String, ByteArray>,
@@ -237,22 +303,11 @@ object BytecodeEditor {
         }
     }
 
-    private fun getClassBytes(path: Path): Pair<Path, ByteArray>? {
-        return try {
-            if (path.toString().endsWith(".class")) {
-                val bytes = Files.readAllBytes(path)
-                if (bytes.size < 4) return null
-                val cafebabe =
-                    String.format("%02X%02X%02X%02X", bytes[0], bytes[1], bytes[2], bytes[3])
-                if (cafebabe.lowercase() != "cafebabe") return null
-                path to bytes
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            Logger.log("Error loading class from Path: $path: ${e.message}", LogLevel.ERROR)
-            null
-        }
+    private fun getClassBytes(name: String, bytes: ByteArray): ByteArray? {
+        if (!name.endsWith(".class") || bytes.size < 4) return null
+        val magicOk = bytes[0] == 0xCA.toByte() && bytes[1] == 0xFE.toByte() &&
+                bytes[2] == 0xBA.toByte() && bytes[3] == 0xBE.toByte()
+        return if (magicOk) bytes else null
     }
 
     private class ClassWriterWithLoader(
@@ -316,14 +371,6 @@ object BytecodeEditor {
         }
     }
 
-    private fun write(pair: Pair<Path, ByteArray>) {
-        Files.write(
-            pair.first,
-            pair.second,
-            StandardOpenOption.CREATE,
-            StandardOpenOption.TRUNCATE_EXISTING,
-        )
-    }
 
     // ---------------------------------------------------------------------
     // Pass A: known-class descriptor replacement (e.g. SimpleDateFormat)
