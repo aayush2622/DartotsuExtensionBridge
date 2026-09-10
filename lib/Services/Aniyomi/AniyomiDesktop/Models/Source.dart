@@ -17,6 +17,8 @@ class AdSource extends PackagedSource {
     super.hasUpdate,
     super.pkgName,
     super.apkName,
+    super.apkUrlOverride,
+    super.jarUrl,
     this.apkPath,
   });
   factory AdSource.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,8 @@ class AdSource extends PackagedSource {
       itemType: ItemType.values[json['itemType'] ?? 0],
       pkgName: json['pkgName'],
       apkName: json['apkName'],
+      apkUrlOverride: json['apkUrlOverride'],
+      jarUrl: json['jarUrl'],
       apkPath: json['apkPath'],
     );
   }
@@ -43,11 +47,16 @@ class AdSource extends PackagedSource {
     final map = super.toJson();
     map['apkName'] = apkName;
     map['pkgName'] = pkgName;
+    map['apkUrlOverride'] = apkUrlOverride;
+    map['jarUrl'] = jarUrl;
     map['apkPath'] = apkPath;
     return map;
   }
 
   String? get apkUrl {
+    if (apkUrlOverride != null && apkUrlOverride!.isNotEmpty) {
+      return apkUrlOverride;
+    }
     if (apkName == null || apkName!.isEmpty) return null;
     if (iconUrl == null || iconUrl!.isEmpty) return null;
 

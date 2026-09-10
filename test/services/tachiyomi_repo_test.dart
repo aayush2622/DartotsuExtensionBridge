@@ -38,7 +38,9 @@ void main() {
 
     test('defaults the branch to main when absent', () {
       expect(
-        tachiyomiFallbackRepoUrl('https://raw.githubusercontent.com/owner/repo'),
+        tachiyomiFallbackRepoUrl(
+          'https://raw.githubusercontent.com/owner/repo',
+        ),
         'https://gcore.jsdelivr.net/gh/owner/repo@main',
       );
     });

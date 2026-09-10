@@ -14,6 +14,14 @@ abstract class PackagedSource extends Source {
   String? pkgName;
   String? apkName;
 
+  /// Absolute download URL when the repository states one outright — the
+  /// `index.pb` format does. Left `null` for `index.min.json` repos, where
+  /// subclasses derive the URL from [iconUrl] + [apkName].
+  String? apkUrlOverride;
+
+  /// Prebuilt desktop JAR published alongside the APK, when the repo has one.
+  String? jarUrl;
+
   PackagedSource({
     super.id,
     super.name,
@@ -28,5 +36,7 @@ abstract class PackagedSource extends Source {
     super.hasUpdate,
     this.pkgName,
     this.apkName,
+    this.apkUrlOverride,
+    this.jarUrl,
   });
 }

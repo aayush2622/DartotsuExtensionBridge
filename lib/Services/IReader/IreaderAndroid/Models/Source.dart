@@ -19,6 +19,8 @@ class ISource extends PackagedSource {
     super.repo,
     super.hasUpdate,
     super.apkName,
+    super.apkUrlOverride,
+    super.jarUrl,
     this.apkUrl,
     this.apkPath,
     super.pkgName,
@@ -42,6 +44,8 @@ class ISource extends PackagedSource {
       hasUpdate: json['hasUpdate'] ?? false,
       itemType: ItemType.novel,
       apkName: json['apkName'],
+      apkUrlOverride: json['apkUrlOverride'],
+      jarUrl: json['jarUrl'],
       apkUrl: json['apkUrl'],
       apkPath: json['apkPath'],
       pkgName: json['pkgName'],
@@ -56,6 +60,8 @@ class ISource extends PackagedSource {
     map['apkUrl'] = apkUrl;
     map['apkPath'] = apkPath;
     map['pkgName'] = pkgName;
+    map['apkUrlOverride'] = apkUrlOverride;
+    map['jarUrl'] = jarUrl;
     map['isShared'] = isShared;
     return map;
   }
