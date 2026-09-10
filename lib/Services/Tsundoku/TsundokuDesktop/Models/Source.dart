@@ -2,7 +2,6 @@ import '../../../../Models/Source.dart';
 import '../../../Shared/PackagedSource.dart';
 
 class TdSource extends PackagedSource {
-  String? apkPath;
   TdSource({
     super.id,
     super.name,
@@ -19,7 +18,7 @@ class TdSource extends PackagedSource {
     super.apkName,
     super.apkUrlOverride,
     super.jarUrl,
-    this.apkPath,
+    super.apkPath,
   });
   factory TdSource.fromJson(Map<String, dynamic> json) {
     return TdSource(
@@ -51,20 +50,5 @@ class TdSource extends PackagedSource {
     map['jarUrl'] = jarUrl;
     map['apkPath'] = apkPath;
     return map;
-  }
-
-  String? get apkUrl {
-    if (apkUrlOverride != null && apkUrlOverride!.isNotEmpty) {
-      return apkUrlOverride;
-    }
-    if (apkName == null || apkName!.isEmpty) return null;
-    if (iconUrl == null || iconUrl!.isEmpty) return null;
-
-    final baseUrl = iconUrl!.replaceFirst('icon/', 'apk/');
-    final lastSlash = baseUrl.lastIndexOf('/');
-    if (lastSlash == -1) return "";
-
-    final cleanedUrl = baseUrl.substring(0, lastSlash);
-    return '$cleanedUrl/$apkName';
   }
 }

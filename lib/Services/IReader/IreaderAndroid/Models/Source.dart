@@ -2,8 +2,6 @@ import '../../../../Models/Source.dart';
 import '../../../Shared/PackagedSource.dart';
 
 class ISource extends PackagedSource {
-  String? apkUrl;
-  String? apkPath;
   bool? isShared;
 
   ISource({
@@ -21,8 +19,7 @@ class ISource extends PackagedSource {
     super.apkName,
     super.apkUrlOverride,
     super.jarUrl,
-    this.apkUrl,
-    this.apkPath,
+    super.apkPath,
     super.pkgName,
     this.isShared,
   });
@@ -44,9 +41,9 @@ class ISource extends PackagedSource {
       hasUpdate: json['hasUpdate'] ?? false,
       itemType: ItemType.novel,
       apkName: json['apkName'],
-      apkUrlOverride: json['apkUrlOverride'],
+      // Tolerate a legacy stored `apkUrl` by treating it as the override.
+      apkUrlOverride: json['apkUrlOverride'] ?? json['apkUrl'],
       jarUrl: json['jarUrl'],
-      apkUrl: json['apkUrl'],
       apkPath: json['apkPath'],
       pkgName: json['pkgName'],
       isShared: json['isShared'],

@@ -365,8 +365,6 @@ class IReaderExtensions extends Extension with TachiyomiRepoBackend {
     repo: e.repo,
     iconUrl: e.iconUrl,
     apkUrlOverride: e.apkUrl,
-    // ISource carries its own stored apkUrl, which is what installSource reads.
-    apkUrl: e.apkUrl,
     jarUrl: e.jarUrl,
   );
 }

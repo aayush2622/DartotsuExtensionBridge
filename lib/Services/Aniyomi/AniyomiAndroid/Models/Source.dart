@@ -52,19 +52,4 @@ class ASource extends PackagedSource {
     map['isShared'] = isShared;
     return map;
   }
-
-  String? get apkUrl {
-    if (apkUrlOverride != null && apkUrlOverride!.isNotEmpty) {
-      return apkUrlOverride;
-    }
-    if (apkName == null || apkName!.isEmpty) return null;
-    if (iconUrl == null || iconUrl!.isEmpty) return null;
-
-    final baseUrl = iconUrl!.replaceFirst('icon/', 'apk/');
-    final lastSlash = baseUrl.lastIndexOf('/');
-    if (lastSlash == -1) return "";
-
-    final cleanedUrl = baseUrl.substring(0, lastSlash);
-    return '$cleanedUrl/$apkName';
-  }
 }
