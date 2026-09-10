@@ -146,6 +146,37 @@ Net: `lib/Services` is ~600 lines lighter; the per-backend classes are now
 mostly just IDs, platform gating, `onInitialize` wiring and the `_sourceFromEntry`
 factory.
 
+## Mangayomi bridge sync (upstream kodjodevf/mangayomi @ ca9a9e9)
+
+Pulled the extension-facing parts of upstream's `lib/eval/` forward; skipped
+everything bound to the app (absolute imports, the Isar `sourcePreference`
+repositories, the cloudflare-webview sidecar `cfPort` HTTP call, the rust epub
+reader, `StorageProvider`, in-app `Logger`/`LoggerLevel`, the per-service
+`dispose()` lifecycle rework).
+
+- **`decryptAESGCM`** — new source-facing crypto primitive. `MBridge.decryptAESGCM`
+  (AES-GCM via `encrypt`, hex key/iv/tag, tag appended to ciphertext), wired into
+  both runtimes: d4rt `registertopLevelFunction('decryptAESGCM')` and the JS
+  `decryptAESGCM(...)` / `onMessage('decryptAESGCM')` pair. Adds a direct
+  `convert` dep for `hex`.
+- **`bridge_cast.dart`** — `asBridgedList` / `asBridgedMap`; the `MManga.genre`
+  / `.chapters` and `Video.headers` / `.subtitles` / `.audios` d4rt setters use
+  them so a `xs.toList` (missing `()`) inside a callback names the property
+  instead of surfacing as a `forEach` cast failure.
+- **JS `service.dart` — fail loudly (upstream #873).** `flutter_qjs.evaluate`
+  signals failure by return value, not by throwing; a source that failed to load
+  used to still set `_isInitialized` and every call fell through to its default
+  ("Video list is empty"). New `_throwIfError` / `js_errors.dart` check the load
+  and every `_extensionCall(Async)`, with a "not implemented" carve-out so
+  optional methods still fall back.
+- **JS `service.dart` — argument encoding.** Method args (`search` query,
+  `getDetail` / page / video urls, `getHtmlContent`, `cleanHtmlContent`,
+  `getHeaders` base url) go through `jsonEncode` instead of raw
+  `` `backtick` `` / `"..."` interpolation, so a url or query containing a
+  backtick / `${` / quote / newline no longer breaks the eval.
+- **JS `getPageList` / `getVideoList`** skip null entries and de-dup via a keyed
+  `LinkedHashSet` (page url; video url+originalUrl) instead of `.toSet()`.
+
 ### Still not done
 
 - The **Android** APK trio (`AniyomiExtensions` / `TsundokuExtensions` /
