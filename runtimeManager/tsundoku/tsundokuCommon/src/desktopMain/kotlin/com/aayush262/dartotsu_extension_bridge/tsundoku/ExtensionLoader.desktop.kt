@@ -23,6 +23,7 @@ actual object NovelExtensionLoader {
     const val LIB_VERSION_MIN = 1.3
 
     const val LIB_VERSION_MAX = 1.6
+    @Synchronized  // two concurrent getInstalled* polls raced APK->jar conversion
     actual fun loadExtensions(path: String): Map<MangaExtension.Installed, String> {
         val dir = File(path)
 

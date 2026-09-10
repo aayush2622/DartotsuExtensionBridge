@@ -21,6 +21,7 @@ actual object ExtensionLoader {
     private const val EXTENSION_FEATURE = "ireader.extension"
     actual val plugins = mutableMapOf<Long, CatalogSource>()
 
+    @Synchronized  // two concurrent getInstalled* polls raced APK->jar conversion
     actual fun loadExtensions(path: String): List<LoadedExtension> {
         plugins.clear()
 

@@ -24,6 +24,7 @@ actual object AnimeExtensionLoader {
     const val LIB_VERSION_MIN = 12.0
     const val LIB_VERSION_MAX = 16.0
 
+    @Synchronized  // two concurrent getInstalled* polls raced APK->jar conversion
     actual fun loadExtensions(path: String): Map<AnimeExtension.Installed, String> {
         val dir = File(path)
 
