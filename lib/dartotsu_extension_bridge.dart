@@ -15,3 +15,4 @@ export './Models/Video.dart';
 export './Services/Mangayomi/Models/Source.dart';
 export './Services/LnReader/Models/Source.dart';
 export './Services/Legado/Models/LegadoSource.dart';
+export './Services/Kotatsu/Models/Source.dart';

@@ -4,6 +4,7 @@ import com.aayush262.dartotsu_extension_bridge.aniyomi.AniyomiBridge
 import com.aayush262.dartotsu_extension_bridge.CustomMethods
 import com.aayush262.dartotsu_extension_bridge.cloudStream.CloudStreamBridge
 import com.aayush262.dartotsu_extension_bridge.ireader.IreaderBridge
+import com.aayush262.dartotsu_extension_bridge.kotatsu.KotatsuBridge
 import com.aayush262.dartotsu_extension_bridge.tsundoku.TsundokuBridge
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodChannel
@@ -15,6 +16,7 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
     private lateinit var cloudStreamBridge: CloudStreamBridge
     private lateinit var tsundokuBridge: TsundokuBridge
     private lateinit var ireaderBridge: IreaderBridge
+    private lateinit var kotatsuBridge: KotatsuBridge
     private lateinit var loggerChannel: MethodChannel
     private lateinit var networkChannel: MethodChannel
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -40,6 +42,9 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
         ireaderBridge = IreaderBridge(binding.applicationContext, customMethods).apply {
             attach(binding)
         }
+        kotatsuBridge = KotatsuBridge(binding.applicationContext, customMethods).apply {
+            attach(binding)
+        }
         Logger.log("Plugin attached to engine", LogLevel.INFO)
         println("Plugin attached to engine")
 
@@ -50,6 +55,7 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
         cloudStreamBridge.detach()
         tsundokuBridge.detach()
         ireaderBridge.detach()
+        kotatsuBridge.detach()
         loggerChannel.setMethodCallHandler(null)
         networkChannel.setMethodCallHandler(null)
 
