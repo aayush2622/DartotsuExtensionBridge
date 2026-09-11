@@ -21,12 +21,16 @@ trap 'rm -rf "${WORK_DIR}"' EXIT
 # --- the embedded-bridge shim JAR -------------------------------------------
 # Built by: (cd runtimeManager && ./gradlew buildEmbeddedBridge)
 #   -> runtimeManager/libraries/commonDesktopLib/build/libs/embedded-bridge.jar
-# then published to a GitHub release. Until that release exists, drop the jar
-# at ios/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/embedded-bridge.jar
-# by hand and this download is skipped.
+# .github/workflows/build.yml stages it into every `latest` release. That tag
+# is rolling (deleted + recreated on every CI run), so BRIDGE_JAR_SHA256 can
+# go stale if embedded-bridge.jar's contents ever change - re-download and
+# re-hash it then. A future improvement is publishing it under an immutable
+# `ios-runtime-v*` tag instead, so this can stop needing manual re-pinning.
+# To skip the download entirely, drop the jar by hand at
+# ios/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/embedded-bridge.jar.
 BRIDGE_JAR="${CACHE_DIR}/embedded-bridge.jar"
-BRIDGE_JAR_URL="https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/embedded-ios-v1/embedded-bridge.jar"
-BRIDGE_JAR_SHA256="0000000000000000000000000000000000000000000000000000000000000000"
+BRIDGE_JAR_URL="https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/embedded-bridge.jar"
+BRIDGE_JAR_SHA256="f8ed258835def15e4a3f4e1274898aa3d643f827ad97cba0a8425544942cb0d8"
 
 OPENJDK_ZIP="${CACHE_DIR}/OpenJDK.xcframework.zip"
 JAVA_BUNDLE_ZIP="${CACHE_DIR}/java_bundle-device.zip"

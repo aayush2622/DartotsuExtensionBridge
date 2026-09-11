@@ -145,8 +145,8 @@ SPM yet) CocoaPods still runs for the whole app regardless, so
 `prepare_command` keeps populating these files as a side effect — but
 whether Xcode resolves the SPM package graph *before* `pod install` has run
 in a given build, and whether that ordering matters, is unverified. If it
-ever does block a build: this is the same shape of problem as
-`embedded-bridge.jar` (`Still on you` #4 below) — the durable fix is
+ever does block a build: this is the same shape of problem
+`embedded-bridge.jar` had (`Still on you` #4/#5 below) — the durable fix is
 publishing a pinned, checksummed `OpenJDKRuntime.xcframework` release zip
 and switching the `binaryTarget` to `url:`/`checksum:` (see
 `media_kit_libs_ios_video`'s `Package.swift` for the pattern: SPM downloads
@@ -183,12 +183,17 @@ unverified plugin-based workaround.
    and `prepare_release.py` emits an `ios` row per backend in
    `builds/plugins.json`. Teach the Dart `DownloadablePlugin` to pick the row
    whose `platform` matches (`ios` on iOS).
-4. **Publish `embedded-bridge.jar`** — CI stages it into
-   `builds/embeddedBridge/`. Fill `BRIDGE_JAR_URL` / `BRIDGE_JAR_SHA256` in
-   `ios/PrepareEmbeddedRuntime.sh`, or commit it under
-   `ios/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/`.
-5. **Immutable iOS tags** — a changed iOS JAR needs a fresh `ios-runtime-v*`
-   tag + checksum, not the rolling `latest`.
+4. ~~**Publish `embedded-bridge.jar`**~~ — done: CI's `build` job already
+   stages it into every `latest` release (confirmed live at
+   `.../releases/download/latest/embedded-bridge.jar`).
+   `BRIDGE_JAR_URL`/`BRIDGE_JAR_SHA256` in `ios/PrepareEmbeddedRuntime.sh`
+   now point at and pin that real file. Still open: see #5.
+5. **Immutable iOS tags** — `latest` is a rolling tag (deleted + recreated
+   every CI run), so the pinned `BRIDGE_JAR_SHA256` above goes stale
+   whenever `embedded-bridge.jar`'s contents change (re-download + re-hash
+   it, same as any other pinned artifact here). A changed iOS JAR should
+   really get a fresh immutable `ios-runtime-v*` tag + checksum instead, so
+   this stops needing manual re-pinning — not done.
 6. **First-call init race (pre-existing).** `PlatformInit.initializeDesktop`
    guards with `if (GlobalContext.getOrNull() != null) return`, not a
    `@Volatile` + `synchronized` block like M-Extension-Server's
