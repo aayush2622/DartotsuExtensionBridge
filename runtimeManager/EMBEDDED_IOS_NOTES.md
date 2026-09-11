@@ -121,6 +121,22 @@ The harness mimics the native side (reflect `EmbeddedBridge.load` / `.call`):
 | `./gradlew buildEmbeddedBridge` | `libraries/commonDesktopLib/build/libs/embedded-bridge.jar` — ONLY `EmbeddedBridge` + kotlin-stdlib (~6.5 MB). Its sole job is to `URLClassLoader` each backend JAR and reflect into `Main.handle`; needs no gson/coroutines/Server/ExtensionApi. |
 | `./gradlew buildEverything` | `buildAllPlugins` + `buildEmbeddedBridge` |
 
+## CI now builds the native side too
+
+`.github/workflows/build.yml`'s `build` job only ever covered the JVM half
+(`buildAllPlugins -PiosRuntime=true`). Added a second, independent
+`build-ios` job (`runs-on: macos-latest`) that exercises the actual native
+path: builds `embedded-bridge.jar`, stages it straight at
+`ios/Runtime/embedded-bridge.jar` (sidesteps the unpublished-release problem
+in #4 below — `PrepareEmbeddedRuntime.sh` skips its own download once that
+file already exists), then scaffolds a throwaway Flutter app, adds this
+plugin as a local path dependency, and runs `flutter build ios
+--no-codesign`. That drives `pod install` → the podspec →
+`prepare_command` → the whole OpenJDK-xcframework build script, and then
+actually compiles `EmbeddedJvm.mm`/`DartotsuExtensionBridgePlugin.swift`
+against it. Unverified from here (no macOS/Xcode in this environment) —
+first real signal will be whichever CI run picks up this commit.
+
 ## Still on you (needs macOS / an on-device run)
 
 1. **`CloudflareInterceptor` degrade path.** The `-PiosRuntime` shadow drops
