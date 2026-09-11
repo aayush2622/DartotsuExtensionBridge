@@ -154,6 +154,20 @@ remote binary targets during package *resolution*, which does have network
 access, unlike build-tool plugins), instead of the local `path:` this
 commit uses.
 
+`Package.swift` checks for `Frameworks/OpenJDKRuntime.xcframework` up front
+(`FileManager.fileExists`) and writes a clear `FileHandle.standardError`
+diagnostic if it's missing, instead of letting SPM fail with an opaque
+"binary target not found" — same techniques (`FileManager` checks and
+stderr diagnostics run directly in the manifest) as `media_kit_video`'s and
+`permission_handler_apple`'s real, published `Package.swift` files. Cross-
+checked several other real plugins already in this machine's pub cache
+before writing any of this: `firebase_crashlytics` needs an Xcode
+build-phase script injection under CocoaPods (`crashlytics_add_upload_symbols`)
+that it simply **doesn't replicate** under SPM at all — confirming that
+even Google's own Firebase plugins accept "this doesn't fully port to SPM
+automatically" for prepare_command-shaped problems, rather than inventing an
+unverified plugin-based workaround.
+
 ## Still on you (needs macOS / an on-device run)
 
 1. **`CloudflareInterceptor` degrade path.** The `-PiosRuntime` shadow drops
