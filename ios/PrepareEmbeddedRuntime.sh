@@ -14,15 +14,16 @@ set -eu
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 CACHE_DIR="${HOME}/Library/Caches/dartotsu_extension_bridge/embedded-openjdk-ios13-v16"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dartotsu-embedded-zero.XXXXXX")"
-FRAMEWORKS_DIR="${SCRIPT_DIR}/Frameworks"
-RUNTIME_DIR="${SCRIPT_DIR}/Runtime"
+FRAMEWORKS_DIR="${SCRIPT_DIR}/dartotsu_extension_bridge/Frameworks"
+RUNTIME_DIR="${SCRIPT_DIR}/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime"
 trap 'rm -rf "${WORK_DIR}"' EXIT
 
 # --- the embedded-bridge shim JAR -------------------------------------------
 # Built by: (cd runtimeManager && ./gradlew buildEmbeddedBridge)
 #   -> runtimeManager/libraries/commonDesktopLib/build/libs/embedded-bridge.jar
 # then published to a GitHub release. Until that release exists, drop the jar
-# at ios/Runtime/embedded-bridge.jar by hand and this download is skipped.
+# at ios/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/embedded-bridge.jar
+# by hand and this download is skipped.
 BRIDGE_JAR="${CACHE_DIR}/embedded-bridge.jar"
 BRIDGE_JAR_URL="https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/embedded-ios-v1/embedded-bridge.jar"
 BRIDGE_JAR_SHA256="0000000000000000000000000000000000000000000000000000000000000000"

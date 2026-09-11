@@ -11,7 +11,8 @@ import 'JniBridge.dart' show JavaBridge;
 /// Desktop platforms run each backend JAR as a `java -jar` subprocess
 /// ([SidecarBridge]); iOS cannot spawn processes and forbids JIT, so instead a
 /// single interpreter-only OpenJDK Zero VM is embedded in-process (see
-/// `ios/Classes/EmbeddedJvm.mm`, modelled on
+/// `ios/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/EmbeddedJvm.mm`,
+/// modelled on
 /// <https://github.com/kodjodevf/m_extension_server>). That VM boots once with
 /// only a small shim JAR (`mextension/EmbeddedBridge`) on its classpath; each
 /// backend's fat JAR is then attached in its own child-first class loader and

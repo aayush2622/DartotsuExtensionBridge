@@ -16,8 +16,9 @@ not M-Extension-Server's NanoHTTPD loopback.
 
 Mapped from `m_extension_server/ios/Classes/MihonEmbeddedBridge.mm` +
 `.../PrepareEmbeddedRuntime.sh` + M-Extension-Server's `EmbeddedBridge.kt` /
-`Main.kt`. Status is for **this repo's** `ios/Classes/EmbeddedJvm.mm` +
-`EmbeddedBridge.kt` + `EmbeddedJvmBridge.dart`.
+`Main.kt`. Status is for **this repo's**
+`ios/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/EmbeddedJvm.mm`
++ `EmbeddedBridge.kt` + `EmbeddedJvmBridge.dart`.
 
 ### Phase 0 — build / packaging (`ios/PrepareEmbeddedRuntime.sh`, runs as the pod `prepare_command`)
 
@@ -121,6 +122,38 @@ The harness mimics the native side (reflect `EmbeddedBridge.load` / `.call`):
 | `./gradlew buildEmbeddedBridge` | `libraries/commonDesktopLib/build/libs/embedded-bridge.jar` — ONLY `EmbeddedBridge` + kotlin-stdlib (~6.5 MB). Its sole job is to `URLClassLoader` each backend JAR and reflect into `Main.handle`; needs no gson/coroutines/Server/ExtensionApi. |
 | `./gradlew buildEverything` | `buildAllPlugins` + `buildEmbeddedBridge` |
 
+## Swift Package Manager support
+
+Flutter plugin sources/resources moved from `ios/Classes/` + `ios/Resources/`
+to `ios/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/` (+
+`include/dartotsu_extension_bridge/` for the public header), matching
+Flutter's [SPM plugin layout](https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-plugin-authors).
+`ios/dartotsu_extension_bridge/Package.swift` declares the same sources, a
+`.copy("Runtime")` resource matching the podspec's `dartotsu_extension_bridge_runtime`
+bundle, and an `OpenJDKRuntime` `binaryTarget` pointing at the same
+`Frameworks/OpenJDKRuntime.xcframework` the podspec vendors. The podspec
+still works unchanged (paths updated to match) and both build systems read
+the exact same files that `PrepareEmbeddedRuntime.sh` generates.
+
+**Real risk, unverified (no macOS here):** `PrepareEmbeddedRuntime.sh` only
+runs automatically as CocoaPods' `prepare_command` — SPM has no equivalent
+hook for a `.buildTool()` plugin (Xcode sandboxes those with no network
+access), so the `binaryTarget`'s local `path:` and the `Runtime` resource
+won't exist until something has run that script. In today's mixed setup
+(flutter_qjs / install_plugin / isar_community_flutter_libs don't support
+SPM yet) CocoaPods still runs for the whole app regardless, so
+`prepare_command` keeps populating these files as a side effect — but
+whether Xcode resolves the SPM package graph *before* `pod install` has run
+in a given build, and whether that ordering matters, is unverified. If it
+ever does block a build: this is the same shape of problem as
+`embedded-bridge.jar` (`Still on you` #4 below) — the durable fix is
+publishing a pinned, checksummed `OpenJDKRuntime.xcframework` release zip
+and switching the `binaryTarget` to `url:`/`checksum:` (see
+`media_kit_libs_ios_video`'s `Package.swift` for the pattern: SPM downloads
+remote binary targets during package *resolution*, which does have network
+access, unlike build-tool plugins), instead of the local `path:` this
+commit uses.
+
 ## Still on you (needs macOS / an on-device run)
 
 1. **`CloudflareInterceptor` degrade path.** The `-PiosRuntime` shadow drops
@@ -138,7 +171,8 @@ The harness mimics the native side (reflect `EmbeddedBridge.load` / `.call`):
    whose `platform` matches (`ios` on iOS).
 4. **Publish `embedded-bridge.jar`** — CI stages it into
    `builds/embeddedBridge/`. Fill `BRIDGE_JAR_URL` / `BRIDGE_JAR_SHA256` in
-   `ios/PrepareEmbeddedRuntime.sh`, or commit it under `ios/Runtime/`.
+   `ios/PrepareEmbeddedRuntime.sh`, or commit it under
+   `ios/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/`.
 5. **Immutable iOS tags** — a changed iOS JAR needs a fresh `ios-runtime-v*`
    tag + checksum, not the rolling `latest`.
 6. **First-call init race (pre-existing).** `PlatformInit.initializeDesktop`
