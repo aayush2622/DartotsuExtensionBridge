@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.aayush262.plugin"
 
-    compileSdk = 37
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.aayush262.dartotsu_extension_bridge.kotatsu_plugin"
@@ -40,7 +40,7 @@ extra.apply {
     set("pluginDescription", "A plugin that allows you to run kotatsu extensions on android")
 }
 
-//apply(from = "$rootDir/plugin-build.gradle.kts")
+apply(from = "$rootDir/plugin-build.gradle.kts")
 
 tasks.register("buildAndInstall") {
     dependsOn(":kotatsu:kotatsuAndroid:assembleDebug")
