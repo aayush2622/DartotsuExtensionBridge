@@ -13,15 +13,6 @@ import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
 import '../KotatsuSourceMethods.dart';
 
-/// Android backend for Kotatsu (<https://github.com/KotatsuApp/kotatsu-parsers>)
-/// manga sources.
-///
-/// Unlike the APK-per-source backends, a Kotatsu "repo" is a single jar
-/// bundling every parser; "installing" a source just flips its id into the
-/// [_activeSourcesKey] allow-list — nothing is downloaded per source. The
-/// native side (`kotatsuExtensionBridge`, `KotatsuExtensionApi` in
-/// `runtimeManager/kotatsu`) enumerates every parser in that jar on
-/// `getInstalledMangaExtensions`; this class does the active/available split.
 class KotatsuExtensions extends Extension {
   static const _activeSourcesKey = 'kotatsu_active_sources';
 
@@ -80,8 +71,6 @@ class KotatsuExtensions extends Extension {
       .getDirectory(subPath: 'bridge/kotatsu', useSystemPath: false, useCustomPath: true);
 
   File _jarFile(Directory dir) => File('${dir.path}/plugin.jar');
-
-  // --- repos: one shared parsers jar, not a per-source index -----------
 
   @override
   Future<void> addRepo(String repoUrl, ItemType type) async {
@@ -142,8 +131,6 @@ class KotatsuExtensions extends Extension {
 
   @override
   Future<List<Source>> fetchRepo(Repo repo, ItemType type) async => const [];
-
-  // --- one shared jar -> split by the active-sources allow-list ---------
 
   @override
   Future<void> fetchAnimeExtensions() async {
@@ -210,8 +197,6 @@ class KotatsuExtensions extends Extension {
   Set<String> _activeIds() =>
       (getVal<List<String>>(_activeSourcesKey) ?? const <String>[]).toSet();
 
-  // --- install/uninstall just toggles the allow-list --------------------
-
   @override
   Future<void> installSource(Source source) async {
     final ids = getVal<List<String>>(_activeSourcesKey) ?? [];
@@ -232,15 +217,12 @@ class KotatsuExtensions extends Extension {
 
   @override
   Future<void> updateSource(Source source) async {
-    // No per-source binary — refresh the shared jar's parse of it.
     await fetchInstalledMangaExtensions();
     await fetchMangaExtensions();
   }
 
   @override
-  void detectUpdates(List<Source> available, ItemType type) {
-    // One shared jar per repo; there's nothing per-source to version-compare.
-  }
+  void detectUpdates(List<Source> available, ItemType type) {}
 
   @override
   Set<String> get schemes => const {};

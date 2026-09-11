@@ -1,9 +1,5 @@
 import '../../../../Models/Source.dart';
 
-/// Desktop counterpart of [KotatsuSource]. Kept as a separate class — same
-/// convention as CSource/CdSource, TSource/TdSource, IdSource — even though
-/// the fields are currently identical, since the two platforms hit different
-/// native `ExtensionApi` implementations that could diverge independently.
 class KotatsuDesktopSource extends Source {
   String? jarName;
   String? pkgName;
