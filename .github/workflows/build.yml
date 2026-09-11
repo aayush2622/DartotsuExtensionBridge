@@ -208,10 +208,23 @@ jobs:
       - name: List available simulators (diagnostic)
         run: xcrun simctl list devices available
 
+      - name: Boot an iOS Simulator
+        # `flutter devices` (and therefore `flutter test -d`) only lists
+        # *booted* simulators — it does not boot a shutdown one for you the
+        # way `flutter run -d <name>` can for some device types. Picks the
+        # first available iPhone-family simulator rather than pinning an
+        # exact model, since that changes across Xcode/runner-image versions.
+        run: |
+          UDID=$(xcrun simctl list devices available iPhone -j | jq -r '[.devices[][] | select(.isAvailable)][0].udid')
+          if [ -z "$UDID" ] || [ "$UDID" = "null" ]; then
+            echo "No available iPhone simulator found" >&2
+            exit 1
+          fi
+          echo "Booting simulator $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID"
+          echo "SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
+
       - name: Run the embedded JVM integration test on an iOS Simulator
         working-directory: example
-        # `-d` matches any available (booted or not) simulator whose name
-        # contains "iPhone"; `flutter test integration_test/` boots it if
-        # needed. Not pinning an exact model, since that changes across
-        # Xcode/runner-image versions.
-        run: flutter test integration_test/embedded_jvm_test.dart -d "iPhone"
+        run: flutter test integration_test/embedded_jvm_test.dart -d "$SIMULATOR_UDID"
