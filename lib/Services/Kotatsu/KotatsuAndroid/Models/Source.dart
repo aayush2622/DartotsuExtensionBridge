@@ -1,4 +1,4 @@
-import '../../../Models/Source.dart';
+import '../../../../Models/Source.dart';
 
 /// A manga source read out of the shared Kotatsu parsers jar. Unlike the
 /// APK-per-source Android backends, Kotatsu ships every parser in one jar;
