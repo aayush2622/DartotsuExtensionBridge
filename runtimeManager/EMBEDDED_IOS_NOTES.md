@@ -121,54 +121,6 @@ The harness mimics the native side (reflect `EmbeddedBridge.load` / `.call`):
 | `./gradlew buildEmbeddedBridge` | `libraries/commonDesktopLib/build/libs/embedded-bridge.jar` — ONLY `EmbeddedBridge` + kotlin-stdlib (~6.5 MB). Its sole job is to `URLClassLoader` each backend JAR and reflect into `Main.handle`; needs no gson/coroutines/Server/ExtensionApi. |
 | `./gradlew buildEverything` | `buildAllPlugins` + `buildEmbeddedBridge` |
 
-## CI now builds *and runs* the native side, on a Simulator
-
-`.github/workflows/build.yml`'s `build` job only ever covered the JVM half
-(`buildAllPlugins -PiosRuntime=true`). Added a second, independent
-`build-ios` job (`runs-on: macos-latest`):
-
-1. Builds `embedded-bridge.jar` + all 5 Desktop modules' `*-plugin-ios.jar`
-   (targeted `buildPlugin` tasks, not the blanket `buildAllPlugins` — that
-   also depends on the `*Android` modules, and this runner has no Android
-   SDK set up).
-2. Stages `embedded-bridge.jar` straight at `ios/Runtime/embedded-bridge.jar`
-   (sidesteps the unpublished-release problem in #4 below —
-   `PrepareEmbeddedRuntime.sh` skips its own download once that file already
-   exists) and the 5 backend jars into `example/assets/plugins/`.
-3. Boots an iOS Simulator (`xcrun simctl boot` — `flutter devices`/`flutter
-   test -d` only see already-*booted* simulators, they won't boot a
-   shutdown one for you) and runs
-   `example/integration_test/embedded_jvm_test.dart` against it. That drives
-   `pod install` → the podspec → `prepare_command` → the whole
-   OpenJDK-xcframework build script → compiling
-   `EmbeddedJvm.mm`/`DartotsuExtensionBridgePlugin.swift` → the app actually
-   launching and calling into it for each of the 5 backends.
-
-**Found by actually running it (first CI attempt), not from reading the
-code:** `EmbeddedJvm.mm` has a hard `#if !TARGET_OS_SIMULATOR` split — the
-static OpenJDK framework is only built for physical arm64 iOS hardware, so
-on the Simulator target every embedded-JVM operation (`start`/`load`/`call`)
-is stubbed to immediately return `EMBEDDED_JVM_ERROR: "The embedded Java
-runtime supports physical iOS devices only."` That's by design (see the
-podspec's own description + `PrepareEmbeddedRuntime.sh`'s separate
-`openjdk_simulator_stub.cpp` — the simulator xcframework slice exists only
-so Xcode's static linking succeeds, not to run anything), **not a CI bug** —
-and GitHub Actions has no physical iOS device runners, so this ceiling is
-permanent for hosted CI. The integration test now accepts that specific
-error as the correct outcome on a Simulator (still proving the whole Dart →
-MethodChannel → Swift → ObjC++ chain is wired correctly — a broken channel
-registration throws a *different* error or hangs, not this one) and only
-asserts a real `ping`/`initializeDesktop` response when it doesn't see that
-error, i.e. when actually run against a real device.
-
-**Bottom line:** CI now proves the native code compiles, links, and its
-Dart↔Swift↔ObjC++ plumbing round-trips correctly, on every push. It cannot
-and will never prove the embedded JVM itself boots and dispatches a real
-backend call — that needs a physical device, which only a human with one
-plugged in (or a self-hosted runner wired to one) can verify. Run
-`flutter test integration_test/embedded_jvm_test.dart -d <device-id>` from
-`example/` against a real device to get that signal.
-
 ## Still on you (needs macOS / an on-device run)
 
 1. **`CloudflareInterceptor` degrade path.** The `-PiosRuntime` shadow drops

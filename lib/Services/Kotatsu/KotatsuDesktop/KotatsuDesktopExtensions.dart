@@ -13,15 +13,6 @@ import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
 import '../KotatsuSourceMethods.dart';
 
-/// Desktop counterpart of `KotatsuAndroid/KotatsuExtensions.dart`. Same
-/// shared-jar-plus-active-sources-allow-list model (see that file's doc
-/// comment) — the only real difference is how the native side loads the
-/// jar's parser classes: Android's `KotatsuExtensionApi` uses
-/// `dalvik.system.DexClassLoader` directly (a real Dalvik/ART runtime is
-/// available), while this backend's native `KotatsuExtensionLoader`
-/// (desktopMain) runs the jar's `classes.dex` through the same dex2jar
-/// conversion the other four JVM-sidecar backends already use, then loads
-/// the converted jar with a normal classloader.
 class KotatsuDesktopExtensions extends Extension {
   static const _activeSourcesKey = 'kotatsu_desktop_active_sources';
 
@@ -100,8 +91,6 @@ class KotatsuDesktopExtensions extends Extension {
 
   File _jarFile(Directory dir) => File('${dir.path}/plugin.jar');
 
-  // --- repos: one shared parsers jar, not a per-source index -----------
-
   @override
   Future<void> addRepo(String repoUrl, ItemType type) async {
     if (type != ItemType.manga) return;
@@ -163,8 +152,6 @@ class KotatsuDesktopExtensions extends Extension {
 
   @override
   Future<List<Source>> fetchRepo(Repo repo, ItemType type) async => const [];
-
-  // --- one shared jar -> split by the active-sources allow-list ---------
 
   @override
   Future<void> fetchAnimeExtensions() async {
@@ -229,8 +216,6 @@ class KotatsuDesktopExtensions extends Extension {
   Set<String> _activeIds() =>
       (getVal<List<String>>(_activeSourcesKey) ?? const <String>[]).toSet();
 
-  // --- install/uninstall just toggles the allow-list --------------------
-
   @override
   Future<void> installSource(Source source) async {
     final ids = getVal<List<String>>(_activeSourcesKey) ?? [];
@@ -251,15 +236,12 @@ class KotatsuDesktopExtensions extends Extension {
 
   @override
   Future<void> updateSource(Source source) async {
-    // No per-source binary — refresh the shared jar's parse of it.
     await fetchInstalledMangaExtensions();
     await fetchMangaExtensions();
   }
 
   @override
-  void detectUpdates(List<Source> available, ItemType type) {
-    // One shared jar per repo; there's nothing per-source to version-compare.
-  }
+  void detectUpdates(List<Source> available, ItemType type) {}
 
   @override
   Set<String> get schemes => const {};

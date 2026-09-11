@@ -183,12 +183,6 @@ class CloudStreamExtensions extends Extension {
       ),
     );
 
-    // Was a raw `_client.send()` + fold-into-list + writeAsBytes with no
-    // status check — a 404/500 (or a Cloudflare HTML page) got happily
-    // written out as the plugin file, and an interrupted download could
-    // leave a half-written archive in place. `downloadPackageFile` (shared
-    // with the desktop variant) checks the status and swaps the file in
-    // atomically once the body has fully arrived.
     await downloadPackageFile(_client, s.pluginUrl!, file.path);
 
     final avail = state(type).available;

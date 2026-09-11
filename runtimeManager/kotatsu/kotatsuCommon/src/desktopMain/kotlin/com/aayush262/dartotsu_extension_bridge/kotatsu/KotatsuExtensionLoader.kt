@@ -37,23 +37,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipFile
 import javax.imageio.ImageIO
 
-/**
- * Desktop implementation of [KotatsuExtensionLoader]. See that file's doc
- * comment for why this exists as a separate implementation instead of
- * sharing Android's: no [dalvik.system.DexClassLoader] on a plain JVM.
- *
- * Unlike Android's `KotatsuAndroidPluginClassLoader` (a *child-first*
- * loader that deliberately re-loads the model classes — `Manga`,
- * `MangaChapter`, `SortOrder`, ... — from inside the plugin jar to isolate
- * them from the host app's own copy), [PackageTools.getClassLoader] returns
- * a plain, *parent-first* `URLClassLoader`. Since `kotatsuCommon` already
- * vendors the full `org.koitharu.kotatsu.parsers.*` model/interface classes
- * on desktop's own classpath, parent-first delegation means those classes
- * always resolve to the same `Class` objects here and inside the plugin
- * jar — so a parser instance can be used directly as a real [MangaParser],
- * with normal method calls instead of Android's reflection-based
- * `KotatsuMangaParserWrapper` dance.
- */
 @OptIn(InternalParsersApi::class)
 actual object KotatsuExtensionLoader {
     private val loadedParsers = ConcurrentHashMap<String, MangaParser>()
@@ -255,7 +238,6 @@ actual object KotatsuExtensionLoader {
                                 ),
                             )
                         } catch (_: Throwable) {
-                            // Not every class in the jar is a MangaParser — expected.
                         }
                     }
                 } catch (e: Exception) {

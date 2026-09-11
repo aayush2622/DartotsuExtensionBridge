@@ -208,9 +208,6 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
                     smartFallbackSucceeded = links.isNotEmpty()
                 }
             } catch (e: Exception) {
-                // Was swallowing the "final resort" loadExtractor call below too —
-                // if provider.load(data) itself threw (e.g. data is already a
-                // direct video URL, not a media page), we never fell through.
                 Logger.log( "Smart Fallback failed for $data — falling through to loadExtractor", e)
             }
 
@@ -290,9 +287,6 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
     }
 
     private fun qualityLabel(quality: Int): String = when {
-        // Qualities.Unknown.value == 400 (see utils/ExtractorApi.kt), not 0 — a
-        // real "unknown" link used to fall through to the `>= 360` branch below
-        // and get mislabeled "360p".
         quality <= 0 || quality == 400 -> ""
         quality >= 2160 -> "4K"
         quality >= 1080 -> "1080p"

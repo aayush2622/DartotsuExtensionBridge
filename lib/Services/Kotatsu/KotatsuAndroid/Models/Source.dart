@@ -1,8 +1,5 @@
 import '../../../../Models/Source.dart';
 
-/// A manga source read out of the shared Kotatsu parsers jar. Unlike the
-/// APK-per-source Android backends, Kotatsu ships every parser in one jar;
-/// [jarName] / [pkgName] identify which parser class within it this is.
 class KotatsuSource extends Source {
   String? jarName;
   String? pkgName;
