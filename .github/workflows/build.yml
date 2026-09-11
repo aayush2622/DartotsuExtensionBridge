@@ -119,3 +119,64 @@ jobs:
       - name: No changes detected
         if: steps.release-prep.outputs.changed != 'true'
         run: echo "All plugin artifacts are unchanged — skipping release."
+
+  # `build` above covers the JVM half of iOS support (`buildAllPlugins
+  # -PiosRuntime=true` produces the *-plugin-ios.jar variants). It never
+  # touches the native side — ios/Classes/*.swift,*.mm and the podspec's
+  # `prepare_command` (ios/PrepareEmbeddedRuntime.sh), which builds the
+  # embedded OpenJDK Zero xcframework — because that needs a macOS runner.
+  # This job builds a throwaway Flutter app that depends on this plugin and
+  # runs `flutter build ios`, which drives `pod install` → the podspec →
+  # the prepare_command, exercising the whole native path for real.
+  #
+  # Independent of `build` (no `needs:`) so a flaky/broken iOS leg can't
+  # block the existing plugin-artifact release pipeline, and vice versa.
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # PrepareEmbeddedRuntime.sh falls back to `/usr/libexec/java_home
+          # -v 21` to compile the java.util.logging shim if $JAVA_HOME isn't
+          # already a JDK 21.
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the embedded-bridge shim jar
+        working-directory: runtimeManager
+        run: ./gradlew buildEmbeddedBridge
+
+      - name: Stage embedded-bridge.jar for the iOS pod
+        # PrepareEmbeddedRuntime.sh skips its own download of this jar (a
+        # release under the `embedded-ios-v1` tag that doesn't exist yet —
+        # see runtimeManager/EMBEDDED_IOS_NOTES.md, "Still on you" #4/#5)
+        # once it's already sitting at ios/Runtime/embedded-bridge.jar. CI
+        # just built one, so stage it directly instead of round-tripping
+        # through a release.
+        run: |
+          mkdir -p ios/Runtime
+          cp runtimeManager/libraries/commonDesktopLib/build/libs/embedded-bridge.jar \
+             ios/Runtime/embedded-bridge.jar
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Precache iOS engine artifacts
+        run: flutter precache --ios
+
+      - name: Build a throwaway app depending on this plugin
+        run: |
+          flutter create --platforms=ios /tmp/ios_smoke_test
+          cd /tmp/ios_smoke_test
+          flutter pub add dartotsu_extension_bridge --path "${{ github.workspace }}"
+          flutter build ios --no-codesign --debug
