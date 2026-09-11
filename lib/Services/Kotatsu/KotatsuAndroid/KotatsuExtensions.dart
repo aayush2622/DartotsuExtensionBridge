@@ -4,14 +4,14 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
-import '../../Extensions/DownloadablePlugin.dart';
-import '../../Extensions/ExtensionBridge.dart';
-import '../../Logger.dart';
-import '../../NetworkClient.dart';
-import '../../Settings/KvStore.dart';
-import '../../dartotsu_extension_bridge.dart';
-import '../Network.dart';
-import 'KotatsuSourceMethods.dart';
+import '../../../Extensions/DownloadablePlugin.dart';
+import '../../../Extensions/ExtensionBridge.dart';
+import '../../../Logger.dart';
+import '../../../NetworkClient.dart';
+import '../../../Settings/KvStore.dart';
+import '../../../dartotsu_extension_bridge.dart';
+import '../../Network.dart';
+import '../KotatsuSourceMethods.dart';
 
 /// Android backend for Kotatsu (<https://github.com/KotatsuApp/kotatsu-parsers>)
 /// manga sources.

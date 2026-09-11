@@ -1,5 +1,6 @@
 import 'package:dartotsu_extension_bridge/Models/Source.dart';
-import 'package:dartotsu_extension_bridge/Services/Kotatsu/Models/Source.dart';
+import 'package:dartotsu_extension_bridge/Services/Kotatsu/KotatsuAndroid/Models/Source.dart';
+import 'package:dartotsu_extension_bridge/Services/Kotatsu/KotatsuDesktop/Models/Source.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -47,6 +48,40 @@ void main() {
       final s = KotatsuSource.fromJson({'id': 'X', 'name': 'X'});
       expect(s.jarName, isNull);
       expect(s.pkgName, isNull);
+    });
+  });
+
+  group('KotatsuDesktopSource', () {
+    test('fromJson defaults itemType to manga and coerces the id', () {
+      final s = KotatsuDesktopSource.fromJson({
+        'id': 12345,
+        'name': 'MangaDex',
+        'jarName': 'plugin.jar',
+        'pkgName': 'MANGADEX',
+      });
+
+      expect(s.id, '12345');
+      expect(s.itemType, ItemType.manga);
+      expect(s.jarName, 'plugin.jar');
+      expect(s.pkgName, 'MANGADEX');
+    });
+
+    test('toJson round-trips jarName/pkgName alongside the base Source fields', () {
+      final original = KotatsuDesktopSource(
+        id: 'MANGADEX',
+        name: 'MangaDex',
+        jarName: 'plugin.jar',
+        pkgName: 'MANGADEX',
+        repo: 'https://example.com/parsers.jar',
+      );
+
+      final decoded = KotatsuDesktopSource.fromJson(original.toJson());
+
+      expect(decoded.id, original.id);
+      expect(decoded.jarName, original.jarName);
+      expect(decoded.pkgName, original.pkgName);
+      expect(decoded.repo, original.repo);
+      expect(decoded.itemType, ItemType.manga);
     });
   });
 }

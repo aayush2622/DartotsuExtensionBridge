@@ -18,6 +18,10 @@ kotlin {
         getByName("androidMain") {
             dependencies {
                 api(projects.libraries.commonLib)
+                // KotatsuExtensionLoader (androidMain) uses Injekt to fetch the
+                // Android Context; commonLib's bundle doesn't carry it, and
+                // commonDesktopLib's Injekt-compatible shim is desktop-only.
+                api("uy.kohesive.injekt:injekt-core:1.16.1")
             }
         }
 
