@@ -107,7 +107,22 @@ Fixed by turning `KotatsuExtensionLoader` into a proper `expect object` in
   `android.webkit.CookieManager`).
 - `kotatsu/kotatsuDesktop/build.gradle.kts` — `plugin-build.gradle.kts` apply
   uncommented, same as `kotatsuAndroid`'s from the previous pass; both now
-  participate in `buildAllPlugins`/`printBuildVariants`.
+  participate in `buildAllPlugins`/`printBuildVariants`. Also added the
+  `-PiosRuntime=true` JCEF/JOGL/JNA exclude block (same as the other four
+  Desktop modules) — cuts the shadow jar from ~64 MB to ~39 MB.
+- **`desktopMain/.../KotatsuExtensionCli.kt`** (new) — the piece that made
+  the first version of this pass non-functional despite every build
+  succeeding: `kotatsuDesktop`'s shadow jar manifest has always pointed
+  `Main-Class` at `com.aayush262.dartotsu_extension_bridge.Main`, but no
+  such class existed anywhere in the module. `SidecarBridge` runs
+  `java -jar <pluginJar>` directly — that's a hard failure at process
+  start, not something a `shadowJar`/`buildPlugin` task would ever catch,
+  since Gradle doesn't verify a manifest's `Main-Class` points at a real
+  class. `EmbeddedJvmBridge` (iOS) would have hit the same gap the other
+  way, reflecting for a `Main.handle(String):String` that didn't exist.
+  Added the same `object Main { api(); main(args); handle(requestJson) }`
+  shape every other backend has (`TsundokuExtensionCli.kt` etc.), wired to
+  `KotatsuExtensionApi`.
 
 ## Verified
 
@@ -118,23 +133,33 @@ Fixed by turning `KotatsuExtensionLoader` into a proper `expect object` in
 - `./gradlew :kotatsu:kotatsuAndroid:assembleDebug` — **BUILD SUCCESSFUL**,
   produces a real debug APK.
 - `./gradlew :kotatsu:kotatsuCommon:compileKotlinDesktop` — **BUILD
-  SUCCESSFUL**.
+  SUCCESSFUL**, both with and without `-PiosRuntime=true`.
 - `./gradlew :kotatsu:kotatsuAndroid:buildPlugin :kotatsu:kotatsuDesktop:buildPlugin`
   — **BUILD SUCCESSFUL**, produces
   `builds/kotatsuAndroid/kotatsuAndroid-plugin.apk` +
   `builds/kotatsuDesktop/kotatsuDesktop-plugin.jar` with matching
   `-plugin.json` metadata, same shape as every other ecosystem.
+- **Actual runtime smoke test**, not just a build: ran
+  `java -jar kotatsuDesktop-all.jar` directly and drove it over stdin with
+  the real sidecar JSON protocol —
+  `{"method":"initializeDesktop",...}` → `{"success":true}` and
+  `{"method":"getInstalledMangaExtensions",...}` → `[]` (against an empty
+  scratch directory, so an empty list is the correct answer), with the
+  loader's own `[Kotatsu-Desktop] Scan complete. Found 0 sources.` log line
+  showing up — proof the `Main` entrypoint, the stdio protocol, and the new
+  `desktopMain` loader code all actually run, not just compile.
 
 ## Not done / unverified
 
 - No real Kotatsu parsers jar was available to test against, on either
-  platform — `getInstalledMangaExtensions`/`getPopular`/etc. compile and the
-  reasoning about parent-first vs. child-first classloading is sound, but
-  end-to-end behavior against an actual jar (does the jar really ship
-  `classes.dex`, do parser constructors really take a bare
-  `MangaLoaderContext`, etc.) is unverified. Same environment limitation
-  that blocked a live smoke test for Legado (outbound DNS/Cloudflare is
-  blocked here).
+  platform, so the smoke test above only exercises the "no jar present"
+  path. `getInstalledMangaExtensions`/`getPopular`/etc. compile and now run
+  without crashing, and the reasoning about parent-first vs. child-first
+  classloading is sound, but end-to-end behavior against an actual jar
+  (does the jar really ship `classes.dex`, do parser constructors really
+  take a bare `MangaLoaderContext`, etc.) is unverified. Same environment
+  limitation that blocked a live smoke test for Legado (outbound
+  DNS/Cloudflare is blocked here).
 - Neither plugin has been published; `plugins.json` (wherever
   `DownloadablePlugin` releases are hosted) has no Kotatsu entry yet, so
   `KotatsuPlugin`/`KotatsuDesktopPlugin.autoUpdate()`/`isInstalled()` will
