@@ -1,0 +1,3 @@
+Populated by CI (.github/workflows/build.yml, `build-ios` job) with the
+*Desktop-plugin-ios.jar files before running integration_test/embedded_jvm_test.dart.
+Not committed — see .gitignore.

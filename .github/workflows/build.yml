@@ -125,9 +125,17 @@ jobs:
   # touches the native side — ios/Classes/*.swift,*.mm and the podspec's
   # `prepare_command` (ios/PrepareEmbeddedRuntime.sh), which builds the
   # embedded OpenJDK Zero xcframework — because that needs a macOS runner.
-  # This job builds a throwaway Flutter app that depends on this plugin and
-  # runs `flutter build ios`, which drives `pod install` → the podspec →
-  # the prepare_command, exercising the whole native path for real.
+  #
+  # This job runs example/integration_test/embedded_jvm_test.dart on a real
+  # iOS Simulator: for every backend that goes through the embedded JVM
+  # (Aniyomi/CloudStream/IReader/Tsundoku/Kotatsu — Mangayomi/Sora/LnReader/
+  # Legado are pure-Dart and never touch this path), it loads that backend's
+  # *-plugin-ios.jar into the VM and makes real calls (`ping`,
+  # `initializeDesktop`). That exercises the whole chain for real: `pod
+  # install` → the podspec → prepare_command → the OpenJDK xcframework build
+  # → EmbeddedJvm.mm/DartotsuExtensionBridgePlugin.swift compiling against
+  # it → the app actually booting the VM at runtime and getting a real
+  # response back. Not just "does it compile".
   #
   # Independent of `build` (no `needs:`) so a flaky/broken iOS leg can't
   # block the existing plugin-artifact release pipeline, and vice versa.
@@ -150,9 +158,20 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build the embedded-bridge shim jar
+      - name: Build the embedded-bridge shim jar + iOS backend plugin jars
+        # Only the 5 Desktop modules' buildPlugin tasks, not the blanket
+        # `buildAllPlugins` — that also depends on the *Android modules'
+        # buildPlugin, and this runner has no Android SDK set up (the `build`
+        # job on ubuntu-latest already builds + verifies those).
         working-directory: runtimeManager
-        run: ./gradlew buildEmbeddedBridge
+        run: |
+          ./gradlew buildEmbeddedBridge \
+            :aniyomi:aniyomiDesktop:buildPlugin \
+            :cloudStream:cloudStreamDesktop:buildPlugin \
+            :ireader:ireaderDesktop:buildPlugin \
+            :tsundoku:tsundokuDesktop:buildPlugin \
+            :kotatsu:kotatsuDesktop:buildPlugin \
+            -PiosRuntime=true
 
       - name: Stage embedded-bridge.jar for the iOS pod
         # PrepareEmbeddedRuntime.sh skips its own download of this jar (a
@@ -166,6 +185,14 @@ jobs:
           cp runtimeManager/libraries/commonDesktopLib/build/libs/embedded-bridge.jar \
              ios/Runtime/embedded-bridge.jar
 
+      - name: Stage backend plugin jars for the integration test
+        run: |
+          mkdir -p example/assets/plugins
+          for plugin in aniyomiDesktop cloudStreamDesktop ireaderDesktop tsundokuDesktop kotatsuDesktop; do
+            cp "runtimeManager/builds/${plugin}/${plugin}-plugin-ios.jar" \
+               "example/assets/plugins/${plugin}-plugin-ios.jar"
+          done
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -174,9 +201,17 @@ jobs:
       - name: Precache iOS engine artifacts
         run: flutter precache --ios
 
-      - name: Build a throwaway app depending on this plugin
-        run: |
-          flutter create --platforms=ios /tmp/ios_smoke_test
-          cd /tmp/ios_smoke_test
-          flutter pub add dartotsu_extension_bridge --path "${{ github.workspace }}"
-          flutter build ios --no-codesign --debug
+      - name: Resolve example app dependencies
+        working-directory: example
+        run: flutter pub get
+
+      - name: List available simulators (diagnostic)
+        run: xcrun simctl list devices available
+
+      - name: Run the embedded JVM integration test on an iOS Simulator
+        working-directory: example
+        # `-d` matches any available (booted or not) simulator whose name
+        # contains "iPhone"; `flutter test integration_test/` boots it if
+        # needed. Not pinning an exact model, since that changes across
+        # Xcode/runner-image versions.
+        run: flutter test integration_test/embedded_jvm_test.dart -d "iPhone"
