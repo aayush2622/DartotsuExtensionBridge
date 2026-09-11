@@ -142,6 +142,12 @@ NSString *OpenJDKRuntimeHome() {
 }
 
 NSString *EmbeddedRuntimeResourcePath() {
+#if SWIFT_PACKAGE
+  NSString *bundlePath = SWIFTPM_MODULE_BUNDLE.resourcePath;
+  return bundlePath == nil
+      ? NSBundle.mainBundle.resourcePath
+      : [bundlePath stringByAppendingPathComponent:@"Runtime"];
+#else
   NSBundle *pluginBundle = [NSBundle
       bundleForClass:NSClassFromString(
                          @"dartotsu_extension_bridge.DartotsuExtensionBridgePlugin")];
@@ -156,6 +162,7 @@ NSString *EmbeddedRuntimeResourcePath() {
   NSBundle *runtimeBundle =
       bundlePath == nil ? nil : [NSBundle bundleWithPath:bundlePath];
   return runtimeBundle.resourcePath ?: NSBundle.mainBundle.resourcePath;
+#endif
 }
 
 bool LoadOpenJDKRuntime(NSError **error) {
