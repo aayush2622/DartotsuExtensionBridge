@@ -179,6 +179,7 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
 
         if (links.isEmpty() && data.startsWith("http") && !data.contains("[{") && !data.contains("{\"")) {
             Logger.log( "Smart Fallback: Calling provider.load($data)")
+            var smartFallbackSucceeded = false
             try {
                 val extractedData = when (val res = provider.load(data)) {
                     is MovieLoadResponse -> res.dataUrl
@@ -204,14 +205,24 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
                             links.add(linkToMap(link, subtitles.toList()))
                         }
                     )
-                } else if (data.startsWith("http")) {
-                    Logger.log( "Final resort: direct loadExtractor for: $data")
+                    smartFallbackSucceeded = links.isNotEmpty()
+                }
+            } catch (e: Exception) {
+                // Was swallowing the "final resort" loadExtractor call below too —
+                // if provider.load(data) itself threw (e.g. data is already a
+                // direct video URL, not a media page), we never fell through.
+                Logger.log( "Smart Fallback failed for $data — falling through to loadExtractor", e)
+            }
+
+            if (!smartFallbackSucceeded && links.isEmpty()) {
+                Logger.log( "Final resort: direct loadExtractor for: $data")
+                try {
                     loadExtractor(data, "", { }, { link ->
                         links.add(linkToMap(link, emptyList()))
                     })
+                } catch (e: Exception) {
+                    Logger.log( "Final resort loadExtractor also failed for $data", e)
                 }
-            } catch (e: Exception) {
-                Logger.log( "Smart Fallback failed for $data", e)
             }
         }
 
@@ -221,10 +232,11 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
 
     private fun linkToMap(link: ExtractorLink, subtitles: List<Map<String, Any?>>): Map<String, Any?> {
         val finalHeaders = fixHeaders(link.headers, link.referer)
-        val baseMap = mutableMapOf(
+        val qLabel = qualityLabel(link.quality)
+        val baseMap = mutableMapOf<String, Any?>(
             "url" to link.url,
-            "title" to "${link.name} (${qualityLabel(link.quality)})",
-            "quality" to qualityLabel(link.quality),
+            "title" to if (qLabel.isEmpty()) link.name else "${link.name} ($qLabel)",
+            "quality" to qLabel,
             "headers" to finalHeaders,
             "isM3u8" to (link.type == ExtractorLinkType.M3U8),
             "subtitles" to subtitles,
@@ -278,7 +290,10 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
     }
 
     private fun qualityLabel(quality: Int): String = when {
-        quality <= 0 -> "Unknown"
+        // Qualities.Unknown.value == 400 (see utils/ExtractorApi.kt), not 0 — a
+        // real "unknown" link used to fall through to the `>= 360` branch below
+        // and get mislabeled "360p".
+        quality <= 0 || quality == 400 -> ""
         quality >= 2160 -> "4K"
         quality >= 1080 -> "1080p"
         quality >= 720 -> "720p"
