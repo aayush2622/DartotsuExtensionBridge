@@ -8,6 +8,14 @@
 # a dedicated JVM-sized bootstrap thread, Serial GC) is taken from
 # https://github.com/kodjodevf/m_extension_server.
 #
+# TorrServer (torrent streaming engine) is GPL-3.0 and can't spawn a
+# subprocess on iOS either, so it's embedded the same way
+# github.com/ayman708-UX/torrserver_flutter does it on iOS: a prebuilt
+# `gomobile bind` xcframework, statically linked into the app binary. Note
+# this makes the whole iOS app binary a GPL-3.0 combined work per FSF
+# guidance (desktop/Android instead subprocess the binary, which stays "mere
+# aggregation" - no such obligation there).
+#
 Pod::Spec.new do |s|
   s.name             = 'dartotsu_extension_bridge'
   s.version          = '0.0.1'
@@ -30,14 +38,19 @@ Android and desktop are unaffected (Dalvik bridge / `java` subprocess).
   # Builds dartotsu_extension_bridge/Frameworks/OpenJDKRuntime.xcframework and
   # stages dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/
   # (the embedded-bridge JAR, the java.util.logging shim, cacerts). Idempotent.
+  # Also vendors Frameworks/TorrServerKit.xcframework (no build step, just a
+  # checksum-verified download+unzip - see PrepareTorrServerRuntime.sh).
   # dartotsu_extension_bridge/Package.swift reads these same generated paths.
-  s.prepare_command = 'sh PrepareEmbeddedRuntime.sh'
-  s.vendored_frameworks = 'dartotsu_extension_bridge/Frameworks/OpenJDKRuntime.xcframework'
+  s.prepare_command = 'sh PrepareEmbeddedRuntime.sh && sh PrepareTorrServerRuntime.sh'
+  s.vendored_frameworks = [
+    'dartotsu_extension_bridge/Frameworks/OpenJDKRuntime.xcframework',
+    'dartotsu_extension_bridge/Frameworks/TorrServerKit.xcframework',
+  ]
   s.resource_bundles = {
     'dartotsu_extension_bridge_runtime' => ['dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/**/*'],
     'dartotsu_extension_bridge_privacy' => ['dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/PrivacyInfo.xcprivacy'],
   }
-  s.preserve_paths = 'RuntimeSources/**/*', 'PrepareEmbeddedRuntime.sh'
+  s.preserve_paths = 'RuntimeSources/**/*', 'PrepareEmbeddedRuntime.sh', 'PrepareTorrServerRuntime.sh'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',

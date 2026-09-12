@@ -1,10 +1,10 @@
 import 'package:get/get.dart';
 
-import '../Engines/TorrentEngine/LibTorrentAddon.dart';
+import '../Engines/TorrentEngine/TorrServerAddon.dart';
 import 'Extensions/Addon.dart';
 
 class AddonManager extends GetxService {
-  final List<Addon> addons = [LibtorrentAddon()];
+  final List<Addon> addons = [TorrServerAddon()];
 
   @override
   void onInit() {
