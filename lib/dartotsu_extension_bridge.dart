@@ -1,7 +1,10 @@
 library;
 
+export './AddonManager.dart';
+export './Engines/TorrentEngine/TorrentEngine.dart';
 export './ExtensionBridge.dart';
 export './ExtensionManager.dart';
+export './Extensions/Addon.dart';
 export './Extensions/Extensions.dart';
 export './Extensions/SourceMethods.dart';
 export './Models/DEpisode.dart';
