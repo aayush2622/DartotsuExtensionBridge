@@ -56,7 +56,7 @@ class TorrServerAddon extends Addon {
   /// local `.torrent` file path), waits for its metadata, picks the largest
   /// streamable file, and returns the playable HTTP stream URL for it. Only
   /// one stream is kept active at a time — a prior one is stopped first.
-  Future<Uri> startStream({
+  Future<String> startStream({
     required String url,
     String? title,
     String? category,
@@ -105,7 +105,7 @@ class TorrServerAddon extends Addon {
       throw Exception("No streamable file found in torrent.");
     }
 
-    return controller.streamUrl(info.hash, fileIndex: selected.id);
+    return controller.streamUrl(info.hash, fileIndex: selected.id).toString();
   }
 
   /// Removes the currently active torrent (added by [startStream]) and its
