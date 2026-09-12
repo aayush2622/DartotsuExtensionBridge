@@ -9,6 +9,7 @@ import UIKit
 /// paused/resumed with the app lifecycle.
 public final class DartotsuExtensionBridgePlugin: NSObject, FlutterPlugin {
   private var vmRequested = false
+  private let torrServerBridge = TorrServerBridge()
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
@@ -17,6 +18,7 @@ public final class DartotsuExtensionBridgePlugin: NSObject, FlutterPlugin {
     let instance = DartotsuExtensionBridgePlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
     instance.observeApplicationLifecycle()
+    instance.torrServerBridge.attach(to: registrar)
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

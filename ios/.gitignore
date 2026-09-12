@@ -38,6 +38,7 @@ Icon?
 /Flutter/flutter_export_environment.sh
 
 /dartotsu_extension_bridge/Frameworks/OpenJDKRuntime.xcframework/
+/dartotsu_extension_bridge/Frameworks/TorrServerKit.xcframework/
 /dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/
 
 /dartotsu_extension_bridge/.build/

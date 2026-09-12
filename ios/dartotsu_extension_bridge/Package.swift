@@ -15,18 +15,23 @@ import Foundation
 // referenced via `binaryTarget(url:checksum:)` instead of a local path).
 let packageDir = URL(fileURLWithPath: #file).deletingLastPathComponent()
 let xcframeworkPath = "Frameworks/OpenJDKRuntime.xcframework"
-let hasXCFramework = FileManager.default.fileExists(
-    atPath: packageDir.appendingPathComponent(xcframeworkPath).path)
+let torrServerXCFrameworkPath = "Frameworks/TorrServerKit.xcframework"
 
-if !hasXCFramework {
+func warnIfMissing(_ relativePath: String, prepareScript: String) {
+    let exists = FileManager.default.fileExists(
+        atPath: packageDir.appendingPathComponent(relativePath).path)
+    guard !exists else { return }
     FileHandle.standardError.write(
         """
-        warning: [dartotsu_extension_bridge] \(xcframeworkPath) not found.
-        Run ios/PrepareEmbeddedRuntime.sh before building with Swift Package \
+        warning: [dartotsu_extension_bridge] \(relativePath) not found.
+        Run ios/\(prepareScript) before building with Swift Package \
         Manager (CocoaPods' `pod install` normally does this for you).
 
         """.data(using: .utf8)!)
 }
+
+warnIfMissing(xcframeworkPath, prepareScript: "PrepareEmbeddedRuntime.sh")
+warnIfMissing(torrServerXCFrameworkPath, prepareScript: "PrepareTorrServerRuntime.sh")
 
 let package = Package(
     name: "dartotsu_extension_bridge",
@@ -42,9 +47,13 @@ let package = Package(
             name: "OpenJDKRuntime",
             path: xcframeworkPath
         ),
+        .binaryTarget(
+            name: "TorrServerKit",
+            path: torrServerXCFrameworkPath
+        ),
         .target(
             name: "dartotsu_extension_bridge",
-            dependencies: ["OpenJDKRuntime"],
+            dependencies: ["OpenJDKRuntime", "TorrServerKit"],
             resources: [
                 .copy("Runtime"),
                 .process("PrivacyInfo.xcprivacy"),
