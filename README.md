@@ -13,11 +13,17 @@ The plugin was built for apps that need to:
 
 ## What this plugin does
 
-Under the hood, the bridge unifies several extension backends already wired into this repository, including:
+Under the hood, the bridge unifies several extension backends already wired into this repository:
 
-- **Mangayomi-style sources**
-- **Aniyomi-style Android extensions**
-- other source backends bundled with the package
+- **Mangayomi** — JS/Dart extension scripts (anime, manga, novel)
+- **Sora** — JS extension modules (anime, manga)
+- **Aniyomi** — Tachiyomi-style anime/manga extensions
+- **CloudStream** — video-only extensions
+- **iReader** — novel extensions
+- **Tsundoku** — anime/manga/novel extensions
+- **Kotatsu** — manga extensions (`kotatsu-parsers`)
+- **LnReader** — novel extensions
+- **Legado** — 阅读/book-source novel extensions
 
 You don't need to know which backend a given source uses. Once a source is installed, it exposes the same `SourceMethods` interface, so your app code stays backend-agnostic. From there, a typical app will:
 
@@ -29,24 +35,21 @@ You don't need to know which backend a given source uses. Once a source is insta
 
 ## Platform support
 
-The bridge doesn't enable every extension source on every platform — each source is registered conditionally based on `Platform.isAndroid`, `Platform.isWindows`, `Platform.isLinux`, and `Platform.isMacOS`. Mangayomi and Sora are registered unconditionally, so they're the only sources available on iOS. Aniyomi, CloudStream, and Tsundoku each ship as two separate registrations — an Android build and a desktop build — which combine to cover both platforms. iReader is desktop-only.
+Every backend above is available on Android, iOS, and Windows/Linux/macOS. Mangayomi, Sora, LnReader, and Legado are registered unconditionally. Aniyomi, CloudStream, iReader, Tsundoku, and Kotatsu each ship as two registrations that combine to cover every platform: a native Android build, and a desktop build that also runs on iOS — through a `java` subprocess on real desktops, or an interpreter-only OpenJDK runtime embedded in-process on iOS (since iOS can't spawn a subprocess or JIT).
 
 | Extension source | Android | iOS | Windows / Linux / macOS |
 |---|:---:|:---:|:---:|
 | Mangayomi | ✅ | ✅ | ✅ |
 | Sora | ✅ | ✅ | ✅ |
-| Aniyomi | ✅ | ❌ | ✅ |
-| CloudStream | ✅ | ❌ | ✅ |
-| Tsundoku | ✅ | ❌ | ✅ |
-| iReader | ✅ | ❌ | ✅ |
+| LnReader | ✅ | ✅ | ✅ |
+| Legado | ✅ | ✅ | ✅ |
+| Aniyomi | ✅ | ✅ (embedded JVM) | ✅ |
+| CloudStream | ✅ | ✅ (embedded JVM) | ✅ |
+| iReader | ✅ | ✅ (embedded JVM) | ✅ |
+| Tsundoku | ✅ | ✅ (embedded JVM) | ✅ |
+| Kotatsu | ✅ | ✅ (embedded JVM) | ✅ |
 
-A few things fall out of this:
-
-- **Android** gets Mangayomi, Sora, and the Android builds of Aniyomi, CloudStream, and Tsundoku.
-- **Windows/Linux/macOS** get Mangayomi, Sora, the desktop builds of Aniyomi, CloudStream, and Tsundoku, plus iReader (desktop-only, no Android equivalent).
-- **iOS** only gets Mangayomi and Sora — none of the Aniyomi, CloudStream, Tsundoku, or iReader sources are registered on that platform.
-
-If your app targets iOS, plan around Mangayomi/Sora-backed content only. If you need the broader extension ecosystem (Aniyomi, CloudStream, Tsundoku, iReader), target Android and/or desktop.
+The "embedded JVM" column note is the only real platform-specific caveat: on iOS those five backends run through the same fat JAR as desktop, but driven by an in-process, interpreter-only OpenJDK Zero VM instead of a spawned `java` process, so expect JIT-level performance to not apply there.
 
 ## Requirements
 
@@ -144,6 +147,30 @@ if (installed.isNotEmpty) {
   print(results.list.length);
 }
 ```
+
+### Torrent streaming (TorrServer addon)
+
+Beyond extension sources, the bridge also ships an optional torrent-streaming engine built on [TorrServer](https://github.com/YouROK/TorrServer), wrapping [`ayman708-UX/torrserver_flutter`](https://github.com/ayman708-UX/torrserver_flutter)'s architecture. It's registered as an `Addon`, not a `SourceMethods` backend, so it's reached through `AddonManager` instead:
+
+```dart
+import 'package:get/get.dart';
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
+
+final addon = Get.find<AddonManager>().get<TorrServerAddon>();
+
+if (!await addon.isInstalled()) {
+  await addon.install(); // downloads the TorrServer binary at runtime
+}
+
+final url = await addon.startStream(url: magnetOrTorrentUrl);
+// hand `url` to your player, then call addon.stopStream() when done
+```
+
+Platform notes:
+
+- **Windows/Linux/macOS/Android** — `TorrServerAddon` downloads the right binary at runtime (per-ABI on Android, via `dart:ffi`'s `Abi.current()`). How that downloaded file gets invoked on Android (subprocess vs. your own FFI loader) is left to the host app.
+- **iOS** — TorrServer is statically linked in-process via a vendored `TorrServerKit.xcframework`, mirroring this plugin's own embedded-JVM approach; there's nothing to install through the addon there.
+- TorrServer itself is **GPL-3.0**. Statically linking it into the iOS binary makes the whole iOS app a combined work under FSF guidance (source-availability obligations apply), whereas the subprocess model on desktop/Android stays "mere aggregation." Confirm this fits your distribution before shipping the iOS target.
 
 ---
 
@@ -253,7 +280,26 @@ import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 | `Pages` | Page/content result model |
 | `Video` | Video stream model |
 | `SourcePreference` | Per-source configuration/preferences |
+| `AddonManager` | Manages installable addons (e.g. `TorrServerAddon`) |
+| `Addon` | Base type for an installable addon |
+| `TorrServerAddon` | Torrent-streaming addon (`startStream`/`stopStream`) |
 
-## License
+## Credits & third-party licenses
 
-See [LICENSE](LICENSE).
+This project's own license is the [Unabandon Public License (UPL)](LICENSE) — a license that explicitly incorporates and extends **GPLv3**, chosen specifically because some of the services below vendor GPL-3.0-licensed source directly. Services whose whole backend source was taken from another project are credited here with that project's license:
+
+| Service | Upstream source | License |
+|---|---|---|
+| Aniyomi | [aniyomiorg/aniyomi](https://github.com/aniyomiorg/aniyomi) | Apache-2.0 |
+| CloudStream | [recloudstream/cloudstream](https://github.com/recloudstream/cloudstream) | GPL-3.0 |
+| Tsundoku | [tsundoku-otaku/tsundoku](https://github.com/tsundoku-otaku/tsundoku) | Apache-2.0 |
+| Kotatsu | [KotatsuApp/Kotatsu](https://github.com/KotatsuApp/Kotatsu) | GPL-3.0 |
+| Legado | [RyanYuuki/AnymeXExtensionRuntimeBridge](https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge) | UPL |
+| Mangayomi | [kodjodevf/mangayomi](https://github.com/kodjodevf/mangayomi) | Apache-2.0 |
+| Torrent streaming (`TorrServerAddon`) | [ayman708-UX/torrserver_flutter](https://github.com/ayman708-UX/torrserver_flutter), embedding [YouROK/TorrServer](https://github.com/YouROK/TorrServer) | GPL-3.0 |
+
+Sora, iReader, and LnReader are original implementations of their respective public extension formats, not ports of another project's source, so no separate license applies beyond this repo's own.
+
+See [LICENSE](LICENSE) for the full UPL text.
+
+See [LICENSE](LICENSE) for the full UPL text.

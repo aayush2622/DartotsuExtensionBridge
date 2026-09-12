@@ -7,11 +7,11 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../ExtensionBridge.dart';
 import '../../Extensions/Addon.dart';
 import '../../Logger.dart';
 import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
-import '../../dartotsu_extension_bridge.dart';
 import 'Models/TorrentInfo.dart';
 import 'TorrServerController.dart';
 import 'TorrServerControllerIos.dart';
