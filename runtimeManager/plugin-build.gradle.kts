@@ -113,13 +113,23 @@ tasks.register("buildPlugin") {
     group = "plugin"
     description = "Build plugin artifact and metadata for $pluginName"
 
-    dependsOn(
-        when {
-            project.plugins.hasPlugin("com.android.application") -> "assembleRelease"
-            tasks.findByName("shadowJar") != null -> "shadowJar"
-            else -> "jar"
-        }
-    )
+    val isAndroidOnIosPass = iosRuntime && project.plugins.hasPlugin("com.android.application")
+
+    // Android has no separate iOS variant - skip re-running assembleRelease
+    // (and republishing the same APK under a bogus "-ios" name) on the
+    // `-PiosRuntime=true` pass, which exists solely to build the trimmed
+    // desktop JAR.
+    onlyIf { !isAndroidOnIosPass }
+
+    if (!isAndroidOnIosPass) {
+        dependsOn(
+            when {
+                project.plugins.hasPlugin("com.android.application") -> "assembleRelease"
+                tasks.findByName("shadowJar") != null -> "shadowJar"
+                else -> "jar"
+            }
+        )
+    }
 
     doLast {
 
@@ -127,7 +137,9 @@ tasks.register("buildPlugin") {
         val outputDir = outputDirectory()
         // Keep the ios artifact next to the desktop one instead of overwriting
         // it: builds/<name>/<name>-plugin-ios.jar + <name>-plugin-ios.json.
-        val suffix = if (iosRuntime) "-ios" else ""
+        // Suffix off the artifact's actual platform, not the raw iosRuntime
+        // flag - an Android APK is never an "ios" artifact.
+        val suffix = if (artifact.platform == "ios") "-ios" else ""
         val destination =
             File(outputDir, "$pluginName-plugin$suffix.${artifact.extension}")
         val metadataFile = File(outputDir, "$pluginName-plugin$suffix.json")
