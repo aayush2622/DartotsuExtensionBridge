@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -17,18 +17,9 @@ import 'TorrServerController.dart';
 
 /// Subprocess implementation of [TorrServerController] for Windows, Linux, macOS, and Android.
 ///
-/// Android's binary comes from the app's own `nativeLibraryDir` (baked into the
-/// APK at build time — see `android/build.gradle.kts`'s `downloadTorrServerBinaries`
-/// task); on modern Android, a *runtime*-downloaded file generally can't be marked
-/// executable and exec'd (W^X / SELinux `noexec` on writable app-data partitions).
-/// Windows/Linux/macOS have no such restriction, so their binary is downloaded at
-/// app runtime by [TorrServerAddon] instead — [customBinaryPath] is how that path
-/// gets here.
+/// The binary for every platform this runs on is downloaded at app runtime by
+/// [TorrServerAddon] — [customBinaryPath] is how that path gets here.
 class TorrServerControllerSubprocess implements TorrServerController {
-  static const MethodChannel _channel = MethodChannel(
-    'dartotsu_extension_bridge/torrserver',
-  );
-
   Process? _process;
   int? _port;
   Uri? _baseUrl;
@@ -448,27 +439,9 @@ class TorrServerControllerSubprocess implements TorrServerController {
         customBinaryPath,
       );
     }
-
-    if (Platform.isAndroid) {
-      final nativeLibraryDir = await _channel.invokeMethod<String>(
-        'getNativeLibraryDir',
-      );
-      if (nativeLibraryDir != null && nativeLibraryDir.isNotEmpty) {
-        final binary = p.join(nativeLibraryDir, 'libtorrserver.so');
-        if (await File(binary).exists()) {
-          return binary;
-        }
-        throw TorrServerBinaryNotFoundException(
-          'TorrServer binary not found at $binary',
-          binary,
-        );
-      }
-    }
-
     throw const TorrServerBinaryNotFoundException(
       'No TorrServer binary path given — pass customBinaryPath '
-      '(TorrServerAddon.binaryPath on desktop; Android resolves '
-      'nativeLibraryDir/libtorrserver.so automatically).',
+      '(TorrServerAddon.binaryPath).',
     );
   }
 }
