@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
@@ -11,15 +12,14 @@ import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
 
-/// Downloads and installs the TorrServer subprocess binary for Windows,
-/// Linux, and macOS at app runtime.
+/// Downloads and installs the TorrServer binary for Windows, Linux, macOS,
+/// and Android at app runtime.
 ///
-/// Android's binary is baked into the APK at build time instead (see
-/// `android/build.gradle.kts`) — a runtime-downloaded file generally can't be
-/// exec'd on modern Android (W^X / SELinux `noexec` on writable app-data
-/// partitions) — so [isInstalled] is unconditionally `true` there. iOS embeds
-/// `TorrServerKit.xcframework` at build time too, so it's not installable
-/// through this addon either; use [TorrServerControllerIos] directly there.
+/// iOS embeds `TorrServerKit.xcframework` at build time instead, so it's not
+/// installable through this addon; use [TorrServerControllerIos] directly
+/// there. Everywhere else, [binaryPath] hands back a plain downloaded file —
+/// how it actually gets invoked (subprocess exec, dlopen/FFI, ...) is up to
+/// the caller.
 class TorrServerAddon extends Addon {
   final _client = MClient.init();
 
@@ -71,7 +71,7 @@ class TorrServerAddon extends Addon {
 
   @override
   Future<bool> isInstalled() async {
-    if (Platform.isAndroid || Platform.isIOS) return true;
+    if (Platform.isIOS) return true;
     return (await _binaryFile).exists();
   }
 
@@ -87,21 +87,42 @@ class TorrServerAddon extends Addon {
       final arch = _isArm ? "arm64" : "amd64";
       return "torrserver-linux-$arch.tar.gz";
     }
+    if (Platform.isAndroid) {
+      return "torrserver-android-$_androidAbi.zip";
+    }
     throw UnsupportedError(
-      "TorrServerAddon only downloads for Windows/macOS/Linux; "
-      "Android bundles its binary at build time, iOS embeds its xcframework.",
+      "TorrServerAddon only downloads for Windows/macOS/Linux/Android; "
+      "iOS embeds its xcframework instead.",
     );
   }
 
   String get _entryName {
     if (Platform.isWindows) return "torrserver-windows-amd64.exe";
     if (Platform.isMacOS) return "torrserver-darwin-${_isArm ? "arm64" : "amd64"}";
+    if (Platform.isAndroid) return "torrserver-android-$_androidAbi";
     return "torrserver-linux-${_isArm ? "arm64" : "amd64"}";
   }
 
   bool get _isArm =>
       Platform.version.toLowerCase().contains("arm") ||
       Platform.version.toLowerCase().contains("aarch64");
+
+  /// Maps the running ABI to torrserver_flutter's own Android asset naming
+  /// (`torrserver-android-{arm64,amd64,arm7,386}`).
+  String get _androidAbi {
+    switch (Abi.current()) {
+      case Abi.androidArm64:
+        return "arm64";
+      case Abi.androidArm:
+        return "arm7";
+      case Abi.androidX64:
+        return "amd64";
+      case Abi.androidIA32:
+        return "386";
+      default:
+        throw UnsupportedError("Unsupported Android ABI: ${Abi.current()}");
+    }
+  }
 
   @override
   Future<void> install() async {
@@ -141,7 +162,7 @@ class TorrServerAddon extends Addon {
   @override
   Future<bool> checkForUpdate() async {
     if (!await isInstalled()) return false;
-    if (Platform.isAndroid || Platform.isIOS) return false;
+    if (Platform.isIOS) return false;
 
     final local = getVal<String>(_versionKey, defaultValue: "") ?? "";
     final update = _version != local;
