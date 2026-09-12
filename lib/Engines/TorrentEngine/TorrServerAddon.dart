@@ -5,12 +5,17 @@ import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../Extensions/Addon.dart';
 import '../../Logger.dart';
 import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
+import 'Models/TorrentInfo.dart';
+import 'TorrServerController.dart';
+import 'TorrServerControllerIos.dart';
+import 'TorrServerControllerSubprocess.dart';
 
 /// Downloads and installs the TorrServer binary for Windows, Linux, macOS,
 /// and Android at app runtime.
@@ -23,7 +28,142 @@ import '../../dartotsu_extension_bridge.dart';
 class TorrServerAddon extends Addon {
   final _client = MClient.init();
 
+  TorrServerController? _controller;
+  String? _activeHash;
+
   TorrServerAddon();
+
+  static const _streamableExtensions = {
+    '.mp4', '.mkv', '.avi', '.mov', '.webm', '.m4v', '.flv', '.wmv', '.ts',
+    '.mp3', '.flac', '.m4a', '.aac', '.ogg', '.wav',
+  };
+
+  /// Starts (if not already running) and returns the shared [TorrServerController].
+  Future<TorrServerController> ensureStarted() async {
+    final controller = _controller ??= Platform.isIOS
+        ? TorrServerControllerIos()
+        : TorrServerControllerSubprocess();
+
+    if (!controller.isRunning) {
+      await controller.start(customBinaryPath: await binaryPath);
+    }
+
+    return controller;
+  }
+
+  /// Convenience wrapper mirroring the old libtorrent addon's `startStream`:
+  /// adds [url] (a magnet URI, an `http(s)://` link to a `.torrent` file, or a
+  /// local `.torrent` file path), waits for its metadata, picks the largest
+  /// streamable file, and returns the playable HTTP stream URL for it. Only
+  /// one stream is kept active at a time — a prior one is stopped first.
+  Future<Uri> startStream({
+    required String url,
+    String? title,
+    String? category,
+    String? poster,
+  }) async {
+    final controller = await ensureStarted();
+    await stopStream();
+
+    late final TorrentInfo added;
+    if (url.startsWith("magnet:")) {
+      added = await controller.addTorrent(
+        magnet: url,
+        title: title,
+        category: category,
+        poster: poster,
+      );
+    } else if (url.startsWith("http://") || url.startsWith("https://")) {
+      final torrentFile = await _downloadTorrentFile(url);
+      try {
+        added = await controller.addTorrent(
+          torrentFile: await torrentFile.readAsBytes(),
+          title: title,
+          category: category,
+          poster: poster,
+        );
+      } finally {
+        if (await torrentFile.exists()) {
+          await torrentFile.delete();
+        }
+      }
+    } else {
+      added = await controller.addTorrent(
+        torrentFile: await File(url).readAsBytes(),
+        title: title,
+        category: category,
+        poster: poster,
+      );
+    }
+
+    _activeHash = added.hash;
+
+    final info = await _waitForMetadata(controller, added.hash);
+    final selected = _selectStreamableFile(info);
+
+    if (selected == null) {
+      throw Exception("No streamable file found in torrent.");
+    }
+
+    return controller.streamUrl(info.hash, fileIndex: selected.id);
+  }
+
+  /// Removes the currently active torrent (added by [startStream]) and its
+  /// cached data, if any.
+  Future<void> stopStream() async {
+    final hash = _activeHash;
+    _activeHash = null;
+    if (hash == null) return;
+
+    try {
+      await _controller?.removeTorrent(hash);
+    } catch (_) {}
+  }
+
+  Future<TorrentInfo> _waitForMetadata(
+    TorrServerController controller,
+    String hash, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+
+    while (DateTime.now().isBefore(deadline)) {
+      final info = await controller.getTorrent(hash);
+      if (info.fileStats.isNotEmpty) return info;
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    }
+
+    throw Exception(
+      "Timed out waiting for torrent metadata (${timeout.inSeconds}s)",
+    );
+  }
+
+  TorrentFileStat? _selectStreamableFile(TorrentInfo info) {
+    TorrentFileStat? selected;
+
+    for (final file in info.fileStats) {
+      if (!_streamableExtensions.contains(p.extension(file.path).toLowerCase())) {
+        continue;
+      }
+      if (selected == null || file.length > selected.length) {
+        selected = file;
+      }
+    }
+
+    return selected;
+  }
+
+  Future<File> _downloadTorrentFile(String url) async {
+    final dir = await getTemporaryDirectory();
+    final file = File(
+      p.join(dir.path, "${DateTime.now().millisecondsSinceEpoch}.torrent"),
+    );
+
+    final response = await _client.get(Uri.parse(url));
+    await file.writeAsBytes(response.bodyBytes);
+
+    return file;
+  }
 
   @override
   String get id => "torrserver";
@@ -146,6 +286,10 @@ class TorrServerAddon extends Addon {
 
   @override
   Future<void> uninstall() async {
+    await _controller?.stop();
+    _controller = null;
+    _activeHash = null;
+
     final dir = await _directory;
 
     if (await dir.exists()) {
