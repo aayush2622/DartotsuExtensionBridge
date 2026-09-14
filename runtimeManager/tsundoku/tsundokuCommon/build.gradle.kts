@@ -47,7 +47,7 @@ kotlin {
             kotlin.exclude("**/AniyomiExtensionApi.kt")
         }
     }
-    jvmToolchain( 21)
+    jvmToolchain( libs.versions.java.get().toInt())
 
     compilerOptions {
         freeCompilerArgs.addAll("-XXLanguage:+NestedTypeAliases","-Xexpect-actual-classes","-Xannotation-default-target=param-property")
@@ -56,6 +56,6 @@ kotlin {
 }
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(libs.versions.java.get().toInt()))
     }
 }

@@ -17,11 +17,11 @@ dependencies {
     implementation(projects.ireader.ireaderCommon)
 }
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(libs.versions.java.get().toInt())
 }
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(libs.versions.java.get().toInt()))
     }
 }
 tasks.shadowJar {
