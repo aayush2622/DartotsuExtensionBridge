@@ -279,7 +279,10 @@ class SoraSourceMethods extends SourceMethods {
     }
 
     if (_isErrorPayload(data)) {
-      Logger.log("extractImages returned error");
+      // This runs inside compute() (see getPageList below), in an isolate
+      // where DartotsuExtensionBridge.context was never set - Logger.log
+      // reads that static and would throw LateInitializationError here.
+      debugPrint("extractImages returned error");
       return [];
     }
 

@@ -55,69 +55,75 @@ class SoraExtensions extends Extension {
   }
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) async {
-    try {
-      final uri = Uri.tryParse(repoUrl);
-      if (uri == null || !uri.hasScheme) {
-        throw Exception("Invalid repo URL");
-      }
+  Stream<double> addRepo(String repoUrl, ItemType type) {
+    return progressStream((_) async {
+      try {
+        final uri = Uri.tryParse(repoUrl);
+        if (uri == null || !uri.hasScheme) {
+          throw Exception("Invalid repo URL");
+        }
 
-      final repos = loadRepos(type);
+        final repos = loadRepos(type);
 
-      if (repos.any((r) => r.url == repoUrl)) {
-        return;
-      }
+        if (repos.any((r) => r.url == repoUrl)) {
+          return;
+        }
 
-      final res = await _client.get(uri);
-      if (res.statusCode != 200) {
-        throw Exception("Failed to fetch repo");
-      }
+        final res = await _client.get(uri);
+        if (res.statusCode != 200) {
+          throw Exception("Failed to fetch repo");
+        }
 
-      final decoded = jsonDecode(res.body);
+        final decoded = jsonDecode(res.body);
 
-      final parsed = await compute(_parseExtensions, (res.body, repoUrl, type));
+        final parsed = await compute(_parseExtensions, (
+          res.body,
+          repoUrl,
+          type,
+        ));
 
-      String? repoName;
-      String? repoIcon;
-      Map<String, dynamic>? firstExtension;
+        String? repoName;
+        String? repoIcon;
+        Map<String, dynamic>? firstExtension;
 
-      if (decoded is List && decoded.isNotEmpty && decoded.first is Map) {
-        firstExtension = Map<String, dynamic>.from(decoded.first);
-      } else if (decoded is Map<String, dynamic>) {
-        if (decoded.containsKey('sourceName')) {
-          firstExtension = decoded;
-        } else {
-          final values = decoded.values.whereType<Map>().toList();
-          if (values.isNotEmpty) {
-            firstExtension = Map<String, dynamic>.from(values.first);
+        if (decoded is List && decoded.isNotEmpty && decoded.first is Map) {
+          firstExtension = Map<String, dynamic>.from(decoded.first);
+        } else if (decoded is Map<String, dynamic>) {
+          if (decoded.containsKey('sourceName')) {
+            firstExtension = decoded;
+          } else {
+            final values = decoded.values.whereType<Map>().toList();
+            if (values.isNotEmpty) {
+              firstExtension = Map<String, dynamic>.from(values.first);
+            }
           }
         }
-      }
 
-      if (firstExtension != null) {
-        final author = firstExtension['author'];
-        if (author is Map<String, dynamic>) {
-          repoName = author['name']?.toString();
-          repoIcon = author['icon']?.toString();
+        if (firstExtension != null) {
+          final author = firstExtension['author'];
+          if (author is Map<String, dynamic>) {
+            repoName = author['name']?.toString();
+            repoIcon = author['icon']?.toString();
+          }
         }
+
+        final repo = Repo(
+          url: repoUrl,
+          name: repoName ?? repoNameFromUrl(repoUrl),
+          iconUrl: repoIcon,
+          extensions: parsed.length.toString(),
+        );
+
+        final updatedRepos = List<Repo>.from(repos)..add(repo);
+
+        saveRepos(updatedRepos, type);
+        state(type).repos.value = updatedRepos;
+        await selectRepo(repo, type);
+      } catch (e) {
+        Logger.log("Failed to add repo $repoUrl: $e");
+        rethrow;
       }
-
-      final repo = Repo(
-        url: repoUrl,
-        name: repoName ?? repoNameFromUrl(repoUrl),
-        iconUrl: repoIcon,
-        extensions: parsed.length.toString(),
-      );
-
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
-
-      saveRepos(updatedRepos, type);
-      state(type).repos.value = updatedRepos;
-      await selectRepo(repo, type);
-    } catch (e) {
-      Logger.log("Failed to add repo $repoUrl: $e");
-      rethrow;
-    }
+    });
   }
 
   @override
@@ -198,39 +204,43 @@ class SoraExtensions extends Extension {
   }
 
   @override
-  Future<void> installSource(Source source) async {
-    final s = source as SSource;
+  Stream<double> installSource(Source source) {
+    // No streamed download here - Sora sources are small JS modules, not a
+    // binary worth byte-progress.
+    return progressStream((_) async {
+      final s = source as SSource;
 
-    try {
-      final type = s.itemType!;
-      if (s.sourceCodeUrl == null) {
-        throw Exception("Missing sourceCodeUrl");
+      try {
+        final type = s.itemType!;
+        if (s.sourceCodeUrl == null) {
+          throw Exception("Missing sourceCodeUrl");
+        }
+
+        final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
+        if (res.statusCode != 200) {
+          throw Exception("Failed to download extension");
+        }
+
+        final installed = s..sourceCode = res.body;
+
+        final installedList = _loadInstalled(type);
+
+        installedList.removeWhere((e) => e.id == s.id);
+        installedList.add(installed);
+
+        _saveInstalled(installedList, type);
+
+        state(type).installed.value = List.unmodifiable(installedList);
+
+        final avail = state(type).available;
+        avail.value = avail.value.where((e) => e.id != s.id).toList();
+        final raw = state(type).rawAvailable.value;
+        detectUpdates(raw, type);
+      } catch (e) {
+        Logger.log("Install failed ${s.id}: $e");
+        rethrow;
       }
-
-      final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
-      if (res.statusCode != 200) {
-        throw Exception("Failed to download extension");
-      }
-
-      final installed = s..sourceCode = res.body;
-
-      final installedList = _loadInstalled(type);
-
-      installedList.removeWhere((e) => e.id == s.id);
-      installedList.add(installed);
-
-      _saveInstalled(installedList, type);
-
-      state(type).installed.value = List.unmodifiable(installedList);
-
-      final avail = state(type).available;
-      avail.value = avail.value.where((e) => e.id != s.id).toList();
-      final raw = state(type).rawAvailable.value;
-      detectUpdates(raw, type);
-    } catch (e) {
-      Logger.log("Install failed ${s.id}: $e");
-      rethrow;
-    }
+    });
   }
 
   @override
@@ -259,36 +269,38 @@ class SoraExtensions extends Extension {
   }
 
   @override
-  Future<void> updateSource(Source source) async {
-    final s = source as SSource;
-    final type = s.itemType!;
-    try {
-      if (s.sourceCodeUrl == null) {
-        throw Exception("Missing sourceCodeUrl");
+  Stream<double> updateSource(Source source) {
+    return progressStream((_) async {
+      final s = source as SSource;
+      final type = s.itemType!;
+      try {
+        if (s.sourceCodeUrl == null) {
+          throw Exception("Missing sourceCodeUrl");
+        }
+
+        final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
+        if (res.statusCode != 200) {
+          throw Exception("Failed to download update");
+        }
+
+        final installed = _loadInstalled(type);
+
+        final index = installed.indexWhere((e) => e.id == s.id);
+        if (index == -1) return;
+
+        installed[index] = installed[index]
+          ..sourceCode = res.body
+          ..version = s.version
+          ..hasUpdate = false;
+
+        _saveInstalled(installed, type);
+
+        state(type).installed.value = List.unmodifiable(installed);
+      } catch (e) {
+        Logger.log("Update failed ${s.id}: $e");
+        rethrow;
       }
-
-      final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
-      if (res.statusCode != 200) {
-        throw Exception("Failed to download update");
-      }
-
-      final installed = _loadInstalled(type);
-
-      final index = installed.indexWhere((e) => e.id == s.id);
-      if (index == -1) return;
-
-      installed[index] = installed[index]
-        ..sourceCode = res.body
-        ..version = s.version
-        ..hasUpdate = false;
-
-      _saveInstalled(installed, type);
-
-      state(type).installed.value = List.unmodifiable(installed);
-    } catch (e) {
-      Logger.log("Update failed ${s.id}: $e");
-      rethrow;
-    }
+    });
   }
 
   @override
@@ -370,7 +382,7 @@ class SoraExtensions extends Extension {
           _ => ItemType.anime,
         };
 
-        await addRepo(url, itemType);
+        await addRepo(url, itemType).drain<void>();
       }
     } catch (e) {
       Logger.log("Failed to fetch repo JSON: $e");

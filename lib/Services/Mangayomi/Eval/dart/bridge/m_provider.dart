@@ -305,16 +305,36 @@ class MProviderBridged {
       (visitor, positionalArgs, namedArgs, _) =>
           MBridge.unpackJsAndCombine(positionalArgs[0] as String),
     );
-    interpreter.registertopLevelFunction(
-      'evalJs',
-      (visitor, positionalArgs, namedArgs, _) =>
-          getJavascriptRuntime().evaluateAsync(positionalArgs[0] as String),
-    );
-    interpreter.registertopLevelFunction(
-      'evalJsSync',
-      (visitor, positionalArgs, namedArgs, _) =>
-          getJavascriptRuntime().evaluate(positionalArgs[0] as String),
-    );
+    interpreter.registertopLevelFunction('evalJs', (
+      visitor,
+      positionalArgs,
+      namedArgs,
+      _,
+    ) async {
+      // getJavascriptRuntime() allocates a new native QuickJS engine with
+      // no automatic finalizer - this is a one-shot expression eval, so
+      // the engine is disposed as soon as the result is in hand rather
+      // than leaking one native engine per evalJs() call from the source.
+      final rt = getJavascriptRuntime();
+      try {
+        return await rt.evaluateAsync(positionalArgs[0] as String);
+      } finally {
+        rt.dispose();
+      }
+    });
+    interpreter.registertopLevelFunction('evalJsSync', (
+      visitor,
+      positionalArgs,
+      namedArgs,
+      _,
+    ) {
+      final rt = getJavascriptRuntime();
+      try {
+        return rt.evaluate(positionalArgs[0] as String);
+      } finally {
+        rt.dispose();
+      }
+    });
     interpreter.registertopLevelFunction(
       'regExp',
       (visitor, positionalArgs, namedArgs, _) => MBridge.regExp(

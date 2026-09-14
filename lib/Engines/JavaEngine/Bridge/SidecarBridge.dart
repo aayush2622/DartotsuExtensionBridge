@@ -7,6 +7,12 @@ import '../JavaInstaller.dart';
 import 'JniBridge.dart';
 
 class SidecarBridge implements JavaBridge {
+  // Safety net for a response that will never arrive (e.g. the sidecar
+  // died between the `_initialized` check and the write, or a response was
+  // dropped) - without a bound, `call()` awaits its Completer forever and
+  // leaks an entry in `_pending` for the lifetime of the process.
+  static const _callTimeout = Duration(seconds: 120);
+
   Process? _process;
 
   StreamSubscription<String>? _stdoutSub;
@@ -54,6 +60,13 @@ class SidecarBridge implements JavaBridge {
     unawaited(
       _process!.exitCode.then((code) {
         Logger.log('Sidecar exited with code $code');
+
+        // Without this, every call() made after the sidecar dies still
+        // passes the `_initialized` guard, writes to a dead stdin, and
+        // waits out the full _callTimeout with no chance of a response -
+        // this makes those calls fail immediately instead.
+        _initialized = false;
+        _process = null;
 
         for (final c in _pending.values) {
           if (!c.isCompleted) {
@@ -105,18 +118,33 @@ class SidecarBridge implements JavaBridge {
       throw Exception('Sidecar bridge not initialized');
     }
 
+    final process = _process;
+
+    if (process == null) {
+      throw Exception('Sidecar bridge not initialized');
+    }
+
     final id = _nextId++;
 
     final completer = Completer<dynamic>();
 
     _pending[id] = completer;
 
-    _process!.stdin.writeln(
+    process.stdin.writeln(
       jsonEncode({'id': id, 'method': method, 'args': args ?? {}}),
     );
 
     try {
-      final result = await completer.future;
+      final result = await completer.future.timeout(
+        _callTimeout,
+        onTimeout: () {
+          _pending.remove(id);
+          throw TimeoutException(
+            'Sidecar call "$method" timed out',
+            _callTimeout,
+          );
+        },
+      );
 
       final decoded = _toDart(jsonDecode(result as String));
 

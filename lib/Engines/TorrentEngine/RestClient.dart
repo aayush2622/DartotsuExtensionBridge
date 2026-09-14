@@ -47,9 +47,7 @@ class TorrServerRestClient {
   }
 
   /// Sends a shutdown request to `/shutdown` to trigger graceful server termination.
-  Future<void> shutdown({
-    Duration timeout = const Duration(seconds: 2),
-  }) async {
+  Future<void> shutdown({Duration timeout = const Duration(seconds: 2)}) async {
     try {
       final uri = baseUrl.replace(path: '/shutdown');
       await _client.get(uri).timeout(timeout);
@@ -242,23 +240,32 @@ class TorrServerRestClient {
     final index = fileIndex > 0 ? fileIndex : 1;
     return baseUrl.replace(
       path: '/stream',
-      queryParameters: {
-        'link': hash,
-        'index': index.toString(),
-        'play': '',
-      },
+      queryParameters: {'link': hash, 'index': index.toString(), 'play': ''},
     );
   }
 
   /// Sends a POST request with JSON payload to the specified endpoint.
-  Future<dynamic> _postJson(String endpoint, Map<String, dynamic> body) async {
+  ///
+  /// Every /torrents and /settings action (addTorrent, listTorrents,
+  /// getTorrent, removeTorrent, dropTorrent, setTorrent, getSettings,
+  /// setSettings, setDefaultSettings) funnels through here, unlike echo()/
+  /// shutdown() above neither of which previously bounded the request - a
+  /// wedged TorrServer (its own error strings mention "bboltDB timeout on
+  /// config.db" as a known failure mode) hung the caller forever.
+  Future<dynamic> _postJson(
+    String endpoint,
+    Map<String, dynamic> body, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     try {
       final uri = baseUrl.replace(path: endpoint);
-      final res = await _client.post(
-        uri,
-        headers: {'Content-Type': 'application/json; charset=utf-8'},
-        body: jsonEncode(body),
-      );
+      final res = await _client
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json; charset=utf-8'},
+            body: jsonEncode(body),
+          )
+          .timeout(timeout);
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         if (res.body.isEmpty) {

@@ -24,29 +24,55 @@ class KvStore {
   static Future<void> _writeQueue = Future.value();
 
   static Future<void> set(String key, dynamic value) {
+    // Each call captures its own `value` in the closure below rather than
+    // re-reading _pendingWrites[key] when the queued task actually runs -
+    // otherwise a second set() to the same key overwrites the shared map
+    // entry before the first queued task executes, and both tasks end up
+    // persisting whatever happens to be in the map at that instant (the
+    // first task can even end up persisting the *second* call's value, then
+    // clearing the pending marker, causing the second task to persist a
+    // just-cleared `null`). Capturing `value` here makes each task write
+    // exactly what its own set() call was asked to write.
     _pendingWrites[key] = value;
 
-    return _writeQueue = _writeQueue.then((_) async {
-      final latest = _pendingWrites[key];
+    final completer = Completer<void>();
 
-      await _isar.writeTxn(() async {
-        final existing = await _isar.kvEntrys
-            .filter()
-            .keyEqualTo(key)
-            .findFirst();
+    // The shared _writeQueue chain must never itself become an error
+    // future - `.then` without `onError` would skip every subsequent
+    // queued task (for any key) once one write throws, permanently
+    // wedging all future persistence. Failures are reported to this
+    // call's own completer instead, keeping the chain alive.
+    _writeQueue = _writeQueue.then((_) async {
+      try {
+        await _isar.writeTxn(() async {
+          final existing = await _isar.kvEntrys
+              .filter()
+              .keyEqualTo(key)
+              .findFirst();
 
-        final entry = existing ?? KvEntry();
+          final entry = existing ?? KvEntry();
 
-        entry.key = key;
-        entry.value = _encode(latest);
+          entry.key = key;
+          entry.value = _encode(value);
 
-        await _isar.kvEntrys.put(entry);
-      });
+          await _isar.kvEntrys.put(entry);
+        });
 
-      if (identical(_pendingWrites[key], latest)) {
-        _pendingWrites.remove(key);
+        if (identical(_pendingWrites[key], value)) {
+          _pendingWrites.remove(key);
+        }
+
+        completer.complete();
+      } catch (e, st) {
+        if (identical(_pendingWrites[key], value)) {
+          _pendingWrites.remove(key);
+        }
+
+        completer.completeError(e, st);
       }
     });
+
+    return completer.future;
   }
 
   static T? get<T>(String key) {

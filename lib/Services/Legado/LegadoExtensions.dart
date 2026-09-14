@@ -57,37 +57,42 @@ class LegadoExtensions extends Extension {
   // --- repos -----------------------------------------------------------
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) async {
-    if (type != ItemType.novel) return;
-    try {
-      final uri = Uri.tryParse(repoUrl);
-      if (uri == null || !uri.hasScheme) throw Exception('Invalid repo URL');
+  Stream<double> addRepo(String repoUrl, ItemType type) {
+    if (type != ItemType.novel) return const Stream<double>.empty();
 
-      final repos = loadRepos(type);
-      if (repos.any((r) => r.url == repoUrl)) return;
+    return progressStream((_) async {
+      try {
+        final uri = Uri.tryParse(repoUrl);
+        if (uri == null || !uri.hasScheme) {
+          throw Exception('Invalid repo URL');
+        }
 
-      final res = await _client.get(uri).timeout(const Duration(seconds: 20));
-      if (res.statusCode != 200) {
-        throw Exception('Failed to fetch repo (${res.statusCode})');
+        final repos = loadRepos(type);
+        if (repos.any((r) => r.url == repoUrl)) return;
+
+        final res = await _client.get(uri).timeout(const Duration(seconds: 20));
+        if (res.statusCode != 200) {
+          throw Exception('Failed to fetch repo (${res.statusCode})');
+        }
+
+        final body = utf8.decode(res.bodyBytes, allowMalformed: true);
+        final parsed = await compute(_parseExtensions, (body, repoUrl, type));
+
+        final repo = Repo(
+          url: repoUrl,
+          name: repoNameFromUrl(repoUrl),
+          extensions: parsed.length.toString(),
+        );
+
+        final updatedRepos = List<Repo>.from(repos)..add(repo);
+        saveRepos(updatedRepos, type);
+        state(type).repos.value = updatedRepos;
+        await selectRepo(repo, type);
+      } catch (e) {
+        Logger.log('Failed to add Legado repo $repoUrl: $e');
+        rethrow;
       }
-
-      final body = utf8.decode(res.bodyBytes, allowMalformed: true);
-      final parsed = await compute(_parseExtensions, (body, repoUrl, type));
-
-      final repo = Repo(
-        url: repoUrl,
-        name: repoNameFromUrl(repoUrl),
-        extensions: parsed.length.toString(),
-      );
-
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
-      saveRepos(updatedRepos, type);
-      state(type).repos.value = updatedRepos;
-      await selectRepo(repo, type);
-    } catch (e) {
-      Logger.log('Failed to add Legado repo $repoUrl: $e');
-      rethrow;
-    }
+    });
   }
 
   @override
@@ -100,7 +105,11 @@ class LegadoExtensions extends Extension {
       if (res.statusCode != 200) return const [];
 
       final body = utf8.decode(res.bodyBytes, allowMalformed: true);
-      final extensions = await compute(_parseExtensions, (body, repo.url, type));
+      final extensions = await compute(_parseExtensions, (
+        body,
+        repo.url,
+        type,
+      ));
       await updateRepoExtensionCount(repo, type, extensions.length);
       return extensions;
     } catch (e) {
@@ -153,25 +162,28 @@ class LegadoExtensions extends Extension {
   // --- install / uninstall / update ----------------------------------
 
   @override
-  Future<void> installSource(Source source) async {
-    try {
-      const type = ItemType.novel;
-      final s = source is LegadoSource
-          ? source
-          : LegadoSource.fromJson(source.toJson());
+  Stream<double> installSource(Source source) {
+    // No download here - Legado sources are stored JSON, not a binary.
+    return progressStream((_) async {
+      try {
+        const type = ItemType.novel;
+        final s = source is LegadoSource
+            ? source
+            : LegadoSource.fromJson(source.toJson());
 
-      final list = _loadInstalled(type)..removeWhere((e) => e.id == s.id);
-      list.add(s);
-      _saveInstalled(list, type);
-      state(type).installed.value = List.unmodifiable(list);
+        final list = _loadInstalled(type)..removeWhere((e) => e.id == s.id);
+        list.add(s);
+        _saveInstalled(list, type);
+        state(type).installed.value = List.unmodifiable(list);
 
-      final avail = state(type).available;
-      avail.value = avail.value.where((e) => e.id != s.id).toList();
-      detectUpdates(state(type).rawAvailable.value, type);
-    } catch (e) {
-      Logger.log('Failed to install Legado source ${source.id}: $e');
-      rethrow;
-    }
+        final avail = state(type).available;
+        avail.value = avail.value.where((e) => e.id != s.id).toList();
+        detectUpdates(state(type).rawAvailable.value, type);
+      } catch (e) {
+        Logger.log('Failed to install Legado source ${source.id}: $e');
+        rethrow;
+      }
+    });
   }
 
   @override
@@ -184,10 +196,9 @@ class LegadoExtensions extends Extension {
 
       final installedIds = list.map((e) => e.id).toSet();
       state(type).available.value = List.unmodifiable(
-        state(type)
-            .rawAvailable
-            .value
-            .where((e) => !installedIds.contains(e.id)),
+        state(
+          type,
+        ).rawAvailable.value.where((e) => !installedIds.contains(e.id)),
       );
       detectUpdates(state(type).rawAvailable.value, type);
     } catch (e) {
@@ -196,23 +207,25 @@ class LegadoExtensions extends Extension {
   }
 
   @override
-  Future<void> updateSource(Source source) async {
-    const type = ItemType.novel;
-    final remote = state(type).rawAvailable.value.firstWhere(
-          (e) => e.id == source.id,
-          orElse: () => source,
-        );
-    final fresh = remote is LegadoSource
-        ? remote
-        : LegadoSource.fromJson(remote.toJson());
+  Stream<double> updateSource(Source source) {
+    return progressStream((_) async {
+      const type = ItemType.novel;
+      final remote = state(type).rawAvailable.value.firstWhere(
+        (e) => e.id == source.id,
+        orElse: () => source,
+      );
+      final fresh = remote is LegadoSource
+          ? remote
+          : LegadoSource.fromJson(remote.toJson());
 
-    final list = _loadInstalled(type);
-    final i = list.indexWhere((e) => e.id == source.id);
-    if (i == -1) return;
-    fresh.hasUpdate = false;
-    list[i] = fresh;
-    _saveInstalled(list, type);
-    state(type).installed.value = List.unmodifiable(list);
+      final list = _loadInstalled(type);
+      final i = list.indexWhere((e) => e.id == source.id);
+      if (i == -1) return;
+      fresh.hasUpdate = false;
+      list[i] = fresh;
+      _saveInstalled(list, type);
+      state(type).installed.value = List.unmodifiable(list);
+    });
   }
 
   @override
@@ -274,7 +287,8 @@ class LegadoExtensions extends Extension {
 
   @override
   void handleSchemes(Uri uri) {
-    final url = uri.queryParameters['src'] ??
+    final url =
+        uri.queryParameters['src'] ??
         uri.queryParameters['url'] ??
         uri.queryParameters['data'];
     if (url != null && url.isNotEmpty) {
