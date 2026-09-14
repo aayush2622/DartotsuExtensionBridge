@@ -138,11 +138,34 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
     return pages.join('\n');
   }
 
-  static List<Video> parseVideos(List<dynamic> list) =>
-      list.map((e) => Video.fromJson(Map<String, dynamic>.from(e))).toList();
+  static List<Video> parseVideos(List<dynamic> list) {
+    final videos = <Video>[];
+    for (final e in list) {
+      if (e == null) continue;
+      try {
+        videos.add(Video.fromJson(Map<String, dynamic>.from(e)));
+      } catch (err) {
+        // Runs inside compute() - debugPrint, not Logger.log (see
+        // CLAUDE.md). One malformed entry from the JVM bridge must not
+        // take down the whole video list.
+        debugPrint('Skipping malformed video entry: $err');
+      }
+    }
+    return videos;
+  }
 
-  static List<PageUrl> parsePageUrls(List<dynamic> list) =>
-      list.map((e) => PageUrl.fromJson(Map<String, dynamic>.from(e))).toList();
+  static List<PageUrl> parsePageUrls(List<dynamic> list) {
+    final pages = <PageUrl>[];
+    for (final e in list) {
+      if (e == null) continue;
+      try {
+        pages.add(PageUrl.fromJson(Map<String, dynamic>.from(e)));
+      } catch (err) {
+        debugPrint('Skipping malformed page entry: $err');
+      }
+    }
+    return pages;
+  }
 }
 
 SourcePreference mapToSourcePreference(Map<String, dynamic> json) {

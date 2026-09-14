@@ -8,6 +8,7 @@ import '../../Models/Pages.dart';
 import '../../Models/SourcePreference.dart' as s;
 import '../../Models/Video.dart';
 import 'Eval/dart/model/m_manga.dart';
+import 'Eval/dart/model/m_pages.dart';
 import 'Eval/dart/model/source_preference.dart';
 import 'Models/Source.dart';
 import 'Util/ChapterRecognition.dart';
@@ -23,7 +24,13 @@ class MangayomiSourceMethods implements SourceMethods {
 
   @override
   Future<DMedia> getDetail(DMedia media) async {
-    final data = await getExtensionService(source).getDetail(media.url!);
+    final service = getExtensionService(source);
+    final MManga data;
+    try {
+      data = await service.getDetail(media.url!);
+    } finally {
+      service.dispose();
+    }
 
     DMedia createMediaData(Map<String, dynamic> args) {
       final media = args['media'] as DMedia;
@@ -65,35 +72,65 @@ class MangayomiSourceMethods implements SourceMethods {
 
   @override
   Future<Pages> getLatestUpdates(int page) async {
-    final data = await getExtensionService(source).getLatestUpdates(page);
+    final service = getExtensionService(source);
+    final MPages data;
+    try {
+      data = await service.getLatestUpdates(page);
+    } finally {
+      service.dispose();
+    }
 
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
   }
 
   @override
   Future<Pages> getPopular(int page) async {
-    final data = await getExtensionService(source).getPopular(page);
+    final service = getExtensionService(source);
+    final MPages data;
+    try {
+      data = await service.getPopular(page);
+    } finally {
+      service.dispose();
+    }
 
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
   }
 
   @override
   Future<Pages> search(String query, int page, List filters) async {
-    final data = await getExtensionService(source).search(query, page, filters);
+    final service = getExtensionService(source);
+    final MPages data;
+    try {
+      data = await service.search(query, page, filters);
+    } finally {
+      service.dispose();
+    }
 
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
   }
 
   @override
   Future<List<PageUrl>> getPageList(DEpisode episode) async {
-    final data = await getExtensionService(source).getPageList(episode.url!);
+    final service = getExtensionService(source);
+    final List<dynamic> data;
+    try {
+      data = await service.getPageList(episode.url!);
+    } finally {
+      service.dispose();
+    }
 
     return data.map((e) => PageUrl(e.url, headers: e.headers)).toList();
   }
 
   @override
   Future<List<Video>> getVideoList(DEpisode episode) async {
-    final data = await getExtensionService(source).getVideoList(episode.url!);
+    final service = getExtensionService(source);
+    final List<dynamic> data;
+    try {
+      data = await service.getVideoList(episode.url!);
+    } finally {
+      service.dispose();
+    }
 
     return data.map((e) {
       return Video(
@@ -113,14 +150,18 @@ class MangayomiSourceMethods implements SourceMethods {
 
   @override
   Future<String?> getNovelContent(DEpisode episode) async {
+    final service = getExtensionService(source);
     try {
-      final data = await getExtensionService(
-        source,
-      ).getHtmlContent(episode.name ?? "", episode.url ?? "");
+      final data = await service.getHtmlContent(
+        episode.name ?? "",
+        episode.url ?? "",
+      );
 
       return data;
     } catch (e) {
       return null;
+    } finally {
+      service.dispose();
     }
   }
 

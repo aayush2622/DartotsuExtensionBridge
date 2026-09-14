@@ -34,8 +34,21 @@ class TorrServerAddon extends Addon {
   TorrServerAddon();
 
   static const _streamableExtensions = {
-    '.mp4', '.mkv', '.avi', '.mov', '.webm', '.m4v', '.flv', '.wmv', '.ts',
-    '.mp3', '.flac', '.m4a', '.aac', '.ogg', '.wav',
+    '.mp4',
+    '.mkv',
+    '.avi',
+    '.mov',
+    '.webm',
+    '.m4v',
+    '.flv',
+    '.wmv',
+    '.ts',
+    '.mp3',
+    '.flac',
+    '.m4a',
+    '.aac',
+    '.ogg',
+    '.wav',
   };
 
   /// Starts (if not already running) and returns the shared [TorrServerController].
@@ -51,12 +64,38 @@ class TorrServerAddon extends Addon {
     return controller;
   }
 
+  Future<String>? _startStreamFuture;
+
   /// Convenience wrapper mirroring the old libtorrent addon's `startStream`:
   /// adds [url] (a magnet URI, an `http(s)://` link to a `.torrent` file, or a
   /// local `.torrent` file path), waits for its metadata, picks the largest
   /// streamable file, and returns the playable HTTP stream URL for it. Only
   /// one stream is kept active at a time — a prior one is stopped first.
   Future<String> startStream({
+    required String url,
+    String? title,
+    String? category,
+    String? poster,
+  }) {
+    // Without this, two concurrent startStream() calls both pass
+    // stopStream() and both add a torrent; whichever finishes last
+    // overwrites _activeHash, silently orphaning the loser's torrent (and
+    // its downloaded cache) on the server until the whole controller stops.
+    final inFlight = _startStreamFuture;
+    if (inFlight != null) return inFlight;
+
+    final future = _startStreamImpl(
+      url: url,
+      title: title,
+      category: category,
+      poster: poster,
+    );
+    return _startStreamFuture = future.whenComplete(
+      () => _startStreamFuture = null,
+    );
+  }
+
+  Future<String> _startStreamImpl({
     required String url,
     String? title,
     String? category,
@@ -142,7 +181,9 @@ class TorrServerAddon extends Addon {
     TorrentFileStat? selected;
 
     for (final file in info.fileStats) {
-      if (!_streamableExtensions.contains(p.extension(file.path).toLowerCase())) {
+      if (!_streamableExtensions.contains(
+        p.extension(file.path).toLowerCase(),
+      )) {
         continue;
       }
       if (selected == null || file.length > selected.length) {
@@ -197,7 +238,8 @@ class TorrServerAddon extends Addon {
     return dir;
   }
 
-  String get _binaryName => Platform.isWindows ? "torrserver.exe" : "torrserver";
+  String get _binaryName =>
+      Platform.isWindows ? "torrserver.exe" : "torrserver";
 
   Future<File> get _binaryFile async =>
       File(p.join((await _directory).path, _binaryName));
@@ -238,7 +280,8 @@ class TorrServerAddon extends Addon {
 
   String get _entryName {
     if (Platform.isWindows) return "torrserver-windows-amd64.exe";
-    if (Platform.isMacOS) return "torrserver-darwin-${_isArm ? "arm64" : "amd64"}";
+    if (Platform.isMacOS)
+      return "torrserver-darwin-${_isArm ? "arm64" : "amd64"}";
     if (Platform.isAndroid) return "torrserver-android-$_androidAbi";
     return "torrserver-linux-${_isArm ? "arm64" : "amd64"}";
   }

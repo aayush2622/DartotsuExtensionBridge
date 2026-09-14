@@ -129,41 +129,47 @@ class IReaderDesktopExtensions extends Extension
   }
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) async {
-    try {
-      final uri = Uri.tryParse(repoUrl);
-      if (uri == null || !uri.hasScheme) {
-        throw Exception("Invalid repo URL");
+  Stream<double> addRepo(String repoUrl, ItemType type) {
+    return progressStream((_) async {
+      try {
+        final uri = Uri.tryParse(repoUrl);
+        if (uri == null || !uri.hasScheme) {
+          throw Exception("Invalid repo URL");
+        }
+
+        final repos = loadRepos(type);
+        if (repos.any((r) => r.url == repoUrl)) {
+          return;
+        }
+
+        final res = await _client
+            .get(Uri.parse(repoUrl))
+            .timeout(const Duration(seconds: 10));
+
+        if (res.statusCode != 200) {
+          throw Exception("Repo returned ${res.statusCode}");
+        }
+
+        final parsed = await compute(_parseExtensions, (
+          res.body,
+          repoUrl,
+          type,
+        ));
+
+        final repo = Repo(
+          name: repoNameFromUrl(repoUrl),
+          url: repoUrl,
+          extensions: parsed.length.toString(),
+        );
+        final updatedRepos = List<Repo>.from(repos)..add(repo);
+        saveRepos(updatedRepos, type);
+        state(type).repos.value = updatedRepos;
+        await selectRepo(repo, type);
+      } catch (e) {
+        Logger.log("Failed to add repo $repoUrl: $e");
+        rethrow;
       }
-
-      final repos = loadRepos(type);
-      if (repos.any((r) => r.url == repoUrl)) {
-        return;
-      }
-
-      final res = await _client
-          .get(Uri.parse(repoUrl))
-          .timeout(const Duration(seconds: 10));
-
-      if (res.statusCode != 200) {
-        throw Exception("Repo returned ${res.statusCode}");
-      }
-
-      final parsed = await compute(_parseExtensions, (res.body, repoUrl, type));
-
-      final repo = Repo(
-        name: repoNameFromUrl(repoUrl),
-        url: repoUrl,
-        extensions: parsed.length.toString(),
-      );
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
-      saveRepos(updatedRepos, type);
-      state(type).repos.value = updatedRepos;
-      await selectRepo(repo, type);
-    } catch (e) {
-      Logger.log("Failed to add repo $repoUrl: $e");
-      rethrow;
-    }
+    });
   }
 
   @override

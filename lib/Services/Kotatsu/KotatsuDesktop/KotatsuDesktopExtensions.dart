@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
+import 'package:http/http.dart' as http;
+
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
@@ -64,15 +67,12 @@ class KotatsuDesktopExtensions extends Extension {
     await jni.call<void>("initializeDesktop", {"path": dir!.path});
 
     if (_context.network != null) {
-      await jni.call<void>(
-        "initClient",
-        {
-          "data": jsonEncode({
-            'dns': _context.network?.dns,
-            'proxy': _context.network?.proxy,
-          }),
-        },
-      );
+      await jni.call<void>("initClient", {
+        "data": jsonEncode({
+          'dns': _context.network?.dns,
+          'proxy': _context.network?.proxy,
+        }),
+      });
     }
     return true;
   }
@@ -89,62 +89,118 @@ class KotatsuDesktopExtensions extends Extension {
     useCustomPath: true,
   );
 
-  File _jarFile(Directory dir) => File('${dir.path}/plugin.jar');
+  // See the matching comment in KotatsuAndroid/KotatsuExtensions.dart - the
+  // native loader scans for every plugin.jar/kotatsu_plugin.jar/*kotatsu*.jar
+  // in the directory, so each repo needs its own stable, unique filename
+  // instead of every repo colliding on the same "plugin.jar".
+  File _jarFile(Directory dir, String repoUrl) =>
+      File('${dir.path}/kotatsu_${_repoFileId(repoUrl)}.jar');
+
+  String _repoFileId(String repoUrl) =>
+      md5.convert(utf8.encode(repoUrl)).toString();
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) async {
-    if (type != ItemType.manga) return;
-    try {
-      final uri = Uri.tryParse(repoUrl);
-      if (uri == null || !uri.hasScheme) throw Exception('Invalid repo URL');
+  Stream<double> addRepo(String repoUrl, ItemType type) {
+    if (type != ItemType.manga) return const Stream<double>.empty();
 
-      final repos = loadRepos(type);
-      if (repos.any((r) => r.url == repoUrl)) return;
+    return progressStream((report) async {
+      // See the matching comment in KotatsuAndroid/KotatsuExtensions.dart -
+      // stream instead of buffering the whole jar so the UI gets real
+      // progress instead of hanging with no feedback.
+      state(type).loadingRepo.value = true;
+      state(type).repoLoadProgress.value = null;
 
-      final dir = await _sourcesDir;
-      if (dir == null) {
-        throw Exception('Could not get Kotatsu desktop plugin directory');
+      try {
+        final uri = Uri.tryParse(repoUrl);
+        if (uri == null || !uri.hasScheme) {
+          throw Exception('Invalid repo URL');
+        }
+
+        final repos = loadRepos(type);
+        if (repos.any((r) => r.url == repoUrl)) return;
+
+        final dir = await _sourcesDir;
+        if (dir == null) {
+          throw Exception('Could not get Kotatsu desktop plugin directory');
+        }
+        if (!await dir.exists()) await dir.create(recursive: true);
+
+        final client = MClient.init();
+        final response = await client.send(http.Request('GET', uri));
+
+        if (response.statusCode != 200) {
+          await response.stream.drain<void>();
+          throw Exception(
+            'Failed to download parsers jar (${response.statusCode})',
+          );
+        }
+
+        final jarFile = _jarFile(dir, repoUrl);
+        final temp = File('${jarFile.path}.tmp');
+        final sink = temp.openWrite();
+        final total = response.contentLength;
+        var received = 0;
+
+        try {
+          await for (final chunk in response.stream) {
+            sink.add(chunk);
+            received += chunk.length;
+            if (total != null && total > 0) {
+              final fraction = received / total;
+              state(type).repoLoadProgress.value = fraction;
+              report(fraction);
+            }
+          }
+          await sink.flush();
+        } finally {
+          await sink.close();
+        }
+
+        try {
+          await temp.rename(jarFile.path);
+        } on FileSystemException {
+          await temp.copy(jarFile.path);
+          await temp.delete();
+        }
+
+        final repo = Repo(url: repoUrl, name: repoNameFromUrl(repoUrl));
+        final updatedRepos = List<Repo>.from(repos)..add(repo);
+        saveRepos(updatedRepos, type);
+        state(type).repos.value = updatedRepos;
+
+        await fetchMangaExtensions();
+        await fetchInstalledMangaExtensions();
+      } catch (e) {
+        Logger.log('Failed to add Kotatsu desktop repo $repoUrl: $e');
+        rethrow;
+      } finally {
+        state(type).loadingRepo.value = false;
+        state(type).repoLoadProgress.value = null;
       }
-      if (!await dir.exists()) await dir.create(recursive: true);
-
-      final client = MClient.init();
-      final res = await client.get(uri);
-      if (res.statusCode != 200) {
-        throw Exception('Failed to download parsers jar (${res.statusCode})');
-      }
-      await _jarFile(dir).writeAsBytes(res.bodyBytes);
-
-      final repo = Repo(url: repoUrl, name: repoNameFromUrl(repoUrl));
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
-      saveRepos(updatedRepos, type);
-      state(type).repos.value = updatedRepos;
-
-      await fetchMangaExtensions();
-      await fetchInstalledMangaExtensions();
-    } catch (e) {
-      Logger.log('Failed to add Kotatsu desktop repo $repoUrl: $e');
-      rethrow;
-    }
+    });
   }
 
   @override
   Future<void> removeRepo(String repoUrl, ItemType type) async {
     try {
-      final repos = loadRepos(type)
-          .where((r) => r.url != repoUrl)
-          .toList(growable: false);
+      final repos = loadRepos(
+        type,
+      ).where((r) => r.url != repoUrl).toList(growable: false);
       saveRepos(repos, type);
       state(type).repos.value = repos;
 
       final dir = await _sourcesDir;
       if (dir != null) {
-        final jar = _jarFile(dir);
+        final jar = _jarFile(dir, repoUrl);
         if (await jar.exists()) await jar.delete();
       }
-      setVal(_activeSourcesKey, const <String>[]);
 
-      state(type).installed.value = const [];
-      state(type).available.value = const [];
+      // Re-derive installed/available from what's left on disk instead of
+      // blanking both lists and clearing every active-source toggle - with
+      // per-repo jar files, removing one repo must not touch sources that
+      // belong to a different, still-installed repo.
+      await fetchInstalledMangaExtensions();
+      await fetchMangaExtensions();
     } catch (e) {
       Logger.log('Failed to remove Kotatsu desktop repo $repoUrl: $e');
     }
@@ -197,7 +253,9 @@ class KotatsuDesktopExtensions extends Extension {
     try {
       final dir = await _sourcesDir;
       if (dir == null || !await dir.exists()) return const [];
-      if (!await _jarFile(dir).exists()) return const [];
+      // No single canonical jar path exists any more (one per repo) - skip
+      // the native call only when there's nothing registered at all.
+      if (loadRepos(ItemType.manga).isEmpty) return const [];
 
       final result = await jni.call<List<Map<String, dynamic>>>(
         'getInstalledMangaExtensions',
@@ -217,13 +275,17 @@ class KotatsuDesktopExtensions extends Extension {
       (getVal<List<String>>(_activeSourcesKey) ?? const <String>[]).toSet();
 
   @override
-  Future<void> installSource(Source source) async {
-    final ids = getVal<List<String>>(_activeSourcesKey) ?? [];
-    if (!ids.contains(source.id) && source.id != null) {
-      setVal(_activeSourcesKey, [...ids, source.id!]);
-    }
-    await fetchInstalledMangaExtensions();
-    await fetchMangaExtensions();
+  Stream<double> installSource(Source source) {
+    // No download here - installing a Kotatsu source just flips it in the
+    // active-list allow-list, so there's no granular progress to report.
+    return progressStream((_) async {
+      final ids = getVal<List<String>>(_activeSourcesKey) ?? [];
+      if (!ids.contains(source.id) && source.id != null) {
+        setVal(_activeSourcesKey, [...ids, source.id!]);
+      }
+      await fetchInstalledMangaExtensions();
+      await fetchMangaExtensions();
+    });
   }
 
   @override
@@ -235,9 +297,11 @@ class KotatsuDesktopExtensions extends Extension {
   }
 
   @override
-  Future<void> updateSource(Source source) async {
-    await fetchInstalledMangaExtensions();
-    await fetchMangaExtensions();
+  Stream<double> updateSource(Source source) {
+    return progressStream((_) async {
+      await fetchInstalledMangaExtensions();
+      await fetchMangaExtensions();
+    });
   }
 
   @override

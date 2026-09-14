@@ -17,27 +17,59 @@ class Video {
   });
 
   factory Video.fromJson(Map<String, dynamic> json) {
+    // A video without a url is unusable - fail clearly here rather than
+    // letting `null.toString()` silently produce the 4-character string
+    // "null" as the url, which then fails much later (an HTTP request to a
+    // bogus path) instead of at the point the bad data was actually seen.
+    // Callers building a list from several of these (parseVideos) catch
+    // this and skip just the one malformed entry.
+    final url = json['url'];
+    if (url == null) {
+      throw FormatException('Video JSON is missing a "url" field: $json');
+    }
+
     return Video(
-      json['title'].toString().trim(),
-      json['url'].toString().trim(),
-      json['quality'].toString().trim(),
+      json['title']?.toString().trim(),
+      url.toString().trim(),
+      json['quality']?.toString().trim() ?? '',
       headers: (json['headers'] as Map?)?.cast<String, String>(),
-      subtitles: json['subtitles'] != null
-          ? (json['subtitles'] as List)
-                .map((e) => Track.fromJson(Map<String, dynamic>.from(e)))
-                .toList()
-          : [],
-      audios: json['audios'] != null
-          ? (json['audios'] as List)
-                .map((e) => Track.fromJson(Map<String, dynamic>.from(e)))
-                .toList()
-          : [],
-      timeStamps:
-          (json['timeStamps'] as List?)
-              ?.map((e) => TimeStamp.fromJson(Map<String, dynamic>.from(e)))
-              .toList() ??
-          [],
+      subtitles: _parseTracks(json['subtitles']),
+      audios: _parseTracks(json['audios']),
+      timeStamps: _parseTimeStamps(json['timeStamps']),
     );
+  }
+
+  static List<Track> _parseTracks(dynamic value) {
+    if (value is! List) return [];
+
+    final tracks = <Track>[];
+    for (final e in value) {
+      if (e == null) continue;
+      try {
+        tracks.add(Track.fromJson(Map<String, dynamic>.from(e)));
+      } catch (_) {
+        // One malformed subtitle/audio track entry should not drop the
+        // whole video.
+      }
+    }
+    return tracks;
+  }
+
+  static List<TimeStamp> _parseTimeStamps(dynamic value) {
+    if (value is! List) return [];
+
+    final stamps = <TimeStamp>[];
+    for (final e in value) {
+      if (e == null) continue;
+      try {
+        stamps.add(TimeStamp.fromJson(Map<String, dynamic>.from(e)));
+      } catch (_) {
+        // One malformed timestamp (e.g. a non-numeric startTime) should not
+        // drop the whole video - this used to throw straight out of
+        // Video.fromJson and take the entire video list down with it.
+      }
+    }
+    return stamps;
   }
 
   Map<String, dynamic> toJson() => {

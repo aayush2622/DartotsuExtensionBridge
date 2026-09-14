@@ -29,13 +29,27 @@ class DMedia {
       description: json['description'],
       artist: json['artist'],
       author: json['author'],
-      genre: json['genre'] != null ? List<String>.from(json['genre']) : [],
-      episodes: json['episodes'] != null
-          ? (json['episodes'] as List)
-                .map((e) => DEpisode.fromJson(Map<String, dynamic>.from(e)))
-                .toList()
-          : [],
+      genre: json['genre'] is List
+          ? List<String>.from(json['genre'])
+          : const [],
+      episodes: _parseEpisodes(json['episodes']),
     );
+  }
+
+  static List<DEpisode> _parseEpisodes(dynamic value) {
+    if (value is! List) return [];
+
+    final episodes = <DEpisode>[];
+    for (final e in value) {
+      if (e == null) continue;
+      try {
+        episodes.add(DEpisode.fromJson(Map<String, dynamic>.from(e)));
+      } catch (_) {
+        // One malformed chapter entry should not take down the whole
+        // media's episode list.
+      }
+    }
+    return episodes;
   }
 
   factory DMedia.withUrl(String url) {

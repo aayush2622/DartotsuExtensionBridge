@@ -12,10 +12,15 @@ class JsHttpClient {
   late JavascriptRuntime runtime;
   JsHttpClient(this.runtime);
 
+  // Reused for every request this instance makes, rather than calling
+  // MClient.init() fresh per call - when the host app hasn't supplied its
+  // own http.Client, MClient.init() falls back to a brand new
+  // IOClient(HttpClient()) (its own socket pool) each time, and nothing
+  // here was ever closing the previous one.
+  InterceptedClient? _client;
+
   void init() {
-    InterceptedClient client() {
-      return MClient.init();
-    }
+    InterceptedClient client() => _client ??= MClient.init();
 
     runtime.onMessage('http_head', (dynamic args) async {
       return await _toHttpResponse(client(), "HEAD", args);

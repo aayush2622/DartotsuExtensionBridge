@@ -43,6 +43,8 @@ class TorrServerControllerSubprocess implements TorrServerController {
   /// Recent process stdout/stderr log output lines.
   List<String> get processLogs => List.unmodifiable(_processLogs);
 
+  Future<void>? _startFuture;
+
   @override
   Future<void> start({
     int? port,
@@ -50,11 +52,39 @@ class TorrServerControllerSubprocess implements TorrServerController {
     Directory? dataDir,
     List<String>? extraArgs,
     String? customBinaryPath,
-  }) async {
+  }) {
     if (_isRunning) {
-      throw const TorrServerStartException('TorrServer is already running');
+      return Future.error(
+        const TorrServerStartException('TorrServer is already running'),
+      );
     }
 
+    // _isRunning isn't set until _waitForServerReady() returns below (up to
+    // 12s later), so without this guard two concurrent start() calls both
+    // pass the check above and both spawn a binary/allocate a port - the
+    // loser's process and port are then silently orphaned. This runs
+    // synchronously (start() is deliberately not `async`), so it takes
+    // effect before another caller's invocation gets a turn.
+    final inFlight = _startFuture;
+    if (inFlight != null) return inFlight;
+
+    final future = _startImpl(
+      port: port,
+      settings: settings,
+      dataDir: dataDir,
+      extraArgs: extraArgs,
+      customBinaryPath: customBinaryPath,
+    );
+    return _startFuture = future.whenComplete(() => _startFuture = null);
+  }
+
+  Future<void> _startImpl({
+    int? port,
+    TorrServerSettings? settings,
+    Directory? dataDir,
+    List<String>? extraArgs,
+    String? customBinaryPath,
+  }) async {
     final binaryPath = await _locateBinary(customBinaryPath: customBinaryPath);
 
     final resolvedDataDir = dataDir ?? await _getDefaultDataDir();

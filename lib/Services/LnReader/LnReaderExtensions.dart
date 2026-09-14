@@ -64,37 +64,43 @@ class LnReaderExtensions extends Extension {
   // --- repos -------------------------------------------------------------
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) async {
-    try {
-      final uri = Uri.tryParse(repoUrl);
-      if (uri == null || !uri.hasScheme) {
-        throw Exception("Invalid repo URL");
+  Stream<double> addRepo(String repoUrl, ItemType type) {
+    return progressStream((_) async {
+      try {
+        final uri = Uri.tryParse(repoUrl);
+        if (uri == null || !uri.hasScheme) {
+          throw Exception("Invalid repo URL");
+        }
+
+        final repos = loadRepos(type);
+        if (repos.any((r) => r.url == repoUrl)) return;
+
+        final res = await _client.get(uri).timeout(const Duration(seconds: 15));
+        if (res.statusCode != 200) {
+          throw Exception("Failed to fetch repo (${res.statusCode})");
+        }
+
+        final parsed = await compute(_parseExtensions, (
+          res.body,
+          repoUrl,
+          type,
+        ));
+
+        final repo = Repo(
+          url: repoUrl,
+          name: repoNameFromUrl(repoUrl),
+          extensions: parsed.length.toString(),
+        );
+
+        final updatedRepos = List<Repo>.from(repos)..add(repo);
+        saveRepos(updatedRepos, type);
+        state(type).repos.value = updatedRepos;
+        await selectRepo(repo, type);
+      } catch (e) {
+        Logger.log("Failed to add repo $repoUrl: $e");
+        rethrow;
       }
-
-      final repos = loadRepos(type);
-      if (repos.any((r) => r.url == repoUrl)) return;
-
-      final res = await _client.get(uri).timeout(const Duration(seconds: 15));
-      if (res.statusCode != 200) {
-        throw Exception("Failed to fetch repo (${res.statusCode})");
-      }
-
-      final parsed = await compute(_parseExtensions, (res.body, repoUrl, type));
-
-      final repo = Repo(
-        url: repoUrl,
-        name: repoNameFromUrl(repoUrl),
-        extensions: parsed.length.toString(),
-      );
-
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
-      saveRepos(updatedRepos, type);
-      state(type).repos.value = updatedRepos;
-      await selectRepo(repo, type);
-    } catch (e) {
-      Logger.log("Failed to add repo $repoUrl: $e");
-      rethrow;
-    }
+    });
   }
 
   @override
@@ -129,37 +135,41 @@ class LnReaderExtensions extends Extension {
   // --- install / uninstall / update ------------------------------------
 
   @override
-  Future<void> installSource(Source source) async {
-    final s = source as LSource;
-    final type = s.itemType!;
-    try {
-      if (s.sourceCodeUrl == null) throw Exception("Missing plugin URL");
+  Stream<double> installSource(Source source) {
+    // No streamed download here - LNReader plugin sources are small JS
+    // modules, not a binary worth byte-progress.
+    return progressStream((_) async {
+      final s = source as LSource;
+      final type = s.itemType!;
+      try {
+        if (s.sourceCodeUrl == null) throw Exception("Missing plugin URL");
 
-      final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
-      if (res.statusCode != 200) {
-        throw Exception("Plugin download failed (${res.statusCode})");
+        final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
+        if (res.statusCode != 200) {
+          throw Exception("Plugin download failed (${res.statusCode})");
+        }
+        s.sourceCode = res.body;
+
+        if (s.customCssUrl != null && s.customCssUrl!.isNotEmpty) {
+          try {
+            final css = await _client.get(Uri.parse(s.customCssUrl!));
+            if (css.statusCode == 200) s.customCss = css.body;
+          } catch (_) {}
+        }
+
+        final list = _loadInstalled(type)..removeWhere((e) => e.id == s.id);
+        list.add(s);
+        _saveInstalled(list, type);
+        state(type).installed.value = List.unmodifiable(list);
+
+        final avail = state(type).available;
+        avail.value = avail.value.where((e) => e.id != s.id).toList();
+        detectUpdates(state(type).rawAvailable.value, type);
+      } catch (e) {
+        Logger.log("Install failed ${s.id}: $e");
+        rethrow;
       }
-      s.sourceCode = res.body;
-
-      if (s.customCssUrl != null && s.customCssUrl!.isNotEmpty) {
-        try {
-          final css = await _client.get(Uri.parse(s.customCssUrl!));
-          if (css.statusCode == 200) s.customCss = css.body;
-        } catch (_) {}
-      }
-
-      final list = _loadInstalled(type)..removeWhere((e) => e.id == s.id);
-      list.add(s);
-      _saveInstalled(list, type);
-      state(type).installed.value = List.unmodifiable(list);
-
-      final avail = state(type).available;
-      avail.value = avail.value.where((e) => e.id != s.id).toList();
-      detectUpdates(state(type).rawAvailable.value, type);
-    } catch (e) {
-      Logger.log("Install failed ${s.id}: $e");
-      rethrow;
-    }
+    });
   }
 
   @override
@@ -184,26 +194,28 @@ class LnReaderExtensions extends Extension {
   }
 
   @override
-  Future<void> updateSource(Source source) async {
-    final s = source as LSource;
-    final type = s.itemType!;
-    if (s.sourceCodeUrl == null) throw Exception("Missing plugin URL");
+  Stream<double> updateSource(Source source) {
+    return progressStream((_) async {
+      final s = source as LSource;
+      final type = s.itemType!;
+      if (s.sourceCodeUrl == null) throw Exception("Missing plugin URL");
 
-    final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
-    if (res.statusCode != 200) {
-      throw Exception("Update download failed (${res.statusCode})");
-    }
+      final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
+      if (res.statusCode != 200) {
+        throw Exception("Update download failed (${res.statusCode})");
+      }
 
-    final list = _loadInstalled(type);
-    final i = list.indexWhere((e) => e.id == s.id);
-    if (i == -1) return;
+      final list = _loadInstalled(type);
+      final i = list.indexWhere((e) => e.id == s.id);
+      if (i == -1) return;
 
-    list[i] = list[i]
-      ..sourceCode = res.body
-      ..version = s.version
-      ..hasUpdate = false;
-    _saveInstalled(list, type);
-    state(type).installed.value = List.unmodifiable(list);
+      list[i] = list[i]
+        ..sourceCode = res.body
+        ..version = s.version
+        ..hasUpdate = false;
+      _saveInstalled(list, type);
+      state(type).installed.value = List.unmodifiable(list);
+    });
   }
 
   @override
