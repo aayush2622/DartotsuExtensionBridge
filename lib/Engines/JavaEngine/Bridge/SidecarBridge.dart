@@ -36,6 +36,12 @@ class SidecarBridge implements JavaBridge {
       pluginJarPath,
     ]);
 
+    // The stdin sink can report write failures (e.g. broken pipe once the
+    // sidecar process has died) through its `done` future instead of
+    // throwing synchronously from `writeln`. Without a listener here that
+    // surfaces as an uncaught zone error and can take down the host app.
+    unawaited(_process!.stdin.done.catchError((_) {}));
+
     _stdoutSub = _process!.stdout
         .transform(utf8.decoder)
         .transform(const LineSplitter())

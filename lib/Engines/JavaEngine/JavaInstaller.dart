@@ -9,12 +9,21 @@ import '../../NetworkClient.dart';
 import '../../dartotsu_extension_bridge.dart';
 
 class JavaRuntimeManager {
+  // The ireader-core dependency (io.github.ireaderorg:source-api-desktop) is
+  // published precompiled at class file version 65 (Java 21) for every
+  // released version, so any JVM running the plugin jars must be 21+. A
+  // newer JVM runs older (<=21) bytecode fine, so this is safe for every
+  // other backend, which all still compile to 17.
+  static const _minJavaMajorVersion = 21;
+
   static String? _cachedJavaPath;
   static String? _cachedJvmPath;
   static Future<String?>? _installFuture;
   static Future<Directory> get _runtimeDir async {
     final dir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'bridge/jre',
+      // Versioned so a bump to _minJavaMajorVersion can't resolve a stale
+      // bundled JRE extracted by an older build of this class.
+      subPath: 'bridge/jre-$_minJavaMajorVersion',
       useSystemPath: true,
       useCustomPath: false,
     );
@@ -31,13 +40,39 @@ class JavaRuntimeManager {
     return await getSystemJavaPath() != null || await getJavaPath() != null;
   }
 
+  static int? _parseJavaMajorVersion(String versionOutput) {
+    final match = RegExp(r'version "(\d+)(?:\.(\d+))?').firstMatch(versionOutput);
+
+    if (match == null) return null;
+
+    final first = int.tryParse(match.group(1) ?? '');
+
+    // Legacy scheme: "1.8.0_351" reports major version 8, not 1.
+    if (first == 1) {
+      return int.tryParse(match.group(2) ?? '');
+    }
+
+    return first;
+  }
+
   static Future<String?> getSystemJavaPath() async {
     try {
       final result = await Process.run('java', ['-version'], runInShell: true);
 
       if (result.exitCode == 0) {
-        Logger.log('System Java found');
-        return 'java';
+        final version = _parseJavaMajorVersion(
+          '${result.stdout}\n${result.stderr}',
+        );
+
+        if (version != null && version >= _minJavaMajorVersion) {
+          Logger.log('System Java found (version $version)');
+          return 'java';
+        }
+
+        Logger.log(
+          'System Java (version $version) is older than the required '
+          '$_minJavaMajorVersion; falling back to bundled runtime',
+        );
       }
     } catch (_) {}
 
@@ -264,22 +299,22 @@ class JavaRuntimeManager {
 
   static String get _jreUrl {
     if (Platform.isWindows) {
-      return 'https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.12+7/OpenJDK17U-jre_x64_windows_hotspot_17.0.12_7.zip';
+      return 'https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1+1/OpenJDK21U-jre_x64_windows_hotspot_21.0.12.1_1.zip';
     }
 
     if (Platform.isMacOS) {
       if (_arch == 'arm64') {
-        return 'https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.12+7/OpenJDK17U-jre_aarch64_mac_hotspot_17.0.12_7.tar.gz';
+        return 'https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1+1/OpenJDK21U-jre_aarch64_mac_hotspot_21.0.12.1_1.tar.gz';
       }
 
-      return 'https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.12+7/OpenJDK17U-jre_x64_mac_hotspot_17.0.12_7.tar.gz';
+      return 'https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1+1/OpenJDK21U-jre_x64_mac_hotspot_21.0.12.1_1.tar.gz';
     }
 
     if (_arch == 'arm64') {
-      return 'https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.12+7/OpenJDK17U-jre_aarch64_linux_hotspot_17.0.12_7.tar.gz';
+      return 'https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1+1/OpenJDK21U-jre_aarch64_linux_hotspot_21.0.12.1_1.tar.gz';
     }
 
-    return 'https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.12+7/OpenJDK17U-jre_x64_linux_hotspot_17.0.12_7.tar.gz';
+    return 'https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1+1/OpenJDK21U-jre_x64_linux_hotspot_21.0.12.1_1.tar.gz';
   }
 
   static String get _arch {
