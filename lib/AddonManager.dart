@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../Engines/TorrentEngine/TorrServerAddon.dart';
 import 'Extensions/Addon.dart';
+import 'Logger.dart';
 
 class AddonManager extends GetxService {
   final List<Addon> addons = [TorrServerAddon()];
@@ -11,9 +12,14 @@ class AddonManager extends GetxService {
     super.onInit();
 
     for (final addon in addons) {
-      addon.isInstalled().then((value) {
-        addon.installed.value = value;
-      });
+      addon
+          .isInstalled()
+          .then((value) {
+            addon.installed.value = value;
+          })
+          .catchError((Object e) {
+            Logger.log('Failed to check if addon ${addon.id} is installed: $e');
+          });
     }
   }
 
@@ -36,7 +42,12 @@ class AddonManager extends GetxService {
     for (final addon in addons) {
       try {
         await addon.checkForUpdate();
-      } catch (_) {}
+      } catch (e) {
+        // One broken addon's update check must not stop the sweep for the
+        // rest - but silently, with zero diagnostic trail, a misconfigured
+        // addon fails invisibly forever.
+        Logger.log('Update check failed for addon ${addon.id}: $e');
+      }
     }
   }
 
@@ -46,7 +57,9 @@ class AddonManager extends GetxService {
         if (await addon.checkForUpdate()) {
           await addon.update();
         }
-      } catch (_) {}
+      } catch (e) {
+        Logger.log('Auto-update failed for addon ${addon.id}: $e');
+      }
     }
   }
 }

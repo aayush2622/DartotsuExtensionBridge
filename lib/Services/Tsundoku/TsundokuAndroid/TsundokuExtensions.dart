@@ -99,13 +99,84 @@ class TsundokuExtensions extends Extension with TachiyomiRepoBackend {
     novel.available.value = await fetchExtensions(ItemType.novel);
   }
 
+  final Map<String, Stream<double>> _installsInFlight = {};
+
   @override
-  Future<void> installSource(Source source) async {
+  Stream<double> installSource(Source source) {
+    final id = (source as TSource).id;
+
+    // See the matching comment in Aniyomi's installSource - without this, a
+    // double-tap (or install racing an update for the same source) runs two
+    // independent download+write sequences concurrently against the same
+    // target file. The stream is broadcast, so a concurrent caller shares
+    // the same in-flight operation and progress.
+    if (id != null) {
+      final inFlight = _installsInFlight[id];
+      if (inFlight != null) return inFlight;
+    }
+
+    final stream = progressStream((report) async {
+      try {
+        await _installSourceImpl(source, report);
+      } finally {
+        if (id != null) _installsInFlight.remove(id);
+      }
+    });
+
+    if (id != null) {
+      _installsInFlight[id] = stream;
+    }
+
+    return stream;
+  }
+
+  /// Streams [response] to [file], updating `installProgress[progressId]`
+  /// (ambient GetX state) and calling [report] (this operation's own
+  /// progress stream) as bytes arrive, once the content length is known.
+  Future<void> _writeWithProgress(
+    http.StreamedResponse response,
+    File file,
+    String? progressId,
+    ItemType type,
+    void Function(double) report,
+  ) async {
+    final sink = file.openWrite();
+    final total = response.contentLength;
+    var received = 0;
+
+    try {
+      await for (final chunk in response.stream) {
+        sink.add(chunk);
+        received += chunk.length;
+
+        if (total != null && total > 0) {
+          final fraction = received / total;
+          if (progressId != null) {
+            state(type).installProgress[progressId] = fraction;
+          }
+          report(fraction);
+        }
+      }
+      await sink.flush();
+    } finally {
+      await sink.close();
+    }
+  }
+
+  Future<void> _installSourceImpl(
+    Source source,
+    void Function(double) report,
+  ) async {
     final aSource = source as TSource;
     final isPrivate = getVal('tsundokuInstallPrivate') ?? false;
     final type = source.itemType!;
     if (aSource.apkUrl == null) {
       throw Exception('Source APK URL is required for installation.');
+    }
+
+    final progressId = aSource.id;
+    if (progressId != null) {
+      state(type).installProgress[progressId] = 0.0;
     }
 
     try {
@@ -138,11 +209,7 @@ class TsundokuExtensions extends Extension with TachiyomiRepoBackend {
 
         final file = File(path.join(extDir.path, apkFileName));
 
-        final sink = file.openWrite();
-
-        await response.stream.pipe(sink);
-
-        await sink.close();
+        await _writeWithProgress(response, file, progressId, type, report);
 
         Logger.log('Installed PRIVATE extension: ${aSource.pkgName}');
       } else {
@@ -150,11 +217,7 @@ class TsundokuExtensions extends Extension with TachiyomiRepoBackend {
 
         final apkFile = File(path.join(tempDir.path, apkFileName));
 
-        final sink = apkFile.openWrite();
-
-        await response.stream.pipe(sink);
-
-        await sink.close();
+        await _writeWithProgress(response, apkFile, progressId, type, report);
 
         final result = await InstallPlugin.installApk(
           apkFile.path,
@@ -184,6 +247,10 @@ class TsundokuExtensions extends Extension with TachiyomiRepoBackend {
     } catch (e) {
       Logger.log('Error installing source: $e');
       rethrow;
+    } finally {
+      if (progressId != null) {
+        state(type).installProgress.remove(progressId);
+      }
     }
   }
 
@@ -237,9 +304,24 @@ class TsundokuExtensions extends Extension with TachiyomiRepoBackend {
           await InstalledApps.isAppInstalled(packageName) ?? false;
 
       if (!isInstalled) {
+        // The APK isn't actually present (install failed partway, or it was
+        // removed outside the app) - still restore `available`/detectUpdates
+        // the same way the two paths below do, instead of leaving the
+        // source missing from both lists until an unrelated full refresh.
         state(type).installed.value = state(
           type,
         ).installed.value.where((e) => e.id != s.id).toList();
+
+        final raw = state(type).rawAvailable.value;
+        final installed = state(type).installed.value;
+        final installedIds = installed.map((e) => e.id).toSet();
+
+        state(type).available.value = List.unmodifiable(
+          raw.where((e) => !installedIds.contains(e.id)),
+        );
+
+        await fetchInstalledExtensions(type);
+        detectUpdates(raw, type);
         return;
       }
 
@@ -283,9 +365,7 @@ class TsundokuExtensions extends Extension with TachiyomiRepoBackend {
   }
 
   @override
-  Future<void> updateSource(Source source) async {
-    await installSource(source);
-  }
+  Stream<double> updateSource(Source source) => installSource(source);
 
   @override
   Set<String> get schemes => {"tsundoku"};

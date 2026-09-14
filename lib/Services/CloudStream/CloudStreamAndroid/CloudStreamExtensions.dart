@@ -106,7 +106,11 @@ class CloudStreamExtensions extends Extension {
   }
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) async {
+  Stream<double> addRepo(String repoUrl, ItemType type) {
+    return progressStream((_) => _addRepoImpl(repoUrl, type));
+  }
+
+  Future<void> _addRepoImpl(String repoUrl, ItemType type) async {
     final uri = Uri.tryParse(repoUrl);
     if (uri == null || !uri.hasScheme) {
       throw Exception("Invalid repo URL");
@@ -134,7 +138,7 @@ class CloudStreamExtensions extends Extension {
       if (pluginLists is List) {
         for (final subRepo in pluginLists.cast<String>()) {
           try {
-            await addRepo(subRepo, type);
+            await _addRepoImpl(subRepo, type);
           } catch (e) {
             Logger.log("Failed to add $subRepo: $e");
           }
@@ -162,8 +166,55 @@ class CloudStreamExtensions extends Extension {
     await selectRepo(repo, type);
   }
 
+  // Repo JSON `name` fields are publisher-controlled and used directly as a
+  // filesystem path component below - path.join() does not collapse ".."
+  // segments (the OS resolves them at open time), so an unsanitized name
+  // containing "/" or "\" could write/delete outside the extensions
+  // directory. Applied identically at install (write) and uninstall
+  // (match) so both agree on the resulting on-disk basename.
+  String _safeFileBaseName(String name) {
+    final sanitized = name.replaceAll(RegExp(r'[\\/]'), '_').trim();
+    if (sanitized.isEmpty || RegExp(r'^\.+$').hasMatch(sanitized)) {
+      return 'extension';
+    }
+    return sanitized;
+  }
+
+  final Map<String, Stream<double>> _installsInFlight = {};
+
   @override
-  Future<void> installSource(Source source) async {
+  Stream<double> installSource(Source source) {
+    final id = (source as CSource).id;
+
+    // See the matching guard in Aniyomi/Tsundoku/IReader's installSource -
+    // without this, a double-tap (or install racing an update for the same
+    // source) runs two independent download+write sequences concurrently
+    // against the same target file. The stream is broadcast, so a
+    // concurrent caller shares the same in-flight operation and progress.
+    if (id != null) {
+      final inFlight = _installsInFlight[id];
+      if (inFlight != null) return inFlight;
+    }
+
+    final stream = progressStream((report) async {
+      try {
+        await _installSourceImpl(source, report);
+      } finally {
+        if (id != null) _installsInFlight.remove(id);
+      }
+    });
+
+    if (id != null) {
+      _installsInFlight[id] = stream;
+    }
+
+    return stream;
+  }
+
+  Future<void> _installSourceImpl(
+    Source source,
+    void Function(double) report,
+  ) async {
     final s = source as CSource;
     final type = source.itemType!;
     final dir = await DartotsuExtensionBridge.context.getDirectory(
@@ -179,11 +230,35 @@ class CloudStreamExtensions extends Extension {
     final file = File(
       path.join(
         dir!.path,
-        "${s.name}${path.extension(Uri.parse(s.pluginUrl!).path)}",
+        "${_safeFileBaseName(s.name ?? s.id ?? 'extension')}${path.extension(Uri.parse(s.pluginUrl!).path)}",
       ),
     );
 
-    await downloadPackageFile(_client, s.pluginUrl!, file.path);
+    final progressId = s.id;
+    if (progressId != null) {
+      state(type).installProgress[progressId] = 0.0;
+    }
+
+    try {
+      await downloadPackageFile(
+        _client,
+        s.pluginUrl!,
+        file.path,
+        onProgress: (received, total) {
+          if (total != null && total > 0) {
+            final fraction = received / total;
+            if (progressId != null) {
+              state(type).installProgress[progressId] = fraction;
+            }
+            report(fraction);
+          }
+        },
+      );
+    } finally {
+      if (progressId != null) {
+        state(type).installProgress.remove(progressId);
+      }
+    }
 
     final avail = state(type).available;
 
@@ -214,10 +289,14 @@ class CloudStreamExtensions extends Extension {
 
     File? pluginFile;
 
+    final expectedBaseName = _safeFileBaseName(
+      s.name ?? s.id ?? 'extension',
+    ).toLowerCase();
+
     await for (final entity in dir!.list()) {
       if (entity is! File) continue;
       var baseName = path.basenameWithoutExtension(entity.path);
-      if (baseName.toLowerCase() == s.name?.toLowerCase()) {
+      if (baseName.toLowerCase() == expectedBaseName) {
         pluginFile = entity;
         break;
       }
@@ -249,7 +328,7 @@ class CloudStreamExtensions extends Extension {
   }
 
   @override
-  Future<void> updateSource(Source source) async => await installSource(source);
+  Stream<double> updateSource(Source source) => installSource(source);
 
   @override
   Set<String> schemes = {"cloudstreamrepo"};
@@ -266,7 +345,7 @@ class CloudStreamExtensions extends Extension {
           ? urlWithoutScheme
           : 'https://$urlWithoutScheme',
       ItemType.anime,
-    );
+    ).drain<void>();
   }
 
   @override

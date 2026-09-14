@@ -7,8 +7,15 @@ class PageUrl {
   PageUrl(this.url, {this.headers});
 
   factory PageUrl.fromJson(Map<String, dynamic> json) {
+    // See the matching comment in lib/Models/Page.dart - a missing url must
+    // not silently become the literal string "null" via null.toString().
+    final url = json['url'];
+    if (url == null) {
+      throw FormatException('PageUrl JSON is missing a "url" field: $json');
+    }
+
     return PageUrl(
-      json['url'].toString().trim(),
+      url.toString().trim(),
       headers: (json['headers'] as Map?)?.toMapStringString,
     );
   }

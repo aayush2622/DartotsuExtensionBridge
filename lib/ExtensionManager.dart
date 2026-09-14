@@ -111,7 +111,18 @@ class ExtensionManager extends GetxController {
       return saved;
     }
 
-    return managers.firstWhere((e) => e.supports(type));
+    // Every backend registered today defaults to supporting all three
+    // ItemTypes, so this isn't reachable yet - but onInit() calls this for
+    // every ItemType.values entry, and a future type-restricted backend
+    // combined with a platform that excludes every other candidate would
+    // otherwise crash GetX bootstrap with an opaque "Bad state: No element".
+    return managers.firstWhere(
+      (e) => e.supports(type),
+      orElse: () => throw StateError(
+        'No registered Extension manager supports $type on '
+        '${Platform.operatingSystem}',
+      ),
+    );
   }
 
   @override

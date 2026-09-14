@@ -33,47 +33,75 @@ mixin TachiyomiJniDesktopExtension on Extension {
       );
 
   @override
-  Future<void> installSource(Source source) async {
-    final s = source as PackagedSource;
-    final type = source.itemType!;
+  Stream<double> installSource(Source source) {
+    return progressStream((report) async {
+      final s = source as PackagedSource;
+      final type = source.itemType!;
 
-    final downloadUrl = s.apkUrl;
-    if (downloadUrl == null || downloadUrl.isEmpty) {
-      throw Exception("APK URL missing");
-    }
-
-    final fileName =
-        s.apkName ?? s.pkgName ?? p.basename(Uri.parse(downloadUrl).path);
-    if (fileName.isEmpty) {
-      throw Exception("Can't determine a file name for ${s.name}");
-    }
-
-    final dir = await _extensionsDir(type);
-    final file = File(p.join(dir!.path, fileName));
-
-    // Capture the path of the version currently on disk (if any) before we
-    // overwrite the field, so a rename between versions doesn't orphan a jar.
-    final oldApkPath = s.apkPath;
-
-    await downloadPackageFile(repoClient, downloadUrl, file.path);
-    s.apkPath = file.path;
-
-    if (oldApkPath != null && oldApkPath != file.path) {
-      final oldFile = File(oldApkPath);
-      if (await oldFile.exists()) {
-        await oldFile.delete();
-        Logger.log('Deleted old extension: ${oldFile.path}');
+      final downloadUrl = s.apkUrl;
+      if (downloadUrl == null || downloadUrl.isEmpty) {
+        throw Exception("APK URL missing");
       }
-    }
 
-    final avail = state(type).available;
-    avail.value = avail.value.where((e) => e.id != s.id).toList();
-    await fetchInstalledExtensions(type);
-    detectUpdates(state(type).rawAvailable.value, type);
+      final fileName =
+          s.apkName ?? s.pkgName ?? p.basename(Uri.parse(downloadUrl).path);
+      if (fileName.isEmpty) {
+        throw Exception("Can't determine a file name for ${s.name}");
+      }
+
+      final dir = await _extensionsDir(type);
+      final file = File(p.join(dir!.path, fileName));
+
+      // Capture the path of the version currently on disk (if any) before we
+      // overwrite the field, so a rename between versions doesn't orphan a
+      // jar.
+      final oldApkPath = s.apkPath;
+
+      final progressId = s.id;
+      if (progressId != null) {
+        state(type).installProgress[progressId] = 0.0;
+      }
+
+      try {
+        await downloadPackageFile(
+          repoClient,
+          downloadUrl,
+          file.path,
+          onProgress: (received, total) {
+            if (total != null && total > 0) {
+              final fraction = received / total;
+              if (progressId != null) {
+                state(type).installProgress[progressId] = fraction;
+              }
+              report(fraction);
+            }
+          },
+        );
+      } finally {
+        if (progressId != null) {
+          state(type).installProgress.remove(progressId);
+        }
+      }
+
+      s.apkPath = file.path;
+
+      if (oldApkPath != null && oldApkPath != file.path) {
+        final oldFile = File(oldApkPath);
+        if (await oldFile.exists()) {
+          await oldFile.delete();
+          Logger.log('Deleted old extension: ${oldFile.path}');
+        }
+      }
+
+      final avail = state(type).available;
+      avail.value = avail.value.where((e) => e.id != s.id).toList();
+      await fetchInstalledExtensions(type);
+      detectUpdates(state(type).rawAvailable.value, type);
+    });
   }
 
   @override
-  Future<void> updateSource(Source source) => installSource(source);
+  Stream<double> updateSource(Source source) => installSource(source);
 
   @override
   Future<void> uninstallSource(Source source) async {

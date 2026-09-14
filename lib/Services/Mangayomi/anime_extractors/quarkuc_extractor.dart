@@ -459,68 +459,77 @@ class QuarkUcExtractor {
   }
 
   Future<List<Video>> videosFromUrl(String url) async {
-    List<String> parts = url.split('++');
-    String fileId = parts[1];
-    String fileToken = parts[2];
-    String shareId = parts[3];
-    String stoken = parts[4];
-    // String type = parts[0];
-    List<String> subtitleParts = parts.length > 5 ? parts[5].split('+') : [];
-    // 获取可用的质量列表
-    //List<String> qualities = getPlayFormtList();
-    List<Video> videos = [];
+    // Every other extractor in this directory wraps its body the same way:
+    // an unexpectedly-shaped url (e.g. `parts[1..4]`/`.split('++')` below
+    // throwing RangeError on a shape this host no longer produces) must
+    // fail just this one extractor, not the whole getVideoList call it's
+    // aggregated into.
+    try {
+      List<String> parts = url.split('++');
+      String fileId = parts[1];
+      String fileToken = parts[2];
+      String shareId = parts[3];
+      String stoken = parts[4];
+      // String type = parts[0];
+      List<String> subtitleParts = parts.length > 5 ? parts[5].split('+') : [];
+      // 获取可用的质量列表
+      //List<String> qualities = getPlayFormtList();
+      List<Video> videos = [];
 
-    String? originalUrl;
-    List<Map<String, String>>? qualityOptions = await getLiveTranscoding(
-      shareId,
-      stoken,
-      fileId,
-      fileToken,
-    );
-    originalUrl = qualityOptions?[0]['url'];
-    var headers = getHeaders();
-    headers.remove('Content-Type');
-    if (qualityOptions != null) {
-      for (Map<String, String> qualityOption in qualityOptions) {
-        videos.add(
-          Video(
-            qualityOption['url'] ?? '',
-            qualityOption['quality'] ?? '',
-            originalUrl ?? '',
-            headers: headers,
-          ),
-        );
-      }
-    }
-
-    // 处理字幕
-    List<Track> subtitles = [];
-    for (String subtitleInfo in subtitleParts) {
-      if (subtitleInfo.isNotEmpty) {
-        List<String> subParts = subtitleInfo.split('@@@');
-        if (subParts.length == 3) {
-          String subName = subParts[0];
-          String subFileId = subParts[2];
-          var subDownload = await getDownload(
-            shareId,
-            stoken,
-            subFileId,
-            '',
-            false,
+      String? originalUrl;
+      List<Map<String, String>>? qualityOptions = await getLiveTranscoding(
+        shareId,
+        stoken,
+        fileId,
+        fileToken,
+      );
+      originalUrl = qualityOptions?[0]['url'];
+      var headers = getHeaders();
+      headers.remove('Content-Type');
+      if (qualityOptions != null) {
+        for (Map<String, String> qualityOption in qualityOptions) {
+          videos.add(
+            Video(
+              qualityOption['url'] ?? '',
+              qualityOption['quality'] ?? '',
+              originalUrl ?? '',
+              headers: headers,
+            ),
           );
-          String? subUrl = subDownload?['download_url'];
-          if (subUrl != null) {
-            subtitles.add(Track(file: subUrl, label: subName));
+        }
+      }
+
+      // 处理字幕
+      List<Track> subtitles = [];
+      for (String subtitleInfo in subtitleParts) {
+        if (subtitleInfo.isNotEmpty) {
+          List<String> subParts = subtitleInfo.split('@@@');
+          if (subParts.length == 3) {
+            String subName = subParts[0];
+            String subFileId = subParts[2];
+            var subDownload = await getDownload(
+              shareId,
+              stoken,
+              subFileId,
+              '',
+              false,
+            );
+            String? subUrl = subDownload?['download_url'];
+            if (subUrl != null) {
+              subtitles.add(Track(file: subUrl, label: subName));
+            }
           }
         }
       }
-    }
 
-    // 为所有视频添加字幕
-    for (var video in videos) {
-      video.subtitles = subtitles;
+      // 为所有视频添加字幕
+      for (var video in videos) {
+        video.subtitles = subtitles;
+      }
+      return videos;
+    } catch (_) {
+      return [];
     }
-    return videos;
   }
 
   String findSubs(String name, List<dynamic> itemList) {

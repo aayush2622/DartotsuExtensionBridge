@@ -8,13 +8,25 @@ class Pages {
 
   factory Pages.fromJson(Map<String, dynamic> json) {
     return Pages(
-      list: json['list'] != null
-          ? (json['list'] as List)
-                .map((e) => DMedia.fromJson(Map<String, dynamic>.from(e)))
-                .toList()
-          : [],
+      list: _parseList(json['list']),
       hasNextPage: json['hasNextPage'] ?? false,
     );
+  }
+
+  static List<DMedia> _parseList(dynamic value) {
+    if (value is! List) return [];
+
+    final list = <DMedia>[];
+    for (final e in value) {
+      if (e == null) continue;
+      try {
+        list.add(DMedia.fromJson(Map<String, dynamic>.from(e)));
+      } catch (_) {
+        // One malformed search/listing result should not take down the
+        // whole page of results.
+      }
+    }
+    return list;
   }
 
   Map<String, dynamic> toJson() => {

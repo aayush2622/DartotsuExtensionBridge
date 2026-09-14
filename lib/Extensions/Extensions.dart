@@ -13,6 +13,38 @@ import 'SourceMethods.dart';
 
 enum InitState { idle, success, failed }
 
+/// Runs [operation] and exposes it as a broadcast [Stream] of progress in
+/// `[0.0, 1.0]` that closes (after emitting a final `1.0`) on success or
+/// errors and closes on failure.
+///
+/// [operation] starts immediately, before this function returns - it does
+/// NOT wait for a listener, so callers that never subscribe (the previous
+/// `Future<void>`-returning API was routinely fire-and-forget, e.g.
+/// `onPressed: () => repo.installSource(source)`) still get the underlying
+/// work done; a listener only opts into progress/completion/error
+/// notifications on top of that. A listener that subscribes after progress
+/// has already been reported only sees events from that point on -
+/// broadcast streams don't replay history.
+Stream<double> progressStream(
+  Future<void> Function(void Function(double progress) reportProgress)
+  operation,
+) {
+  final controller = StreamController<double>.broadcast();
+
+  scheduleMicrotask(() async {
+    try {
+      await operation(controller.add);
+      controller.add(1.0);
+    } catch (e, s) {
+      controller.addError(e, s);
+    } finally {
+      await controller.close();
+    }
+  });
+
+  return controller.stream;
+}
+
 class ExtensionState {
   final installed = Rx<List<Source>>([]);
   final available = Rx<List<Source>>([]);
@@ -21,6 +53,24 @@ class ExtensionState {
   final activeRepo = Rxn<Repo>();
   final loadingAvailable = false.obs;
   final loadingInstalled = false.obs;
+
+  /// Per-source install/update download progress in [0.0, 1.0], keyed by
+  /// [Source.id]. A backend that can report byte-level progress updates
+  /// this while installSource()/updateSource() run and removes the entry
+  /// when done (success or failure); a backend that can't (e.g. the
+  /// desktop JVM-sidecar backends, whose actual download happens on the
+  /// Kotlin side) just never populates it for its sources. UI should treat
+  /// "no entry" as not-installing and "entry present" as installing,
+  /// independent of whether the value itself is meaningful yet.
+  final installProgress = <String, double>{}.obs;
+
+  /// Set while addRepo() is fetching a repo big enough that a bare spinner
+  /// isn't enough feedback (e.g. Kotatsu's shared parsers jar can be
+  /// several MB). [repoLoadProgress] is null while the transfer size isn't
+  /// known yet (or for a backend that doesn't report it), 0.0-1.0 once it
+  /// is.
+  final loadingRepo = false.obs;
+  final repoLoadProgress = Rxn<double>();
 
   final selectedLanguages = <String>{}.obs;
 
@@ -82,20 +132,30 @@ abstract class Extension {
   Future<void> initialize() async {
     if (_initCompleter != null) return _initCompleter!.future;
 
-    _initCompleter = Completer<void>();
+    final completer = _initCompleter = Completer<void>();
 
     try {
       final ok = await onInitialize();
       _initState = ok ? InitState.success : InitState.failed;
 
-      _initCompleter!.complete();
+      // A failed init must not pin _initCompleter forever - ensureInitialized
+      // short-circuits on InitState.failed without ever calling initialize()
+      // again, so leaving the completer set here would permanently disable
+      // this backend after a single transient failure (a cold-start network
+      // blip, a sidecar/JVM handshake miss, ...) with no way to retry short
+      // of restarting the app. Clearing it lets the next ensureInitialized()
+      // call attempt onInitialize() again.
+      if (!ok) _initCompleter = null;
+
+      completer.complete();
     } catch (e, s) {
       _initState = InitState.failed;
-      _initCompleter!.completeError(e, s);
+      _initCompleter = null;
+      completer.completeError(e, s);
       rethrow;
     }
 
-    return _initCompleter!.future;
+    return completer.future;
   }
 
   final _states = <ItemType, ExtensionState>{};
@@ -112,9 +172,16 @@ abstract class Extension {
 
   Future<bool> ensureInitialized() async {
     if (_initState == InitState.success) return true;
-    if (_initState == InitState.failed) return false;
 
-    await initialize();
+    try {
+      await initialize();
+    } catch (_) {
+      // initialize() already recorded the failure in _initState (and
+      // completed its own completer with the error for direct initialize()
+      // callers) - ensureInitialized()'s contract is a bool, never a thrown
+      // exception, and a failure here must still leave _initCompleter
+      // cleared so the *next* call can retry rather than getting stuck.
+    }
 
     return _initState == InitState.success;
   }
@@ -195,11 +262,14 @@ abstract class Extension {
     }
   }
 
-  Future<void> installSource(Source source);
+  /// Progress in `[0.0, 1.0]`. See [progressStream] for the exact contract
+  /// (starts eagerly, broadcast, closes on completion/error).
+  Stream<double> installSource(Source source);
 
   Future<void> uninstallSource(Source source);
 
-  Future<void> updateSource(Source source);
+  /// Progress in `[0.0, 1.0]`. See [progressStream].
+  Stream<double> updateSource(Source source);
 
   @mustCallSuper
   Future<void> fetchAnimeExtensions() async {
@@ -366,7 +436,8 @@ abstract class Extension {
     );
   }
 
-  Future<void> addRepo(String repoUrl, ItemType type);
+  /// Progress in `[0.0, 1.0]`. See [progressStream].
+  Stream<double> addRepo(String repoUrl, ItemType type);
 
   Future<void> removeRepo(String repoUrl, ItemType type) async {
     try {

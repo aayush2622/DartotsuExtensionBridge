@@ -75,8 +75,9 @@ String? tachiyomiFallbackRepoUrl(String repoUrl) {
 Future<void> downloadPackageFile(
   http.Client client,
   String url,
-  String destPath,
-) async {
+  String destPath, {
+  void Function(int received, int? total)? onProgress,
+}) async {
   final request = http.Request('GET', Uri.parse(url));
   final response = await client.send(request);
 
@@ -93,8 +94,21 @@ Future<void> downloadPackageFile(
 
   final temp = File('$destPath.tmp');
   final sink = temp.openWrite();
+  final total = response.contentLength;
+  var received = 0;
+
   try {
-    await sink.addStream(response.stream);
+    if (onProgress == null) {
+      // No progress consumer - addStream is the cheaper path (no per-chunk
+      // Dart-side bookkeeping).
+      await sink.addStream(response.stream);
+    } else {
+      await for (final chunk in response.stream) {
+        sink.add(chunk);
+        received += chunk.length;
+        onProgress(received, total);
+      }
+    }
     await sink.flush();
   } finally {
     await sink.close();
@@ -536,40 +550,46 @@ mixin TachiyomiRepoBackend on Extension {
   bool get refreshExtensionCountOnFetch => false;
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) async {
-    try {
-      final uri = Uri.tryParse(repoUrl);
-      if (uri == null || !uri.hasScheme) {
-        throw Exception("Invalid repo URL");
+  Stream<double> addRepo(String repoUrl, ItemType type) {
+    // The index fetch + parse here has no natural byte-progress signal (a
+    // single JSON/protobuf response, not a large streamed binary like
+    // Kotatsu's parsers jar) - this just reports start/done via
+    // progressStream rather than granular progress.
+    return progressStream((_) async {
+      try {
+        final uri = Uri.tryParse(repoUrl);
+        if (uri == null || !uri.hasScheme) {
+          throw Exception("Invalid repo URL");
+        }
+
+        final normalizedUrl = repoUrl.replaceAll(RegExp(r'/+$'), '');
+
+        final repos = loadRepos(type);
+        if (repos.any((r) => r.url == normalizedUrl)) {
+          return;
+        }
+
+        final index = await fetchTachiyomiRepoIndex(repoClient, normalizedUrl);
+        final parsed = await compute(parseIndexIsolate, (
+          index.body,
+          index.url,
+          type,
+        ));
+
+        final repo = Repo(
+          name: repoNameFromUrl(repoUrl),
+          url: normalizedUrl,
+          extensions: parsed.length.toString(),
+        );
+        final updatedRepos = List<Repo>.from(repos)..add(repo);
+        saveRepos(updatedRepos, type);
+        state(type).repos.value = updatedRepos;
+        await selectRepo(repo, type);
+      } catch (e) {
+        Logger.log("Failed to add repo $repoUrl: $e");
+        rethrow;
       }
-
-      final normalizedUrl = repoUrl.replaceAll(RegExp(r'/+$'), '');
-
-      final repos = loadRepos(type);
-      if (repos.any((r) => r.url == normalizedUrl)) {
-        return;
-      }
-
-      final index = await fetchTachiyomiRepoIndex(repoClient, normalizedUrl);
-      final parsed = await compute(parseIndexIsolate, (
-        index.body,
-        index.url,
-        type,
-      ));
-
-      final repo = Repo(
-        name: repoNameFromUrl(repoUrl),
-        url: normalizedUrl,
-        extensions: parsed.length.toString(),
-      );
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
-      saveRepos(updatedRepos, type);
-      state(type).repos.value = updatedRepos;
-      await selectRepo(repo, type);
-    } catch (e) {
-      Logger.log("Failed to add repo $repoUrl: $e");
-      rethrow;
-    }
+    });
   }
 
   @override

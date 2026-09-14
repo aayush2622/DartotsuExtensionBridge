@@ -36,4 +36,10 @@ abstract interface class ExtensionService {
   FilterList getFilterList();
 
   List<SourcePreference> getSourcePreferences();
+
+  /// Releases any native/runtime resources this service holds (e.g. a
+  /// QuickJS engine). Callers construct a fresh [ExtensionService] per call
+  /// via [getExtensionService], so they must dispose it once done rather
+  /// than relying on Dart's GC - native resources are not freed by GC alone.
+  void dispose();
 }

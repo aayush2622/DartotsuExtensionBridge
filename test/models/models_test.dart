@@ -1,5 +1,6 @@
 import 'package:dartotsu_extension_bridge/Models/DEpisode.dart';
 import 'package:dartotsu_extension_bridge/Models/DMedia.dart';
+import 'package:dartotsu_extension_bridge/Models/Page.dart';
 import 'package:dartotsu_extension_bridge/Models/Pages.dart';
 import 'package:dartotsu_extension_bridge/Models/Source.dart';
 import 'package:dartotsu_extension_bridge/Models/Video.dart';
@@ -138,6 +139,75 @@ void main() {
       expect(video.subtitles, hasLength(1));
       expect(video.subtitles!.single.file, 'https://s/en.vtt');
       expect(video.subtitles!.single.label, 'English');
+    });
+
+    test('throws on a missing url instead of stringifying null', () {
+      // A missing url used to become the literal string "null" via
+      // null.toString() - now it must fail clearly so a list-building
+      // caller (e.g. BridgeSourceMethods.parseVideos) can skip just this
+      // entry instead of shipping a bogus "null" playback url.
+      expect(
+        () => Video.fromJson({'title': 't', 'quality': 'q'}),
+        throwsFormatException,
+      );
+    });
+
+    test('drops a malformed timestamp instead of failing the whole video', () {
+      final video = Video.fromJson({
+        'url': 'u',
+        'timeStamps': [
+          {'name': 'intro', 'startTime': 'not a number', 'endTime': 10},
+          {'name': 'outro', 'startTime': 90, 'endTime': 100},
+        ],
+      });
+
+      expect(video.timeStamps, hasLength(1));
+      expect(video.timeStamps!.single.name, 'outro');
+    });
+
+    test('missing/null title and quality do not throw', () {
+      final video = Video.fromJson({'url': 'u'});
+      expect(video.title, isNull);
+      expect(video.quality, '');
+    });
+  });
+
+  group('PageUrl.fromJson', () {
+    test('throws on a missing url instead of stringifying null', () {
+      expect(() => PageUrl.fromJson({}), throwsFormatException);
+    });
+  });
+
+  group('malformed list entries', () {
+    test('Pages.fromJson skips a malformed media entry, keeps the rest', () {
+      final pages = Pages.fromJson({
+        'list': [
+          {'title': 'ok', 'url': '/ok'},
+          {
+            'title': 'bad genre',
+            'url': '/bad',
+            'genre': 'not-a-list', // would previously throw via List.from
+          },
+        ],
+      });
+
+      // The malformed `genre` value is now tolerated (defaults to empty)
+      // rather than thrown - both entries survive.
+      expect(pages.list, hasLength(2));
+    });
+
+    test('DMedia.fromJson skips a malformed episode, keeps the rest', () {
+      final media = DMedia.fromJson({
+        'title': 'M',
+        'url': '/m',
+        'episodes': [
+          {'name': 'Ep 1', 'episode_number': '1'},
+          'not a map', // Map<String, dynamic>.from(...) throws on this
+        ],
+      });
+
+      expect(media.episodes, hasLength(1));
+      expect(media.episodes!.single.name, 'Ep 1');
     });
   });
 }

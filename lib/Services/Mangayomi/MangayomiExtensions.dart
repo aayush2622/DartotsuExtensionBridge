@@ -65,37 +65,49 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<void> installSource(Source source) async {
-    final m = source as MSource;
-    final type = m.itemType!;
-    try {
-      final res = await _client.get(Uri.parse(m.sourceCodeUrl!));
+  Stream<double> installSource(Source source) {
+    // No streamed download here - Mangayomi sources are small JS/Dart
+    // scripts, not a binary worth byte-progress.
+    return progressStream((_) async {
+      final m = source as MSource;
+      final type = m.itemType!;
+      try {
+        final res = await _client.get(Uri.parse(m.sourceCodeUrl!));
 
-      if (res.statusCode != 200) {
-        throw Exception("Extension download failed");
+        if (res.statusCode != 200) {
+          throw Exception("Extension download failed");
+        }
+
+        final service = getExtensionService(m);
+        final String headers;
+        try {
+          headers = jsonEncode(service.getHeaders());
+        } finally {
+          service.dispose();
+        }
+
+        final installed = m
+          ..sourceCode = res.body
+          ..headers = headers;
+
+        final list = _loadInstalled(type);
+
+        list.removeWhere((e) => e.id == m.id);
+        list.add(installed);
+
+        _saveInstalled(list, type);
+
+        state(type).installed.value = List.unmodifiable(list);
+
+        final avail = state(type).available;
+        avail.value = avail.value.where((e) => e.id != m.id).toList();
+        final raw = state(type).rawAvailable.value;
+        detectUpdates(raw, type);
+      } catch (e) {
+        Logger.log("Install failed ${m.id}: $e");
+        rethrow;
       }
-
-      final installed = m
-        ..sourceCode = res.body
-        ..headers = jsonEncode(getExtensionService(m).getHeaders());
-
-      final list = _loadInstalled(type);
-
-      list.removeWhere((e) => e.id == m.id);
-      list.add(installed);
-
-      _saveInstalled(list, type);
-
-      state(type).installed.value = List.unmodifiable(list);
-
-      final avail = state(type).available;
-      avail.value = avail.value.where((e) => e.id != m.id).toList();
-      final raw = state(type).rawAvailable.value;
-      detectUpdates(raw, type);
-    } catch (e) {
-      Logger.log("Install failed ${m.id}: $e");
-      rethrow;
-    }
+    });
   }
 
   @override
@@ -124,28 +136,30 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<void> updateSource(Source source) async {
-    final s = source as MSource;
-    final type = s.itemType!;
-    final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
+  Stream<double> updateSource(Source source) {
+    return progressStream((_) async {
+      final s = source as MSource;
+      final type = s.itemType!;
+      final res = await _client.get(Uri.parse(s.sourceCodeUrl!));
 
-    if (res.statusCode != 200) {
-      throw Exception("Update download failed");
-    }
+      if (res.statusCode != 200) {
+        throw Exception("Update download failed");
+      }
 
-    final installed = _loadInstalled(type);
+      final installed = _loadInstalled(type);
 
-    final index = installed.indexWhere((e) => e.id == s.id);
-    if (index == -1) return;
+      final index = installed.indexWhere((e) => e.id == s.id);
+      if (index == -1) return;
 
-    installed[index] = installed[index]
-      ..sourceCode = res.body
-      ..version = s.version
-      ..hasUpdate = false;
+      installed[index] = installed[index]
+        ..sourceCode = res.body
+        ..version = s.version
+        ..hasUpdate = false;
 
-    _saveInstalled(installed, type);
+      _saveInstalled(installed, type);
 
-    state(type).installed.value = List.unmodifiable(installed);
+      state(type).installed.value = List.unmodifiable(installed);
+    });
   }
 
   @override
@@ -185,34 +199,36 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
-  Future<void> addRepo(String repoUrl, ItemType type) async {
-    try {
-      final uri = Uri.tryParse(repoUrl);
-      if (uri == null || !uri.hasScheme) {
-        throw Exception("Invalid URL");
+  Stream<double> addRepo(String repoUrl, ItemType type) {
+    return progressStream((_) async {
+      try {
+        final uri = Uri.tryParse(repoUrl);
+        if (uri == null || !uri.hasScheme) {
+          throw Exception("Invalid URL");
+        }
+
+        final repos = loadRepos(type);
+
+        if (repos.any((r) => r.url == repoUrl)) {
+          return;
+        }
+
+        final res = await _client.get(uri);
+        if (res.statusCode != 200) {
+          throw Exception("Failed to fetch repo");
+        }
+
+        final repo = Repo(name: repoNameFromUrl(repoUrl), url: repoUrl);
+        final updatedRepos = List<Repo>.from(repos)..add(repo);
+
+        saveRepos(updatedRepos, type);
+        state(type).repos.value = updatedRepos;
+        await selectRepo(repo, type);
+      } catch (e) {
+        Logger.log("Failed to add repo $repoUrl: $e");
+        rethrow;
       }
-
-      final repos = loadRepos(type);
-
-      if (repos.any((r) => r.url == repoUrl)) {
-        return;
-      }
-
-      final res = await _client.get(uri);
-      if (res.statusCode != 200) {
-        throw Exception("Failed to fetch repo");
-      }
-
-      final repo = Repo(name: repoNameFromUrl(repoUrl), url: repoUrl);
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
-
-      saveRepos(updatedRepos, type);
-      state(type).repos.value = updatedRepos;
-      await selectRepo(repo, type);
-    } catch (e) {
-      Logger.log("Failed to add repo $repoUrl: $e");
-      rethrow;
-    }
+    });
   }
 
   @override

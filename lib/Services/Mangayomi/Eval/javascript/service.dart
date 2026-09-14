@@ -284,4 +284,19 @@ var extention = new DefaultExtension();
   /// something, rather than the source going wrong.
   bool _isNotImplemented(JsEvalResult result) =>
       isNotImplementedError(result.stringResult);
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    // getJavascriptRuntime() allocates a brand-new native QuickJS engine
+    // (FFI JSRuntime/JSContext + a ReceivePort) per instance rather than
+    // sharing JsEngineEnv's singleton, and nothing finalizes it
+    // automatically - every call site constructs a fresh JsExtensionService
+    // (see getExtensionService), so skipping this leaks one native engine
+    // per source-method call.
+    if (_disposed || !_isInitialized) return;
+    _disposed = true;
+    runtime.dispose();
+  }
 }

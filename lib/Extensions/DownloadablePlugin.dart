@@ -164,6 +164,9 @@ abstract class DownloadablePlugin {
       installed.value = true;
     } catch (e) {
       Logger.log("$name download failed: $e");
+      // Otherwise progress is left stuck at whatever partial fraction the
+      // failed attempt reached until the next successful download.
+      progress.value = 0;
     } finally {
       downloading.value = false;
     }
@@ -196,7 +199,7 @@ abstract class DownloadablePlugin {
   }
 
   Future<void> update() async {
-    if (!await isInstalled()) return;
+    if (!await isInstalled() || downloading.value) return;
 
     final remote = await fetchRemote();
     if (remote == null) return;
@@ -208,7 +211,22 @@ abstract class DownloadablePlugin {
 
     Logger.log("$name updating → v$remoteVersion", show: true);
 
-    await _download(remote["downloadUrl"], remoteVersion);
+    // download() reports progress via `downloading`/`progress`; update() ran
+    // the exact same underlying transfer silently, so a UI observing those
+    // two Rx values (e.g. a progress bar) never lit up for a background
+    // update even though bytes were moving.
+    downloading.value = true;
+    progress.value = 0;
+
+    try {
+      await _download(remote["downloadUrl"], remoteVersion);
+    } catch (e) {
+      Logger.log("$name update failed: $e");
+      progress.value = 0;
+      rethrow;
+    } finally {
+      downloading.value = false;
+    }
   }
 
   Future<void> autoUpdate() async {
@@ -293,8 +311,19 @@ abstract class DownloadablePlugin {
           throw Exception("Incomplete download");
         }
 
-        await temp.copy(file.path);
-        await temp.delete();
+        try {
+          await temp.rename(file.path);
+        } on FileSystemException {
+          // Windows won't rename onto an existing file, and rename() can
+          // fail across filesystems - fall back to copy+delete. A crash
+          // between these two calls at least leaves the correct bytes at
+          // file.path (copy completed) rather than truncating it, which
+          // await temp.copy(...); await temp.delete(); on its own already
+          // achieves; the rename-first path just avoids the extra full
+          // copy in the common case.
+          await temp.copy(file.path);
+          await temp.delete();
+        }
 
         setVal(_versionKey, version);
         progress.value = 1.0;

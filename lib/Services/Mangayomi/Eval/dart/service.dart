@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:d4rt/d4rt.dart';
 
 import '../../Models/Source.dart';
@@ -102,20 +104,44 @@ class DartExtensionService implements ExtensionService {
   Future<List<PageUrl>> getPageList(String url) async {
     final interpreter = _executeLib();
     final result = await interpreter.invoke('getPageList', [url]);
-    return (result as List)
-        .map(
-          (e) => e is String
-              ? PageUrl(e.toString().trim())
-              : PageUrl.fromJson((e as Map).toMapStringDynamic!),
-        )
-        .toList();
+
+    // Matches the JS eval path (Eval/javascript/service.dart) - a null
+    // entry here used to hit `e as Map` and throw TypeError, taking the
+    // whole page list down; dedup by url the same way too.
+    final pages = LinkedHashSet<PageUrl>(
+      equals: (a, b) => a.url == b.url,
+      hashCode: (p) => p.url.hashCode,
+    );
+
+    for (final e in result as List) {
+      if (e == null) continue;
+      final page = e is String
+          ? PageUrl(e.toString().trim())
+          : PageUrl.fromJson((e as Map).toMapStringDynamic!);
+      pages.add(page);
+    }
+
+    return pages.toList();
   }
 
   @override
   Future<List<Video>> getVideoList(String url) async {
     final interpreter = _executeLib();
     final result = await interpreter.invoke('getVideoList', [url]);
-    return (result as List).cast<Video>();
+
+    // Matches the JS eval path - a null entry used to hit .cast<Video>()
+    // and throw, taking the whole video list down; dedup by
+    // url+originalUrl the same way too.
+    final videos = LinkedHashSet<Video>(
+      equals: (a, b) => a.url == b.url && a.originalUrl == b.originalUrl,
+      hashCode: (v) => Object.hash(v.url, v.originalUrl),
+    );
+
+    for (final e in result as List) {
+      if (e is Video) videos.add(e);
+    }
+
+    return videos.toList();
   }
 
   @override
@@ -182,5 +208,12 @@ class DartExtensionService implements ExtensionService {
     } catch (_) {
       return [];
     }
+  }
+
+  @override
+  void dispose() {
+    // _executeLib() builds a fresh, pure-Dart D4rt() interpreter per call
+    // and never retains it on this instance, so there is no native/runtime
+    // handle here to release - unlike JsExtensionService's QuickJS engine.
   }
 }

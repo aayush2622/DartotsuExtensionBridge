@@ -2,15 +2,17 @@ import '../Eval/dart/model/source_preference.dart';
 import '../Eval/dart/service.dart';
 import '../Eval/javascript/service.dart';
 import '../Models/Source.dart';
+import 'interface.dart';
 
 List<SourcePreference> getSourcePreference({required MSource source}) {
-  List<SourcePreference> sourcePreference = [];
+  final ExtensionService service =
+      source.sourceCodeLanguage == SourceCodeLanguage.dart
+      ? DartExtensionService(source)
+      : JsExtensionService(source);
 
-  if (source.sourceCodeLanguage == SourceCodeLanguage.dart) {
-    sourcePreference = DartExtensionService(source).getSourcePreferences();
-  } else {
-    sourcePreference = JsExtensionService(source).getSourcePreferences();
+  try {
+    return service.getSourcePreferences();
+  } finally {
+    service.dispose();
   }
-
-  return sourcePreference;
 }
