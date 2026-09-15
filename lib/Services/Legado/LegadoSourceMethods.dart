@@ -29,10 +29,10 @@ class LegadoSourceMethods extends SourceMethods {
     final headers = <String, String>{
       'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-              '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       'Accept':
           'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,'
-              'image/webp,*/*;q=0.8',
+          'image/webp,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
     };
     final raw = source.header?.trim();
@@ -100,10 +100,11 @@ class LegadoSourceMethods extends SourceMethods {
       rule['coverUrl']?.toString(),
       baseUrl: base,
     );
-    final author =
-        LegadoRuleEngine.extractString(el, rule['author']?.toString());
-    final intro =
-        LegadoRuleEngine.extractString(el, rule['intro']?.toString());
+    final author = LegadoRuleEngine.extractString(
+      el,
+      rule['author']?.toString(),
+    );
+    final intro = LegadoRuleEngine.extractString(el, rule['intro']?.toString());
 
     return DMedia(
       title: title,
@@ -114,8 +115,12 @@ class LegadoSourceMethods extends SourceMethods {
     );
   }
 
-  Future<Pages> _list(String urlTemplate, Map<String, dynamic>? rule, int page,
-      {String query = ''}) async {
+  Future<Pages> _list(
+    String urlTemplate,
+    Map<String, dynamic>? rule,
+    int page, {
+    String query = '',
+  }) async {
     if (urlTemplate.trim().isEmpty || rule == null) {
       return Pages(list: [], hasNextPage: false);
     }
@@ -126,8 +131,10 @@ class LegadoSourceMethods extends SourceMethods {
       page: page,
     );
     final doc = LegadoRuleEngine.parseHtml(await _fetch(url));
-    final elements =
-        LegadoRuleEngine.selectElements(doc, rule['bookList']?.toString());
+    final elements = LegadoRuleEngine.selectElements(
+      doc,
+      rule['bookList']?.toString(),
+    );
 
     final results = <DMedia>[];
     for (final el in elements) {
@@ -196,11 +203,7 @@ class LegadoSourceMethods extends SourceMethods {
         target = target.substring(target.indexOf('::') + 2).trim();
       }
 
-      return await _list(
-        target,
-        source.ruleExplore ?? source.ruleSearch,
-        page,
-      );
+      return await _list(target, source.ruleExplore ?? source.ruleSearch, page);
     } catch (e, st) {
       Logger.log('[Legado] explore error: $e\n$st');
       return Pages(list: [], hasNextPage: false);
@@ -218,27 +221,35 @@ class LegadoSourceMethods extends SourceMethods {
       final doc = LegadoRuleEngine.parseHtml(await _fetch(fullBookUrl));
 
       final ruleBook = source.ruleBookInfo ?? const {};
-      final title =
-          LegadoRuleEngine.extractString(doc, ruleBook['name']?.toString());
+      final title = LegadoRuleEngine.extractString(
+        doc,
+        ruleBook['name']?.toString(),
+      );
       final cover = LegadoRuleEngine.extractString(
         doc,
         ruleBook['coverUrl']?.toString(),
         baseUrl: base,
       );
-      final author =
-          LegadoRuleEngine.extractString(doc, ruleBook['author']?.toString());
-      final intro =
-          LegadoRuleEngine.extractString(doc, ruleBook['intro']?.toString());
-      final kind =
-          LegadoRuleEngine.extractString(doc, ruleBook['kind']?.toString());
+      final author = LegadoRuleEngine.extractString(
+        doc,
+        ruleBook['author']?.toString(),
+      );
+      final intro = LegadoRuleEngine.extractString(
+        doc,
+        ruleBook['intro']?.toString(),
+      );
+      final kind = LegadoRuleEngine.extractString(
+        doc,
+        ruleBook['kind']?.toString(),
+      );
 
       final genres = kind.isEmpty
           ? null
           : kind
-              .split(RegExp(r'[,/;\n\s]+'))
-              .map((s) => s.trim())
-              .where((s) => s.isNotEmpty)
-              .toList();
+                .split(RegExp(r'[,/;\n\s]+'))
+                .map((s) => s.trim())
+                .where((s) => s.isNotEmpty)
+                .toList();
 
       // The chapter list may live on a separate tocUrl page; that url can
       // itself be a `{{@@selector}}` template resolved against the book doc.
@@ -311,8 +322,10 @@ class LegadoSourceMethods extends SourceMethods {
       if (chapterUrl.isEmpty) return null;
       if (!chapterUrl.startsWith('http://') &&
           !chapterUrl.startsWith('https://')) {
-        chapterUrl =
-            LegadoRuleEngine.resolveUrl(source.baseUrl ?? '', chapterUrl);
+        chapterUrl = LegadoRuleEngine.resolveUrl(
+          source.baseUrl ?? '',
+          chapterUrl,
+        );
       }
 
       final ruleContent = source.ruleContent ?? const {};
@@ -343,7 +356,7 @@ class LegadoSourceMethods extends SourceMethods {
           if (rep.isEmpty) continue;
           try {
             content = content.replaceAll(
-              RegExp(rep[0], multiLine: true),
+              LegadoRuleEngine.cachedRegex(rep[0]),
               rep.length > 1 ? rep[1] : '',
             );
           } catch (_) {}
@@ -369,5 +382,6 @@ class LegadoSourceMethods extends SourceMethods {
   Future<List<SourcePreference>> getPreference() async => const [];
 
   @override
-  Future<bool> setPreference(SourcePreference pref, dynamic value) async => true;
+  Future<bool> setPreference(SourcePreference pref, dynamic value) async =>
+      true;
 }

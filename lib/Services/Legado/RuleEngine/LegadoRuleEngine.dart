@@ -18,6 +18,24 @@ import 'package:html/parser.dart' as html_parser;
 ///
 /// Ported from RyanYuuki/AnymeXExtensionRuntimeBridge.
 class LegadoRuleEngine {
+  static final RegExp _orSplitRegex = RegExp(r'\s*\|\|\s*');
+  static final RegExp _containsOwnRegex = RegExp(r':containsOwn\(([^)]+)\)');
+  static final RegExp _containsRegex = RegExp(r':contains\(([^)]+)\)');
+  static final RegExp _quoteStripRegex = RegExp("^['\"]|['\"]\$");
+  static final RegExp _conditionalPageRegex = RegExp(
+    r'<([^>]*?\{\{page\}\}[^>]*?)>',
+  );
+
+  static final Map<String, RegExp> _replacementRegexCache = {};
+
+  static RegExp cachedRegex(String pattern) => _cachedReplacementRegex(pattern);
+
+  static RegExp _cachedReplacementRegex(String pattern) =>
+      _replacementRegexCache.putIfAbsent(
+        pattern,
+        () => RegExp(pattern, multiLine: true),
+      );
+
   static String buildUrl({
     required String urlTemplate,
     required String baseUrl,
@@ -33,11 +51,13 @@ class LegadoRuleEngine {
       url = url.substring(0, commaIndex);
     }
 
-    final conditionalRegex = RegExp(r'<([^>]*?\{\{page\}\}[^>]*?)>');
     if (page <= 1) {
-      url = url.replaceAll(conditionalRegex, '');
+      url = url.replaceAll(_conditionalPageRegex, '');
     } else {
-      url = url.replaceAllMapped(conditionalRegex, (m) => m.group(1) ?? '');
+      url = url.replaceAllMapped(
+        _conditionalPageRegex,
+        (m) => m.group(1) ?? '',
+      );
     }
 
     url = url
@@ -75,7 +95,7 @@ class LegadoRuleEngine {
 
   static List<Element> selectElements(dynamic root, String? rule) {
     if (root == null || rule == null || rule.trim().isEmpty) return [];
-    for (final singleRule in rule.split(RegExp(r'\s*\|\|\s*'))) {
+    for (final singleRule in rule.split(_orSplitRegex)) {
       final elements = _selectElementsSingle(root, singleRule.trim());
       if (elements.isNotEmpty) return elements;
     }
@@ -97,10 +117,8 @@ class LegadoRuleEngine {
     }
 
     List<Element> matched = [];
-    final containsOwnRegex = RegExp(r':containsOwn\(([^)]+)\)');
-    final containsRegex = RegExp(r':contains\(([^)]+)\)');
 
-    if (containsOwnRegex.hasMatch(css) || containsRegex.hasMatch(css)) {
+    if (_containsOwnRegex.hasMatch(css) || _containsRegex.hasMatch(css)) {
       matched = _selectWithCustomPseudo(root, css);
     } else {
       try {
@@ -114,7 +132,9 @@ class LegadoRuleEngine {
       }
     }
 
-    if (indexFilter != null && matched.isNotEmpty && indexFilter.startsWith('!')) {
+    if (indexFilter != null &&
+        matched.isNotEmpty &&
+        indexFilter.startsWith('!')) {
       final idx = int.tryParse(indexFilter.substring(1));
       if (idx != null && idx >= 0 && idx < matched.length) {
         matched.removeAt(idx);
@@ -124,17 +144,24 @@ class LegadoRuleEngine {
     return matched;
   }
 
-  static String extractString(dynamic root, String? rule, {String baseUrl = ''}) {
+  static String extractString(
+    dynamic root,
+    String? rule, {
+    String baseUrl = '',
+  }) {
     if (root == null || rule == null || rule.trim().isEmpty) return '';
-    for (final alt in rule.split(RegExp(r'\s*\|\|\s*'))) {
+    for (final alt in rule.split(_orSplitRegex)) {
       final result = _extractStringSingle(root, alt.trim(), baseUrl: baseUrl);
       if (result.isNotEmpty) return result;
     }
     return '';
   }
 
-  static String _extractStringSingle(dynamic root, String rule,
-      {String baseUrl = ''}) {
+  static String _extractStringSingle(
+    dynamic root,
+    String rule, {
+    String baseUrl = '',
+  }) {
     if (rule.isEmpty) return '';
 
     String selectorPart = rule;
@@ -178,7 +205,8 @@ class LegadoRuleEngine {
         for (final el in targets) {
           String? val;
           if (attr == 'href' || attr == 'src') {
-            val = el.attributes[attr] ??
+            val =
+                el.attributes[attr] ??
                 el.attributes['data-$attr'] ??
                 el.attributes['data-original'] ??
                 el.attributes['data-lazy-src'];
@@ -211,7 +239,10 @@ class LegadoRuleEngine {
       final pattern = rep[0];
       final replacement = rep.length > 1 ? rep[1] : '';
       try {
-        result = result.replaceAll(RegExp(pattern, multiLine: true), replacement);
+        result = result.replaceAll(
+          _cachedReplacementRegex(pattern),
+          replacement,
+        );
       } catch (_) {}
     }
 
@@ -234,15 +265,18 @@ class LegadoRuleEngine {
     String searchText = '';
     bool own = false;
 
-    final ownMatch = RegExp(r':containsOwn\(([^)]+)\)').firstMatch(css);
+    final ownMatch = _containsOwnRegex.firstMatch(css);
     if (ownMatch != null) {
       own = true;
-      searchText = ownMatch.group(1)!.trim().replaceAll(RegExp("^['\"]|['\"]\$"), '');
+      searchText = ownMatch.group(1)!.trim().replaceAll(_quoteStripRegex, '');
       baseSelector = css.replaceFirst(ownMatch.group(0)!, '').trim();
     } else {
-      final containsMatch = RegExp(r':contains\(([^)]+)\)').firstMatch(css);
+      final containsMatch = _containsRegex.firstMatch(css);
       if (containsMatch != null) {
-        searchText = containsMatch.group(1)!.trim().replaceAll(RegExp("^['\"]|['\"]\$"), '');
+        searchText = containsMatch
+            .group(1)!
+            .trim()
+            .replaceAll(_quoteStripRegex, '');
         baseSelector = css.replaceFirst(containsMatch.group(0)!, '').trim();
       }
     }
@@ -278,7 +312,9 @@ class LegadoRuleEngine {
         if (siblingSelector != null) {
           final parent = el.parent;
           if (parent != null) {
-            filtered.addAll(parent.querySelectorAll(siblingSelector.substring(2)));
+            filtered.addAll(
+              parent.querySelectorAll(siblingSelector.substring(2)),
+            );
           }
         } else {
           filtered.add(el);
