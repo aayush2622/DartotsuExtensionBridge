@@ -251,16 +251,6 @@ class KotatsuDesktopExtensions extends Extension {
     );
   }
 
-  // fetchInstalledMangaExtensions()/fetchMangaExtensions() are called back to
-  // back from every install/uninstall/update/addRepo/removeRepo path, and
-  // each independently called _loadAll() - which round-trips through the JNI
-  // bridge's `getInstalledMangaExtensions`, which has the JVM side
-  // reflectively enumerate every parser class in the shared jar. That's
-  // identical, deterministic work run twice in a row every time. Caching the
-  // result (invalidated only when a repo is added/removed, the only thing
-  // that can change the jar's source list) turns the second call into a
-  // plain field read; a failed load is never cached so the next call still
-  // retries.
   List<KotatsuDesktopSource>? _cachedSources;
   Future<List<KotatsuDesktopSource>>? _loadingSources;
 

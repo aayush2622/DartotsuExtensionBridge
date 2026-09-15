@@ -7,8 +7,6 @@ import 'package:pseudom/pseudom.dart' as pseudom;
 /// custom pseudo-class handlers, so the LnReader backend carries no dependency
 /// on the Mangayomi tree.
 
-// Fixed pattern, evaluated once per nth-child/nth-of-type test per element -
-// compiled once here rather than on every parseNth() call.
 final _nthPattern = RegExp(r'^(\d*)n([+-]?\d+)?$');
 
 void _initPseudoSelector() {
@@ -122,10 +120,6 @@ void _initPseudoSelector() {
     return ownText.toLowerCase().contains(text.toLowerCase());
   }
 
-  // `:matches()`/`:matchesWholeText()`/`:matchesWholeOwnText()` run once per
-  // candidate element during a single select() call, but `args` is the same
-  // fixed pattern from the selector string every time - cache the compiled
-  // regex instead of recompiling it per element.
   final matchesCache = <String, RegExp>{};
   final wholeTextCache = <String, RegExp>{};
 

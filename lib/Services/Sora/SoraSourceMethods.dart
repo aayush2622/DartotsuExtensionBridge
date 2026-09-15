@@ -404,11 +404,6 @@ class SoraSourceMethods extends SourceMethods {
       return [];
     }
 
-    // Resolves one server entry to its final Video(s) - an m3u8 entry needs
-    // its own network fetch to expand quality variants. Returns the list
-    // rather than mutating `videos` directly so multiple independent server
-    // entries can be resolved with Future.wait instead of one at a time;
-    // the final sort below makes completion order irrelevant.
     Future<List<Video>> resolveVideo(
       String title,
       String url, {

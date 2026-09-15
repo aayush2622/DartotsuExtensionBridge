@@ -39,10 +39,6 @@ class AddonManager extends GetxService {
   }
 
   Future<void> checkForUpdates() async {
-    // Every addon's update check is independent - running them concurrently
-    // instead of one at a time keeps the sweep from taking N times as long
-    // as addons are added. Each keeps its own try/catch so one broken addon
-    // can't stop (or fail) the others.
     await Future.wait(
       addons.map((addon) async {
         try {
