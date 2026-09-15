@@ -63,7 +63,11 @@ class KotatsuExtensions extends Extension {
     if (network != null) {
       await platform.invokeMethod(
         'initClient',
-        jsonEncode({'dns': network.dns, 'proxy': network.proxy}),
+        jsonEncode({
+          'dns': network.dns,
+          'proxy': network.proxy,
+          'userAgent': network.userAgent,
+        }),
       );
     }
     return true;

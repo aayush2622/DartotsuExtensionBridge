@@ -66,6 +66,7 @@ class CloudStreamExtensions extends Extension {
         jsonEncode({
           'dns': _context.network?.dns,
           'proxy': _context.network?.proxy,
+          'userAgent': _context.network?.userAgent,
         }),
       );
     }
