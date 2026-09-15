@@ -7,13 +7,16 @@ import 'package:pseudom/pseudom.dart' as pseudom;
 /// custom pseudo-class handlers, so the LnReader backend carries no dependency
 /// on the Mangayomi tree.
 
+// Fixed pattern, evaluated once per nth-child/nth-of-type test per element -
+// compiled once here rather than on every parseNth() call.
+final _nthPattern = RegExp(r'^(\d*)n([+-]?\d+)?$');
+
 void _initPseudoSelector() {
   (int, int) parseNth(String arg) {
     arg = arg.toLowerCase().replaceAll(' ', '');
     if (arg == 'odd') return (2, 1);
     if (arg == 'even') return (2, 0);
-    final reg = RegExp(r'^(\d*)n([+-]?\d+)?$');
-    final match = reg.firstMatch(arg);
+    final match = _nthPattern.firstMatch(arg);
     if (match != null) {
       final aStr = match.group(1);
       final a = aStr == null || aStr.isEmpty ? 1 : int.parse(aStr);
@@ -119,10 +122,20 @@ void _initPseudoSelector() {
     return ownText.toLowerCase().contains(text.toLowerCase());
   }
 
+  // `:matches()`/`:matchesWholeText()`/`:matchesWholeOwnText()` run once per
+  // candidate element during a single select() call, but `args` is the same
+  // fixed pattern from the selector string every time - cache the compiled
+  // regex instead of recompiling it per element.
+  final matchesCache = <String, RegExp>{};
+  final wholeTextCache = <String, RegExp>{};
+
   bool matches(Element element, String? args) {
     if (args == null) return false;
     try {
-      final reg = RegExp(args, caseSensitive: false);
+      final reg = matchesCache.putIfAbsent(
+        args,
+        () => RegExp(args, caseSensitive: false),
+      );
       return reg.hasMatch(element.text);
     } catch (e) {
       return false;
@@ -151,7 +164,7 @@ void _initPseudoSelector() {
   bool matchesWholeText(Element element, String? args) {
     if (args == null) return false;
     try {
-      final reg = RegExp(args);
+      final reg = wholeTextCache.putIfAbsent(args, () => RegExp(args));
       return reg.hasMatch(getWholeText(element));
     } catch (e) {
       return false;
@@ -161,7 +174,7 @@ void _initPseudoSelector() {
   bool matchesWholeOwnText(Element element, String? args) {
     if (args == null) return false;
     try {
-      final reg = RegExp(args);
+      final reg = wholeTextCache.putIfAbsent(args, () => RegExp(args));
       return reg.hasMatch(getWholeOwnText(element));
     } catch (e) {
       return false;
