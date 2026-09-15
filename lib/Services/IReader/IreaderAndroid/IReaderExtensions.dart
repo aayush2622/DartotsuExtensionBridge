@@ -75,6 +75,7 @@ class IReaderExtensions extends Extension with TachiyomiRepoBackend {
         jsonEncode({
           'dns': context.network?.dns,
           'proxy': context.network?.proxy,
+          'userAgent': context.network?.userAgent,
         }),
       );
     }
