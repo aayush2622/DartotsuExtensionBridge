@@ -62,8 +62,7 @@ class LegadoSource extends Source {
   }) {
     final rawName = (json['bookSourceName'] ?? json['name'] ?? '').toString();
     final rawUrl = (json['bookSourceUrl'] ?? json['baseUrl'] ?? '').toString();
-    final rawGroup =
-        (json['bookSourceGroup'] ?? json['lang'] ?? '').toString();
+    final rawGroup = (json['bookSourceGroup'] ?? json['lang'] ?? '').toString();
     final sourceId = json['id']?.toString() ?? generateId(rawUrl, rawName);
 
     Map<String, dynamic>? parseRuleMap(dynamic value) {
@@ -89,12 +88,14 @@ class LegadoSource extends Source {
       }
     }
 
-    final hasExplore = json['exploreUrl'] != null &&
+    final hasExplore =
+        json['exploreUrl'] != null &&
         json['exploreUrl'].toString().trim().isNotEmpty;
 
     String? resolvedIcon;
-    final rawIcon =
-        (json['iconUrl'] ?? json['bookSourceIcon'])?.toString().trim();
+    final rawIcon = (json['iconUrl'] ?? json['bookSourceIcon'])
+        ?.toString()
+        .trim();
     if (rawIcon != null && rawIcon.isNotEmpty) {
       if (rawIcon.startsWith('http://') || rawIcon.startsWith('https://')) {
         resolvedIcon = rawIcon;
@@ -109,8 +110,7 @@ class LegadoSource extends Source {
     if ((resolvedIcon == null || resolvedIcon.isEmpty) && rawUrl.isNotEmpty) {
       final host = Uri.tryParse(rawUrl)?.host;
       if (host != null && host.isNotEmpty) {
-        resolvedIcon =
-            'https://www.google.com/s2/favicons?domain=$host&sz=128';
+        resolvedIcon = 'https://www.google.com/s2/favicons?domain=$host&sz=128';
       }
     }
 
@@ -122,7 +122,8 @@ class LegadoSource extends Source {
       isNsfw: false,
       iconUrl: resolvedIcon,
       version: json['version']?.toString() ?? '1.0.0',
-      versionLast: json['versionLast']?.toString() ??
+      versionLast:
+          json['versionLast']?.toString() ??
           json['lastUpdateTime']?.toString() ??
           '1.0.0',
       itemType: ItemType.novel,
@@ -190,20 +191,20 @@ class LegadoSource extends Source {
 
   @override
   Map<String, dynamic> toJson() => {
-        ...super.toJson(),
-        'bookSourceName': bookSourceName,
-        'bookSourceUrl': bookSourceUrl,
-        'bookSourceGroup': bookSourceGroup,
-        'bookSourceType': bookSourceType,
-        'bookSourceComment': bookSourceComment,
-        'searchUrl': searchUrl,
-        'exploreUrl': exploreUrl,
-        'header': header,
-        'ruleSearch': ruleSearch,
-        'ruleExplore': ruleExplore,
-        'ruleBookInfo': ruleBookInfo,
-        'ruleToc': ruleToc,
-        'ruleContent': ruleContent,
-        'weight': weight,
-      };
+    ...super.toJson(),
+    'bookSourceName': bookSourceName,
+    'bookSourceUrl': bookSourceUrl,
+    'bookSourceGroup': bookSourceGroup,
+    'bookSourceType': bookSourceType,
+    'bookSourceComment': bookSourceComment,
+    'searchUrl': searchUrl,
+    'exploreUrl': exploreUrl,
+    'header': header,
+    'ruleSearch': ruleSearch,
+    'ruleExplore': ruleExplore,
+    'ruleBookInfo': ruleBookInfo,
+    'ruleToc': ruleToc,
+    'ruleContent': ruleContent,
+    'weight': weight,
+  };
 }

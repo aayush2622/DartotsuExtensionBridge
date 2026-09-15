@@ -15,7 +15,11 @@ void main() {
         'bookSourceType': 0,
         'searchUrl': '/search?q={{key}}<,&page={{page}}>',
         'exploreUrl': 'Hot::/rank/hot\nLatest::/rank/new',
-        'ruleSearch': {'bookList': '.book', 'name': 'h3@text', 'bookUrl': 'a@href'},
+        'ruleSearch': {
+          'bookList': '.book',
+          'name': 'h3@text',
+          'bookUrl': 'a@href',
+        },
         'ruleContent': {'content': '#content@text'},
       }, repoUrl: 'https://repo/x.json');
 
@@ -33,7 +37,8 @@ void main() {
     test('parses rule maps given as JSON strings', () {
       final s = LegadoSource.fromLegadoJson({
         'bookSourceUrl': 'https://x',
-        'ruleToc': '{"chapterList":"ul li","chapterName":"a@text","chapterUrl":"a@href"}',
+        'ruleToc':
+            '{"chapterList":"ul li","chapterName":"a@text","chapterUrl":"a@href"}',
       });
       expect(s.ruleToc, isA<Map<String, dynamic>>());
       expect(s.ruleToc!['chapterList'], 'ul li');
@@ -89,10 +94,16 @@ void main() {
 
     test('|| falls through to the next selector, ## applies a regex strip', () {
       final doc = LegadoRuleEngine.parseHtml(html);
-      final missing = LegadoRuleEngine.extractString(doc, '.nope@text || .list li:first-child a@text');
+      final missing = LegadoRuleEngine.extractString(
+        doc,
+        '.nope@text || .list li:first-child a@text',
+      );
       expect(missing, 'First Book');
 
-      final content = LegadoRuleEngine.extractString(doc, '#content p@text##广告.*');
+      final content = LegadoRuleEngine.extractString(
+        doc,
+        '#content p@text##广告.*',
+      );
       expect(content, contains('line one'));
       expect(content, isNot(contains('广告')));
     });
