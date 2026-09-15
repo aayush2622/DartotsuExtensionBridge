@@ -164,6 +164,7 @@ class KotatsuExtensions extends Extension {
         final updatedRepos = List<Repo>.from(repos)..add(repo);
         saveRepos(updatedRepos, type);
         state(type).repos.value = updatedRepos;
+        _invalidateSourcesCache();
 
         await fetchMangaExtensions();
         await fetchInstalledMangaExtensions();
@@ -191,6 +192,7 @@ class KotatsuExtensions extends Extension {
         final jar = _jarFile(dir, repoUrl);
         if (await jar.exists()) await jar.delete();
       }
+      _invalidateSourcesCache();
 
       // Re-derive installed/available from what's left on disk instead of
       // blanking both lists and clearing every active-source toggle - with
@@ -246,7 +248,28 @@ class KotatsuExtensions extends Extension {
     );
   }
 
-  Future<List<KotatsuSource>> _loadAll() async {
+  // fetchInstalledMangaExtensions()/fetchMangaExtensions() are called back to
+  // back from every install/uninstall/update/addRepo/removeRepo path, and
+  // each independently called _loadAll() - which round-trips through
+  // `getInstalledMangaExtensions`, a platform-channel call that has the
+  // native side reflectively enumerate every parser class in the shared jar.
+  // That's identical, deterministic work run twice in a row every time.
+  // Caching the result (invalidated only when a repo is added/removed, the
+  // only thing that can change the jar's source list) turns the second call
+  // into a plain field read; a failed load is never cached so the next call
+  // still retries.
+  List<KotatsuSource>? _cachedSources;
+  Future<List<KotatsuSource>>? _loadingSources;
+
+  Future<List<KotatsuSource>> _loadAll() {
+    final cached = _cachedSources;
+    if (cached != null) return Future.value(cached);
+    return _loadingSources ??= _loadAllUncached();
+  }
+
+  void _invalidateSourcesCache() => _cachedSources = null;
+
+  Future<List<KotatsuSource>> _loadAllUncached() async {
     try {
       final dir = await _sourcesDir;
       if (dir == null || !await dir.exists()) return const [];
@@ -261,12 +284,17 @@ class KotatsuExtensions extends Extension {
       if (jsonString == null || jsonString.isEmpty) return const [];
 
       final List<dynamic> result = jsonDecode(jsonString);
-      return result
+      final sources = result
           .map((e) => KotatsuSource.fromJson(Map<String, dynamic>.from(e)))
           .toList(growable: false);
+
+      _cachedSources = sources;
+      return sources;
     } catch (e) {
       Logger.log('Failed to load Kotatsu parsers: $e');
       return const [];
+    } finally {
+      _loadingSources = null;
     }
   }
 
