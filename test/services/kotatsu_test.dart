@@ -22,27 +22,30 @@ void main() {
       expect(s.pkgName, 'MANGADEX');
     });
 
-    test('toJson round-trips jarName/pkgName alongside the base Source fields', () {
-      final original = KotatsuSource(
-        id: 'MANGADEX',
-        name: 'MangaDex',
-        baseUrl: 'https://mangadex.org',
-        lang: 'en',
-        jarName: 'plugin.jar',
-        pkgName: 'MANGADEX',
-        repo: 'https://example.com/parsers.jar',
-      );
+    test(
+      'toJson round-trips jarName/pkgName alongside the base Source fields',
+      () {
+        final original = KotatsuSource(
+          id: 'MANGADEX',
+          name: 'MangaDex',
+          baseUrl: 'https://mangadex.org',
+          lang: 'en',
+          jarName: 'plugin.jar',
+          pkgName: 'MANGADEX',
+          repo: 'https://example.com/parsers.jar',
+        );
 
-      final decoded = KotatsuSource.fromJson(original.toJson());
+        final decoded = KotatsuSource.fromJson(original.toJson());
 
-      expect(decoded.id, original.id);
-      expect(decoded.name, original.name);
-      expect(decoded.baseUrl, original.baseUrl);
-      expect(decoded.jarName, original.jarName);
-      expect(decoded.pkgName, original.pkgName);
-      expect(decoded.repo, original.repo);
-      expect(decoded.itemType, ItemType.manga);
-    });
+        expect(decoded.id, original.id);
+        expect(decoded.name, original.name);
+        expect(decoded.baseUrl, original.baseUrl);
+        expect(decoded.jarName, original.jarName);
+        expect(decoded.pkgName, original.pkgName);
+        expect(decoded.repo, original.repo);
+        expect(decoded.itemType, ItemType.manga);
+      },
+    );
 
     test('fromJson tolerates a missing jarName/pkgName', () {
       final s = KotatsuSource.fromJson({'id': 'X', 'name': 'X'});
@@ -66,22 +69,25 @@ void main() {
       expect(s.pkgName, 'MANGADEX');
     });
 
-    test('toJson round-trips jarName/pkgName alongside the base Source fields', () {
-      final original = KotatsuDesktopSource(
-        id: 'MANGADEX',
-        name: 'MangaDex',
-        jarName: 'plugin.jar',
-        pkgName: 'MANGADEX',
-        repo: 'https://example.com/parsers.jar',
-      );
+    test(
+      'toJson round-trips jarName/pkgName alongside the base Source fields',
+      () {
+        final original = KotatsuDesktopSource(
+          id: 'MANGADEX',
+          name: 'MangaDex',
+          jarName: 'plugin.jar',
+          pkgName: 'MANGADEX',
+          repo: 'https://example.com/parsers.jar',
+        );
 
-      final decoded = KotatsuDesktopSource.fromJson(original.toJson());
+        final decoded = KotatsuDesktopSource.fromJson(original.toJson());
 
-      expect(decoded.id, original.id);
-      expect(decoded.jarName, original.jarName);
-      expect(decoded.pkgName, original.pkgName);
-      expect(decoded.repo, original.repo);
-      expect(decoded.itemType, ItemType.manga);
-    });
+        expect(decoded.id, original.id);
+        expect(decoded.jarName, original.jarName);
+        expect(decoded.pkgName, original.pkgName);
+        expect(decoded.repo, original.repo);
+        expect(decoded.itemType, ItemType.manga);
+      },
+    );
   });
 }
