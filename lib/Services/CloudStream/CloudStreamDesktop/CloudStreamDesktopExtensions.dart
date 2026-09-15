@@ -192,6 +192,34 @@ class CloudStreamDesktopExtensions extends Extension {
     return sanitized;
   }
 
+  // ExtensionLoader.desktop.kt (runtimeManager) dex2jar-converts each
+  // downloaded .cs3/.jar into `<extensionsDir>/jar/<basename>.jar` and only
+  // reconverts it when the source file's mtime is newer than that cached
+  // copy's. Filesystem mtimes aren't reliably monotonic/fine-grained enough
+  // across a fast delete+redownload (same second, or a filesystem with
+  // coarse mtime resolution), so an update can silently keep serving the
+  // old cached jar - and with it the old, already-loaded plugin class -
+  // until something eventually pushes the mtime comparison over. Deleting
+  // the cached copy here removes the mtime bet entirely: the native loader
+  // always sees `!jarFile.exists()` and rebuilds from the freshly written
+  // source file.
+  Future<void> _deleteCachedJar(File sourceFile) async {
+    final cached = File(
+      path.join(
+        sourceFile.parent.path,
+        'jar',
+        "${path.basenameWithoutExtension(sourceFile.path)}.jar",
+      ),
+    );
+    if (await cached.exists()) {
+      try {
+        await cached.delete();
+      } catch (e) {
+        Logger.log("Failed to delete cached plugin jar: $e");
+      }
+    }
+  }
+
   final Map<String, Stream<double>> _installsInFlight = {};
 
   @override
@@ -274,6 +302,8 @@ class CloudStreamDesktopExtensions extends Extension {
       }
     }
 
+    await _deleteCachedJar(file);
+
     final avail = state(type).available;
 
     avail.value = avail.value.where((e) => e.id != s.id).toList();
@@ -323,6 +353,7 @@ class CloudStreamDesktopExtensions extends Extension {
     }
 
     if (pluginFile != null) {
+      await _deleteCachedJar(pluginFile);
       await pluginFile.delete();
       Logger.log("Deleted private extension: ${s.name}");
     } else {
