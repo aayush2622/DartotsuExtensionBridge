@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../../ExtensionBridge.dart';
 import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/DEpisode.dart';
@@ -324,9 +325,10 @@ class SoraSourceMethods extends SourceMethods {
     final client = MClient.init();
     final videos = <Video>[];
 
-    const defaultHeaders = {
+    final defaultHeaders = {
       "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36",
+          DartotsuExtensionBridge.context.network?.userAgent ??
+          defaultUserAgent,
     };
 
     Future<List<Video>> expandM3U8(
