@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
+import '../../NetworkClient.dart';
 import 'Exceptions.dart';
 import 'Models/TorrentInfo.dart';
 import 'Models/TorrServerSettings.dart';
@@ -12,12 +13,14 @@ class TorrServerRestClient {
   final Uri baseUrl;
   final http.Client _client;
 
-  TorrServerRestClient(this.baseUrl, {http.Client? client})
-    : _client = client ?? http.Client();
+  final bool _ownsClient;
 
-  /// Closes the underlying HTTP client.
+  TorrServerRestClient(this.baseUrl, {http.Client? client})
+    : _client = client ?? MClient.init(),
+      _ownsClient = client != null;
+
   void close() {
-    _client.close();
+    if (_ownsClient) _client.close();
   }
 
   /// Sends a health-check request to `/echo` to verify server responsiveness.
