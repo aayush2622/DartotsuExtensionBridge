@@ -82,6 +82,7 @@ class AniyomiDesktopExtensions extends Extension
         "data": jsonEncode({
           "dns": _context.network?.dns,
           "proxy": _context.network?.proxy,
+          "userAgent": _context.network?.userAgent,
         }),
       });
     }
