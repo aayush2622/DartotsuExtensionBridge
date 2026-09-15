@@ -23,6 +23,9 @@ class KvStore {
   static final Map<String, dynamic> _pendingWrites = {};
   static Future<void> _writeQueue = Future.value();
 
+  static final Map<String, dynamic> _cache = {};
+  static const Object _notFound = Object();
+
   static Future<void> set(String key, dynamic value) {
     // Each call captures its own `value` in the closure below rather than
     // re-reading _pendingWrites[key] when the queued task actually runs -
@@ -58,6 +61,8 @@ class KvStore {
           await _isar.kvEntrys.put(entry);
         });
 
+        _cache[key] = value;
+
         if (identical(_pendingWrites[key], value)) {
           _pendingWrites.remove(key);
         }
@@ -82,12 +87,25 @@ class KvStore {
       if (value is T) return value;
     }
 
+    if (_cache.containsKey(key)) {
+      final cached = _cache[key];
+      if (identical(cached, _notFound)) return null;
+      return _cast<T>(key, cached);
+    }
+
     final entry = _isar.kvEntrys.filter().keyEqualTo(key).findFirstSync();
-    if (entry == null) return null;
+    if (entry == null) {
+      _cache[key] = _notFound;
+      return null;
+    }
 
     final decoded = _decode(entry.value);
+    _cache[key] = decoded;
 
-    // <-- Add this
+    return _cast<T>(key, decoded);
+  }
+
+  static T? _cast<T>(String key, dynamic decoded) {
     if (decoded == null) return null;
 
     if (decoded is T) return decoded;
@@ -107,9 +125,14 @@ class KvStore {
   }
 
   static Future<void> remove(String key) async {
+    _cache.remove(key);
+    _pendingWrites.remove(key);
+
     await _isar.writeTxn(() async {
       await _isar.kvEntrys.filter().keyEqualTo(key).deleteAll();
     });
+
+    _cache[key] = _notFound;
   }
 
   static String _encode(dynamic value) => jsonEncode(_wrap(value));
