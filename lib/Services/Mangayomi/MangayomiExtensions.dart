@@ -111,6 +111,12 @@ class MangayomiExtensions extends Extension {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+    disposeAllExtensionServices();
+  }
+
+  @override
   Future<void> uninstallSource(Source source) async {
     final s = source as MSource;
 
@@ -119,6 +125,7 @@ class MangayomiExtensions extends Extension {
       final installed = _loadInstalled(type);
 
       installed.removeWhere((e) => e.id == s.id);
+      invalidateExtensionService(s.id);
 
       _saveInstalled(installed, type);
       state(type).installed.value = List.unmodifiable(installed);
