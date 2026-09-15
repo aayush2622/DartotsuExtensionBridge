@@ -9,6 +9,7 @@ rhino = "1.7.15"
 tmdb = "2.10.0"
 retrofit = "2.11.0"
 jackson = "2.13.1"
+ktor = "3.3.2"
 [libraries]
 injekt-core = { module = "uy.kohesive.injekt:injekt-core", version.ref = "injekt" }
 
@@ -33,6 +34,10 @@ tmdb-java = { module = "com.uwetrottmann.tmdb2:tmdb-java", version.ref = "tmdb" 
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-jackson = { module = "com.squareup.retrofit2:converter-jackson", version.ref = "retrofit" }
 
+# CloudStream's own network utils (and some plugins directly) reference
+# io.ktor.http.Url - without this on the classpath, loading such a plugin
+# throws NoClassDefFoundError.
+ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
 
 [bundles]
 common = [
@@ -47,4 +52,5 @@ common = [
     "tmdb-java",
     "retrofit",
     "retrofit-jackson",
+    "ktor-http",
 ]
