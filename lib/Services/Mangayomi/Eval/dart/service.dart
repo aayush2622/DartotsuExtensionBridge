@@ -19,7 +19,12 @@ class DartExtensionService implements ExtensionService {
 
   DartExtensionService(this.source);
 
+  D4rt? _interpreter;
+
   D4rt _executeLib() {
+    final existing = _interpreter;
+    if (existing != null) return existing;
+
     final interpreter = D4rt();
     RegistrerBridge.registerBridge(interpreter);
 
@@ -27,6 +32,7 @@ class DartExtensionService implements ExtensionService {
       source: source.sourceCode!.replaceAll('Client(source)', 'Client()'),
       args: source.toMSource(),
     );
+    _interpreter = interpreter;
     return interpreter;
   }
 
@@ -212,8 +218,6 @@ class DartExtensionService implements ExtensionService {
 
   @override
   void dispose() {
-    // _executeLib() builds a fresh, pure-Dart D4rt() interpreter per call
-    // and never retains it on this instance, so there is no native/runtime
-    // handle here to release - unlike JsExtensionService's QuickJS engine.
+    _interpreter = null;
   }
 }
