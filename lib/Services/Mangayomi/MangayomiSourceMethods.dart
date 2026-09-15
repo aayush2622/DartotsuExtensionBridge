@@ -29,7 +29,7 @@ class MangayomiSourceMethods implements SourceMethods {
     try {
       data = await service.getDetail(media.url!);
     } finally {
-      service.dispose();
+      releaseExtensionService(source, service);
     }
 
     DMedia createMediaData(Map<String, dynamic> args) {
@@ -77,7 +77,7 @@ class MangayomiSourceMethods implements SourceMethods {
     try {
       data = await service.getLatestUpdates(page);
     } finally {
-      service.dispose();
+      releaseExtensionService(source, service);
     }
 
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
@@ -90,7 +90,7 @@ class MangayomiSourceMethods implements SourceMethods {
     try {
       data = await service.getPopular(page);
     } finally {
-      service.dispose();
+      releaseExtensionService(source, service);
     }
 
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
@@ -103,7 +103,7 @@ class MangayomiSourceMethods implements SourceMethods {
     try {
       data = await service.search(query, page, filters);
     } finally {
-      service.dispose();
+      releaseExtensionService(source, service);
     }
 
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
@@ -116,7 +116,7 @@ class MangayomiSourceMethods implements SourceMethods {
     try {
       data = await service.getPageList(episode.url!);
     } finally {
-      service.dispose();
+      releaseExtensionService(source, service);
     }
 
     return data.map((e) => PageUrl(e.url, headers: e.headers)).toList();
@@ -129,7 +129,7 @@ class MangayomiSourceMethods implements SourceMethods {
     try {
       data = await service.getVideoList(episode.url!);
     } finally {
-      service.dispose();
+      releaseExtensionService(source, service);
     }
 
     return data.map((e) {
@@ -161,7 +161,7 @@ class MangayomiSourceMethods implements SourceMethods {
     } catch (e) {
       return null;
     } finally {
-      service.dispose();
+      releaseExtensionService(source, service);
     }
   }
 
