@@ -41,7 +41,9 @@ class JavaRuntimeManager {
   }
 
   static int? _parseJavaMajorVersion(String versionOutput) {
-    final match = RegExp(r'version "(\d+)(?:\.(\d+))?').firstMatch(versionOutput);
+    final match = RegExp(
+      r'version "(\d+)(?:\.(\d+))?',
+    ).firstMatch(versionOutput);
 
     if (match == null) return null;
 
@@ -193,57 +195,53 @@ class JavaRuntimeManager {
 
     final client = MClient.init();
 
-    try {
-      final request = http.Request('GET', Uri.parse(_jreUrl));
+    final request = http.Request('GET', Uri.parse(_jreUrl));
 
-      final response = await client.send(request);
+    final response = await client.send(request);
 
-      if (response.statusCode != 200) {
-        throw Exception('Download failed (${response.statusCode})');
-      }
+    if (response.statusCode != 200) {
+      throw Exception('Download failed (${response.statusCode})');
+    }
 
-      final sink = file.openWrite();
+    final sink = file.openWrite();
 
-      final total = response.contentLength ?? 0;
+    final total = response.contentLength ?? 0;
 
-      int downloaded = 0;
-      int lastLogged = DateTime.now().millisecondsSinceEpoch;
+    int downloaded = 0;
+    int lastLogged = DateTime.now().millisecondsSinceEpoch;
 
-      await for (final chunk in response.stream) {
-        downloaded += chunk.length;
-        sink.add(chunk);
+    await for (final chunk in response.stream) {
+      downloaded += chunk.length;
+      sink.add(chunk);
 
-        final now = DateTime.now().millisecondsSinceEpoch;
+      final now = DateTime.now().millisecondsSinceEpoch;
 
-        if (now - lastLogged >= 1000) {
-          lastLogged = now;
+      if (now - lastLogged >= 1000) {
+        lastLogged = now;
 
-          if (total > 0) {
-            final percent = (downloaded / total * 100).toStringAsFixed(1);
+        if (total > 0) {
+          final percent = (downloaded / total * 100).toStringAsFixed(1);
 
-            Logger.log(
-              'Downloading Java Runtime: '
-              '$percent% '
-              '(${_formatSize(downloaded)}/${_formatSize(total)})',
-              show: true,
-            );
-          } else {
-            Logger.log(
-              'Downloading Java Runtime: '
-              '${_formatSize(downloaded)}',
-              show: true,
-            );
-          }
+          Logger.log(
+            'Downloading Java Runtime: '
+            '$percent% '
+            '(${_formatSize(downloaded)}/${_formatSize(total)})',
+            show: true,
+          );
+        } else {
+          Logger.log(
+            'Downloading Java Runtime: '
+            '${_formatSize(downloaded)}',
+            show: true,
+          );
         }
       }
-
-      await sink.flush();
-      await sink.close();
-
-      return file;
-    } finally {
-      client.close();
     }
+
+    await sink.flush();
+    await sink.close();
+
+    return file;
   }
 
   static String _formatSize(int bytes) {
