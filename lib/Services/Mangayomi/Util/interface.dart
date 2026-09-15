@@ -37,7 +37,5 @@ abstract interface class ExtensionService {
 
   List<SourcePreference> getSourcePreferences();
 
-  /// Releases any native/runtime resources this service holds (e.g. a
-  /// QuickJS engine).
   void dispose();
 }
