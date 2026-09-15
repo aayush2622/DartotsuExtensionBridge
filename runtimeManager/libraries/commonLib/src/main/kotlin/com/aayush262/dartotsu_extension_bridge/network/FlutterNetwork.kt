@@ -8,8 +8,13 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.dnsoverhttps.DnsOverHttps
 import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Proxy
 import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
+
+const val DEFAULT_USER_AGENT =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
 object Network {
 
@@ -23,7 +28,8 @@ object Network {
 
 
             val dns = config["dns"] as? String ?: ""
-            val proxy = config["proxy"] as? String
+            val proxy = (config["proxy"] as? String)?.trim()
+            val userAgent = (config["userAgent"] as? String)?.trim()
 
             val dnsClient = OkHttpClient.Builder()
                 .connectTimeout(5, TimeUnit.SECONDS)
@@ -49,15 +55,34 @@ object Network {
                     )
                 }
             }
+
+            if (!proxy.isNullOrBlank()) {
+                try {
+                    val (host, portStr) = proxy.split(":", limit = 2)
+                    builder.proxy(
+                        Proxy(Proxy.Type.HTTP, InetSocketAddress(host, portStr.toInt()))
+                    )
+                    Logger.log("Using proxy: $proxy")
+                } catch (e: Exception) {
+                    Logger.log(
+                        "Failed to parse proxy \"$proxy\" (expected host:port), ignoring",
+                        e,
+                        LogLevel.WARNING
+                    )
+                }
+            }
+
             Logger.log("Flutter networking enabled")
             return builder
                 .addInterceptor { chain ->
-                    val request = chain.request().newBuilder()
-                        .header(
-                            "User-Agent",
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
-                        )
-                        .build()
+                    val original = chain.request()
+                    val request = if (original.header("User-Agent") == null) {
+                        original.newBuilder()
+                            .header("User-Agent", userAgent?.ifBlank { null } ?: DEFAULT_USER_AGENT)
+                            .build()
+                    } else {
+                        original
+                    }
 
                     chain.proceed(request)
                 }
