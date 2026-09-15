@@ -404,7 +404,12 @@ class SoraSourceMethods extends SourceMethods {
       return [];
     }
 
-    Future<void> addVideo(
+    // Resolves one server entry to its final Video(s) - an m3u8 entry needs
+    // its own network fetch to expand quality variants. Returns the list
+    // rather than mutating `videos` directly so multiple independent server
+    // entries can be resolved with Future.wait instead of one at a time;
+    // the final sort below makes completion order irrelevant.
+    Future<List<Video>> resolveVideo(
       String title,
       String url, {
       Map<String, String>? headers,
@@ -414,25 +419,32 @@ class SoraSourceMethods extends SourceMethods {
       final subs = subtitles ?? const <Track>[];
 
       if (url.contains(".m3u8")) {
-        videos.addAll(await expandM3U8(title, url, h, subs));
-      } else {
-        videos.add(Video(title, url, "auto", headers: h, subtitles: subs));
+        return expandM3U8(title, url, h, subs);
       }
+      return [Video(title, url, "auto", headers: h, subtitles: subs)];
     }
 
     if (data is String) {
-      await addVideo("Video", data);
+      videos.addAll(await resolveVideo("Video", data));
     } else if (data is Map) {
       final map = Map<String, dynamic>.from(data);
 
       if (map.containsKey("stream")) {
         final subs = parseSubs(map["subtitles"]);
 
-        await addVideo("Video", map["stream"].toString(), subtitles: subs);
+        videos.addAll(
+          await resolveVideo(
+            "Video",
+            map["stream"].toString(),
+            subtitles: subs,
+          ),
+        );
       } else if (data["streams"] is List) {
         final list = data["streams"] as List;
 
         if (list.isNotEmpty && list.first is Map) {
+          final pending = <Future<List<Video>>>[];
+
           for (final raw in list) {
             final stream = Map<String, dynamic>.from(raw as Map);
 
@@ -447,21 +459,33 @@ class SoraSourceMethods extends SourceMethods {
 
             final subs = parseSubs(stream["subtitles"]);
 
-            await addVideo(
-              stream["title"]?.toString() ?? "Server",
-              url.toString(),
-              headers: headers,
-              subtitles: subs,
+            pending.add(
+              resolveVideo(
+                stream["title"]?.toString() ?? "Server",
+                url.toString(),
+                headers: headers,
+                subtitles: subs,
+              ),
             );
           }
+
+          for (final result in await Future.wait(pending)) {
+            videos.addAll(result);
+          }
         } else if (list.isNotEmpty && list.first is String) {
+          final pending = <Future<List<Video>>>[];
+
           for (int i = 0; i < list.length - 1; i += 2) {
             final title = list[i]?.toString() ?? "Server";
             final url = list[i + 1]?.toString();
 
             if (url == null || url.isEmpty) continue;
 
-            await addVideo(title, url);
+            pending.add(resolveVideo(title, url));
+          }
+
+          for (final result in await Future.wait(pending)) {
+            videos.addAll(result);
           }
         }
       }
