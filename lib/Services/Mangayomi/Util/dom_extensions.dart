@@ -287,10 +287,17 @@ String _fixSelector(String selector) {
   return selector.replaceAll(':not', ':inot');
 }
 
+bool _pseudoReady = false;
+void _ensurePseudo() {
+  if (_pseudoReady) return;
+  _initPseudoSelector();
+  _pseudoReady = true;
+}
+
 extension DocumentExtension on Document? {
   List<Element>? select(String selector) {
     try {
-      _initPseudoSelector();
+      _ensurePseudo();
       final dom = this?.documentElement;
       return pseudom.parse(_fixSelector(selector)).select(dom!).toList();
     } catch (e) {
@@ -300,7 +307,7 @@ extension DocumentExtension on Document? {
 
   Element? selectFirst(String selector) {
     try {
-      _initPseudoSelector();
+      _ensurePseudo();
       final dom = this?.documentElement;
       return pseudom.parse(_fixSelector(selector)).selectFirst(dom!);
     } catch (e) {
@@ -343,7 +350,7 @@ extension DocumentExtension on Document? {
 extension ElementtExtension on Element {
   List<Element>? select(String selector) {
     try {
-      _initPseudoSelector();
+      _ensurePseudo();
       return pseudom
           .parse(_fixSelector(selector))
           .select(
@@ -372,7 +379,7 @@ extension ElementtExtension on Element {
 
   Element? selectFirst(String selector) {
     try {
-      _initPseudoSelector();
+      _ensurePseudo();
       return pseudom
           .parse(_fixSelector(selector))
           .selectFirst(

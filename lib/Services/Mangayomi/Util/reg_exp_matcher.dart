@@ -1,34 +1,37 @@
+final _hrefRegExp = RegExp(r'href="([^"]+)"');
+final _dataSrcRegExp = RegExp(r'data-src="([^"]+)"');
+final _srcRegExp = RegExp(r'src="([^"]+)"');
+final _imgRegExp = RegExp(r'img="([^"]+)"');
+
+final _customRegExpCache = <String, RegExp>{};
+
 String regHrefMatcher(String input) {
-  RegExp exp = RegExp(r'href="([^"]+)"');
-  Iterable<Match> matches = exp.allMatches(input);
+  Iterable<Match> matches = _hrefRegExp.allMatches(input);
   String? firstMatch = matches.first.group(1);
   return firstMatch!;
 }
 
 String regDataSrcMatcher(String input) {
-  RegExp exp = RegExp(r'data-src="([^"]+)"');
-  Iterable<Match> matches = exp.allMatches(input);
+  Iterable<Match> matches = _dataSrcRegExp.allMatches(input);
   String? firstMatch = matches.first.group(1);
   return firstMatch!;
 }
 
 String regSrcMatcher(String input) {
-  RegExp exp = RegExp(r'src="([^"]+)"');
-  Iterable<Match> matches = exp.allMatches(input);
+  Iterable<Match> matches = _srcRegExp.allMatches(input);
   String? firstMatch = matches.first.group(1);
   return firstMatch!;
 }
 
 String regImgMatcher(String input) {
-  RegExp exp = RegExp(r'img="([^"]+)"');
-  Iterable<Match> matches = exp.allMatches(input);
+  Iterable<Match> matches = _imgRegExp.allMatches(input);
   String? firstMatch = matches.first.group(1);
   return firstMatch!;
 }
 
 String regCustomMatcher(String input, String source, int group) {
   try {
-    RegExp exp = RegExp(source);
+    final exp = _customRegExpCache.putIfAbsent(source, () => RegExp(source));
     Iterable<Match> matches = exp.allMatches(input);
     String? firstMatch = matches.first.group(group);
     return firstMatch!;
