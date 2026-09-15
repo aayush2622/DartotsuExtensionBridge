@@ -94,10 +94,21 @@ class DartotsuExtensionBridge {
 Isar isar = DartotsuExtensionBridge.isar;
 
 abstract interface class BridgeNetwork {
+  /// DNS-over-HTTPS resolver endpoint (e.g. `https://cloudflare-dns.com/dns-query`),
+  /// or `null` to use the platform's normal DNS resolution.
   String? get dns;
 
+  /// `host:port` of an HTTP proxy to route requests through, or `null` for none.
   String? get proxy;
 
+  /// The `User-Agent` header every backend should send by default, or `null`
+  /// to leave a backend's own default untouched.
+  String? get userAgent;
+
+  /// Returns cookies valid for [url] as a JSON-encoded array of
+  /// `{name, value, domain, hostOnly, path, expires, secure, httpOnly}`
+  /// objects (the shape the native `CookieInterceptor` in `runtimeManager`
+  /// also expects), or `null`/empty for none.
   Future<String?> getCookies(String url);
 
   Future<void> setCookies(String url, List<String> cookies);
