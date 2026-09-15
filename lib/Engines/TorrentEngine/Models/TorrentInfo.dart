@@ -47,8 +47,7 @@ class TorrentFileStat {
   }
 
   @override
-  String toString() =>
-      'TorrentFileStat(id: $id, path: $path, length: $length)';
+  String toString() => 'TorrentFileStat(id: $id, path: $path, length: $length)';
 }
 
 /// Complete torrent information and live metrics returned by TorrServer API.

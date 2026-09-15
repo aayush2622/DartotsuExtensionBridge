@@ -43,11 +43,7 @@ class TorrServerBinaryNotFoundException extends TorrServerException {
 /// Thrown when the TorrServer process terminates unexpectedly.
 class TorrServerProcessException extends TorrServerException {
   final int? exitCode;
-  const TorrServerProcessException(
-    super.message, [
-    this.exitCode,
-    super.cause,
-  ]);
+  const TorrServerProcessException(super.message, [this.exitCode, super.cause]);
 }
 
 /// Thrown when an error occurs during Dart FFI/MethodChannel invocation on iOS.
