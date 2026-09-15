@@ -39,27 +39,32 @@ class AddonManager extends GetxService {
   }
 
   Future<void> checkForUpdates() async {
-    for (final addon in addons) {
-      try {
-        await addon.checkForUpdate();
-      } catch (e) {
-        // One broken addon's update check must not stop the sweep for the
-        // rest - but silently, with zero diagnostic trail, a misconfigured
-        // addon fails invisibly forever.
-        Logger.log('Update check failed for addon ${addon.id}: $e');
-      }
-    }
+    // Every addon's update check is independent - running them concurrently
+    // instead of one at a time keeps the sweep from taking N times as long
+    // as addons are added. Each keeps its own try/catch so one broken addon
+    // can't stop (or fail) the others.
+    await Future.wait(
+      addons.map((addon) async {
+        try {
+          await addon.checkForUpdate();
+        } catch (e) {
+          Logger.log('Update check failed for addon ${addon.id}: $e');
+        }
+      }),
+    );
   }
 
   Future<void> autoUpdate() async {
-    for (final addon in addons) {
-      try {
-        if (await addon.checkForUpdate()) {
-          await addon.update();
+    await Future.wait(
+      addons.map((addon) async {
+        try {
+          if (await addon.checkForUpdate()) {
+            await addon.update();
+          }
+        } catch (e) {
+          Logger.log('Auto-update failed for addon ${addon.id}: $e');
         }
-      } catch (e) {
-        Logger.log('Auto-update failed for addon ${addon.id}: $e');
-      }
-    }
+      }),
+    );
   }
 }
