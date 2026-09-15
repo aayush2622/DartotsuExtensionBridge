@@ -26,7 +26,9 @@ import 'JniBridge.dart' show JavaBridge;
 /// * `call`   – `{jarPath, request}` → response JSON envelope.
 /// * `unload` – drop `{jarPath}`'s loader + api (the VM itself stays up).
 class EmbeddedJvmBridge implements JavaBridge {
-  static const _channel = MethodChannel('dartotsu_extension_bridge/embedded_jvm');
+  static const _channel = MethodChannel(
+    'dartotsu_extension_bridge/embedded_jvm',
+  );
 
   /// One VM per process — starting it is guarded so the four desktop backends
   /// racing through [init] at boot only pay for it once.
@@ -78,7 +80,9 @@ class EmbeddedJvmBridge implements JavaBridge {
       }
 
       final data = decodedEnvelope['data'];
-      final decoded = data is String ? _toDart(jsonDecode(data)) : _toDart(data);
+      final decoded = data is String
+          ? _toDart(jsonDecode(data))
+          : _toDart(data);
 
       if (decoded is List && decoded.every((e) => e is Map<String, dynamic>)) {
         return List<Map<String, dynamic>>.from(decoded) as T;
