@@ -138,14 +138,60 @@ class AniyomiDesktopExtensions extends Extension
         "path": dir!.path,
       });
 
-      return result
+      final sources = result
           .map((e) => AdSource.fromJson(e))
-          .where((s) => s.itemType == type)
-          .toList(growable: false);
+          .where((s) => s.itemType == type);
+
+      return _dedupeById(sources);
     } catch (e, s) {
       Logger.log("Desktop loadInstalled error: $e\n$s");
       return [];
     }
+  }
+
+  /// Guards against duplicate-`GlobalKey` crashes in the extension list UI
+  /// (each entry is keyed by [Source.id]). A native-side scan glitch -
+  /// e.g. a leftover jar from an update that failed to clean up its old
+  /// file, or an entry whose id couldn't be parsed - can otherwise surface
+  /// two [Source]s sharing an id. Drops entries with a blank/missing id and
+  /// keeps the highest-versioned entry per remaining id.
+  List<Source> _dedupeById(Iterable<AdSource> sources) {
+    final byId = <String, AdSource>{};
+
+    for (final source in sources) {
+      final id = source.id;
+      if (id == null || id.isEmpty || id == 'null') {
+        Logger.log('Dropping installed source with invalid id: ${source.name}');
+        continue;
+      }
+
+      final existing = byId[id];
+      if (existing == null ||
+          _compareVersions(source.version, existing.version) > 0) {
+        if (existing != null) {
+          Logger.log(
+            'Dropping duplicate installed source id=$id '
+            '(kept version ${source.version}, dropped ${existing.version})',
+          );
+        }
+        byId[id] = source;
+      }
+    }
+
+    return byId.values.toList(growable: false);
+  }
+
+  int _compareVersions(String? a, String? b) {
+    final partsA = (a ?? '').split('.').map(int.tryParse).toList();
+    final partsB = (b ?? '').split('.').map(int.tryParse).toList();
+
+    for (var i = 0; i < partsA.length || i < partsB.length; i++) {
+      final va = i < partsA.length ? partsA[i] ?? 0 : 0;
+      final vb = i < partsB.length ? partsB[i] ?? 0 : 0;
+      if (va != vb) return va.compareTo(vb);
+    }
+
+    return 0;
   }
 
   @override
