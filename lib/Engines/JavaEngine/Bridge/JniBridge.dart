@@ -25,6 +25,25 @@ abstract class JavaBridge {
   void dispose();
 }
 
+/// Shared "safe default" fallback for [JavaBridge.call] implementations when
+/// a native-side error must not propagate (`throwError: false`, the
+/// default). Handles every `T` `BridgeSourceMethods` actually calls with -
+/// `bool`, `Map<String, dynamic>`, `List<Map<String, dynamic>>`,
+/// `List<dynamic>` - plus any nullable `T`. All three [JavaBridge]
+/// implementations used to carry their own copy of this, and none of them
+/// handled `List<dynamic>` (used by getVideoList/getPageList/getPreference/
+/// getNovelContent), so a native-side failure there crashed with
+/// `type 'Null' is not a subtype of type 'List<dynamic>'` instead of
+/// returning the empty list the call site expected.
+T emptyJavaBridgeValue<T>() {
+  if (null is T) return null as T;
+  if (T == bool) return false as T;
+  if (T == Map<String, dynamic>) return <String, dynamic>{} as T;
+  if (T == List<Map<String, dynamic>>) return <Map<String, dynamic>>[] as T;
+  if (T == List<dynamic>) return <dynamic>[] as T;
+  throw StateError('emptyJavaBridgeValue: no empty default for $T');
+}
+
 // useless if they dont add multiple jni instances
 class JniBridge implements JavaBridge {
   final JavaHandler handler;
@@ -113,7 +132,7 @@ class JniBridge implements JavaBridge {
           throw Exception(result["error"]);
         }
         Logger.log("${result["error"]} ${result["stack"]}");
-        return _emptyForType<T>();
+        return emptyJavaBridgeValue<T>();
       }
 
       final data = result["data"];
@@ -252,17 +271,5 @@ class JniBridge implements JavaBridge {
     }
 
     return value;
-  }
-
-  T _emptyForType<T>() {
-    if (T == bool) return false as T;
-    if (T == Map<String, dynamic>) {
-      return <String, dynamic>{} as T;
-    }
-    if (T == List<Map<String, dynamic>>) {
-      return <Map<String, dynamic>>[] as T;
-    }
-
-    return null as T;
   }
 }
