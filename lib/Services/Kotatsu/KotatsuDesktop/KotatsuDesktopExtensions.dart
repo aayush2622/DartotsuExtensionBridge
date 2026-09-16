@@ -86,7 +86,7 @@ class KotatsuDesktopExtensions extends Extension {
   }
 
   Future<Directory?> get _sourcesDir => _context.getDirectory(
-    subPath: 'bridge/kotatsuDesktop',
+    subPath: 'bridge/kotatsu',
     useSystemPath: false,
     useCustomPath: true,
   );

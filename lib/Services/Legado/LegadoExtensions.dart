@@ -29,8 +29,7 @@ class LegadoExtensions extends Extension {
 
   @override
   String get icon =>
-      'https://raw.githubusercontent.com/gedoor/legado/master/app/src/main/'
-      'res/mipmap-xxxhdpi/ic_launcher.png';
+      "packages/dartotsu_extension_bridge/assets/images/legado.png";
 
   @override
   bool get supportsAnime => false;
