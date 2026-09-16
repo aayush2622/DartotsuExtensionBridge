@@ -52,6 +52,11 @@ actual object ExtensionLoader {
                 apk.absolutePath,
                 jarFile.absolutePath
             )
+
+            // The jar at this path may have been loaded before (e.g. the
+            // previous version of this extension) - drop the stale
+            // classloader so the rebuilt jar's classes are actually seen.
+            PackageTools.invalidateClassLoader(jarFile.absolutePath)
         }
         val apkPath = apk.absolutePath
 

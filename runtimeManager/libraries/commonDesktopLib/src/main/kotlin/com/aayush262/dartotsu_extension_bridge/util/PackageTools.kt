@@ -127,6 +127,28 @@ object PackageTools {
     val jarLoaderMap = ConcurrentHashMap<String, URLClassLoader>()
 
     /**
+     * Evicts and closes the cached classloader for [jarPath], if any.
+     *
+     * [jarLoaderMap] is keyed by the jar's file path, which is stable across
+     * extension versions — dex2jar names it after the package, not the
+     * version — so updating an extension overwrites that same path's
+     * *contents* via an atomic move, but a already-cached `URLClassLoader`
+     * has its zip central directory built from the old bytes and never
+     * notices the file underneath it changed. Reusing it after an update
+     * then throws `ClassNotFoundException` for classes that are actually
+     * present in the freshly written jar. Callers must invoke this after
+     * regenerating a jar and before the next [loadExtensionSources] call.
+     */
+    fun invalidateClassLoader(jarPath: String) {
+        jarLoaderMap.remove(jarPath)?.let {
+            try {
+                it.close()
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /**
      * loads the extension main class called [className] from the jar located at [jarPath]
      * It may return an instance of HttpSource or SourceFactory depending on the extension.
      */
