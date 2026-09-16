@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../../../Logger.dart';
-import 'JniBridge.dart' show JavaBridge;
+import 'JniBridge.dart' show JavaBridge, emptyJavaBridgeValue;
 
 /// iOS implementation of [JavaBridge].
 ///
@@ -94,7 +94,7 @@ class EmbeddedJvmBridge implements JavaBridge {
     } catch (e, s) {
       Logger.log('[EMBEDDED-JVM] Call failed: $e\n$s', show: true);
       if (throwError) rethrow;
-      return _emptyForType<T>();
+      return emptyJavaBridgeValue<T>();
     }
   }
 
@@ -119,12 +119,5 @@ class EmbeddedJvmBridge implements JavaBridge {
     }
     if (value is List) return value.map(_toDart).toList();
     return value;
-  }
-
-  T _emptyForType<T>() {
-    if (T == bool) return false as T;
-    if (T == Map<String, dynamic>) return <String, dynamic>{} as T;
-    if (T == List<Map<String, dynamic>>) return <Map<String, dynamic>>[] as T;
-    return null as T;
   }
 }
