@@ -164,7 +164,7 @@ class SidecarBridge implements JavaBridge {
         rethrow;
       }
 
-      return _emptyForType<T>();
+      return emptyJavaBridgeValue<T>();
     }
   }
 
@@ -184,18 +184,6 @@ class SidecarBridge implements JavaBridge {
     }
 
     return value;
-  }
-
-  T _emptyForType<T>() {
-    if (T == bool) return false as T;
-    if (T == Map<String, dynamic>) {
-      return <String, dynamic>{} as T;
-    }
-    if (T == List<Map<String, dynamic>>) {
-      return <Map<String, dynamic>>[] as T;
-    }
-
-    return null as T;
   }
 
   @override
