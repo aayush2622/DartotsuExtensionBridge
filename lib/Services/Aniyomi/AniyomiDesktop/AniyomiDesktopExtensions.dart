@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 
 import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
@@ -13,6 +15,7 @@ import '../../../Logger.dart';
 import '../../../NetworkClient.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
+import '../../Shared/PackagedSource.dart';
 import '../../Shared/TachiyomiJniDesktopExtension.dart';
 import '../../Shared/TachiyomiRepo.dart';
 import '../AniyomiSourceMethods.dart';
@@ -142,10 +145,47 @@ class AniyomiDesktopExtensions extends Extension
           .map((e) => AdSource.fromJson(e))
           .where((s) => s.itemType == type);
 
-      return _dedupeById(sources);
+      final deduped = _dedupeById(sources);
+      await _pruneObsoletePackageFiles(dir, deduped);
+      return deduped;
     } catch (e, s) {
       Logger.log("Desktop loadInstalled error: $e\n$s");
       return [];
+    }
+  }
+
+  /// The native loader keeps only the highest-versioned file per package
+  /// when scanning (`byPackage` in AnimeExtensionLoader.desktop.kt /
+  /// MangaExtensionLoader.desktop.kt), so a superseded version that
+  /// installSource failed to delete never shows up in the list - but it
+  /// also never gets deleted, so old .apk files pile up in the extensions
+  /// directory indefinitely across app restarts. Sweep anything that isn't
+  /// the file currently backing an installed source.
+  Future<void> _pruneObsoletePackageFiles(
+    Directory dir,
+    List<Source> installed,
+  ) async {
+    final keep = installed
+        .whereType<PackagedSource>()
+        .map((s) => s.apkPath)
+        .whereType<String>()
+        .map(p.basename)
+        .toSet();
+
+    if (!await dir.exists()) return;
+
+    await for (final entry in dir.list()) {
+      if (entry is! File || p.extension(entry.path) != '.apk') continue;
+      if (keep.contains(p.basename(entry.path))) continue;
+
+      try {
+        await entry.delete();
+        Logger.log('Deleted obsolete extension file: ${entry.path}');
+      } catch (e) {
+        Logger.log(
+          'Failed to delete obsolete extension file ${entry.path}: $e',
+        );
+      }
     }
   }
 
