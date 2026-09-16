@@ -174,6 +174,10 @@ actual object KotatsuExtensionLoader {
                         if (!converted.exists() || jar.lastModified() > converted.lastModified()) {
                             Logger.log("[Kotatsu-Desktop] Converting ${jar.name} via dex2jar...")
                             PackageTools.dex2jar(jar.absolutePath, converted.absolutePath)
+                            // converted.absolutePath is stable across repo jar
+                            // updates - drop any classloader cached for it from
+                            // a previous version so classes are re-read fresh.
+                            PackageTools.invalidateClassLoader(converted.absolutePath)
                         }
                         converted
                     } else {

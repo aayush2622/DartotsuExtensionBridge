@@ -110,7 +110,10 @@ actual object AnimeExtensionLoader {
             try {
                 PackageTools.dex2jar(apkPath, jarFile.absolutePath)
                 PackageTools.extractAssetsFromApk(apkPath, jarFile.absolutePath)
-
+                // The jar at this path may have been loaded before (e.g. the
+                // previous version of this extension) - drop the stale
+                // classloader so the rebuilt jar's classes are actually seen.
+                PackageTools.invalidateClassLoader(jarFile.absolutePath)
             } catch (e: Exception) {
                 Logger.log("Failed to build jar for ${apkFile.name}: ${e.message}")
                 throw e
