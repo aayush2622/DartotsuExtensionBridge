@@ -76,14 +76,7 @@ actual object KotatsuExtensionLoader {
             OkHttpClient.Builder().cookieJar(cookieJar).build()
         }
 
-        override fun newParserInstance(source: MangaSource): MangaParser =
-            throw UnsupportedOperationException("Context doesn't instantiate parsers directly")
-
-        override fun getParserSources(): List<MangaSource> = loadedParsers.values.map { it.source }
-
-        @Deprecated("Provide a base url")
         override suspend fun evaluateJs(script: String): String? = null
-        override suspend fun evaluateJs(baseUrl: String, script: String): String? = null
 
         override fun getConfig(source: MangaSource): MangaSourceConfig = object : MangaSourceConfig {
             override fun <T> get(key: ConfigKey<T>): T = key.defaultValue
@@ -197,48 +190,88 @@ actual object KotatsuExtensionLoader {
                             .toList()
                     }
 
+                    var loadFailures = 0
+                    var assignableCount = 0
+                    var postInstantiateFailures = 0
+                    val distinctFailures = LinkedHashMap<String, String>()
+                    val distinctPostFailures = LinkedHashMap<String, String>()
                     for (className in classNames) {
                         try {
-                            val clazz = classLoader.loadClass(className)
+                            val clazz = try {
+                                classLoader.loadClass(className)
+                            } catch (e: Throwable) {
+                                loadFailures++
+                                distinctFailures["${e.javaClass.name}: ${e.message}"] = className
+                                continue
+                            }
                             if (!MangaParser::class.java.isAssignableFrom(clazz)) continue
+                            assignableCount++
 
-                            val parser = instantiateParser(clazz) ?: continue
-                            val source = parser.source
-                            val idStr = "kotatsu_" + source.name.replace(Regex("[^a-zA-Z0-9]"), "").lowercase()
-                            loadedParsers[idStr] = parser
-                            sourceIdToClassName[idStr] = className
+                            // instantiateParser() returns null for abstract/intermediate
+                            // base classes (e.g. PagedMangaParser) as well as genuine
+                            // failures - both are routine, not worth logging per class.
+                            val parser = try {
+                                instantiateParser(clazz)
+                            } catch (_: Throwable) {
+                                continue
+                            } ?: continue
+                            try {
+                                val source = parser.source
+                                val idStr = "kotatsu_" + source.name.replace(Regex("[^a-zA-Z0-9]"), "").lowercase()
+                                loadedParsers[idStr] = parser
+                                sourceIdToClassName[idStr] = className
 
-                            val cleanDomain = try {
-                                parser.domain.replace("https://", "").replace("http://", "").split("/")[0]
-                            } catch (_: Exception) {
-                                ""
+                                val cleanDomain = try {
+                                    parser.domain.replace("https://", "").replace("http://", "").split("/")[0]
+                                } catch (_: Exception) {
+                                    ""
+                                }
+                                val iconUrl = if (cleanDomain.isNotEmpty()) {
+                                    "https://www.google.com/s2/favicons?sz=128&domain=$cleanDomain"
+                                } else {
+                                    "https://raw.githubusercontent.com/KotatsuApp/Kotatsu/devel/metadata/en-US/icon.png"
+                                }
+
+                                list.add(
+                                    mapOf(
+                                        "id" to idStr,
+                                        "name" to source.title,
+                                        "lang" to source.locale.ifEmpty { "all" },
+                                        "type" to "manga",
+                                        "baseUrl" to parser.domain,
+                                        "iconUrl" to iconUrl,
+                                        "isNsfw" to (source.contentType == ContentType.HENTAI),
+                                        "version" to "1.0.0",
+                                        "pkgName" to "kotatsu.plugin",
+                                        "className" to className,
+                                        "itemType" to 0,
+                                        "hasUpdate" to false,
+                                        "isObsolete" to false,
+                                        "isShared" to false,
+                                    ),
+                                )
+                            } catch (e: Throwable) {
+                                postInstantiateFailures++
+                                distinctPostFailures["${e.javaClass.name}: ${e.message}"] = className
                             }
-                            val iconUrl = if (cleanDomain.isNotEmpty()) {
-                                "https://www.google.com/s2/favicons?sz=128&domain=$cleanDomain"
-                            } else {
-                                "https://raw.githubusercontent.com/KotatsuApp/Kotatsu/devel/metadata/en-US/icon.png"
-                            }
-
-                            list.add(
-                                mapOf(
-                                    "id" to idStr,
-                                    "name" to source.title,
-                                    "lang" to source.locale.ifEmpty { "all" },
-                                    "type" to "manga",
-                                    "baseUrl" to parser.domain,
-                                    "iconUrl" to iconUrl,
-                                    "isNsfw" to (source.contentType == ContentType.HENTAI),
-                                    "version" to "1.0.0",
-                                    "pkgName" to "kotatsu.plugin",
-                                    "className" to className,
-                                    "itemType" to 0,
-                                    "hasUpdate" to false,
-                                    "isObsolete" to false,
-                                    "isShared" to false,
-                                ),
-                            )
                         } catch (_: Throwable) {
                         }
+                    }
+
+                    Logger.log(
+                        "[Kotatsu-Desktop] ${jar.name}: ${list.size}/${assignableCount} sources loaded " +
+                            "($loadFailures class-load failures, $postInstantiateFailures incompatible parsers)",
+                    )
+                    // A load or post-instantiate failure means a class the JVM otherwise
+                    // considers a real MangaParser couldn't actually be used - usually a
+                    // binary-compatibility break between this jar's kotatsu-parsers build
+                    // and the one this sidecar depends on. Log a sample so that's
+                    // diagnosable instead of just silently missing sources.
+                    for ((error, sampleClass) in distinctFailures) {
+                        Logger.log("[Kotatsu-Desktop]   class-load failure: $error (e.g. $sampleClass)")
+                    }
+                    for ((error, sampleClass) in distinctPostFailures) {
+                        Logger.log("[Kotatsu-Desktop]   incompatible parser: $error (e.g. $sampleClass)")
                     }
                 } catch (e: Exception) {
                     Logger.log("[Kotatsu-Desktop] Error processing ${jar.name}: ${e.message}")
