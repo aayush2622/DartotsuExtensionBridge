@@ -13,6 +13,7 @@ import '../../../NetworkClient.dart';
 import '../../../Settings/KvStore.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
+import '../../Shared/ZipValidation.dart';
 import '../KotatsuSourceMethods.dart';
 
 class KotatsuExtensions extends Extension {
@@ -153,6 +154,14 @@ class KotatsuExtensions extends Extension {
           await sink.flush();
         } finally {
           await sink.close();
+        }
+
+        if (!await hasZipSignature(temp)) {
+          await temp.delete();
+          throw Exception(
+            'This URL did not return a valid parsers jar (got something '
+            'else - check the repo URL)',
+          );
         }
 
         try {
