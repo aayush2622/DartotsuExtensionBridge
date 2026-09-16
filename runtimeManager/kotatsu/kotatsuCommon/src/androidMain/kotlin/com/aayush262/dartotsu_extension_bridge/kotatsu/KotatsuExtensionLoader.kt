@@ -449,7 +449,12 @@ actual object KotatsuExtensionLoader {
 
                                 val parserInstance = KotatsuMangaParserWrapper(rawParser, classLoader)
                                 val source = parserInstance.source
-                                val idStr = "kotatsu_" + source.name.replace(Regex("[^a-zA-Z0-9]"), "").lowercase()
+                                // source.name is a MangaParserSource enum constant name, which
+                                // the Kotlin compiler already guarantees is unique - stripping
+                                // non-alphanumeric characters (the "_" in e.g. LUNAR_SCAN vs
+                                // LUNARSCAN) before lowercasing collapsed distinct sources onto
+                                // the same id, causing duplicate-GlobalKey crashes in the list UI.
+                                val idStr = "kotatsu_" + source.name.lowercase()
                                 loadedParsers[idStr] = parserInstance
                                 sourceIdToClassName[idStr] = className
 
