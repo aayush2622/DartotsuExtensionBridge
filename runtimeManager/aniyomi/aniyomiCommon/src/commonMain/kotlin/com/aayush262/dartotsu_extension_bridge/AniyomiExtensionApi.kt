@@ -81,7 +81,8 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
                             "pkgName" to ext.pkgName,
                             "apkPath" to apkPath,
                             "itemType" to 1,
-                            "isShared" to ext.isShared
+                            "isShared" to ext.isShared,
+                            "isTorrent" to ext.isTorrent,
                         )
                     }
                 }

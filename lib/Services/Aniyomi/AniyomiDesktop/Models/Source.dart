@@ -2,6 +2,7 @@ import '../../../../Models/Source.dart';
 import '../../../Shared/PackagedSource.dart';
 
 class AdSource extends PackagedSource {
+  bool? isTorrent;
   AdSource({
     super.id,
     super.name,
@@ -19,6 +20,7 @@ class AdSource extends PackagedSource {
     super.apkUrlOverride,
     super.jarUrl,
     super.apkPath,
+    this.isTorrent,
   });
   factory AdSource.fromJson(Map<String, dynamic> json) {
     return AdSource(
@@ -38,6 +40,7 @@ class AdSource extends PackagedSource {
       apkUrlOverride: json['apkUrlOverride'],
       jarUrl: json['jarUrl'],
       apkPath: json['apkPath'],
+      isTorrent: json['isTorrent'] ?? false,
     );
   }
 
@@ -49,6 +52,7 @@ class AdSource extends PackagedSource {
     map['apkUrlOverride'] = apkUrlOverride;
     map['jarUrl'] = jarUrl;
     map['apkPath'] = apkPath;
+    map['isTorrent'] = isTorrent;
     return map;
   }
 }

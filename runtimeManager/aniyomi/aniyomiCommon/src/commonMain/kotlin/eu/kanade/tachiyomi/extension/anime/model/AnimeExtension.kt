@@ -14,6 +14,9 @@ sealed class AnimeExtension {
     abstract val hasReadme: Boolean
     abstract val hasChangelog: Boolean
     abstract val iconUrl: String?
+    // since extensions-lib 17 - not abstract so Available/Untrusted (which
+    // don't read this from anywhere) keep compiling unchanged.
+    open val isTorrent: Boolean = false
 
     data class Installed(
         override val name: String,
@@ -28,6 +31,7 @@ sealed class AnimeExtension {
         val pkgFactory: String?,
         val sources: List<AnimeSource>,
         override val iconUrl: String?,
+        override val isTorrent: Boolean = false,
         val hasUpdate: Boolean = false,
         val isObsolete: Boolean = false,
         val isUnofficial: Boolean = false,
