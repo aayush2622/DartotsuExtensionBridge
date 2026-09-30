@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 
 import '../../Extensions/Extensions.dart';
@@ -7,7 +5,7 @@ import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
 import '../../NetworkClient.dart';
-import '../../Settings/KvStore.dart';
+import '../Shared/SimpleInstalledSourceStore.dart';
 import 'LnReaderSourceMethods.dart';
 import 'Manifest.dart';
 import 'Models/Source.dart';
@@ -20,7 +18,8 @@ import 'Models/Source.dart';
 /// [LSource]. Novel-only — anime/manga are unsupported. The runtime and its
 /// polyfills live under `Js/`; a source is driven through
 /// [LnReaderSourceMethods].
-class LnReaderExtensions extends Extension {
+class LnReaderExtensions extends Extension
+    with SimpleInstalledSourceStore<LSource> {
   static final _client = MClient.init();
 
   @override
@@ -44,6 +43,9 @@ class LnReaderExtensions extends Extension {
       (LSource, (source) => LnReaderSourceMethods(source as LSource));
 
   @override
+  LSource Function(Map<String, dynamic>) get sourceFromJson => LSource.fromJson;
+
+  @override
   void dispose() {
     super.dispose();
     LnReaderSourceMethods.disposeAll();
@@ -58,7 +60,7 @@ class LnReaderExtensions extends Extension {
   @override
   Future<void> fetchInstalledNovelExtensions() async {
     await super.fetchInstalledNovelExtensions();
-    novel.installed.value = _loadInstalled(ItemType.novel);
+    novel.installed.value = loadInstalled(ItemType.novel);
   }
 
   // --- repos -------------------------------------------------------------
@@ -157,9 +159,9 @@ class LnReaderExtensions extends Extension {
           } catch (_) {}
         }
 
-        final list = _loadInstalled(type)..removeWhere((e) => e.id == s.id);
+        final list = loadInstalled(type)..removeWhere((e) => e.id == s.id);
         list.add(s);
-        _saveInstalled(list, type);
+        saveInstalled(list, type);
         state(type).installed.value = List.unmodifiable(list);
 
         final avail = state(type).available;
@@ -177,8 +179,8 @@ class LnReaderExtensions extends Extension {
     final s = source as LSource;
     try {
       final type = s.itemType!;
-      final list = _loadInstalled(type)..removeWhere((e) => e.id == s.id);
-      _saveInstalled(list, type);
+      final list = loadInstalled(type)..removeWhere((e) => e.id == s.id);
+      saveInstalled(list, type);
       state(type).installed.value = List.unmodifiable(list);
 
       final installedIds = list.map((e) => e.id).toSet();
@@ -205,7 +207,7 @@ class LnReaderExtensions extends Extension {
         throw Exception("Update download failed (${res.statusCode})");
       }
 
-      final list = _loadInstalled(type);
+      final list = loadInstalled(type);
       final i = list.indexWhere((e) => e.id == s.id);
       if (i == -1) return;
 
@@ -213,14 +215,14 @@ class LnReaderExtensions extends Extension {
         ..sourceCode = res.body
         ..version = s.version
         ..hasUpdate = false;
-      _saveInstalled(list, type);
+      saveInstalled(list, type);
       state(type).installed.value = List.unmodifiable(list);
     });
   }
 
   @override
   void detectUpdates(List<Source> available, ItemType type) {
-    final installed = _loadInstalled(type);
+    final installed = loadInstalled(type);
     if (installed.isEmpty || available.isEmpty) return;
 
     final repoMap = {for (final s in available) s.id: s};
@@ -244,31 +246,9 @@ class LnReaderExtensions extends Extension {
     }
 
     if (changed) {
-      _saveInstalled(installed, type);
+      saveInstalled(installed, type);
       state(type).installed.value = List.unmodifiable(installed);
     }
-  }
-
-  // --- persistence -----------------------------------------------------
-
-  List<LSource> _loadInstalled(ItemType type) {
-    final encoded = getVal<List<String>>('$id-Installed-${type.name}');
-    if (encoded == null || encoded.isEmpty) return [];
-
-    final list = <LSource>[];
-    for (final e in encoded) {
-      try {
-        list.add(LSource.fromJson(jsonDecode(e)));
-      } catch (_) {}
-    }
-    return list;
-  }
-
-  void _saveInstalled(List<LSource> list, ItemType type) {
-    setVal(
-      '$id-Installed-${type.name}',
-      list.map((e) => jsonEncode(e.toJson())).toList(growable: false),
-    );
   }
 
   // --- deep links ----------------------------------------------------

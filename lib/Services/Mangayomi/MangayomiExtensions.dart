@@ -7,12 +7,13 @@ import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
 import '../../NetworkClient.dart';
-import '../../Settings/KvStore.dart';
+import '../Shared/SimpleInstalledSourceStore.dart';
 import 'MangayomiSourceMethods.dart';
 import 'Models/Source.dart';
 import 'Util/lib.dart';
 
-class MangayomiExtensions extends Extension {
+class MangayomiExtensions extends Extension
+    with SimpleInstalledSourceStore<MSource> {
   static final _client = MClient.init();
 
   @override
@@ -27,6 +28,10 @@ class MangayomiExtensions extends Extension {
   @override
   (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
       (MSource, (source) => MangayomiSourceMethods(source as MSource));
+
+  @override
+  MSource Function(Map<String, dynamic>) get sourceFromJson =>
+      MSource.fromJson;
 
   @override
   Future<void> fetchAnimeExtensions() async {
@@ -49,19 +54,19 @@ class MangayomiExtensions extends Extension {
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
     await super.fetchInstalledAnimeExtensions();
-    anime.installed.value = _loadInstalled(ItemType.anime);
+    anime.installed.value = loadInstalled(ItemType.anime);
   }
 
   @override
   Future<void> fetchInstalledMangaExtensions() async {
     await super.fetchInstalledMangaExtensions();
-    manga.installed.value = _loadInstalled(ItemType.manga);
+    manga.installed.value = loadInstalled(ItemType.manga);
   }
 
   @override
   Future<void> fetchInstalledNovelExtensions() async {
     await super.fetchInstalledNovelExtensions();
-    novel.installed.value = _loadInstalled(ItemType.novel);
+    novel.installed.value = loadInstalled(ItemType.novel);
   }
 
   @override
@@ -90,12 +95,12 @@ class MangayomiExtensions extends Extension {
           ..sourceCode = res.body
           ..headers = headers;
 
-        final list = _loadInstalled(type);
+        final list = loadInstalled(type);
 
         list.removeWhere((e) => e.id == m.id);
         list.add(installed);
 
-        _saveInstalled(list, type);
+        saveInstalled(list, type);
 
         state(type).installed.value = List.unmodifiable(list);
 
@@ -122,12 +127,12 @@ class MangayomiExtensions extends Extension {
 
     try {
       final type = s.itemType!;
-      final installed = _loadInstalled(type);
+      final installed = loadInstalled(type);
 
       installed.removeWhere((e) => e.id == s.id);
       invalidateExtensionService(s.id);
 
-      _saveInstalled(installed, type);
+      saveInstalled(installed, type);
       state(type).installed.value = List.unmodifiable(installed);
 
       final raw = state(type).rawAvailable.value;
@@ -153,7 +158,7 @@ class MangayomiExtensions extends Extension {
         throw Exception("Update download failed");
       }
 
-      final installed = _loadInstalled(type);
+      final installed = loadInstalled(type);
 
       final index = installed.indexWhere((e) => e.id == s.id);
       if (index == -1) return;
@@ -163,7 +168,7 @@ class MangayomiExtensions extends Extension {
         ..version = s.version
         ..hasUpdate = false;
 
-      _saveInstalled(installed, type);
+      saveInstalled(installed, type);
 
       state(type).installed.value = List.unmodifiable(installed);
     });
@@ -171,7 +176,7 @@ class MangayomiExtensions extends Extension {
 
   @override
   void detectUpdates(List<Source> available, ItemType type) {
-    final installed = _loadInstalled(type);
+    final installed = loadInstalled(type);
 
     final repoMap = {for (var s in available) s.id: s};
 
@@ -200,7 +205,7 @@ class MangayomiExtensions extends Extension {
     }
 
     if (changed) {
-      _saveInstalled(installed, type);
+      saveInstalled(installed, type);
       state(type).installed.value = List.unmodifiable(installed);
     }
   }
@@ -276,20 +281,6 @@ class MangayomiExtensions extends Extension {
     }
 
     return sources.where((s) => s.itemType == itemType).toList(growable: false);
-  }
-
-  List<MSource> _loadInstalled(ItemType type) {
-    final encoded = getVal<List<String>>('$id-Installed-${type.name}');
-    if (encoded == null) return [];
-
-    return encoded.map((e) => MSource.fromJson(jsonDecode(e))).toList();
-  }
-
-  void _saveInstalled(List<MSource> list, ItemType type) {
-    setVal(
-      '$id-Installed-${type.name}',
-      list.map((e) => jsonEncode(e.toJson())).toList(),
-    );
   }
 
   @override
