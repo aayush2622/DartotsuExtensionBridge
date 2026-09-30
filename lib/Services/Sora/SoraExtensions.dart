@@ -7,11 +7,11 @@ import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
 import '../../NetworkClient.dart';
-import '../../Settings/KvStore.dart';
+import '../Shared/SimpleInstalledSourceStore.dart';
 import 'Models/Source.dart';
 import 'SoraSourceMethods.dart';
 
-class SoraExtensions extends Extension {
+class SoraExtensions extends Extension with SimpleInstalledSourceStore<SSource> {
   static final _client = MClient.init();
 
   @override
@@ -31,6 +31,9 @@ class SoraExtensions extends Extension {
       (SSource, (source) => SoraSourceMethods(source as SSource));
 
   @override
+  SSource Function(Map<String, dynamic>) get sourceFromJson => SSource.fromJson;
+
+  @override
   Future<void> fetchAnimeExtensions() async {
     await super.fetchAnimeExtensions();
     anime.available.value = await fetchExtensions(ItemType.anime);
@@ -45,13 +48,13 @@ class SoraExtensions extends Extension {
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
     await super.fetchInstalledAnimeExtensions();
-    anime.installed.value = _loadInstalled(ItemType.anime);
+    anime.installed.value = loadInstalled(ItemType.anime);
   }
 
   @override
   Future<void> fetchInstalledMangaExtensions() async {
     await super.fetchInstalledMangaExtensions();
-    manga.installed.value = _loadInstalled(ItemType.manga);
+    manga.installed.value = loadInstalled(ItemType.manga);
   }
 
   @override
@@ -223,12 +226,12 @@ class SoraExtensions extends Extension {
 
         final installed = s..sourceCode = res.body;
 
-        final installedList = _loadInstalled(type);
+        final installedList = loadInstalled(type);
 
         installedList.removeWhere((e) => e.id == s.id);
         installedList.add(installed);
 
-        _saveInstalled(installedList, type);
+        saveInstalled(installedList, type);
 
         state(type).installed.value = List.unmodifiable(installedList);
 
@@ -249,11 +252,11 @@ class SoraExtensions extends Extension {
 
     try {
       final type = s.itemType!;
-      final installed = _loadInstalled(type);
+      final installed = loadInstalled(type);
 
       installed.removeWhere((e) => e.id == s.id);
 
-      _saveInstalled(installed, type);
+      saveInstalled(installed, type);
       state(type).installed.value = List.unmodifiable(installed);
 
       final raw = state(type).rawAvailable.value;
@@ -283,7 +286,7 @@ class SoraExtensions extends Extension {
           throw Exception("Failed to download update");
         }
 
-        final installed = _loadInstalled(type);
+        final installed = loadInstalled(type);
 
         final index = installed.indexWhere((e) => e.id == s.id);
         if (index == -1) return;
@@ -293,7 +296,7 @@ class SoraExtensions extends Extension {
           ..version = s.version
           ..hasUpdate = false;
 
-        _saveInstalled(installed, type);
+        saveInstalled(installed, type);
 
         state(type).installed.value = List.unmodifiable(installed);
       } catch (e) {
@@ -305,7 +308,7 @@ class SoraExtensions extends Extension {
 
   @override
   void detectUpdates(List<Source> available, ItemType type) {
-    final installed = _loadInstalled(type);
+    final installed = loadInstalled(type);
     if (installed.isEmpty || available.isEmpty) return;
 
     final repoMap = {for (final s in available) s.id: s};
@@ -329,34 +332,11 @@ class SoraExtensions extends Extension {
     }
 
     if (changed) {
-      _saveInstalled(installed, type);
+      saveInstalled(installed, type);
       state(type).installed.value = List.unmodifiable(installed);
     }
   }
 
-  List<SSource> _loadInstalled(ItemType type) {
-    final encoded = getVal<List<String>>('$id-Installed-${type.name}');
-    if (encoded == null || encoded.isEmpty) return [];
-
-    final list = <SSource>[];
-
-    for (final e in encoded) {
-      try {
-        list.add(SSource.fromJson(jsonDecode(e)));
-      } catch (_) {}
-    }
-
-    return list;
-  }
-
-  void _saveInstalled(List<SSource> list, ItemType type) {
-    final key = '$id-Installed-${type.name}';
-
-    setVal(
-      key,
-      list.map((e) => jsonEncode(e.toJson())).toList(growable: false),
-    );
-  }
 
   @override
   Set<String> get schemes => {"sora"};
