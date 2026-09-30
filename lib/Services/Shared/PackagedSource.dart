@@ -27,6 +27,12 @@ abstract class PackagedSource extends Source {
   /// on the Android backends, which uninstall by package name instead.
   String? apkPath;
 
+  /// Android only: whether this was installed into a private per-app
+  /// directory (`true`) rather than as a real system-visible package
+  /// (`false`/`null`). Drives the install/uninstall branching in
+  /// `AndroidApkInstallMixin`. Unused by the desktop backends.
+  bool? isShared;
+
   PackagedSource({
     super.id,
     super.name,
@@ -44,6 +50,7 @@ abstract class PackagedSource extends Source {
     this.apkUrlOverride,
     this.jarUrl,
     this.apkPath,
+    this.isShared,
   });
 
   /// Download URL for the package. Prefers an explicit [apkUrlOverride];

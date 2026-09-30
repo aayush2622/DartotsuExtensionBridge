@@ -2,8 +2,6 @@ import '../../../../Models/Source.dart';
 import '../../../Shared/PackagedSource.dart';
 
 class ISource extends PackagedSource {
-  bool? isShared;
-
   ISource({
     super.id,
     super.name,
@@ -21,7 +19,7 @@ class ISource extends PackagedSource {
     super.jarUrl,
     super.apkPath,
     super.pkgName,
-    this.isShared,
+    super.isShared,
   });
 
   factory ISource.fromJson(Map<String, dynamic> json) {
