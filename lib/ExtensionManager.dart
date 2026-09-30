@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import 'Extensions/Extensions.dart';
 import 'Extensions/SourceMethods.dart';
+import 'Logger.dart';
 import 'Models/Source.dart';
 import 'Services/Aniyomi/AniyomiAndroid/AniyomiExtensions.dart';
 import 'Services/Aniyomi/AniyomiDesktop/AniyomiDesktopExtensions.dart';
@@ -39,22 +40,38 @@ class ExtensionManager extends GetxController {
       Platform.isMacOS ||
       Platform.isIOS;
 
-  List<Extension> get _extensionManagers => [
-    MangayomiExtensions(),
-    SoraExtensions(),
-    LnReaderExtensions(),
-    LegadoExtensions(),
-    if (Platform.isAndroid) AniyomiExtensions(),
-    if (Platform.isAndroid) CloudStreamExtensions(),
-    if (Platform.isAndroid) IReaderExtensions(),
-    if (Platform.isAndroid) TsundokuExtensions(),
-    if (Platform.isAndroid) KotatsuExtensions(),
-    if (_jvmBackends) AniyomiDesktopExtensions(),
-    if (_jvmBackends) CloudStreamDesktopExtensions(),
-    if (_jvmBackends) IReaderDesktopExtensions(),
-    if (_jvmBackends) TsundokuDesktopExtensions(),
-    if (_jvmBackends) KotatsuDesktopExtensions(),
+  /// Each entry is a factory, not a constructed instance: a backend whose
+  /// constructor throws (missing native lib, bad platform assumption, ...)
+  /// must not take every other backend down with it - see [_tryCreate].
+  List<Extension Function()> get _extensionFactories => [
+    MangayomiExtensions.new,
+    SoraExtensions.new,
+    LnReaderExtensions.new,
+    LegadoExtensions.new,
+    if (Platform.isAndroid) AniyomiExtensions.new,
+    if (Platform.isAndroid) CloudStreamExtensions.new,
+    if (Platform.isAndroid) IReaderExtensions.new,
+    if (Platform.isAndroid) TsundokuExtensions.new,
+    if (Platform.isAndroid) KotatsuExtensions.new,
+    if (_jvmBackends) AniyomiDesktopExtensions.new,
+    if (_jvmBackends) CloudStreamDesktopExtensions.new,
+    if (_jvmBackends) IReaderDesktopExtensions.new,
+    if (_jvmBackends) TsundokuDesktopExtensions.new,
+    if (_jvmBackends) KotatsuDesktopExtensions.new,
   ];
+
+  List<Extension> get _extensionManagers => [
+    for (final create in _extensionFactories) ?_tryCreate(create),
+  ];
+
+  Extension? _tryCreate(Extension Function() create) {
+    try {
+      return create();
+    } catch (e, s) {
+      Logger.log('Failed to construct an extension manager: $e\n$s');
+      return null;
+    }
+  }
 
   @override
   void onInit() {
@@ -170,18 +187,11 @@ class ExtensionManager extends GetxController {
   SourceMethods createSourceMethods(Source source) {
     final factory = _factories[source.runtimeType];
 
-    if (factory != null) {
-      return factory(source);
+    if (factory == null) {
+      throw Exception("No SourceMethods registered for ${source.runtimeType}");
     }
 
-    for (final entry in _factories.entries) {
-      if (source.runtimeType == entry.key ||
-          source.runtimeType.toString() == entry.key.toString()) {
-        return entry.value(source);
-      }
-    }
-
-    throw Exception("No SourceMethods registered for ${source.runtimeType}");
+    return factory(source);
   }
 }
 
