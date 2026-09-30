@@ -9,7 +9,6 @@ import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Extensions/ExtensionSettings.dart';
-import '../../../Logger.dart';
 import '../../../NetworkClient.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
@@ -45,6 +44,7 @@ class TsundokuDesktopExtensions extends Extension
   @override
   DownloadablePlugin plugin = TsundokuDesktopPlugin();
 
+  @override
   final JavaBridge jni = createJavaBridge();
 
   final _client = MClient.init();
@@ -115,27 +115,8 @@ class TsundokuDesktopExtensions extends Extension
     novel.available.value = await fetchExtensions(ItemType.novel);
   }
 
-  Future<List<Source>> _loadInstalled(String method, ItemType type) async {
-    try {
-      final dir = await DartotsuExtensionBridge.context.getDirectory(
-        subPath: 'bridge/tsundoku/extensions/${type.toString()}',
-        useSystemPath: false,
-        useCustomPath: true,
-      );
-
-      final result = await jni.call<List<Map<String, dynamic>>>(method, {
-        "path": dir!.path,
-      });
-
-      return result
-          .map((e) => TdSource.fromJson(e))
-          .where((s) => s.itemType == type)
-          .toList(growable: false);
-    } catch (e, s) {
-      Logger.log("Desktop loadInstalled error: $e\n$s");
-      return [];
-    }
-  }
+  Future<List<Source>> _loadInstalled(String method, ItemType type) =>
+      loadInstalledJniSources(method, type, TdSource.fromJson);
 
   @override
   Set<String> get schemes => {"tsundoku"};
