@@ -3,6 +3,7 @@ import '../../../Shared/PackagedSource.dart';
 
 class ASource extends PackagedSource {
   bool? isShared;
+  bool? isTorrent;
   ASource({
     super.id,
     super.name,
@@ -20,6 +21,7 @@ class ASource extends PackagedSource {
     super.apkUrlOverride,
     super.jarUrl,
     this.isShared,
+    this.isTorrent,
   });
   factory ASource.fromJson(Map<String, dynamic> json) {
     return ASource(
@@ -39,6 +41,7 @@ class ASource extends PackagedSource {
       apkUrlOverride: json['apkUrlOverride'],
       jarUrl: json['jarUrl'],
       isShared: json['isShared'],
+      isTorrent: json['isTorrent'] ?? false,
     );
   }
 
@@ -50,6 +53,7 @@ class ASource extends PackagedSource {
     map['apkUrlOverride'] = apkUrlOverride;
     map['jarUrl'] = jarUrl;
     map['isShared'] = isShared;
+    map['isTorrent'] = isTorrent;
     return map;
   }
 }
