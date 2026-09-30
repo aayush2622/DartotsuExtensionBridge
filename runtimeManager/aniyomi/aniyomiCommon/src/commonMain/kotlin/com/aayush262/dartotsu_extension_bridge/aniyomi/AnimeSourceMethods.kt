@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.Hoster.Companion.NO_HOSTER_LIST
+import eu.kanade.tachiyomi.animesource.model.HttpServer
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
@@ -22,9 +23,10 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.flatten
 
-class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
+class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
 
     private val source: AnimeCatalogueSource
 
@@ -34,15 +36,15 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
         val src = manager.installedAnimeExtensions
             .asSequence()
             .flatMap { it.key.sources.asSequence() }
-            .firstOrNull { it.id.toString() == sourceID }
+            .firstOrNull { it.id.toString() == sourceId }
             ?: throw IllegalArgumentException(
-                "Anime source with ID '$sourceID' not found."
+                "Anime source with ID '$sourceId' not found."
             )
 
         source = src as? AnimeHttpSource
             ?: src as? AnimeCatalogueSource
                     ?: throw IllegalArgumentException(
-                "Source with ID '$sourceID' is not an AnimeHttpSource or AnimeCatalogueSource"
+                "Source with ID '$sourceId' is not an AnimeHttpSource or AnimeCatalogueSource"
             )
     }
 
@@ -149,11 +151,64 @@ class AnimeSourceMethods(sourceID: String) : AniyomiSourceMethods {
             }.awaitAll()
         }
 
-        return source.run {
+        val videos = source.run {
             (resolvedDirect + hosterVideos)
                 .distinctBy { it.videoUrl }
                 .filter { it.videoUrl.isNotEmpty() && it.videoUrl != "null" }
                 .sortVideos()
+        }
+
+        return applyHttpServers(videos)
+    }
+
+    /**
+     * extensions-lib 17: a source can ask the app to run a local proxy server
+     * for a video instead of returning a directly playable url (e.g. to inject
+     * auth headers a player can't set itself) - [Video.usesHttpServer] is
+     * `true` for such a video, and [AnimeHttpSource.createHttpServer] builds
+     * the server that knows how to serve it. Legacy sources never produce a
+     * video where [Video.usesHttpServer] is true, so this is a no-op for them.
+     *
+     * There's no separate "user picked this video to play" call in this
+     * bridge's API - the whole list returned by [getVideoList] is handed to
+     * Dart at once - so any server-backed video in the list gets its server
+     * started eagerly here rather than lazily at playback time. A fresh
+     * [getVideoList] call for this source (a new episode, or a refresh)
+     * replaces the previous batch, so old servers are stopped first.
+     */
+    private fun applyHttpServers(videos: List<Video>): List<Video> {
+        val httpSource = source as? AnimeHttpSource ?: return videos
+        if (videos.none { it.usesHttpServer() }) return videos
+
+        stopHttpServers(sourceId)
+        val started = mutableListOf<HttpServer>()
+
+        val result = videos.map { video ->
+            if (!video.usesHttpServer()) return@map video
+
+            val server = runCatching { httpSource.createHttpServer() }.getOrNull()
+                ?: return@map video
+
+            server.start()
+            if (!server.isRunning()) return@map video
+
+            started += server
+            video.copyHttpServer(server.listeningPort)
+        }
+
+        if (started.isNotEmpty()) activeHttpServers[sourceId] = started
+        return result
+    }
+
+    companion object {
+        // Keyed by source id so the next getVideoList() call for the same
+        // source can stop whatever servers a previous call started.
+        private val activeHttpServers = ConcurrentHashMap<String, List<HttpServer>>()
+
+        private fun stopHttpServers(sourceId: String) {
+            activeHttpServers.remove(sourceId)?.forEach { server ->
+                runCatching { if (server.isRunning()) server.stop() }
+            }
         }
     }
 
