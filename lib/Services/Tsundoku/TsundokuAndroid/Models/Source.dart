@@ -2,7 +2,6 @@ import '../../../../Models/Source.dart';
 import '../../../Shared/PackagedSource.dart';
 
 class TSource extends PackagedSource {
-  bool? isShared;
   TSource({
     super.id,
     super.name,
@@ -19,7 +18,7 @@ class TSource extends PackagedSource {
     super.apkName,
     super.apkUrlOverride,
     super.jarUrl,
-    this.isShared,
+    super.isShared,
   });
   factory TSource.fromJson(Map<String, dynamic> json) {
     return TSource(
