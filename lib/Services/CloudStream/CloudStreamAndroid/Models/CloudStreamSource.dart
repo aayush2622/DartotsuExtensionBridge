@@ -1,9 +1,7 @@
 import '../../../../Models/Source.dart';
+import '../../../Shared/CloudStreamSource.dart';
 
-class CSource extends Source {
-  String? internalName;
-  String? pluginUrl;
-
+class CSource extends CloudStreamSource {
   CSource({
     super.id,
     super.name,
@@ -16,8 +14,8 @@ class CSource extends Source {
     super.itemType,
     super.repo,
     super.hasUpdate,
-    this.internalName,
-    this.pluginUrl,
+    super.internalName,
+    super.pluginUrl,
   });
 
   factory CSource.fromJson(Map<String, dynamic> json) {
