@@ -7,7 +7,7 @@ import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
 import '../../NetworkClient.dart';
-import '../../Settings/KvStore.dart';
+import '../Shared/SimpleInstalledSourceStore.dart';
 import 'LegadoSourceMethods.dart';
 import 'Models/LegadoSource.dart';
 
@@ -18,7 +18,8 @@ import 'Models/LegadoSource.dart';
 /// carrying its own HTML parse rules — there is no plugin binary, so
 /// installing a source just stashes its JSON. Everything runs pure-Dart via
 /// [LegadoSourceMethods] + `LegadoRuleEngine`. Novel-only.
-class LegadoExtensions extends Extension {
+class LegadoExtensions extends Extension
+    with SimpleInstalledSourceStore<LegadoSource> {
   static final _client = MClient.init();
 
   @override
@@ -42,6 +43,10 @@ class LegadoExtensions extends Extension {
       (LegadoSource, (source) => LegadoSourceMethods(source as LegadoSource));
 
   @override
+  LegadoSource Function(Map<String, dynamic>) get sourceFromJson =>
+      LegadoSource.fromJson;
+
+  @override
   Future<void> fetchNovelExtensions() async {
     await super.fetchNovelExtensions();
     novel.available.value = await fetchExtensions(ItemType.novel);
@@ -50,7 +55,7 @@ class LegadoExtensions extends Extension {
   @override
   Future<void> fetchInstalledNovelExtensions() async {
     await super.fetchInstalledNovelExtensions();
-    novel.installed.value = _loadInstalled(ItemType.novel);
+    novel.installed.value = loadInstalled(ItemType.novel);
   }
 
   // --- repos -----------------------------------------------------------
@@ -170,9 +175,9 @@ class LegadoExtensions extends Extension {
             ? source
             : LegadoSource.fromJson(source.toJson());
 
-        final list = _loadInstalled(type)..removeWhere((e) => e.id == s.id);
+        final list = loadInstalled(type)..removeWhere((e) => e.id == s.id);
         list.add(s);
-        _saveInstalled(list, type);
+        saveInstalled(list, type);
         state(type).installed.value = List.unmodifiable(list);
 
         final avail = state(type).available;
@@ -189,8 +194,8 @@ class LegadoExtensions extends Extension {
   Future<void> uninstallSource(Source source) async {
     try {
       const type = ItemType.novel;
-      final list = _loadInstalled(type)..removeWhere((e) => e.id == source.id);
-      _saveInstalled(list, type);
+      final list = loadInstalled(type)..removeWhere((e) => e.id == source.id);
+      saveInstalled(list, type);
       state(type).installed.value = List.unmodifiable(list);
 
       final installedIds = list.map((e) => e.id).toSet();
@@ -217,12 +222,12 @@ class LegadoExtensions extends Extension {
           ? remote
           : LegadoSource.fromJson(remote.toJson());
 
-      final list = _loadInstalled(type);
+      final list = loadInstalled(type);
       final i = list.indexWhere((e) => e.id == source.id);
       if (i == -1) return;
       fresh.hasUpdate = false;
       list[i] = fresh;
-      _saveInstalled(list, type);
+      saveInstalled(list, type);
       state(type).installed.value = List.unmodifiable(list);
     });
   }
@@ -230,7 +235,7 @@ class LegadoExtensions extends Extension {
   @override
   void detectUpdates(List<Source> available, ItemType type) {
     if (type != ItemType.novel) return;
-    final installed = _loadInstalled(type);
+    final installed = loadInstalled(type);
     if (installed.isEmpty || available.isEmpty) return;
 
     final repoMap = {for (final s in available) s.id: s};
@@ -253,30 +258,9 @@ class LegadoExtensions extends Extension {
     }
 
     if (changed) {
-      _saveInstalled(installed, type);
+      saveInstalled(installed, type);
       state(type).installed.value = List.unmodifiable(installed);
     }
-  }
-
-  // --- persistence -------------------------------------------------
-
-  List<LegadoSource> _loadInstalled(ItemType type) {
-    final encoded = getVal<List<String>>('$id-Installed-${type.name}');
-    if (encoded == null || encoded.isEmpty) return [];
-    final list = <LegadoSource>[];
-    for (final e in encoded) {
-      try {
-        list.add(LegadoSource.fromJson(jsonDecode(e)));
-      } catch (_) {}
-    }
-    return list;
-  }
-
-  void _saveInstalled(List<LegadoSource> list, ItemType type) {
-    setVal(
-      '$id-Installed-${type.name}',
-      list.map((e) => jsonEncode(e.toJson())).toList(growable: false),
-    );
   }
 
   // --- deep links ------------------------------------------------
