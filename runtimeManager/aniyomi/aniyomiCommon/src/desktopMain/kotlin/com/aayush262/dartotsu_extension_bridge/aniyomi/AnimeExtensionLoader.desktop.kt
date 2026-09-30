@@ -23,7 +23,7 @@ actual object AnimeExtensionLoader {
     private const val METADATA_HAS_CHANGELOG = "tachiyomi.animeextension.hasChangelog"
 
     const val LIB_VERSION_MIN = 12.0
-    const val LIB_VERSION_MAX = 16.0
+    const val LIB_VERSION_MAX = 17.0
 
     @Synchronized  // two concurrent getInstalled* polls raced APK->jar conversion
     actual fun loadExtensions(path: String): Map<AnimeExtension.Installed, String> {

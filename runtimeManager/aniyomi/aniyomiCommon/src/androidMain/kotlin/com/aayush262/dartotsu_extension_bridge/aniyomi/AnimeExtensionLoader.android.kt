@@ -39,7 +39,7 @@ actual object AnimeExtensionLoader {
     private const val METADATA_HAS_CHANGELOG = "tachiyomi.animeextension.hasChangelog"
 
     const val LIB_VERSION_MIN = 12
-    const val LIB_VERSION_MAX = 16
+    const val LIB_VERSION_MAX = 17
 
     @Suppress("DEPRECATION")
     private val PACKAGE_FLAGS =
