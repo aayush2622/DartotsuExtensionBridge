@@ -11,13 +11,6 @@ import '../Shared/SimpleInstalledSourceStore.dart';
 import 'LegadoSourceMethods.dart';
 import 'Models/LegadoSource.dart';
 
-/// Independent backend for **Legado / 阅读** book sources
-/// (<https://github.com/gedoor/legado>).
-///
-/// A repo is a JSON array (or `{sources|data: [...]}`) of "书源" objects, each
-/// carrying its own HTML parse rules — there is no plugin binary, so
-/// installing a source just stashes its JSON. Everything runs pure-Dart via
-/// [LegadoSourceMethods] + `LegadoRuleEngine`. Novel-only.
 class LegadoExtensions extends Extension
     with SimpleInstalledSourceStore<LegadoSource> {
   static final _client = MClient.init();
@@ -57,8 +50,6 @@ class LegadoExtensions extends Extension
     await super.fetchInstalledNovelExtensions();
     novel.installed.value = loadInstalled(ItemType.novel);
   }
-
-  // --- repos -----------------------------------------------------------
 
   @override
   Stream<double> addRepo(String repoUrl, ItemType type) {
@@ -163,11 +154,8 @@ class LegadoExtensions extends Extension
     }
   }
 
-  // --- install / uninstall / update ----------------------------------
-
   @override
   Stream<double> installSource(Source source) {
-    // No download here - Legado sources are stored JSON, not a binary.
     return progressStream((_) async {
       try {
         const type = ItemType.novel;
@@ -262,8 +250,6 @@ class LegadoExtensions extends Extension
       state(type).installed.value = List.unmodifiable(installed);
     }
   }
-
-  // --- deep links ------------------------------------------------
 
   @override
   Set<String> get schemes => {'legado', 'yuedu'};

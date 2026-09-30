@@ -52,8 +52,8 @@ class CloudStreamExtensions extends Extension
   http.Client get repoClient => _client;
 
   @override
-  Future<Directory?> get extensionsDir => DartotsuExtensionBridge.context
-      .getDirectory(
+  Future<Directory?> get extensionsDir =>
+      DartotsuExtensionBridge.context.getDirectory(
         subPath: 'bridge/cloudStream/extensions/Anime',
         useSystemPath: false,
         useCustomPath: true,

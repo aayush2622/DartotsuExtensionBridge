@@ -11,7 +11,8 @@ import '../Shared/SimpleInstalledSourceStore.dart';
 import 'Models/Source.dart';
 import 'SoraSourceMethods.dart';
 
-class SoraExtensions extends Extension with SimpleInstalledSourceStore<SSource> {
+class SoraExtensions extends Extension
+    with SimpleInstalledSourceStore<SSource> {
   static final _client = MClient.init();
 
   @override
@@ -208,8 +209,6 @@ class SoraExtensions extends Extension with SimpleInstalledSourceStore<SSource> 
 
   @override
   Stream<double> installSource(Source source) {
-    // No streamed download here - Sora sources are small JS modules, not a
-    // binary worth byte-progress.
     return progressStream((_) async {
       final s = source as SSource;
 
@@ -336,7 +335,6 @@ class SoraExtensions extends Extension with SimpleInstalledSourceStore<SSource> 
       state(type).installed.value = List.unmodifiable(installed);
     }
   }
-
 
   @override
   Set<String> get schemes => {"sora"};

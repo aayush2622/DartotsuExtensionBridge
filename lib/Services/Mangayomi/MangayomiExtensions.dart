@@ -30,8 +30,7 @@ class MangayomiExtensions extends Extension
       (MSource, (source) => MangayomiSourceMethods(source as MSource));
 
   @override
-  MSource Function(Map<String, dynamic>) get sourceFromJson =>
-      MSource.fromJson;
+  MSource Function(Map<String, dynamic>) get sourceFromJson => MSource.fromJson;
 
   @override
   Future<void> fetchAnimeExtensions() async {
@@ -71,8 +70,6 @@ class MangayomiExtensions extends Extension
 
   @override
   Stream<double> installSource(Source source) {
-    // No streamed download here - Mangayomi sources are small JS/Dart
-    // scripts, not a binary worth byte-progress.
     return progressStream((_) async {
       final m = source as MSource;
       final type = m.itemType!;
@@ -197,8 +194,6 @@ class MangayomiExtensions extends Extension
           ..versionLast = repo.version;
         changed = true;
       } else if (inst.hasUpdate == true) {
-        // Repo caught up (e.g. the extension was updated) — drop the flag so
-        // the UI stops offering an update that would be a no-op.
         installed[i] = inst..hasUpdate = false;
         changed = true;
       }
