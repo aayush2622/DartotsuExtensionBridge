@@ -39,7 +39,6 @@ class ISource extends PackagedSource {
       hasUpdate: json['hasUpdate'] ?? false,
       itemType: ItemType.novel,
       apkName: json['apkName'],
-      // Tolerate a legacy stored `apkUrl` by treating it as the override.
       apkUrlOverride: json['apkUrlOverride'] ?? json['apkUrl'],
       jarUrl: json['jarUrl'],
       apkPath: json['apkPath'],

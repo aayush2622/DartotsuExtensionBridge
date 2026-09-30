@@ -14,34 +14,13 @@ import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'PackagedSource.dart';
 
-/// `installSource` / `uninstallSource` / `updateSource` and installed-source
-/// loading for the Android APK-delivered Tachiyomi backends — Aniyomi,
-/// IReader and Tsundoku.
-///
-/// All three were byte-identical bar the `getVal` install-privacy setting key,
-/// the `bridge/<name>-extensions` directory, and the concrete [PackagedSource]
-/// subtype (hidden behind the generic type parameter on
-/// [loadInstalledAndroidSources]). A source installs either into a private
-/// per-app directory (never visible to other apps, no real Android package)
-/// or as a real installed package via `install_plugin`; either way the
-/// backend's own [MethodChannel] (`platform`) scans for what's on disk /
-/// installed on the next `getInstalled…` call.
 mixin AndroidApkInstallMixin on Extension {
-  /// HTTP client for the APK download. Every current user of this mixin
-  /// already exposes this for the `TachiyomiRepoBackend` mixin
-  /// (see TachiyomiRepo.dart).
   http.Client get repoClient;
 
-  /// Platform channel this backend's native side listens on
-  /// (`loadPlugin`/`initClient`/`getInstalled…Extensions`).
   MethodChannel get platform;
 
-  /// `getVal`/`setVal` key for the "install extensions privately" setting -
-  /// `'aniyomiInstallPrivate'`, `'ireaderInstallPrivate'`, `'tsundokuInstallPrivate'`.
   String get installPrivateKey;
 
-  /// Directory segment under `bridge/` for a private install -
-  /// `'aniyomi-extensions'`, `'ireader-extensions'`, `'tsundoku-extensions'`.
   String get androidExtensionsDirName;
 
   Future<Directory?> _extensionsDir(ItemType type) =>
@@ -57,12 +36,6 @@ mixin AndroidApkInstallMixin on Extension {
   Stream<double> installSource(Source source) {
     final id = (source as PackagedSource).id;
 
-    // Without this, a double-tap (or install racing an update for the same
-    // source) runs two independent download+write sequences against the
-    // same target file/path concurrently - interleaved writes can corrupt
-    // the APK, and the loser's post-install cleanup can delete the winner's
-    // file out from under it. The stream is broadcast, so a concurrent
-    // caller shares the same in-flight operation and progress.
     if (id != null) {
       final inFlight = _installsInFlight[id];
       if (inFlight != null) return inFlight;
@@ -83,9 +56,6 @@ mixin AndroidApkInstallMixin on Extension {
     return stream;
   }
 
-  /// Streams [response] to [file], updating `installProgress[progressId]`
-  /// (ambient GetX state) and calling [report] (this operation's own
-  /// progress stream) as bytes arrive, once the content length is known.
   Future<void> _writeWithProgress(
     http.StreamedResponse response,
     File file,
@@ -206,9 +176,6 @@ mixin AndroidApkInstallMixin on Extension {
   Future<void> uninstallSource(Source source) async {
     final s = source as PackagedSource;
     final type = source.itemType!;
-    // Resolve a package name without dereferencing a possibly-null apkUrl: an
-    // installed source loaded from the native side may not carry
-    // apkUrlOverride, and the derived getter can be null.
     final fallbackPkg =
         s.pkgName ??
         s.apkName?.replaceAll('.apk', '') ??
@@ -246,10 +213,6 @@ mixin AndroidApkInstallMixin on Extension {
           await InstalledApps.isAppInstalled(packageName) ?? false;
 
       if (!isInstalled) {
-        // The APK isn't actually present (install failed partway, or it was
-        // removed outside the app) - still restore `available`/detectUpdates
-        // the same way the paths below do, instead of leaving the source
-        // missing from both lists until an unrelated full refresh.
         state(type).installed.value = state(
           type,
         ).installed.value.where((e) => e.id != s.id).toList();
@@ -304,11 +267,6 @@ mixin AndroidApkInstallMixin on Extension {
   @override
   Stream<double> updateSource(Source source) => installSource(source);
 
-  /// Calls [method] over [platform] to load installed [type] sources from the
-  /// native side's scan of the (possibly private) extensions directory -
-  /// every user of this mixin's `_loadInstalled` was byte-identical past the
-  /// method channel name and the concrete [PackagedSource] subtype
-  /// ([fromJson]).
   Future<List<T>> loadInstalledAndroidSources<T extends PackagedSource>(
     String method,
     ItemType type,
@@ -316,10 +274,7 @@ mixin AndroidApkInstallMixin on Extension {
   ) async {
     try {
       final dir = await _extensionsDir(type);
-      final jsonString = await platform.invokeMethod<String>(
-        method,
-        dir?.path,
-      );
+      final jsonString = await platform.invokeMethod<String>(method, dir?.path);
 
       if (jsonString == null || jsonString.isEmpty) {
         return [];

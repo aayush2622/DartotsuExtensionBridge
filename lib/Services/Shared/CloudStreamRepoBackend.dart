@@ -12,10 +12,6 @@ import '../../Models/Source.dart';
 import 'CloudStreamSource.dart';
 import 'TachiyomiRepo.dart' show downloadPackageFile;
 
-/// One CloudStream repo-index entry, already resolved against the repo URL.
-/// Field names mirror the [CloudStreamSource] constructor so a backend's
-/// factory is a straight field copy - the non-Tachiyomi analog of
-/// `TachiyomiRepoEntry`.
 class CloudStreamRepoEntry {
   final String id;
   final String? name;
@@ -42,11 +38,6 @@ class CloudStreamRepoEntry {
   });
 }
 
-/// Parses a CloudStream repo-index [body] (a plain JSON array, distinct from
-/// the `pluginLists`-nesting shape [CloudStreamRepoBackend] unwraps before
-/// getting here) into concrete sources. Safe to call inside `compute()` - no
-/// I/O, touches no state - as long as [factory] is too (a static method, same
-/// requirement `parseTachiyomiRepoIndex`'s callers already have).
 List<T> parseCloudStreamRepoBody<T extends CloudStreamSource>(
   String body,
   String repoUrl,
@@ -77,37 +68,16 @@ List<T> parseCloudStreamRepoBody<T extends CloudStreamSource>(
       .toList(growable: false);
 }
 
-/// `addRepo`/`fetchRepo`/`detectUpdates`/`installSource`/`uninstallSource` for
-/// the CloudStream backends (Android + desktop).
-///
-/// CloudStream's repo format (a `pluginLists`-nesting JSON array, unrelated to
-/// Tachiyomi's `index.min.json`) is its own thing, so this is CloudStream's
-/// analog of `TachiyomiRepoBackend` rather than a reuse of it - every method
-/// here was byte-identical between the two backends past the concrete
-/// [CloudStreamSource] subtype ([parseExtensionsIsolate]) and two small
-/// desktop-only hooks ([onSourceFileWritten] / [onSourceFileDeleted]), used to
-/// invalidate the desktop sidecar's cached dex2jar output.
 mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
   http.Client get repoClient;
 
-  /// The backend's `static _parseExtensions` - the function handed to
-  /// `compute()`. Kept per-backend (like `TachiyomiRepoBackend.parseIndexIsolate`)
-  /// so the isolate entry point stays a plain static tear-off; this mixin
-  /// just calls it.
   List<Source> Function((String body, String repoUrl, ItemType type))
   get parseExtensionsIsolate;
 
-  /// Directory a source's plugin file lives in once installed -
-  /// `bridge/cloudStream/extensions/Anime` for both backends today.
   Future<Directory?> get extensionsDir;
 
-  /// Called after a source's plugin file has been (re)written by
-  /// [installSource] - the desktop backend deletes its cached dex2jar output
-  /// for the old file so a fast delete+redownload can't keep serving it.
   Future<void> onSourceFileWritten(File file) async {}
 
-  /// Called just before an uninstalled source's plugin file is deleted -
-  /// same cache-invalidation need as [onSourceFileWritten].
   Future<void> onSourceFileDeleted(File file) async {}
 
   @override
@@ -175,12 +145,6 @@ mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
     await selectRepo(repo, type);
   }
 
-  // Repo JSON `name` fields are publisher-controlled and used directly as a
-  // filesystem path component below - path.join() does not collapse ".."
-  // segments (the OS resolves them at open time), so an unsanitized name
-  // containing "/" or "\" could write/delete outside the extensions
-  // directory. Applied identically at install (write) and uninstall (match)
-  // so both agree on the resulting on-disk basename.
   String _safeFileBaseName(String name) {
     final sanitized = name.replaceAll(RegExp(r'[\\/]'), '_').trim();
     if (sanitized.isEmpty || RegExp(r'^\.+$').hasMatch(sanitized)) {
@@ -195,11 +159,6 @@ mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
   Stream<double> installSource(Source source) {
     final id = (source as CloudStreamSource).id;
 
-    // See the matching guard in the Tachiyomi-style backends' installSource -
-    // without this, a double-tap (or install racing an update for the same
-    // source) runs two independent download+write sequences concurrently
-    // against the same target file. The stream is broadcast, so a
-    // concurrent caller shares the same in-flight operation and progress.
     if (id != null) {
       final inFlight = _installsInFlight[id];
       if (inFlight != null) return inFlight;
@@ -378,8 +337,7 @@ mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
     final installed = state(type).installed.value.cast<CloudStreamSource>();
 
     final repoMap = {
-      for (var s in available.cast<CloudStreamSource>())
-        s.id?.toLowerCase(): s,
+      for (var s in available.cast<CloudStreamSource>()) s.id?.toLowerCase(): s,
     };
 
     var changed = false;

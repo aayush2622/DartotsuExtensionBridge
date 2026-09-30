@@ -1,10 +1,5 @@
 import '../../Models/Source.dart';
 
-/// Base class for CloudStream sources. Android's `CSource` and desktop's
-/// `CdSource` were byte-identical past the class name - `internalName` /
-/// `pluginUrl` live here now so `CloudStreamRepoBackend` can operate on them
-/// generically, the same treatment `PackagedSource` got for the Tachiyomi
-/// backends.
 abstract class CloudStreamSource extends Source {
   String? internalName;
   String? pluginUrl;
