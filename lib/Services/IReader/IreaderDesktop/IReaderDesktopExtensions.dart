@@ -9,16 +9,16 @@ import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Extensions/ExtensionSettings.dart';
-import '../../../Logger.dart';
 import '../../../NetworkClient.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
 import '../../Shared/TachiyomiJniDesktopExtension.dart';
+import '../../Shared/TachiyomiRepo.dart';
 import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
 
 class IReaderDesktopExtensions extends Extension
-    with TachiyomiJniDesktopExtension {
+    with TachiyomiRepoBackend, TachiyomiJniDesktopExtension {
   @override
   String get id => 'ireader_desktop';
 
@@ -44,6 +44,7 @@ class IReaderDesktopExtensions extends Extension
   @override
   DownloadablePlugin plugin = IreaderDesktopPlugin();
 
+  @override
   final JavaBridge jni = createJavaBridge();
 
   final _client = MClient.init();
@@ -54,6 +55,13 @@ class IReaderDesktopExtensions extends Extension
 
   @override
   String get jniDataDir => 'ireader';
+
+  @override
+  List<Source> Function((Uint8List body, String repoUrl, ItemType type))
+  get parseIndexIsolate => _parseExtensions;
+
+  @override
+  bool get refreshExtensionCountOnFetch => true;
 
   @override
   Future<bool> onInitialize() async {
@@ -107,71 +115,8 @@ class IReaderDesktopExtensions extends Extension
     novel.available.value = await fetchExtensions(ItemType.novel);
   }
 
-  Future<List<Source>> _loadInstalled(String method, ItemType type) async {
-    try {
-      final dir = await DartotsuExtensionBridge.context.getDirectory(
-        subPath: 'bridge/ireader/extensions/${type.toString()}',
-        useSystemPath: false,
-        useCustomPath: true,
-      );
-
-      final result = await jni.call<List<Map<String, dynamic>>>(method, {
-        "path": dir!.path,
-      });
-
-      return result
-          .map((e) => IdSource.fromJson(e))
-          .where((s) => s.itemType == type)
-          .toList(growable: false);
-    } catch (e, s) {
-      Logger.log("Desktop loadInstalled error: $e\n$s");
-      return [];
-    }
-  }
-
-  @override
-  Stream<double> addRepo(String repoUrl, ItemType type) {
-    return progressStream((_) async {
-      try {
-        final uri = Uri.tryParse(repoUrl);
-        if (uri == null || !uri.hasScheme) {
-          throw Exception("Invalid repo URL");
-        }
-
-        final repos = loadRepos(type);
-        if (repos.any((r) => r.url == repoUrl)) {
-          return;
-        }
-
-        final res = await _client
-            .get(Uri.parse(repoUrl))
-            .timeout(const Duration(seconds: 10));
-
-        if (res.statusCode != 200) {
-          throw Exception("Repo returned ${res.statusCode}");
-        }
-
-        final parsed = await compute(_parseExtensions, (
-          res.body,
-          repoUrl,
-          type,
-        ));
-
-        final repo = Repo(
-          name: repoNameFromUrl(repoUrl),
-          url: repoUrl,
-          extensions: parsed.length.toString(),
-        );
-        final updatedRepos = List<Repo>.from(repos)..add(repo);
-        saveRepos(updatedRepos, type);
-        state(type).repos.value = updatedRepos;
-        await selectRepo(repo, type);
-      } catch (e) {
-        Logger.log("Failed to add repo $repoUrl: $e");
-        rethrow;
-      }
-    });
-  }
+  Future<List<Source>> _loadInstalled(String method, ItemType type) =>
+      loadInstalledJniSources(method, type, IdSource.fromJson);
 
   @override
   Set<String> get schemes => {"ireader"};
@@ -181,106 +126,31 @@ class IReaderDesktopExtensions extends Extension
 
   @override
   List<ExtensionSetting> settings(context) => [];
-  static List<Source> _parseExtensions(
-    (String body, String repoUrl, ItemType itemType) args,
-  ) {
-    final (body, repoUrl, itemType) = args;
 
-    final decoded = jsonDecode(body) as List;
+  static List<IdSource> _parseExtensions(
+    (Uint8List body, String repoUrl, ItemType itemType) args,
+  ) => parseTachiyomiIndexBytes<IdSource>(
+    args.$1,
+    args.$2,
+    args.$3,
+    prefixes: const {'ireader: ': ItemType.novel},
+    factory: _sourceFromEntry,
+  );
 
-    final baseRepo = repoUrl.replaceFirst(
-      RegExp(r'index(?:\.min)?\.json$'),
-      '',
-    );
-
-    return decoded
-        .map<Source>((e) {
-          final json = e as Map<String, dynamic>;
-
-          final apkName = json["apk"] as String?;
-          final iconName = apkName?.replaceFirst(RegExp(r'\.apk$'), '');
-
-          return IdSource(
-            id: json["id"].toString().toLowerCase(),
-            name: json["name"],
-            lang: json["lang"],
-            isNsfw: json["nsfw"] ?? false,
-            version: json["version"]?.toString(),
-            versionLast: json["version"]?.toString(),
-            itemType: itemType,
-            repo: repoUrl,
-
-            apkName: apkName,
-            apkUrlOverride: apkName == null ? null : '${baseRepo}apk/$apkName',
-            pkgName: json["pkg"],
-
-            iconUrl: iconName == null ? null : '${baseRepo}icon/$iconName.png',
-          );
-        })
-        .toList(growable: false);
-  }
-
-  @override
-  void detectUpdates(List<Source> available, ItemType type) {
-    final installed = state(type).installed.value.cast<IdSource>();
-
-    final repoMap = {for (var s in available.cast<IdSource>()) s.id: s};
-
-    bool changed = false;
-
-    for (var i = 0; i < installed.length; i++) {
-      final inst = installed[i];
-      final repo = repoMap[inst.id];
-
-      if (repo == null) continue;
-
-      if (compareVersions(repo.version ?? "0", inst.version ?? "0") > 0) {
-        installed[i] = inst
-          ..hasUpdate = true
-          ..versionLast = repo.version
-          ..apkName = repo.apkName
-          ..apkUrlOverride = repo.apkUrlOverride
-          ..pkgName = repo.pkgName
-          ..iconUrl = repo.iconUrl
-          ..repo = repo.repo;
-
-        changed = true;
-      } else if (inst.hasUpdate == true) {
-        installed[i] = inst..hasUpdate = false;
-        changed = true;
-      }
-    }
-
-    if (changed) {
-      state(type).installed.value = List.unmodifiable(installed);
-    }
-  }
-
-  @override
-  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
-    try {
-      final res = await _client
-          .get(Uri.parse(repo.url))
-          .timeout(const Duration(seconds: 10));
-
-      if (res.statusCode == 200) {
-        var extensions = await compute(_parseExtensions, (
-          res.body,
-          repo.url,
-          type,
-        ));
-        await updateRepoExtensionCount(repo, type, extensions.length);
-
-        return extensions;
-      }
-
-      throw Exception("Primary fetch failed");
-    } catch (e) {
-      Logger.log("repo failed: $repo.url → $e");
-    }
-
-    return const [];
-  }
+  static IdSource _sourceFromEntry(TachiyomiRepoEntry e) => IdSource(
+    id: e.id,
+    name: e.name,
+    pkgName: e.pkgName,
+    apkName: e.apkName,
+    lang: e.lang,
+    version: e.version,
+    isNsfw: e.isNsfw,
+    itemType: e.itemType,
+    repo: e.repo,
+    iconUrl: e.iconUrl,
+    apkUrlOverride: e.apkUrl,
+    jarUrl: e.jarUrl,
+  );
 }
 
 class IreaderDesktopPlugin extends DownloadablePlugin {
