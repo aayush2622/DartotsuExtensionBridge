@@ -56,8 +56,8 @@ class CloudStreamDesktopExtensions extends Extension
   http.Client get repoClient => _client;
 
   @override
-  Future<Directory?> get extensionsDir => DartotsuExtensionBridge.context
-      .getDirectory(
+  Future<Directory?> get extensionsDir =>
+      DartotsuExtensionBridge.context.getDirectory(
         subPath: 'bridge/cloudStream/extensions/Anime',
         useSystemPath: false,
         useCustomPath: true,
@@ -82,11 +82,6 @@ class CloudStreamDesktopExtensions extends Extension
 
     await jni.init(pluginJarPath: filePath);
 
-    // NOTE: every other path in this class is under `bridge/cloudStream`; this
-    // one says `bridge/aniyomi`. Left as-is because the desktop sidecar's
-    // `initializeDesktop` contract (shared JVM with the Aniyomi backend?) isn't
-    // in scope here — see runtimeManager. Revisit if CloudStream desktop state
-    // turns up in the wrong directory.
     var file = await _context.getDirectory(subPath: 'bridge/aniyomi');
 
     await jni.call<void>("initializeDesktop", {"path": file!.path});
@@ -132,17 +127,6 @@ class CloudStreamDesktopExtensions extends Extension
     anime.available.value = await fetchExtensions(ItemType.anime);
   }
 
-  // ExtensionLoader.desktop.kt (runtimeManager) dex2jar-converts each
-  // downloaded .cs3/.jar into `<extensionsDir>/jar/<basename>.jar` and only
-  // reconverts it when the source file's mtime is newer than that cached
-  // copy's. Filesystem mtimes aren't reliably monotonic/fine-grained enough
-  // across a fast delete+redownload (same second, or a filesystem with
-  // coarse mtime resolution), so an update can silently keep serving the
-  // old cached jar - and with it the old, already-loaded plugin class -
-  // until something eventually pushes the mtime comparison over. Deleting
-  // the cached copy here removes the mtime bet entirely: the native loader
-  // always sees `!jarFile.exists()` and rebuilds from the freshly written
-  // source file.
   Future<void> _deleteCachedJar(File sourceFile) async {
     final cached = File(
       path.join(

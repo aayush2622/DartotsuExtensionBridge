@@ -9,26 +9,11 @@ import '../../dartotsu_extension_bridge.dart';
 import 'PackagedSource.dart';
 import 'TachiyomiRepo.dart';
 
-/// `installSource` / `updateSource` / `uninstallSource` — and installed-source
-/// loading — for the desktop (JVM-sidecar) Tachiyomi backends: Aniyomi,
-/// IReader and Tsundoku.
-///
-/// All three were byte-identical bar the `bridge/<name>` data directory and the
-/// concrete `Source` subtype; both are abstracted behind [jniDataDir] and
-/// [PackagedSource]. The package file is downloaded into
-/// `bridge/<jniDataDir>/extensions/<type>/` and the JVM side picks it up from
-/// there on the next `getInstalled…` scan, so there's nothing else to call.
 mixin TachiyomiJniDesktopExtension on Extension {
-  /// HTTP client for the package download. Aniyomi/Tsundoku desktop already
-  /// expose this for [TachiyomiRepoBackend]; IReader desktop supplies its own.
   http.Client get repoClient;
 
-  /// Directory segment under `bridge/` that this backend keeps its extensions
-  /// in — `'aniyomi'`, `'ireader'`, `'tsundoku'`.
   String get jniDataDir;
 
-  /// JVM sidecar bridge used to call `getInstalled…Extensions` in
-  /// [loadInstalledJniSources].
   JavaBridge get jni;
 
   Future<Directory?> _extensionsDir(ItemType type) =>
@@ -38,10 +23,6 @@ mixin TachiyomiJniDesktopExtension on Extension {
         useCustomPath: true,
       );
 
-  /// Calls [jniMethod] over the JVM sidecar to load installed [type] sources,
-  /// then dedupes and prunes the result — the three desktop backends'
-  /// `_loadInstalled` were byte-identical past the JNI method name and the
-  /// concrete [PackagedSource] subtype ([fromJson]).
   Future<List<T>> loadInstalledJniSources<T extends PackagedSource>(
     String jniMethod,
     ItemType type,
@@ -65,13 +46,6 @@ mixin TachiyomiJniDesktopExtension on Extension {
     }
   }
 
-  /// The native loader keeps only the highest-versioned file per package
-  /// when scanning (`byPackage` in AnimeExtensionLoader.desktop.kt /
-  /// MangaExtensionLoader.desktop.kt), so a superseded version that
-  /// installSource failed to delete never shows up in the list - but it
-  /// also never gets deleted, so old package files pile up in the
-  /// extensions directory indefinitely across app restarts. Sweep anything
-  /// that isn't the file currently backing an installed source.
   Future<void> _pruneObsoletePackageFiles(
     Directory dir,
     List<PackagedSource> installed,
@@ -99,12 +73,6 @@ mixin TachiyomiJniDesktopExtension on Extension {
     }
   }
 
-  /// Guards against duplicate-`GlobalKey` crashes in the extension list UI
-  /// (each entry is keyed by [Source.id]). A native-side scan glitch -
-  /// e.g. a leftover jar from an update that failed to clean up its old
-  /// file, or an entry whose id couldn't be parsed - can otherwise surface
-  /// two [Source]s sharing an id. Drops entries with a blank/missing id and
-  /// keeps the highest-versioned entry per remaining id.
   List<T> _dedupeById<T extends PackagedSource>(Iterable<T> sources) {
     final byId = <String, T>{};
 
@@ -151,9 +119,6 @@ mixin TachiyomiJniDesktopExtension on Extension {
       final dir = await _extensionsDir(type);
       final file = File(p.join(dir!.path, fileName));
 
-      // Capture the path of the version currently on disk (if any) before we
-      // overwrite the field, so a rename between versions doesn't orphan a
-      // jar.
       final oldApkPath = s.apkPath;
 
       final progressId = s.id;

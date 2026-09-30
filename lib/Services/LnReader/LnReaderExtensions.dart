@@ -10,14 +10,6 @@ import 'LnReaderSourceMethods.dart';
 import 'Manifest.dart';
 import 'Models/Source.dart';
 
-/// Independent backend for **LNReader** plugins
-/// (<https://github.com/LNReader/lnreader-plugins>).
-///
-/// Each plugin is a standalone JS module listed in a `plugins.min.json`
-/// manifest; installing one downloads the module and stashes it on the
-/// [LSource]. Novel-only — anime/manga are unsupported. The runtime and its
-/// polyfills live under `Js/`; a source is driven through
-/// [LnReaderSourceMethods].
 class LnReaderExtensions extends Extension
     with SimpleInstalledSourceStore<LSource> {
   static final _client = MClient.init();
@@ -62,8 +54,6 @@ class LnReaderExtensions extends Extension
     await super.fetchInstalledNovelExtensions();
     novel.installed.value = loadInstalled(ItemType.novel);
   }
-
-  // --- repos -------------------------------------------------------------
 
   @override
   Stream<double> addRepo(String repoUrl, ItemType type) {
@@ -134,12 +124,8 @@ class LnReaderExtensions extends Extension
     return parseLnReaderManifest(body, repoUrl);
   }
 
-  // --- install / uninstall / update ------------------------------------
-
   @override
   Stream<double> installSource(Source source) {
-    // No streamed download here - LNReader plugin sources are small JS
-    // modules, not a binary worth byte-progress.
     return progressStream((_) async {
       final s = source as LSource;
       final type = s.itemType!;
@@ -250,8 +236,6 @@ class LnReaderExtensions extends Extension
       state(type).installed.value = List.unmodifiable(installed);
     }
   }
-
-  // --- deep links ----------------------------------------------------
 
   @override
   Set<String> get schemes => {"lnreader"};

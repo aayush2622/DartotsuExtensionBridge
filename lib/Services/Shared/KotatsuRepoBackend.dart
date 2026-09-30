@@ -12,35 +12,13 @@ import '../../NetworkClient.dart';
 import '../../Settings/KvStore.dart';
 import 'ZipValidation.dart';
 
-/// Repo/install plumbing shared by the two Kotatsu backends (Android +
-/// desktop). Kotatsu ships one shared parsers jar per repo rather than an
-/// APK/JAR per source - "installing" a source just flips it in an
-/// active-sources allow-list, so `addRepo`/`removeRepo`/`installSource`/
-/// `uninstallSource`/`updateSource`/`detectUpdates` and the installed-source
-/// cache were byte-identical between the two backends past the native
-/// transport call ([loadInstalledFromNative]) and the concrete `Source`
-/// subtype ([T]).
 mixin KotatsuRepoBackend<T extends Source> on Extension {
-  /// `getVal`/`setVal` key for this backend's active-sources allow-list -
-  /// `'kotatsu_active_sources'` / `'kotatsu_desktop_active_sources'`.
   String get activeSourcesKey;
 
-  /// Directory the parsers jar(s) live in and that the native side scans.
   Future<Directory?> get sourcesDir;
 
-  /// Backend-specific native call to list every parser class from every jar
-  /// in [dir] - the wire shape (a JSON string over a `MethodChannel` on
-  /// Android vs a typed JNI call on desktop) is the only real difference
-  /// between the two backends.
   Future<List<T>> loadInstalledFromNative(Directory dir);
 
-  // The native loader (KotatsuExtensionLoader) scans the whole directory for
-  // every file named "plugin.jar"/"kotatsu_plugin.jar", or any *.jar whose
-  // name contains "kotatsu" - it already supports multiple parser jars side
-  // by side. Each repo therefore needs a name of its own (stable and derived
-  // from the repo URL, so addRepo/removeRepo/uninstall agree on it without
-  // persisting anything extra) rather than a fixed "plugin.jar" every repo
-  // would collide on.
   File _jarFile(Directory dir, String repoUrl) =>
       File('${dir.path}/kotatsu_${_repoFileId(repoUrl)}.jar');
 
@@ -52,11 +30,6 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
     if (type != ItemType.manga) return const Stream<double>.empty();
 
     return progressStream((report) async {
-      // Kotatsu's shared parsers jar can be several MB - unlike a plain
-      // buffered client.get(), stream it so the UI can show real progress
-      // (state(type).loadingRepo / repoLoadProgress, and now this stream)
-      // instead of hanging with no feedback until the whole body has
-      // arrived.
       state(type).loadingRepo.value = true;
       state(type).repoLoadProgress.value = null;
 
@@ -117,8 +90,6 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
         try {
           await temp.rename(jarFile.path);
         } on FileSystemException {
-          // Windows won't rename onto an existing file - fall back to
-          // replace.
           await temp.copy(jarFile.path);
           await temp.delete();
         }
@@ -157,10 +128,6 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
       }
       _invalidateSourcesCache();
 
-      // Re-derive installed/available from what's left on disk instead of
-      // blanking both lists and clearing every active-source toggle - with
-      // per-repo jar files, removing one repo must not touch sources that
-      // belong to a different, still-installed repo.
       await fetchInstalledMangaExtensions();
       await fetchMangaExtensions();
     } catch (e) {
@@ -206,8 +173,6 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
     try {
       final dir = await sourcesDir;
       if (dir == null || !await dir.exists()) return const [];
-      // No single canonical jar path exists any more (one per repo) - skip
-      // the native call only when there's nothing registered at all.
       if (loadRepos(ItemType.manga).isEmpty) return const [];
 
       final sources = await loadInstalledFromNative(dir);
@@ -226,8 +191,6 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
 
   @override
   Stream<double> installSource(Source source) {
-    // No download here - installing a Kotatsu source just flips it in the
-    // active-list allow-list, so there's no granular progress to report.
     return progressStream((_) async {
       final ids = getVal<List<String>>(activeSourcesKey) ?? [];
       if (!ids.contains(source.id) && source.id != null) {
