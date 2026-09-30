@@ -37,6 +37,8 @@ actual object AnimeExtensionLoader {
     private const val METADATA_NSFW = "tachiyomi.animeextension.nsfw"
     private const val METADATA_HAS_README = "tachiyomi.animeextension.hasReadme"
     private const val METADATA_HAS_CHANGELOG = "tachiyomi.animeextension.hasChangelog"
+    private const val METADATA_TORRENT = "tachiyomi.animeextension.torrent"
+    private const val METADATA_IS_TORRENT = "aniyomix.torrent"
 
     const val LIB_VERSION_MIN = 12
     const val LIB_VERSION_MAX = 17
@@ -158,6 +160,8 @@ actual object AnimeExtensionLoader {
         val isNsfw = appInfo.metaData.getInt(METADATA_NSFW) == 1
         val hasReadme = appInfo.metaData.getInt(METADATA_HAS_README, 0) == 1
         val hasChangelog = appInfo.metaData.getInt(METADATA_HAS_CHANGELOG, 0) == 1
+        val isTorrent = appInfo.metaData.getBoolean(METADATA_IS_TORRENT) ||
+            appInfo.metaData.getInt(METADATA_TORRENT) == 1
 
         val parent = context.classLoader!!
 
@@ -234,6 +238,7 @@ actual object AnimeExtensionLoader {
             pkgFactory = appInfo.metaData.getString(METADATA_SOURCE_FACTORY),
             isUnofficial = true,
             iconUrl = context.getApplicationIcon(pkgInfo),
+            isTorrent = isTorrent,
             isShared = extensionInfo.isShared,
         )
         return AnimeLoadResult.Success(extension)

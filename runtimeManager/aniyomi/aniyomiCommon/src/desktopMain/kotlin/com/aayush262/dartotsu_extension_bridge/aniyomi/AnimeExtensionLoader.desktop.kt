@@ -21,6 +21,8 @@ actual object AnimeExtensionLoader {
     private const val METADATA_NSFW = "tachiyomi.animeextension.nsfw"
     private const val METADATA_HAS_README = "tachiyomi.animeextension.hasReadme"
     private const val METADATA_HAS_CHANGELOG = "tachiyomi.animeextension.hasChangelog"
+    private const val METADATA_TORRENT = "tachiyomi.animeextension.torrent"
+    private const val METADATA_IS_TORRENT = "aniyomix.torrent"
 
     const val LIB_VERSION_MIN = 12.0
     const val LIB_VERSION_MAX = 17.0
@@ -87,6 +89,8 @@ actual object AnimeExtensionLoader {
         val isNsfw = meta.getString(METADATA_NSFW) == "1"
         val hasReadme = meta.getString(METADATA_HAS_README) == "1"
         val hasChangelog = meta.getString(METADATA_HAS_CHANGELOG) == "1"
+        val isTorrent = meta.getString(METADATA_IS_TORRENT) == "1" ||
+            meta.getString(METADATA_TORRENT) == "1"
 
         val baseClass = meta.getString(METADATA_SOURCE_CLASS)
             ?: error("Missing source class")
@@ -166,6 +170,7 @@ actual object AnimeExtensionLoader {
             hasChangelog = hasChangelog,
             sources = sources,
             iconUrl = iconPath,
+            isTorrent = isTorrent,
             pkgFactory = meta.getString(METADATA_SOURCE_FACTORY),
             isUnofficial = true,
             isShared = false,
