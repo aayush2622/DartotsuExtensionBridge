@@ -117,10 +117,7 @@ abstract class DownloadablePlugin {
     if (_cachedMeta != null) return _cachedMeta;
 
     try {
-      final entries = await DownloadablePlugin._loadIndex(
-        _client,
-        forceRefresh: forceRefresh,
-      );
+      final entries = await DownloadablePlugin._loadIndex(_client);
       final entry = entries.firstWhere(
         (e) => e["name"] == name,
         orElse: () => const {},
