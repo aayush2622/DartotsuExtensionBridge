@@ -51,13 +51,15 @@ class MClient {
 
   static InterceptedClient init({Map<String, dynamic>? reqcopyWith}) {
     var appHttpClient = DartotsuExtensionBridge.context.http;
-    var client =
-        reqcopyWith?["useDartHttpClient"] == true || appHttpClient == null
-        ? _sharedFallbackClient()
-        : appHttpClient;
+    var useFallback =
+        reqcopyWith?["useDartHttpClient"] == true || appHttpClient == null;
+    var client = useFallback ? _sharedFallbackClient() : appHttpClient;
+
     return InterceptedClient.build(
       client: client,
-      interceptors: const [_NetworkContextInterceptor()],
+      interceptors: useFallback
+          ? const [_NetworkContextInterceptor()]
+          : const [],
     );
   }
 }
