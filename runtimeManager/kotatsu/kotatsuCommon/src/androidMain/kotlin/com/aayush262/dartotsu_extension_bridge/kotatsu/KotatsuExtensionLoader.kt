@@ -200,7 +200,17 @@ actual object KotatsuExtensionLoader {
             }
         }
 
+        override fun newParserInstance(source: MangaSource): MangaParser {
+            throw UnsupportedOperationException("Context doesn't instantiate parsers directly")
+        }
+
+        override fun getParserSources(): List<MangaSource> {
+            return loadedParsers.values.map { it.source }
+        }
+
+        @Deprecated("Provide a base url")
         override suspend fun evaluateJs(script: String): String? = null
+        override suspend fun evaluateJs(baseUrl: String, script: String): String? = null
 
         override fun getConfig(source: MangaSource): MangaSourceConfig {
             return object : MangaSourceConfig {
