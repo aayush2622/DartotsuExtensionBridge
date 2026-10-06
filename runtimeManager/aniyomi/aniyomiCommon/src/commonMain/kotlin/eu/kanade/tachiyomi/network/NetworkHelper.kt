@@ -38,8 +38,6 @@ class NetworkHelper(
                     maxSize = 5L * 1024 * 1024, // 5 MiB
                 ),
             )
-            .addNetworkInterceptor(IgnoreGzipInterceptor())
-            .addNetworkInterceptor(BrotliInterceptor)
             .addInterceptor(UncaughtExceptionInterceptor())
             .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
             .addInterceptor(

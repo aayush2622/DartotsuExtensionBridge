@@ -42,9 +42,16 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
     }
 
     override fun initClient(data: String) {
-        val client = Injekt.get<NetworkHelper>()
-        client.client = enableNetworking(data)
+        val helper = Injekt.get<NetworkHelper>()
+        val base = helper.client.newBuilder()
+        val custom = enableNetworking(data)
+
+        custom.interceptors.forEach {
+            base.addInterceptor(it)
+        }
+        helper.client = base.build()
     }
+
 
 
     private val gson = Gson()
