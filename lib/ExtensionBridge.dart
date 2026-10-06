@@ -98,7 +98,6 @@ abstract interface class BridgeNetwork {
   /// or `null` to use the platform's normal DNS resolution.
   String? get dns;
 
-  /// `host:port` of an HTTP proxy to route requests through, or `null` for none.
   String? get proxy;
 
   /// The `User-Agent` header every backend should send by default, or `null`

@@ -23,7 +23,19 @@ class MClient {
 
   static String _findProxy(Uri uri) {
     final proxy = DartotsuExtensionBridge.context.network?.proxy;
-    return (proxy == null || proxy.isEmpty) ? 'DIRECT' : 'PROXY $proxy; DIRECT';
+    if (proxy == null || proxy.isEmpty) return 'DIRECT';
+
+    if (proxy.contains('://')) {
+      final parsed = Uri.tryParse(proxy);
+      if (parsed != null) {
+        final hostPort = '${parsed.host}:${parsed.port}';
+        if (parsed.scheme == 'socks5' || parsed.scheme == 'socks') {
+          return 'SOCKS5 $hostPort; DIRECT';
+        }
+        return 'PROXY $hostPort; DIRECT';
+      }
+    }
+    return 'PROXY $proxy; DIRECT';
   }
 
   static Future<ConnectionTask<Socket>> _dnsAwareConnect(
