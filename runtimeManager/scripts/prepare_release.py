@@ -3,20 +3,27 @@
 prepare_release.py
 
 Runs inside GitHub Actions, after `./gradlew buildAllPlugins` and after
-the previous "latest" release assets have been downloaded into
-`previous-release/`.
+the previous "latest" release assets (the .apk/.jar binaries only) have
+been downloaded into `previous-release/`.
 
 This script is the ONLY place in the whole pipeline that knows about
 GitHub release tags / download URLs. plugin.gradle.kts stays completely
 host-agnostic; this is where that gap gets filled in.
 
+Per-plugin version history is NOT tracked via separate per-plugin JSON
+release assets — there is exactly one version ledger, the aggregate
+plugins.json already committed at the repo root, which this script reads
+as REPO_PLUGINS_JSON before overwriting it.
+
 For each builds/<plugin>/<plugin>-plugin.json:
-  1. Compare the artifact's SHA-256 against the previous release's copy.
-  2. If it changed (or there was no previous release): bump versionCode
+  1. Look up the matching entry (by fileName) in the previous aggregate
+     plugins.json.
+  2. Compare the artifact's SHA-256 against the previous release's copy.
+  3. If it changed (or there was no previous entry): bump versionCode
      by 1 and bump the patch segment of versionName.
-  3. If unchanged: keep the previous version numbers as-is.
-  4. Set downloadUrl to point at the (recreated) "latest" release.
-  5. Write the patched JSON back in place.
+  4. If unchanged: keep the previous version numbers as-is.
+  5. Set downloadUrl to point at the (recreated) "latest" release.
+  6. Write the patched JSON back in place.
 
 Finally, writes builds/plugins.json as an aggregate index of every
 plugin's metadata, and reports via $GITHUB_OUTPUT whether *anything*
@@ -35,6 +42,7 @@ from pathlib import Path
 
 BUILDS_DIR = Path("builds")
 PREVIOUS_DIR = Path("previous-release")
+REPO_PLUGINS_JSON = Path("../plugins.json")
 TAG = "latest"
 
 
@@ -64,13 +72,21 @@ def download_url(repo: str, file_name: str) -> str:
     return f"https://github.com/{repo}/releases/download/{TAG}/{file_name}"
 
 
-def process_plugin(metadata_path: Path, repo: str) -> tuple[dict, bool]:
+def load_previous_index() -> dict[str, dict]:
+    """fileName -> metadata, from the aggregate plugins.json already committed at the repo root."""
+    entries = load_json(REPO_PLUGINS_JSON)
+    if isinstance(entries, dict):
+        return {}
+    return {entry["fileName"]: entry for entry in entries if "fileName" in entry}
+
+
+def process_plugin(metadata_path: Path, repo: str, previous_index: dict[str, dict]) -> tuple[dict, bool]:
     metadata = load_json(metadata_path)
     plugin_dir = metadata_path.parent
     file_name = metadata["fileName"]
     artifact_path = plugin_dir / file_name
 
-    previous_metadata = load_json(PREVIOUS_DIR / metadata_path.name)
+    previous_metadata = previous_index.get(file_name, {})
     previous_artifact = PREVIOUS_DIR / file_name
 
     changed = True
@@ -105,11 +121,13 @@ def main() -> None:
         write_output("changed", "false")
         return
 
+    previous_index = load_previous_index()
+
     index = []
     any_changed = False
 
     for metadata_path in metadata_files:
-        metadata, changed = process_plugin(metadata_path, repo)
+        metadata, changed = process_plugin(metadata_path, repo, previous_index)
         index.append(metadata)
         any_changed = any_changed or changed
         status = "changed" if changed else "unchanged"
