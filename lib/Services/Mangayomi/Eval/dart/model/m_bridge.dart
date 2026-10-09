@@ -1,13 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:convert/convert.dart' show hex;
 import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/dom.dart' hide Text;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:js_packer/js_packer.dart';
+import 'package:webview_all/webview_all.dart';
 import 'package:xpath_selector_html_parser/xpath_selector_html_parser.dart';
 
 import '../../../Util/reg_exp_matcher.dart';
@@ -622,51 +623,69 @@ class MBridge {
     }
   }
 
+  static const _handlerShim = """
+(function () {
+  window.flutter_inappwebview = {
+    callHandler: function (name) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      FlutterBridge.postMessage(JSON.stringify([name, args]));
+      return Promise.resolve();
+    },
+  };
+})();
+""";
+
   static Future<String> evaluateJavascriptViaWebview(
     String url,
     Map<String, String> headers,
     List<String> scripts, {
     int time = 30,
   }) async {
-    int t = 0;
-    bool timeOut = false;
-    bool isOk = false;
-    String response = "";
-    HeadlessInAppWebView? headlessWebView;
-    headlessWebView = HeadlessInAppWebView(
-      onWebViewCreated: (controller) {
-        controller.addJavaScriptHandler(
-          handlerName: 'setResponse',
-          callback: (args) {
-            response = args[0] as String;
-            isOk = true;
-          },
-        );
-      },
-      initialUrlRequest: URLRequest(url: WebUri(url), headers: headers),
-      onLoadStop: (controller, url) async {
-        for (var script in scripts) {
-          await controller.platform.evaluateJavascript(source: script);
-        }
-      },
-    );
-
-    await headlessWebView.run();
-
-    await Future.doWhile(() async {
-      timeOut = time == t;
-      if (timeOut || isOk) {
-        return false;
-      }
-      await Future.delayed(const Duration(seconds: 1));
-      t++;
-      return true;
-    });
+    final response = Completer<String>();
+    OffscreenWebViewSession? session;
     try {
-      await headlessWebView.dispose();
-    } catch (_) {}
-
-    return response;
+      session = await OffscreenWebViewSession.create();
+      final controller = session.controller;
+      await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+      await controller.addJavaScriptChannel(
+        'FlutterBridge',
+        onMessageReceived: (message) {
+          try {
+            final data = jsonDecode(message.message) as List;
+            final args = data[1] as List;
+            if (data[0] == 'setResponse' &&
+                args.isNotEmpty &&
+                !response.isCompleted) {
+              final value = args.first;
+              response.complete(value is String ? value : jsonEncode(value));
+            }
+          } catch (_) {}
+        },
+      );
+      await controller.setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) async {
+            try {
+              await controller.runJavaScript(_handlerShim);
+              for (final script in scripts) {
+                await controller.runJavaScript(script);
+              }
+            } catch (_) {}
+          },
+        ),
+      );
+      await controller.loadRequest(Uri.parse(url), headers: headers);
+      return await response.future.timeout(
+        Duration(seconds: time),
+        onTimeout: () => '',
+      );
+    } catch (_) {
+      return '';
+    } finally {
+      try {
+        await session?.close();
+      } catch (_) {}
+    }
   }
 }
 
