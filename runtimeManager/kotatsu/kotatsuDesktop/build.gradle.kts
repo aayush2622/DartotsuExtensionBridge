@@ -45,6 +45,7 @@ tasks.shadowJar {
             "com/sun/jna/**", "native/**", "jni/**",
             "**/*.dll", "**/*.dylib", "**/*.so", "**/*.jnilib",
             "darwin*/**", "win32-*/**", "linux-*/**",
+            "okhttp3/zstd/**", "com/squareup/zstd/**",
             "AndroidManifest.xml", "resources.arsc", "res/**",
         )
     }

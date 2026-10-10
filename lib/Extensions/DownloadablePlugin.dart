@@ -20,6 +20,22 @@ abstract class DownloadablePlugin {
 
   String get _versionKey => "${name}_version";
 
+  static String get _platformKey => Platform.isIOS
+      ? "ios"
+      : Platform.isAndroid
+      ? "android"
+      : "desktop";
+
+  Future<bool> _needsUpdate(Map<String, dynamic> remote) async {
+    final remoteVersion = remote["versionCode"] ?? 0;
+    final localVersion = getVal<int>(_versionKey) ?? 0;
+    if (remoteVersion > localVersion) return true;
+
+    final remoteSize = remote["fileSize"];
+    if (remoteSize is! int) return false;
+    return (await (await _file).length()) != remoteSize;
+  }
+
   final RxDouble progress = 0.0.obs;
   final RxBool downloading = false.obs;
 
@@ -118,10 +134,15 @@ abstract class DownloadablePlugin {
 
     try {
       final entries = await DownloadablePlugin._loadIndex(_client);
-      final entry = entries.firstWhere(
-        (e) => e["name"] == name,
-        orElse: () => const {},
-      );
+      final named = entries.where((e) => e["name"] == name).toList();
+      final entry =
+          named.firstWhere(
+            (e) => e["platform"] == _platformKey,
+            orElse: () => named.firstWhere(
+              (e) => e["platform"] == null,
+              orElse: () => const {},
+            ),
+          );
 
       if (entry.isEmpty) {
         availableInRepo.value = false;
@@ -187,12 +208,7 @@ abstract class DownloadablePlugin {
     final remote = await fetchRemote();
     if (remote == null) return false;
 
-    final remoteVersion = remote["versionCode"] ?? 0;
-    final localVersion = getVal<int>(_versionKey) ?? 0;
-
-    final hasUpdate = remoteVersion > localVersion;
-
-    return hasUpdate;
+    return _needsUpdate(remote);
   }
 
   Future<void> update() async {
@@ -201,10 +217,9 @@ abstract class DownloadablePlugin {
     final remote = await fetchRemote();
     if (remote == null) return;
 
-    final remoteVersion = remote["versionCode"] ?? 0;
-    final localVersion = getVal<int>(_versionKey) ?? 0;
+    if (!await _needsUpdate(remote)) return;
 
-    if (remoteVersion <= localVersion) return;
+    final remoteVersion = remote["versionCode"] ?? 0;
 
     Logger.log("$name updating → v$remoteVersion", show: true);
 
