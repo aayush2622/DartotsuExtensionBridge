@@ -14,15 +14,15 @@
   },
   {
     "name": "aniyomiDesktop",
-    "versionCode": 2,
-    "versionName": "2.0.0",
+    "versionCode": 3,
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1791273409554,
+    "createdAt": 1791666314538,
     "platform": "ios",
     "type": "jar",
     "fileName": "aniyomiDesktop-plugin-ios.jar",
-    "fileSize": 38306561,
+    "fileSize": 38285912,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiDesktop-plugin-ios.jar"
   },
   {
@@ -53,15 +53,15 @@
   },
   {
     "name": "cloudStreamDesktop",
-    "versionCode": 2,
-    "versionName": "2.0.0",
+    "versionCode": 3,
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run cloudstream extensions on desktop",
     "author": "aayush262/Ryan",
-    "createdAt": 1791273413985,
+    "createdAt": 1791666319265,
     "platform": "ios",
     "type": "jar",
     "fileName": "cloudStreamDesktop-plugin-ios.jar",
-    "fileSize": 50639727,
+    "fileSize": 50619078,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/cloudStreamDesktop-plugin-ios.jar"
   },
   {
@@ -92,15 +92,15 @@
   },
   {
     "name": "ireaderDesktop",
-    "versionCode": 2,
-    "versionName": "2.0.0",
+    "versionCode": 3,
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run ireader extensions on desktop",
     "author": "aayush262",
-    "createdAt": 1791273417879,
+    "createdAt": 1791666323622,
     "platform": "ios",
     "type": "jar",
     "fileName": "ireaderDesktop-plugin-ios.jar",
-    "fileSize": 45124690,
+    "fileSize": 45104041,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/ireaderDesktop-plugin-ios.jar"
   },
   {
@@ -131,15 +131,15 @@
   },
   {
     "name": "kotatsuDesktop",
-    "versionCode": 2,
-    "versionName": "2.0.0",
+    "versionCode": 3,
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run kotatsu extensions on desktop",
     "author": "aayush262/Ryan",
-    "createdAt": 1791273421261,
+    "createdAt": 1791666327327,
     "platform": "ios",
     "type": "jar",
     "fileName": "kotatsuDesktop-plugin-ios.jar",
-    "fileSize": 38965749,
+    "fileSize": 38945100,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/kotatsuDesktop-plugin-ios.jar"
   },
   {
@@ -170,15 +170,15 @@
   },
   {
     "name": "tsundokuDesktop",
-    "versionCode": 2,
-    "versionName": "2.0.0",
+    "versionCode": 3,
+    "versionName": "2.0.1",
     "description": "A plugin that allows you to run Tsundoku extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1791273424617,
+    "createdAt": 1791666331130,
     "platform": "ios",
     "type": "jar",
     "fileName": "tsundokuDesktop-plugin-ios.jar",
-    "fileSize": 38432867,
+    "fileSize": 38412218,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/tsundokuDesktop-plugin-ios.jar"
   },
   {
