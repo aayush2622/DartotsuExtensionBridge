@@ -80,17 +80,23 @@ class MangayomiExtensions extends Extension
           throw Exception("Extension download failed");
         }
 
-        final service = getExtensionService(m);
+        final previousCode = m.sourceCode;
+        m.sourceCode = res.body;
+
         final String headers;
         try {
-          headers = jsonEncode(service.getHeaders());
-        } finally {
-          service.dispose();
+          final service = getExtensionService(m);
+          try {
+            headers = jsonEncode(service.getHeaders());
+          } finally {
+            releaseExtensionService(m, service);
+          }
+        } catch (_) {
+          m.sourceCode = previousCode;
+          rethrow;
         }
 
-        final installed = m
-          ..sourceCode = res.body
-          ..headers = headers;
+        final installed = m..headers = headers;
 
         final list = loadInstalled(type);
 

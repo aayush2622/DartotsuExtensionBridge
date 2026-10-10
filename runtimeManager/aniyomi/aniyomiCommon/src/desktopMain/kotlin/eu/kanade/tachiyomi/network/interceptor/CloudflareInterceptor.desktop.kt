@@ -105,8 +105,17 @@ actual class CloudflareInterceptor actual constructor(
                     maybeFallbackToFlareSolverResponse(flareResponse, chain, originalRequest, originalResponse)
                 }
             } catch (e: Exception) {
-                bypassRequest.completeExceptionally(e)
-                throw e
+                val failure = if (e is java.net.ConnectException || e.cause is java.net.ConnectException) {
+                    IOException(
+                        "$host is behind Cloudflare and FlareSolverr is not reachable at " +
+                            "${CFClearance.FLARESOLVERR_URL}. Start FlareSolverr to use this source.",
+                        e,
+                    )
+                } else {
+                    e
+                }
+                bypassRequest.completeExceptionally(failure)
+                throw failure
             } finally {
                 CFClearance.inflightCalls.remove(host, bypassRequest)
             }
@@ -167,7 +176,7 @@ actual class CloudflareInterceptor actual constructor(
  * The original code is licensed under Apache 2.0
 */
 object CFClearance {
-    private const val FLARESOLVERR_URL = "http://localhost:8191"
+    const val FLARESOLVERR_URL = "http://localhost:8191"
     private const val SESSION_NAME = "dartotsu"
     private val SESSION_TTL_MINUTES = 15.minutes.inWholeMinutes.toInt()
     private val TIMEOUT = 60.seconds

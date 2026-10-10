@@ -1,5 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
+import kotlin.coroutines.cancellation.CancellationException
 import android.content.SharedPreferences
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
@@ -63,16 +64,21 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
 
 
     suspend fun getEpisodeList(media: SAnime): List<SEpisode> {
-        runCatching {
+        val episodeError = try {
             return (source as? AnimeHttpSource? ?: source).getEpisodeList(media)
-
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            e
         }
 
-        val seasons = runCatching { source.getSeasonList(media) }.getOrElse {
-                throw UnsupportedOperationException(
-                    "This source does not support fetching episodes."
-                )
-            }
+        val seasons = try {
+            source.getSeasonList(media)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            throw episodeError
+        }
 
         val episodes = mutableListOf<SEpisode>()
 

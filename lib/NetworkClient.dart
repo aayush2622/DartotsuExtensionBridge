@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
@@ -68,12 +69,27 @@ class MClient {
     var client = useFallback ? _sharedFallbackClient() : appHttpClient;
 
     return InterceptedClient.build(
-      client: client,
+      client: _SharedClient(client),
       interceptors: useFallback
           ? const [_NetworkContextInterceptor()]
           : const [],
     );
   }
+}
+
+/// Every [MClient.init] caller gets its own wrapper over one shared client, so
+/// a caller's `close()` must not dispose the client everyone else is using.
+class _SharedClient extends http.BaseClient {
+  _SharedClient(this._inner);
+
+  final http.Client _inner;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) =>
+      _inner.send(request);
+
+  @override
+  void close() {}
 }
 
 /// The default `User-Agent` MClient sends when neither the caller nor
