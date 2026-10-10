@@ -1,5 +1,7 @@
 package xyz.nulldev.androidcompat.webkit
 
+import com.aayush262.dartotsu_extension_bridge.logger.LogLevel
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.cef.CefClient
@@ -8,9 +10,12 @@ import org.cef.browser.CefFrame
 import org.cef.browser.CefMessageRouter
 import org.cef.callback.CefQueryCallback
 import org.cef.handler.CefMessageRouterHandlerAdapter
+import java.util.Collections
+import java.util.WeakHashMap
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
-private val jsHandler: MutableMap<CefClient, JsHandler> = mutableMapOf()
+private val jsHandler: MutableMap<CefClient, JsHandler> = Collections.synchronizedMap(WeakHashMap())
 
 fun CefBrowser.evaluateJavaScript(
     expression: String,
@@ -23,8 +28,13 @@ fun CefBrowser.dispose() {
     close(true)
 }
 
+fun CefClient.disposeWithJsHandler() {
+    jsHandler.remove(this)
+    dispose()
+}
+
 class JsHandler : CefMessageRouterHandlerAdapter {
-    private val handler: MutableMap<String, (String?) -> Unit> = mutableMapOf()
+    private val handler = ConcurrentHashMap<String, (String?) -> Unit>()
 
     constructor(client: CefClient) {
         val config = CefMessageRouter.CefMessageRouterConfig()
@@ -69,6 +79,7 @@ class JsHandler : CefMessageRouterHandlerAdapter {
                 try {
                     Json.decodeFromString<FunctionCall>(request)
                 } catch (e: Exception) {
+                    Logger.log("Invalid request received", e, LogLevel.WARNING)
                     return false
                 }
             val handler = handler.remove(invoke.id) ?: return false

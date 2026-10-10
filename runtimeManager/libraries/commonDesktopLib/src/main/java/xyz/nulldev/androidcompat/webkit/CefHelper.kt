@@ -1,13 +1,13 @@
 package xyz.nulldev.androidcompat.webkit
 
-
+import com.aayush262.dartotsu_extension_bridge.logger.LogLevel
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
 import org.cef.CefApp
 import org.cef.CefClient
-
 
 
 object CefHelper {
@@ -24,6 +24,7 @@ object CefHelper {
         callbackFlow {
             val app = cefApp.first { it.isFailure || it.getOrThrow() != null }.getOrThrow()!!
             app.onInitialization {
+                Logger.log("CEF: Initialization state $it", LogLevel.DEBUG)
                 when (it) {
                     CefApp.CefAppState.INITIALIZED -> {
                         trySend(app)
