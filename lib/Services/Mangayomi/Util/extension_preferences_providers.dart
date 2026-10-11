@@ -6,8 +6,32 @@ import '../Models/Source.dart';
 import 'get_source_preference.dart';
 import 'string_extensions.dart';
 
+abstract interface class PrefKv {
+  T? get<T>(String key);
+  void set(String key, dynamic value);
+}
+
+class _KvStorePrefKv implements PrefKv {
+  const _KvStorePrefKv();
+
+  @override
+  T? get<T>(String key) => getVal<T>(key);
+
+  @override
+  void set(String key, dynamic value) => setVal(key, value);
+}
+
+/// Where source preferences are read and written. Worker isolates replace this
+/// with a snapshot-backed store, since the host's database isn't reachable from
+/// there.
+PrefKv prefKv = const _KvStorePrefKv();
+
+/// Sources already loaded in this isolate, so a preference lookup doesn't have
+/// to decode every installed source out of storage to find one.
+final Map<String, MSource> knownSources = {};
+
 List<SourcePreference> _loadPrefs(String sourceId) {
-  final encoded = getVal<List<String>>("sourcePrefs_$sourceId");
+  final encoded = prefKv.get<List<String>>("sourcePrefs_$sourceId");
 
   if (encoded == null || encoded.isEmpty) return [];
 
@@ -23,7 +47,7 @@ List<SourcePreference> _loadPrefs(String sourceId) {
 }
 
 void _savePrefs(String sourceId, List<SourcePreference> prefs) {
-  setVal(
+  prefKv.set(
     "sourcePrefs_$sourceId",
     prefs.map((e) => jsonEncode(e.toJson())).toList(growable: false),
   );
@@ -81,6 +105,19 @@ SourcePreference getSourcePreferenceEntry(String key, String sourceId) {
   return defaultPref;
 }
 
+/// Applies the stored value (if any) over a source's default preference.
+SourcePreference resolveSourcePreference(
+  SourcePreference defaultPref,
+  MSource source,
+) {
+  final id = extractSourceId(source.id!).toString();
+  final stored = _loadPrefs(id).where((e) => e.key == defaultPref.key);
+  if (stored.isNotEmpty) return stored.first;
+
+  setPreferenceSetting(defaultPref, source);
+  return defaultPref;
+}
+
 String getSourcePreferenceStringValue(
   String sourceId,
   String key,
@@ -88,7 +125,7 @@ String getSourcePreferenceStringValue(
 ) {
   final kvKey = "sourcePrefString_${sourceId}_$key";
 
-  final value = getVal<String>(kvKey);
+  final value = prefKv.get<String>(kvKey);
 
   if (value == null) {
     setSourcePreferenceStringValue(sourceId, key, defaultValue);
@@ -100,7 +137,7 @@ String getSourcePreferenceStringValue(
 
 void setSourcePreferenceStringValue(String sourceId, String key, String value) {
   final kvKey = "sourcePrefString_${sourceId}_$key";
-  setVal(kvKey, value);
+  prefKv.set(kvKey, value);
 }
 
 int extractSourceId(String id) {
@@ -110,6 +147,9 @@ int extractSourceId(String id) {
 }
 
 MSource getInstalledSource(String sourceId) {
+  final known = knownSources[sourceId];
+  if (known != null) return known;
+
   final anime = getVal<List<String>>('mangayomi-Installed-anime') ?? [];
   final manga = getVal<List<String>>('mangayomi-Installed-manga') ?? [];
 

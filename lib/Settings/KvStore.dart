@@ -124,6 +124,23 @@ class KvStore {
     );
   }
 
+  static Map<String, dynamic> entriesWithPrefix(String prefix) {
+    final result = <String, dynamic>{};
+
+    for (final entry
+        in _isar.kvEntrys.filter().keyStartsWith(prefix).findAllSync()) {
+      try {
+        result[entry.key] = _decode(entry.value);
+      } catch (_) {}
+    }
+
+    _pendingWrites.forEach((key, value) {
+      if (key.startsWith(prefix)) result[key] = value;
+    });
+
+    return result;
+  }
+
   static Future<void> remove(String key) async {
     _cache.remove(key);
     _pendingWrites.remove(key);
@@ -186,6 +203,15 @@ T? getVal<T>(String key, {T? defaultValue}) {
   } catch (e) {
     Logger.log('Failed to get value for key "$key": $e');
     return defaultValue;
+  }
+}
+
+Map<String, dynamic> getValsWithPrefix(String prefix) {
+  try {
+    return KvStore.entriesWithPrefix(prefix);
+  } catch (e) {
+    Logger.log('Failed to read values for prefix "$prefix": $e');
+    return const {};
   }
 }
 

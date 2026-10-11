@@ -28,6 +28,7 @@ import '../../../anime_extractors/streamwish_extractor.dart';
 import '../../../anime_extractors/vidbom_extractor.dart';
 import '../../../anime_extractors/voe_extractor.dart';
 import '../../../anime_extractors/your_upload_extractor.dart';
+import '../../../Util/host_hooks.dart';
 import '../../../cryptoaes/crypto_aes.dart';
 import '../../../cryptoaes/deobfuscator.dart';
 import '../../../cryptoaes/js_unpacker.dart';
@@ -641,6 +642,9 @@ class MBridge {
     List<String> scripts, {
     int time = 30,
   }) async {
+    final forward = MangayomiHostHooks.evaluateInWebview;
+    if (forward != null) return forward(url, headers, scripts, time);
+
     final response = Completer<String>();
     OffscreenWebViewSession? session;
     try {
