@@ -7,6 +7,7 @@ import 'package:http/io_client.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import 'ExtensionBridge.dart';
+import 'Logger.dart';
 
 class MClient {
   static IOClient? _fallbackClient;
@@ -166,8 +167,54 @@ class _NetworkContextInterceptor implements HttpInterceptor {
       }
     }
 
-    return response;
+    return _warnIfChallengePage(response);
   }
+}
+
+/// Anti-bot challenge pages (Cloudflare and similar) are often served with a
+/// plain `200` status, so a source's HTML parsing silently finds nothing
+/// instead of hitting an error path - surfacing as "0 results"/"no episodes"
+/// with no visible failure. Flags that case in the log so it's diagnosable
+/// without re-running the source under a debugger.
+Future<BaseResponse> _warnIfChallengePage(BaseResponse response) async {
+  if (response is! StreamedResponse) return response;
+
+  final contentType = response.headers['content-type'] ?? '';
+  if (!contentType.contains('text/html')) return response;
+
+  final length = response.contentLength;
+  if (length == null || length > 65536) return response;
+
+  final bytes = await response.stream.toBytes();
+  final text = utf8.decode(bytes, allowMalformed: true);
+  if (_looksLikeAntiBotChallenge(text)) {
+    Logger.log(
+      '[possible anti-bot challenge] ${response.request?.url} -> '
+      '${response.statusCode}, ${bytes.length}B: '
+      '${text.substring(0, text.length < 300 ? text.length : 300)}',
+    );
+  }
+
+  return StreamedResponse(
+    ByteStream.fromBytes(bytes),
+    response.statusCode,
+    contentLength: bytes.length,
+    request: response.request,
+    headers: response.headers,
+    isRedirect: response.isRedirect,
+    persistentConnection: response.persistentConnection,
+    reasonPhrase: response.reasonPhrase,
+  );
+}
+
+bool _looksLikeAntiBotChallenge(String body) {
+  final lower = body.toLowerCase();
+  return lower.contains('cf-chl') ||
+      lower.contains('__cf_chl') ||
+      lower.contains('just a moment') ||
+      lower.contains('challenge-platform') ||
+      lower.contains('enable javascript and cookies to continue') ||
+      lower.contains('checking your browser before accessing');
 }
 
 /// Parses [BridgeNetwork.getCookies]'s JSON-encoded `[{name, value, ...}]`

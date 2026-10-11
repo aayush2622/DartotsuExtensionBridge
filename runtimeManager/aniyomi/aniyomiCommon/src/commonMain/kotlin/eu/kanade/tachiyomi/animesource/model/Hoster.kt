@@ -7,7 +7,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
-open class Hoster(
+open class Hoster @JvmOverloads constructor(
     val hosterUrl: String = "",
     val hosterName: String = "",
     val videoList: List<Video>? = null,

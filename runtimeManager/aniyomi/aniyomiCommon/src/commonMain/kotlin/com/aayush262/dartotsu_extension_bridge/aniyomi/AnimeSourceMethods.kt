@@ -2,6 +2,7 @@ package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import kotlin.coroutines.cancellation.CancellationException
 import android.content.SharedPreferences
+import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
@@ -104,6 +105,8 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
         val directVideos = if (!hasHosters) {
             runCatching {
                 source.getVideoList(episode)
+            }.onFailure {
+                Logger.log("getVideoList (direct) failed for ${episode.url}: ${it.message}")
             }.getOrElse { emptyList() }
         } else {
             emptyList()
@@ -112,7 +115,13 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
         val hosterVideos = if (hasHosters) {
             val hosters = runCatching {
                 source.getHosterList(episode)
+            }.onFailure {
+                Logger.log("getHosterList failed for ${episode.url}: ${it.message}")
             }.getOrElse { emptyList() }
+
+            if (hosters.isEmpty()) {
+                Logger.log("getHosterList returned 0 hosters for ${episode.url}")
+            }
 
             coroutineScope {
                 hosters.map { hoster ->
@@ -122,6 +131,10 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
                             !hoster.videoList.isNullOrEmpty() -> hoster.videoList
                             else -> runCatching {
                                 source.getVideoList(hoster)
+                            }.onFailure {
+                                Logger.log(
+                                    "getVideoList (hoster '${hoster.hosterName}') failed for ${episode.url}: ${it.message}",
+                                )
                             }.getOrElse { emptyList() }
                         }
 
@@ -273,6 +286,8 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
 
         val resolved = runCatching {
             source.resolveVideo(video)
+        }.onFailure {
+            Logger.log("resolveVideo failed for ${video.videoUrl}: ${it.message}")
         }.getOrNull()
 
         if (resolved != null) return resolved
@@ -280,6 +295,8 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
         if (video.videoUrl == "null" || video.videoUrl.isEmpty()) {
             val newUrl = runCatching {
                 source.getVideoUrl(video)
+            }.onFailure {
+                Logger.log("getVideoUrl failed for ${video.videoUrl}: ${it.message}")
             }.getOrNull()
 
             return video.copy(videoUrl = newUrl ?: video.videoUrl)

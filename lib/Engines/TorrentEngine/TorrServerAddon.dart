@@ -162,7 +162,7 @@ class TorrServerAddon extends Addon {
   Future<TorrentInfo> _waitForMetadata(
     TorrServerController controller,
     String hash, {
-    Duration timeout = const Duration(seconds: 15),
+    Duration timeout = const Duration(seconds: 30),
   }) async {
     final deadline = DateTime.now().add(timeout);
 
