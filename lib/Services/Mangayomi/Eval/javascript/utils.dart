@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../Logger.dart';
+import '../../Util/host_hooks.dart';
 import '../../../../NetworkClient.dart';
 import '../../cryptoaes/js_unpacker.dart';
 import '../dart/model/m_bridge.dart';
@@ -222,13 +223,15 @@ async function parseEpubChapter(bookName, url, headers, chapterTitle) {
               : (args[3] as Map?)?.toMapStringDynamic
         : null;
 
-    final tmpDirectory = (await getTemporaryDirectory());
+    final tmpPath =
+        await (MangayomiHostHooks.tempDirPath?.call() ??
+            getTemporaryDirectory().then((d) => d.path));
     if (Platform.isAndroid) {
-      if (!(await File(p.join(tmpDirectory.path, ".nomedia")).exists())) {
-        await File(p.join(tmpDirectory.path, ".nomedia")).create();
+      if (!(await File(p.join(tmpPath, ".nomedia")).exists())) {
+        await File(p.join(tmpPath, ".nomedia")).create();
       }
     }
-    final file = File(p.join(tmpDirectory.path, "$bookName.epub"));
+    final file = File(p.join(tmpPath, "$bookName.epub"));
     if (await file.exists()) {
       return await file.readAsBytes();
     }

@@ -6,15 +6,16 @@ import '../../Models/DMedia.dart';
 import '../../Models/Page.dart';
 import '../../Models/Pages.dart';
 import '../../Models/SourcePreference.dart' as s;
-import '../../Models/Video.dart';
+import '../../Models/Video.dart' as app;
 import 'Eval/dart/model/m_manga.dart';
 import 'Eval/dart/model/m_pages.dart';
+import 'Eval/dart/model/page.dart' as ev;
 import 'Eval/dart/model/source_preference.dart';
+import 'Eval/dart/model/video.dart' as ev;
 import 'Models/Source.dart';
 import 'Util/ChapterRecognition.dart';
 import 'Util/extension_preferences_providers.dart';
-import 'Util/get_source_preference.dart';
-import 'Util/lib.dart';
+import 'Worker/MangayomiWorkerClient.dart';
 
 class MangayomiSourceMethods implements SourceMethods {
   @override
@@ -22,15 +23,12 @@ class MangayomiSourceMethods implements SourceMethods {
 
   MangayomiSourceMethods(this.source);
 
+  Future<T> _call<T>(String op, List args) =>
+      MangayomiWorkerClient.instance.call<T>(source, op, args);
+
   @override
   Future<DMedia> getDetail(DMedia media) async {
-    final service = getExtensionService(source);
-    final MManga data;
-    try {
-      data = await service.getDetail(media.url!);
-    } finally {
-      releaseExtensionService(source, service);
-    }
+    final data = await _call<MManga>('getDetail', [media.url!]);
 
     DMedia createMediaData(Map<String, dynamic> args) {
       final media = args['media'] as DMedia;
@@ -72,77 +70,43 @@ class MangayomiSourceMethods implements SourceMethods {
 
   @override
   Future<Pages> getLatestUpdates(int page) async {
-    final service = getExtensionService(source);
-    final MPages data;
-    try {
-      data = await service.getLatestUpdates(page);
-    } finally {
-      releaseExtensionService(source, service);
-    }
-
+    final data = await _call<MPages>('getLatestUpdates', [page]);
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
   }
 
   @override
   Future<Pages> getPopular(int page) async {
-    final service = getExtensionService(source);
-    final MPages data;
-    try {
-      data = await service.getPopular(page);
-    } finally {
-      releaseExtensionService(source, service);
-    }
-
+    final data = await _call<MPages>('getPopular', [page]);
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
   }
 
   @override
   Future<Pages> search(String query, int page, List filters) async {
-    final service = getExtensionService(source);
-    final MPages data;
-    try {
-      data = await service.search(query, page, filters);
-    } finally {
-      releaseExtensionService(source, service);
-    }
-
+    final data = await _call<MPages>('search', [query, page, filters]);
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
   }
 
   @override
   Future<List<PageUrl>> getPageList(DEpisode episode) async {
-    final service = getExtensionService(source);
-    final List<dynamic> data;
-    try {
-      data = await service.getPageList(episode.url!);
-    } finally {
-      releaseExtensionService(source, service);
-    }
-
+    final data = await _call<List<ev.PageUrl>>('getPageList', [episode.url!]);
     return data.map((e) => PageUrl(e.url, headers: e.headers)).toList();
   }
 
   @override
-  Future<List<Video>> getVideoList(DEpisode episode) async {
-    final service = getExtensionService(source);
-    final List<dynamic> data;
-    try {
-      data = await service.getVideoList(episode.url!);
-    } finally {
-      releaseExtensionService(source, service);
-    }
+  Future<List<app.Video>> getVideoList(DEpisode episode) async {
+    final data = await _call<List<ev.Video>>('getVideoList', [episode.url!]);
 
     return data.map((e) {
-      return Video(
+      return app.Video(
         e.quality,
         e.url,
         e.quality,
         headers: e.headers,
         audios: e.audios
-            ?.map((a) => Track(file: a.file, label: a.label))
+            ?.map((a) => app.Track(file: a.file, label: a.label))
             .toList(),
         subtitles: e.subtitles
-            ?.map((s) => Track(file: s.file, label: s.label))
+            ?.map((s) => app.Track(file: s.file, label: s.label))
             .toList(),
       );
     }).toList();
@@ -150,18 +114,13 @@ class MangayomiSourceMethods implements SourceMethods {
 
   @override
   Future<String?> getNovelContent(DEpisode episode) async {
-    final service = getExtensionService(source);
     try {
-      final data = await service.getHtmlContent(
+      return await _call<String>('getHtmlContent', [
         episode.name ?? "",
         episode.url ?? "",
-      );
-
-      return data;
+      ]);
     } catch (e) {
       return null;
-    } finally {
-      releaseExtensionService(source, service);
     }
   }
 
@@ -184,10 +143,14 @@ class MangayomiSourceMethods implements SourceMethods {
     }
 
     try {
-      final data = getSourcePreference(
-        source: source,
-      ).map((e) => getSourcePreferenceEntry(e.key!, source.id!)).toList();
-      return data
+      final defaults = await _call<List<SourcePreference>>(
+        'getSourcePreferences',
+        const [],
+      );
+      final resolved = defaults
+          .map((e) => resolveSourcePreference(e, source))
+          .toList();
+      return resolved
           .map(
             (p) => s.SourcePreference.fromJson(p.toJson())..type = getType(p),
           )
