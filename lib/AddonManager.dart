@@ -1,11 +1,12 @@
 import 'package:get/get.dart';
 
+import '../Engines/Ffmpeg/FfmpegAddon.dart';
 import '../Engines/TorrentEngine/TorrServerAddon.dart';
 import 'Extensions/Addon.dart';
 import 'Logger.dart';
 
 class AddonManager extends GetxService {
-  final List<Addon> addons = [TorrServerAddon()];
+  final List<Addon> addons = [TorrServerAddon(), FfmpegAddon()];
 
   @override
   void onInit() {
