@@ -15,7 +15,7 @@ SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 CACHE_DIR="${HOME}/Library/Caches/dartotsu_extension_bridge/embedded-openjdk-ios13-v16"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dartotsu-embedded-zero.XXXXXX")"
 FRAMEWORKS_DIR="${SCRIPT_DIR}/dartotsu_extension_bridge/Frameworks"
-RUNTIME_DIR="${SCRIPT_DIR}/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime"
+RUNTIME_DIR="${SCRIPT_DIR}/dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime"
 trap 'rm -rf "${WORK_DIR}"' EXIT
 
 # --- the embedded-bridge shim JAR -------------------------------------------
@@ -27,7 +27,7 @@ trap 'rm -rf "${WORK_DIR}"' EXIT
 # re-hash it then. A future improvement is publishing it under an immutable
 # `ios-runtime-v*` tag instead, so this can stop needing manual re-pinning.
 # To skip the download entirely, drop the jar by hand at
-# ios/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/embedded-bridge.jar.
+# ios/dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/embedded-bridge.jar.
 BRIDGE_JAR="${CACHE_DIR}/embedded-bridge.jar"
 BRIDGE_JAR_URL="https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/embedded-bridge.jar"
 BRIDGE_JAR_SHA256="1b700ffe27b6035dee6e3538e3b89c9108595ec64526d1a8e640c4bf33036fee"

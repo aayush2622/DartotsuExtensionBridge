@@ -3,7 +3,7 @@ import PackageDescription
 import Foundation
 
 // PrepareEmbeddedRuntime.sh (../PrepareEmbeddedRuntime.sh) builds
-// Frameworks/OpenJDKRuntime.xcframework and Sources/dartotsu_extension_bridge/Runtime/.
+// Frameworks/OpenJDKRuntime.xcframework and Sources/dartotsu_embedded_jvm/Runtime/.
 // It only runs automatically as CocoaPods' `prepare_command` — SPM has no
 // equivalent hook that can do a network download (build-tool plugins are
 // sandboxed with no network access). If this app also depends on any plugin
@@ -52,14 +52,20 @@ let package = Package(
             path: torrServerXCFrameworkPath
         ),
         .target(
-            name: "dartotsu_extension_bridge",
-            dependencies: ["OpenJDKRuntime", "TorrServerKit"],
+            name: "dartotsu_embedded_jvm",
+            dependencies: ["OpenJDKRuntime"],
             resources: [
                 .copy("Runtime"),
-                .process("PrivacyInfo.xcprivacy"),
             ],
             cSettings: [
-                .headerSearchPath("include/dartotsu_extension_bridge")
+                .headerSearchPath("include")
+            ]
+        ),
+        .target(
+            name: "dartotsu_extension_bridge",
+            dependencies: ["dartotsu_embedded_jvm", "TorrServerKit"],
+            resources: [
+                .process("PrivacyInfo.xcprivacy"),
             ]
         ),
     ],
