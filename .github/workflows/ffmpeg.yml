@@ -8,7 +8,7 @@ on:
         default: "7.1.1"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -47,21 +47,3 @@ jobs:
           name: ffmpeg-${{ matrix.target }}
           path: dist/*
 
-  release:
-    needs: build
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-      - name: Publish
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view ffmpeg-mini -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
-            || gh release create ffmpeg-mini -R "$GITHUB_REPOSITORY" \
-                 --title "FFmpeg (remux only)" \
-                 --notes "Minimal FFmpeg builds used by the Dartotsu downloader to turn HLS into mp4. No encoders, filters or network code."
-          gh release upload ffmpeg-mini dist/* --clobber -R "$GITHUB_REPOSITORY"
