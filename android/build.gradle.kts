@@ -2,7 +2,7 @@ import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id("com.android.library") version "9.2.1"
+    id("com.android.library")
     id("org.jetbrains.kotlin.plugin.serialization") version "2.3.21"
 }
 
