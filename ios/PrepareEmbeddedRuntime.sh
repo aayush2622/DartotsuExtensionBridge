@@ -30,7 +30,7 @@ trap 'rm -rf "${WORK_DIR}"' EXIT
 # ios/dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/embedded-bridge.jar.
 BRIDGE_JAR="${CACHE_DIR}/embedded-bridge.jar"
 BRIDGE_JAR_URL="https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/embedded-bridge.jar"
-BRIDGE_JAR_SHA256="f8ed258835def15e4a3f4e1274898aa3d643f827ad97cba0a8425544942cb0d8"
+BRIDGE_JAR_SHA256="1b700ffe27b6035dee6e3538e3b89c9108595ec64526d1a8e640c4bf33036fee"
 
 OPENJDK_ZIP="${CACHE_DIR}/OpenJDK.xcframework.zip"
 JAVA_BUNDLE_ZIP="${CACHE_DIR}/java_bundle-device.zip"
