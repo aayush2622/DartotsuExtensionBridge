@@ -49,7 +49,9 @@ case "$TARGET" in
     EXT=".exe"
     ;;
   android-arm64)
-    BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+    NDK="${ANDROID_NDK_HOME:-${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_ROOT:-}}}"
+    [ -d "$NDK" ] || { echo "Android NDK not found (set ANDROID_NDK_HOME)" >&2; exit 1; }
+    BIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
     ./configure "${COMMON[@]}" --enable-cross-compile --arch=aarch64 \
       --target-os=android --cc="$BIN/aarch64-linux-android24-clang" \
       --strip="$BIN/llvm-strip" --ar="$BIN/llvm-ar" --nm="$BIN/llvm-nm" \
