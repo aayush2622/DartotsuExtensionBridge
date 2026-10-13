@@ -1,7 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
@@ -104,36 +103,13 @@ class TorrServerAddon extends Addon {
     final controller = await ensureStarted();
     await stopStream();
 
-    late final TorrentInfo added;
-    if (url.startsWith("magnet:")) {
-      added = await controller.addTorrent(
-        magnet: url,
-        title: title,
-        category: category,
-        poster: poster,
-      );
-    } else if (url.startsWith("http://") || url.startsWith("https://")) {
-      final torrentFile = await _downloadTorrentFile(url);
-      try {
-        added = await controller.addTorrent(
-          torrentFile: await torrentFile.readAsBytes(),
-          title: title,
-          category: category,
-          poster: poster,
-        );
-      } finally {
-        if (await torrentFile.exists()) {
-          await torrentFile.delete();
-        }
-      }
-    } else {
-      added = await controller.addTorrent(
-        torrentFile: await File(url).readAsBytes(),
-        title: title,
-        category: category,
-        poster: poster,
-      );
-    }
+    final added = await _addTorrent(
+      controller,
+      url: url,
+      title: title,
+      category: category,
+      poster: poster,
+    );
 
     _activeHash = added.hash;
 
@@ -145,6 +121,104 @@ class TorrServerAddon extends Addon {
     }
 
     return controller.streamUrl(info.hash, fileIndex: selected.id).toString();
+  }
+
+  Future<TorrentInfo> _addTorrent(
+    TorrServerController controller, {
+    required String url,
+    String? title,
+    String? category,
+    String? poster,
+  }) async {
+    if (url.startsWith("magnet:")) {
+      return controller.addTorrent(
+        magnet: url,
+        title: title,
+        category: category,
+        poster: poster,
+      );
+    }
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      final torrentFile = await _downloadTorrentFile(url);
+      try {
+        return await controller.addTorrent(
+          torrentFile: await torrentFile.readAsBytes(),
+          title: title,
+          category: category,
+          poster: poster,
+        );
+      } finally {
+        if (await torrentFile.exists()) {
+          await torrentFile.delete();
+        }
+      }
+    }
+    return controller.addTorrent(
+      torrentFile: await File(url).readAsBytes(),
+      title: title,
+      category: category,
+      poster: poster,
+    );
+  }
+
+  /// Adds a torrent for downloading without touching the stream started by
+  /// [startStream]. Returns the torrent once its file list is known; read the
+  /// files from [TorrentInfo.fileStats] and fetch one with [fileUrl]. Call
+  /// [release] when done.
+  Future<TorrentInfo> addForDownload({
+    required String url,
+    String? title,
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
+    final controller = await ensureStarted();
+    final added = await _addTorrent(controller, url: url, title: title);
+    return _waitForMetadata(controller, added.hash, timeout: timeout);
+  }
+
+  /// HTTP url of one file of a torrent added with [addForDownload]. The server
+  /// answers range requests, so it can be fetched and resumed like any file.
+  Uri fileUrl(String hash, int fileIndex) {
+    final controller = _controller;
+    if (controller == null) {
+      throw StateError("TorrServer is not running");
+    }
+    return controller.streamUrl(hash, fileIndex: fileIndex);
+  }
+
+  Future<TorrentInfo> torrentInfo(String hash) async =>
+      (await ensureStarted()).getTorrent(hash);
+
+  /// Picks the file of [info] that best matches [episode]: the one whose name
+  /// carries that number, otherwise the biggest streamable file.
+  TorrentFileStat? pickFile(TorrentInfo info, {double? episode}) {
+    final candidates = [
+      for (final file in info.fileStats)
+        if (_streamableExtensions.contains(
+          p.extension(file.path).toLowerCase(),
+        ))
+          file,
+    ];
+    if (candidates.isEmpty) return null;
+    if (episode != null && candidates.length > 1) {
+      final wanted = RegExp.escape(
+        episode % 1 == 0 ? episode.toInt().toString() : "$episode",
+      );
+      final pattern = RegExp("(?<![0-9.])0*$wanted(?![0-9])");
+      final tags = RegExp(r"\[[^\]]*\]|\([^)]*\)");
+      for (final file in candidates) {
+        final name = p
+            .basenameWithoutExtension(file.path)
+            .replaceAll(tags, " ");
+        if (pattern.hasMatch(name)) return file;
+      }
+    }
+    return _selectStreamableFile(info);
+  }
+
+  Future<void> release(String hash) async {
+    try {
+      await _controller?.removeTorrent(hash);
+    } catch (_) {}
   }
 
   /// Removes the currently active torrent (added by [startStream]) and its
@@ -215,9 +289,9 @@ class TorrServerAddon extends Addon {
   @override
   IconData get icon => Icons.extension;
 
-  static const _owner = "ayman708-UX";
-  static const _repo = "torrserver_flutter";
-  static const _version = "v0.0.6";
+  static const _owner = "YouROK";
+  static const _repo = "TorrServer";
+  static const _version = "MatriX.146.1";
 
   String get _versionKey => "${id}_version";
   String get _updateKey => "${id}_update";
@@ -257,20 +331,21 @@ class TorrServerAddon extends Addon {
     return (await _binaryFile).exists();
   }
 
-  String get _archiveName {
+  /// YouROK/TorrServer release assets are plain binaries named
+  /// `TorrServer-{os}-{arch}` (`.exe` on Windows) - no archive to extract,
+  /// unlike the old `torrserver_flutter` fork this addon used to point at.
+  String get _assetName {
     if (Platform.isWindows) {
-      return "torrserver-windows-amd64.zip";
+      return "TorrServer-windows-amd64.exe";
     }
     if (Platform.isMacOS) {
-      final arch = _isArm ? "arm64" : "amd64";
-      return "torrserver-darwin-$arch.tar.gz";
+      return "TorrServer-darwin-${_isArm ? "arm64" : "amd64"}";
     }
     if (Platform.isLinux) {
-      final arch = _isArm ? "arm64" : "amd64";
-      return "torrserver-linux-$arch.tar.gz";
+      return "TorrServer-linux-${_isArm ? "arm64" : "amd64"}";
     }
     if (Platform.isAndroid) {
-      return "torrserver-android-$_androidAbi.zip";
+      return "TorrServer-android-$_androidAbi";
     }
     throw UnsupportedError(
       "TorrServerAddon only downloads for Windows/macOS/Linux/Android; "
@@ -278,20 +353,12 @@ class TorrServerAddon extends Addon {
     );
   }
 
-  String get _entryName {
-    if (Platform.isWindows) return "torrserver-windows-amd64.exe";
-    if (Platform.isMacOS)
-      return "torrserver-darwin-${_isArm ? "arm64" : "amd64"}";
-    if (Platform.isAndroid) return "torrserver-android-$_androidAbi";
-    return "torrserver-linux-${_isArm ? "arm64" : "amd64"}";
-  }
-
   bool get _isArm =>
       Platform.version.toLowerCase().contains("arm") ||
       Platform.version.toLowerCase().contains("aarch64");
 
-  /// Maps the running ABI to torrserver_flutter's own Android asset naming
-  /// (`torrserver-android-{arm64,amd64,arm7,386}`).
+  /// Maps the running ABI to YouROK/TorrServer's Android asset naming
+  /// (`TorrServer-android-{arm64,amd64,arm7,386}`).
   String get _androidAbi {
     switch (Abi.current()) {
       case Abi.androidArm64:
@@ -368,7 +435,7 @@ class TorrServerAddon extends Addon {
 
   Future<void> _download() async {
     final url =
-        "https://github.com/$_owner/$_repo/releases/download/$_version/$_archiveName";
+        "https://github.com/$_owner/$_repo/releases/download/$_version/$_assetName";
 
     final request = http.Request("GET", Uri.parse(url));
     final response = await _client.send(request);
@@ -377,10 +444,8 @@ class TorrServerAddon extends Addon {
       throw Exception("Failed to download TorrServer (${response.statusCode})");
     }
 
-    final dir = await _directory;
-    final archiveFile = File(p.join(dir.path, _archiveName));
-
-    final sink = archiveFile.openWrite();
+    final binary = await _binaryFile;
+    final sink = binary.openWrite();
     int received = 0;
     final total = response.contentLength ?? 0;
 
@@ -394,20 +459,6 @@ class TorrServerAddon extends Addon {
 
     await sink.flush();
     await sink.close();
-
-    final bytes = await archiveFile.readAsBytes();
-    final archive = _archiveName.endsWith(".zip")
-        ? ZipDecoder().decodeBytes(bytes)
-        : TarDecoder().decodeBytes(const GZipDecoder().decodeBytes(bytes));
-
-    final entry = archive.files.firstWhere(
-      (f) => f.isFile && p.basename(f.name) == _entryName,
-      orElse: () => throw Exception("$_entryName not found in $_archiveName"),
-    );
-
-    final binary = await _binaryFile;
-    await binary.writeAsBytes(entry.content as List<int>);
-    await archiveFile.delete();
 
     if (!Platform.isWindows) {
       await Process.run("chmod", ["755", binary.path]);
