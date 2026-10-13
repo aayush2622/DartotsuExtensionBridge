@@ -35,7 +35,7 @@ class FfmpegFailure implements Exception {
 }
 
 /// Downloads a minimal remux-only `ffmpeg` (a few MB, built by
-/// `scripts/build_ffmpeg.sh`, published on the `ffmpeg-mini` release) for
+/// `scripts/build_ffmpeg.sh`, committed in the repo's `ffmpeg/` folder) for
 /// Windows, Linux, macOS and Android (arm64) at app runtime. iOS (no
 /// subprocesses) cannot use it.
 class FfmpegAddon extends Addon {
@@ -55,7 +55,7 @@ class FfmpegAddon extends Addon {
   static const _btbn =
       'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest';
   static const _release =
-      'https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/ffmpeg-mini';
+      'https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/ffmpeg';
 
   String get _versionKey => '${id}_version';
 
