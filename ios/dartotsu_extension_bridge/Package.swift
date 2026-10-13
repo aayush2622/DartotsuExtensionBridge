@@ -58,7 +58,8 @@ let package = Package(
                 .copy("Runtime"),
             ],
             cSettings: [
-                .headerSearchPath("include")
+                .headerSearchPath("include"),
+                .headerSearchPath("../../Frameworks/OpenJDKRuntime.xcframework/ios-arm64/OpenJDKRuntime.framework/Headers"),
             ]
         ),
         .target(
