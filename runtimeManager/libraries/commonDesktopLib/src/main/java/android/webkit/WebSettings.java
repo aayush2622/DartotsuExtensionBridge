@@ -618,7 +618,7 @@ public abstract class WebSettings {
      * This setting is not recommended for use in new applications.  If the WebView
      * is utilized to display mobile-oriented pages, the desired effect can be achieved by
      * adjusting 'width' and 'initial-scale' attributes of page's 'meta viewport'
-     * tag. For pages lacking the tag, {@link WebView#setInitialScale}
+     * tag. For pages lacking the tag, {@link android.webkit.WebView#setInitialScale}
      * and {@link #setUseWideViewPort} can be used.
      *
      * @param zoom the zoom density
@@ -989,16 +989,16 @@ public abstract class WebSettings {
      * image resources. Note that if the value of this setting is
      * changed from {@code true} to {@code false}, network resources referenced by content
      * currently displayed by the WebView are not fetched until
-     * {@link WebView#reload} is called.
+     * {@link android.webkit.WebView#reload} is called.
      * If the application does not have the
      * {@link android.Manifest.permission#INTERNET} permission, attempts to set
-     * a value of {@code false} will cause a {@link SecurityException}
+     * a value of {@code false} will cause a {@link java.lang.SecurityException}
      * to be thrown. The default value is {@code false} if the application has the
      * {@link android.Manifest.permission#INTERNET} permission, otherwise it is
      * {@code true}.
      *
      * @param flag {@code true} means block network loads by the WebView
-     * @see WebView#reload
+     * @see android.webkit.WebView#reload
      */
     public abstract void setBlockNetworkLoads(boolean flag);
 

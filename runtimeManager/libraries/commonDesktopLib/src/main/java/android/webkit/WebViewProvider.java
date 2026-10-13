@@ -509,32 +509,32 @@ public interface WebViewProvider {
         // exists to promote them to public so they may be called by the WebView proxy class.
         // TODO: Combine into ViewDelegate?
         /**
-         * See {@link WebView#computeHorizontalScrollRange}
+         * See {@link android.webkit.WebView#computeHorizontalScrollRange}
          */
         public int computeHorizontalScrollRange();
 
         /**
-         * See {@link WebView#computeHorizontalScrollOffset}
+         * See {@link android.webkit.WebView#computeHorizontalScrollOffset}
          */
         public int computeHorizontalScrollOffset();
 
         /**
-         * See {@link WebView#computeVerticalScrollRange}
+         * See {@link android.webkit.WebView#computeVerticalScrollRange}
          */
         public int computeVerticalScrollRange();
 
         /**
-         * See {@link WebView#computeVerticalScrollOffset}
+         * See {@link android.webkit.WebView#computeVerticalScrollOffset}
          */
         public int computeVerticalScrollOffset();
 
         /**
-         * See {@link WebView#computeVerticalScrollExtent}
+         * See {@link android.webkit.WebView#computeVerticalScrollExtent}
          */
         public int computeVerticalScrollExtent();
 
         /**
-         * See {@link WebView#computeScroll}
+         * See {@link android.webkit.WebView#computeScroll}
          */
         public void computeScroll();
     }

@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 package com.android.internal.util;
-
 import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.text.TextUtils;
-
 import java.util.Collection;
 /**
  * Simple static methods to be called at the start of your own methods to verify

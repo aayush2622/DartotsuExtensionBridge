@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 package com.android.internal.util;
-
 import org.xmlpull.v1.XmlSerializer;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;

@@ -80,15 +80,15 @@ import java.time.ZoneOffset;
  * you do not use {@link Thread#interrupt Thread.interrupt()}, as it will
  * preserve the interrupted state of the thread.
  *
- * <li> <p> The {@link Handler} class can schedule asynchronous
+ * <li> <p> The {@link android.os.Handler} class can schedule asynchronous
  * callbacks at an absolute or relative time.  Handler objects also use the
- * {@link #uptimeMillis} clock, and require an {@link Looper
+ * {@link #uptimeMillis} clock, and require an {@link android.os.Looper
  * event loop} (normally present in any GUI application).
  *
  * <li> <p> The {@link android.app.AlarmManager} can trigger one-time or
  * recurring events which occur even when the device is in deep sleep
  * or your application is not running.  Events may be scheduled with your
- * choice of {@link System#currentTimeMillis} (RTC) or
+ * choice of {@link java.lang.System#currentTimeMillis} (RTC) or
  * {@link #elapsedRealtime} (ELAPSED_REALTIME), and cause an
  * {@link android.content.Intent} broadcast when they occur.
  * </ul>
@@ -105,7 +105,7 @@ public final class SystemClock {
 
     /**
      * Waits a given number of milliseconds (of uptimeMillis) before returning.
-     * Similar to {@link Thread#sleep(long)}, but does not throw
+     * Similar to {@link java.lang.Thread#sleep(long)}, but does not throw
      * {@link InterruptedException}; {@link Thread#interrupt()} events are
      * deferred until the next interruptible operation.  Does not return until
      * at least the specified number of milliseconds has elapsed.

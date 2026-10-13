@@ -222,7 +222,13 @@ public class LruCache<K, V> {
     }
 
     private Map.Entry<K, V> eldest() {
-        return map.firstEntry();
+        // LinkedHashMap.firstEntry() only exists from JDK 21's SequencedMap
+        // onward (and even then only as an inherited default method, which
+        // some JVMs fail to resolve via invokevirtual - see the
+        // NoSuchMethodError this used to throw at runtime despite compiling
+        // fine). Iterating the eldest entry this way works on every JDK.
+        java.util.Iterator<Map.Entry<K, V>> it = map.entrySet().iterator();
+        return it.hasNext() ? it.next() : null;
     }
 
     /**

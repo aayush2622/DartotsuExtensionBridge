@@ -39,8 +39,8 @@ import java.lang.annotation.RetentionPolicy;
  * {@link android.R.styleable#AndroidManifestService &lt;service&gt;}
  * declaration in its package's <code>AndroidManifest.xml</code>.  Services
  * can be started with
- * {@link Context#startService Context.startService()} and
- * {@link Context#bindService Context.bindService()}.
+ * {@link android.content.Context#startService Context.startService()} and
+ * {@link android.content.Context#bindService Context.bindService()}.
  * 
  * <p>Note that services, like other application objects, run in the main
  * thread of their hosting process.  This means that, if your service is going
@@ -88,12 +88,12 @@ import java.lang.annotation.RetentionPolicy;
  * <li>A facility for the application to tell the system <em>about</em>
  * something it wants to be doing in the background (even when the user is not
  * directly interacting with the application).  This corresponds to calls to
- * {@link Context#startService Context.startService()}, which
+ * {@link android.content.Context#startService Context.startService()}, which
  * ask the system to schedule work for the service, to be run until the service
  * or someone else explicitly stop it.
  * <li>A facility for an application to expose some of its functionality to
  * other applications.  This corresponds to calls to
- * {@link Context#bindService Context.bindService()}, which
+ * {@link android.content.Context#bindService Context.bindService()}, which
  * allows a long-standing connection to be made to the service in order to
  * interact with it.
  * </ul>
@@ -114,11 +114,11 @@ import java.lang.annotation.RetentionPolicy;
  * <h3>Service Lifecycle</h3>
  * 
  * <p>There are two reasons that a service can be run by the system.  If someone
- * calls {@link Context#startService Context.startService()} then the system will
+ * calls {@link android.content.Context#startService Context.startService()} then the system will
  * retrieve the service (creating it and calling its {@link #onCreate} method
  * if needed) and then call its {@link #onStartCommand} method with the
  * arguments supplied by the client.  The service will at this point continue
- * running until {@link Context#stopService Context.stopService()} or
+ * running until {@link android.content.Context#stopService Context.stopService()} or
  * {@link #stopSelf()} is called.  Note that multiple calls to
  * Context.startService() do not nest (though they do result in multiple corresponding
  * calls to onStartCommand()), so no matter how many times it is started a service
@@ -134,7 +134,7 @@ import java.lang.annotation.RetentionPolicy;
  * remain running while processing any commands sent to them.  See the linked
  * documentation for more detail on the semantics.
  * 
- * <p>Clients can also use {@link Context#bindService Context.bindService()} to
+ * <p>Clients can also use {@link android.content.Context#bindService Context.bindService()} to
  * obtain a persistent connection to a service.  This likewise creates the
  * service if it is not already running (calling {@link #onCreate} while
  * doing so), but does not call onStartCommand().  The client will receive the
@@ -149,7 +149,7 @@ import java.lang.annotation.RetentionPolicy;
  * <p>A service can be both started and have connections bound to it.  In such
  * a case, the system will keep the service running as long as either it is
  * started <em>or</em> there are one or more connections to it with the
- * {@link Context#BIND_AUTO_CREATE Context.BIND_AUTO_CREATE}
+ * {@link android.content.Context#BIND_AUTO_CREATE Context.BIND_AUTO_CREATE}
  * flag.  Once neither
  * of these situations hold, the service's {@link #onDestroy} method is called
  * and the service is effectively terminated.  All cleanup (stopping threads,
@@ -454,7 +454,7 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
     public @interface StartArgFlags {}
     /**
      * Called by the system every time a client explicitly starts the service by calling 
-     * {@link Context#startService}, providing the arguments it supplied and a
+     * {@link android.content.Context#startService}, providing the arguments it supplied and a 
      * unique integer token representing the start request.  Do not call this method directly.
      * 
      * <p>For backwards compatibility, the default implementation calls
@@ -477,7 +477,7 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
      * network calls, or heavy disk I/O, you should kick off a new
      * thread, or use {@link android.os.AsyncTask}.</p>
      *
-     * @param intent The Intent supplied to {@link Context#startService},
+     * @param intent The Intent supplied to {@link android.content.Context#startService}, 
      * as given.  This may be null if the service is being restarted after
      * its process has gone away, and it had previously returned anything
      * except {@link #START_STICKY_COMPATIBILITY}.
@@ -526,7 +526,7 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
      * Threads</a>.</p>
      * 
      * @param intent The Intent that was used to bind to this service,
-     * as given to {@link Context#bindService
+     * as given to {@link android.content.Context#bindService
      * Context.bindService}.  Note that any extras that were included with
      * the Intent at that point will <em>not</em> be seen here.
      * 
@@ -541,7 +541,7 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
      * returns false.
      * 
      * @param intent The Intent that was used to bind to this service,
-     * as given to {@link Context#bindService
+     * as given to {@link android.content.Context#bindService
      * Context.bindService}.  Note that any extras that were included with
      * the Intent at that point will <em>not</em> be seen here.
      * 
@@ -559,7 +559,7 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
      * of {@link #onUnbind} was overridden to return true.
      * 
      * @param intent The Intent that was used to bind to this service,
-     * as given to {@link Context#bindService
+     * as given to {@link android.content.Context#bindService
      * Context.bindService}.  Note that any extras that were included with
      * the Intent at that point will <em>not</em> be seen here.
      */
@@ -580,7 +580,7 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
     }
     /**
      * Stop the service, if it was previously started.  This is the same as
-     * calling {@link Context#stopService} for this particular service.
+     * calling {@link android.content.Context#stopService} for this particular service.
      *  
      * @see #stopSelfResult(int)
      */
@@ -600,7 +600,7 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
     /**
      * Stop the service if the most recent time it was started was 
      * <var>startId</var>.  This is the same as calling {@link 
-     * Context#stopService} for this particular service but allows you to
+     * android.content.Context#stopService} for this particular service but allows you to 
      * safely avoid stopping if there is a start request from a client that you 
      * haven't yet seen in {@link #onStart}. 
      * 

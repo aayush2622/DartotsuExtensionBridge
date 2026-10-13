@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
@@ -242,6 +243,11 @@ abstract class DownloadablePlugin {
   }
 
   Future<void> autoUpdate() async {
+    // In a debug build the plugin jar/apk on disk is often a local dev build
+    // whose size won't match the published index entry - without this guard
+    // every hot-restart would re-download and clobber it with the released
+    // copy. Release builds still auto-update normally.
+    if (kDebugMode) return;
     if (!await isInstalled()) return;
 
     try {

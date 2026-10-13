@@ -106,7 +106,7 @@ public final class SQLiteStatement extends SQLiteProgram {
      *
      * @return The result of the query.
      *
-     * @throws SQLiteDoneException if the query returns zero rows
+     * @throws android.database.sqlite.SQLiteDoneException if the query returns zero rows
      */
     public long simpleQueryForLong() {
         acquireReference();
@@ -130,7 +130,7 @@ public final class SQLiteStatement extends SQLiteProgram {
      *
      * @return The result of the query.
      *
-     * @throws SQLiteDoneException if the query returns zero rows
+     * @throws android.database.sqlite.SQLiteDoneException if the query returns zero rows
      */
     public String simpleQueryForString() {
         acquireReference();
@@ -154,7 +154,7 @@ public final class SQLiteStatement extends SQLiteProgram {
      * @return A read-only file descriptor for a copy of the blob value, or {@code null}
      *         if the value is null or could not be read for some reason.
      *
-     * @throws SQLiteDoneException if the query returns zero rows
+     * @throws android.database.sqlite.SQLiteDoneException if the query returns zero rows
      */
     public ParcelFileDescriptor simpleQueryForBlobFileDescriptor() {
         throw new UnsupportedOperationException("Not implemented!");

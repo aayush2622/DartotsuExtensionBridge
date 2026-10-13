@@ -173,7 +173,7 @@ public class Process {
      * Standard priority of application threads.
      * Use with {@link #setThreadPriority(int)} and
      * {@link #setThreadPriority(int, int)}, <b>not</b> with the normal
-     * {@link Thread} class.
+     * {@link java.lang.Thread} class.
      */
     public static final int THREAD_PRIORITY_DEFAULT = 0;
     /*
@@ -187,7 +187,7 @@ public class Process {
      * don't want to run if anything else is happening.
      * Use with {@link #setThreadPriority(int)} and
      * {@link #setThreadPriority(int, int)}, <b>not</b> with the normal
-     * {@link Thread} class.
+     * {@link java.lang.Thread} class.
      */
     public static final int THREAD_PRIORITY_LOWEST = 19;
     
@@ -197,7 +197,7 @@ public class Process {
      * the responsiveness of the user interface.
      * Use with {@link #setThreadPriority(int)} and
      * {@link #setThreadPriority(int, int)}, <b>not</b> with the normal
-     * {@link Thread} class.
+     * {@link java.lang.Thread} class.
      */
     public static final int THREAD_PRIORITY_BACKGROUND = 10;
     
@@ -208,7 +208,7 @@ public class Process {
      * application threads as the user moves through the UI.
      * Use with {@link #setThreadPriority(int)} and
      * {@link #setThreadPriority(int, int)}, <b>not</b> with the normal
-     * {@link Thread} class.
+     * {@link java.lang.Thread} class.
      */
     public static final int THREAD_PRIORITY_FOREGROUND = -2;
     
@@ -218,7 +218,7 @@ public class Process {
      * normally change to this priority.
      * Use with {@link #setThreadPriority(int)} and
      * {@link #setThreadPriority(int, int)}, <b>not</b> with the normal
-     * {@link Thread} class.
+     * {@link java.lang.Thread} class.
      */
     public static final int THREAD_PRIORITY_DISPLAY = -4;
     
@@ -228,7 +228,7 @@ public class Process {
      * change to this priority.
      * Use with {@link #setThreadPriority(int)} and
      * {@link #setThreadPriority(int, int)}, <b>not</b> with the normal
-     * {@link Thread} class.
+     * {@link java.lang.Thread} class.
      */
     public static final int THREAD_PRIORITY_URGENT_DISPLAY = -8;
     /**
@@ -236,7 +236,7 @@ public class Process {
      * change to this priority.
      * Use with {@link #setThreadPriority(int)} and
      * {@link #setThreadPriority(int, int)}, <b>not</b> with the normal
-     * {@link Thread} class.
+     * {@link java.lang.Thread} class.
      */
     public static final int THREAD_PRIORITY_AUDIO = -16;
     /**
@@ -244,7 +244,7 @@ public class Process {
      * Applications can not normally change to this priority.
      * Use with {@link #setThreadPriority(int)} and
      * {@link #setThreadPriority(int, int)}, <b>not</b> with the normal
-     * {@link Thread} class.
+     * {@link java.lang.Thread} class.
      */
     public static final int THREAD_PRIORITY_URGENT_AUDIO = -19;
     /**

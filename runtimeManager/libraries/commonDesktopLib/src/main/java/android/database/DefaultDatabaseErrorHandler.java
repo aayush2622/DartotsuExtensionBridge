@@ -29,9 +29,9 @@ import java.util.List;
  * following:
  * <ul>
  *   <li>{@link SQLiteDatabase#openOrCreateDatabase(String,
- *      SQLiteDatabase.CursorFactory, DatabaseErrorHandler)}</li>
+ *      android.database.sqlite.SQLiteDatabase.CursorFactory, DatabaseErrorHandler)}</li>
  *   <li>{@link SQLiteDatabase#openDatabase(String,
- *      SQLiteDatabase.CursorFactory, int, DatabaseErrorHandler)}</li>
+ *      android.database.sqlite.SQLiteDatabase.CursorFactory, int, DatabaseErrorHandler)}</li>
  * </ul>
  * The specified {@link DatabaseErrorHandler} is used to handle database corruption errors, if they
  * occur.
