@@ -60,7 +60,7 @@ public class ConnectivityManager {
      * broadcast if they declare the broadcast receiver in their manifest. Apps
      * will still receive broadcasts if they register their
      * {@link android.content.BroadcastReceiver} with
-     * {@link Context#registerReceiver Context.registerReceiver()}
+     * {@link android.content.Context#registerReceiver Context.registerReceiver()}
      * and that context is still valid.
      * <p/>
      * If this is a connection that was the result of failing over from a
@@ -129,7 +129,7 @@ public class ConnectivityManager {
 
     /**
      * The lookup key for a {@link NetworkInfo} object. Retrieve with
-     * {@link Intent#getParcelableExtra(String)}.
+     * {@link android.content.Intent#getParcelableExtra(String)}.
      *
      * @deprecated Since {@link NetworkInfo} can vary based on UID, applications
      *             should always obtain network information through
@@ -142,7 +142,7 @@ public class ConnectivityManager {
     /**
      * Network type which triggered a {@link #CONNECTIVITY_ACTION} broadcast.
      *
-     * @see Intent#getIntExtra(String, int)
+     * @see android.content.Intent#getIntExtra(String, int)
      */
     public static final String EXTRA_NETWORK_TYPE = "networkType";
 
@@ -150,21 +150,21 @@ public class ConnectivityManager {
      * The lookup key for a boolean that indicates whether a connect event
      * is for a network to which the connectivity manager was failing over
      * following a disconnect on another network.
-     * Retrieve it with {@link Intent#getBooleanExtra(String,boolean)}.
+     * Retrieve it with {@link android.content.Intent#getBooleanExtra(String,boolean)}.
      */
     public static final String EXTRA_IS_FAILOVER = "isFailover";
 
     /**
      * The lookup key for a {@link NetworkInfo} object. This is supplied when
      * there is another network that it may be possible to connect to. Retrieve with
-     * {@link Intent#getParcelableExtra(String)}.
+     * {@link android.content.Intent#getParcelableExtra(String)}.
      */
     public static final String EXTRA_OTHER_NETWORK_INFO = "otherNetwork";
 
     /**
      * The lookup key for a boolean that indicates whether there is a
      * complete lack of connectivity, i.e., no network is available.
-     * Retrieve it with {@link Intent#getBooleanExtra(String,boolean)}.
+     * Retrieve it with {@link android.content.Intent#getBooleanExtra(String,boolean)}.
      */
     public static final String EXTRA_NO_CONNECTIVITY = "noConnectivity";
 
@@ -172,7 +172,7 @@ public class ConnectivityManager {
      * The lookup key for a string that indicates why an attempt to connect
      * to a network failed. The string has no particular structure. It is
      * intended to be used in notifications presented to users. Retrieve
-     * it with {@link Intent#getStringExtra(String)}.
+     * it with {@link android.content.Intent#getStringExtra(String)}.
      */
     public static final String EXTRA_REASON = "reason";
 
@@ -181,7 +181,7 @@ public class ConnectivityManager {
      * extra information about the network state. The information
      * may be passed up from the lower networking layers, and its
      * meaning may be specific to a particular network type. Retrieve
-     * it with {@link Intent#getStringExtra(String)}.
+     * it with {@link android.content.Intent#getStringExtra(String)}.
      */
     public static final String EXTRA_EXTRA_INFO = "extraInfo";
 
@@ -189,7 +189,7 @@ public class ConnectivityManager {
      * The lookup key for an int that provides information about
      * our connection to the internet at large.  0 indicates no connection,
      * 100 indicates a great connection.  Retrieve it with
-     * {@link Intent#getIntExtra(String, int)}.
+     * {@link android.content.Intent#getIntExtra(String, int)}.
      * {@hide}
      */
     public static final String EXTRA_INET_CONDITION = "inetCondition";
@@ -200,7 +200,7 @@ public class ConnectivityManager {
      * object can be used to either indicate to the system that the captive
      * portal has been dismissed or that the user does not want to pursue
      * signing in to captive portal.  Retrieve it with
-     * {@link Intent#getParcelableExtra(String)}.
+     * {@link android.content.Intent#getParcelableExtra(String)}.
      */
     public static final String EXTRA_CAPTIVE_PORTAL = "android.net.extra.CAPTIVE_PORTAL";
 
@@ -337,7 +337,7 @@ public class ConnectivityManager {
 
     /**
      * The lookup key for a boolean that indicates whether a captive portal was detected.
-     * Retrieve it with {@link Intent#getBooleanExtra(String,boolean)}.
+     * Retrieve it with {@link android.content.Intent#getBooleanExtra(String,boolean)}.
      * @hide
      */
     public static final String EXTRA_IS_CAPTIVE_PORTAL = "captivePortal";
@@ -1248,7 +1248,7 @@ public class ConnectivityManager {
      * behalf, using hardware offload to save battery power.
      *
      * To request that the system send keepalives, call one of the methods that return a
-     * {@link PacketKeepalive} object, such as {@link #startNattKeepalive},
+     * {@link ConnectivityManager.PacketKeepalive} object, such as {@link #startNattKeepalive},
      * passing in a non-null callback. If the callback is successfully started, the callback's
      * {@code onStarted} method will be called. If an error occurs, {@code onError} will be called,
      * specifying one of the {@code ERROR_*} constants in this class.
@@ -2429,7 +2429,7 @@ public class ConnectivityManager {
     /**
      * The lookup key for a {@link Network} object included with the intent after
      * successfully finding a network for the applications request.  Retrieve it with
-     * {@link Intent#getParcelableExtra(String)}.
+     * {@link android.content.Intent#getParcelableExtra(String)}.
      * <p>
      * Note that if you intend to invoke {@link Network#openConnection(java.net.URL)}
      * then you must get a ConnectivityManager instance before doing so.
@@ -2439,7 +2439,7 @@ public class ConnectivityManager {
     /**
      * The lookup key for a {@link NetworkRequest} object included with the intent after
      * successfully finding a network for the applications request.  Retrieve it with
-     * {@link Intent#getParcelableExtra(String)}.
+     * {@link android.content.Intent#getParcelableExtra(String)}.
      */
     public static final String EXTRA_NETWORK_REQUEST = "android.net.extra.NETWORK_REQUEST";
 
@@ -2618,7 +2618,7 @@ public class ConnectivityManager {
      * Requests bandwidth update for a given {@link Network} and returns whether the update request
      * is accepted by ConnectivityService. Once accepted, ConnectivityService will poll underlying
      * network connection for updated bandwidth information. The caller will be notified via
-     * {@link NetworkCallback} if there is an update. Notice that this
+     * {@link ConnectivityManager.NetworkCallback} if there is an update. Notice that this
      * method assumes that the caller has previously called
      * {@link #registerNetworkCallback(NetworkRequest, NetworkCallback)} to listen for network
      * changes.

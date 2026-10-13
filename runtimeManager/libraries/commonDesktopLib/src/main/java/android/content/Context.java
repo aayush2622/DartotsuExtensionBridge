@@ -56,7 +56,7 @@ public abstract class Context {
      * File creation mode: allow all other applications to have read access to
      * the created file.
      * <p>
-     * As of {@link Build.VERSION_CODES#N} attempting to use this
+     * As of {@link android.os.Build.VERSION_CODES#N} attempting to use this
      * mode will throw a {@link SecurityException}.
      *
      * @deprecated Creating world-readable files is very dangerous, and likely
@@ -75,7 +75,7 @@ public abstract class Context {
      * File creation mode: allow all other applications to have write access to
      * the created file.
      * <p>
-     * As of {@link Build.VERSION_CODES#N} attempting to use this
+     * As of {@link android.os.Build.VERSION_CODES#N} attempting to use this
      * mode will throw a {@link SecurityException}.
      *
      * @deprecated Creating world-writable files is very dangerous, and likely
@@ -164,7 +164,7 @@ public abstract class Context {
      * this still provides you with access to the service object while the
      * service is created.
      *
-     * <p>Note that prior to {@link Build.VERSION_CODES#ICE_CREAM_SANDWICH},
+     * <p>Note that prior to {@link android.os.Build.VERSION_CODES#ICE_CREAM_SANDWICH},
      * not supplying this flag would also impact how important the system
      * consider's the target service's process to be.  When set, the only way
      * for it to be raised was by binding from a service in which case it will
@@ -414,7 +414,7 @@ public abstract class Context {
     /**
      * Returns a localized formatted string from the application's package's
      * default string table, substituting the format arguments as defined in
-     * {@link java.util.Formatter} and {@link String#format}.
+     * {@link java.util.Formatter} and {@link java.lang.String#format}.
      *
      * @param resId Resource id for the format string
      * @param formatArgs The format arguments that will be used for
@@ -666,7 +666,7 @@ public abstract class Context {
      * @see #openFileOutput
      * @see #fileList
      * @see #deleteFile
-     * @see FileInputStream#FileInputStream(String)
+     * @see java.io.FileInputStream#FileInputStream(String)
      */
     public abstract FileInputStream openFileInput(String name)
         throws FileNotFoundException;
@@ -688,7 +688,7 @@ public abstract class Context {
      * @see #openFileInput
      * @see #fileList
      * @see #deleteFile
-     * @see FileOutputStream#FileOutputStream(String)
+     * @see java.io.FileOutputStream#FileOutputStream(String)
      */
     public abstract FileOutputStream openFileOutput(String name, int mode)
         throws FileNotFoundException;
@@ -705,7 +705,7 @@ public abstract class Context {
      * @see #openFileInput
      * @see #openFileOutput
      * @see #fileList
-     * @see File#delete()
+     * @see java.io.File#delete()
      */
     public abstract boolean deleteFile(String name);
     /**
@@ -817,7 +817,7 @@ public abstract class Context {
      * benefit to storing data here instead of the private directories returned
      * by {@link #getFilesDir()}, etc.
      * <p>
-     * Starting in {@link Build.VERSION_CODES#KITKAT}, no permissions
+     * Starting in {@link android.os.Build.VERSION_CODES#KITKAT}, no permissions
      * are required to read or write to the returned path; it's always
      * accessible to the calling app. This only applies to paths generated for
      * package name of the calling application. To access paths belonging to
@@ -844,12 +844,12 @@ public abstract class Context {
      * explicitly add them to the media database with
      * {@link android.media.MediaScannerConnection#scanFile(Context, String[], String[], android.media.MediaScannerConnection.OnScanCompletedListener)
      * MediaScannerConnection.scanFile}. Note that this is not the same as
-     * {@link Environment#getExternalStoragePublicDirectory
+     * {@link android.os.Environment#getExternalStoragePublicDirectory
      * Environment.getExternalStoragePublicDirectory()}, which provides
      * directories of media shared by all applications. The directories returned
      * here are owned by the application, and their contents will be removed
      * when the application is uninstalled. Unlike
-     * {@link Environment#getExternalStoragePublicDirectory
+     * {@link android.os.Environment#getExternalStoragePublicDirectory
      * Environment.getExternalStoragePublicDirectory()}, the directory returned
      * here will be automatically created for you.
      * <p>
@@ -862,13 +862,13 @@ public abstract class Context {
      * @param type The type of files directory to return. May be {@code null}
      *            for the root of the files directory or one of the following
      *            constants for a subdirectory:
-     *            {@link Environment#DIRECTORY_MUSIC},
-     *            {@link Environment#DIRECTORY_PODCASTS},
-     *            {@link Environment#DIRECTORY_RINGTONES},
-     *            {@link Environment#DIRECTORY_ALARMS},
-     *            {@link Environment#DIRECTORY_NOTIFICATIONS},
-     *            {@link Environment#DIRECTORY_PICTURES}, or
-     *            {@link Environment#DIRECTORY_MOVIES}.
+     *            {@link android.os.Environment#DIRECTORY_MUSIC},
+     *            {@link android.os.Environment#DIRECTORY_PODCASTS},
+     *            {@link android.os.Environment#DIRECTORY_RINGTONES},
+     *            {@link android.os.Environment#DIRECTORY_ALARMS},
+     *            {@link android.os.Environment#DIRECTORY_NOTIFICATIONS},
+     *            {@link android.os.Environment#DIRECTORY_PICTURES}, or
+     *            {@link android.os.Environment#DIRECTORY_MOVIES}.
      * @return the absolute path to application-specific directory. May return
      *         {@code null} if shared storage is not currently available.
      * @see #getFilesDir
@@ -923,13 +923,13 @@ public abstract class Context {
      * @param type The type of files directory to return. May be {@code null}
      *            for the root of the files directory or one of the following
      *            constants for a subdirectory:
-     *            {@link Environment#DIRECTORY_MUSIC},
-     *            {@link Environment#DIRECTORY_PODCASTS},
-     *            {@link Environment#DIRECTORY_RINGTONES},
-     *            {@link Environment#DIRECTORY_ALARMS},
-     *            {@link Environment#DIRECTORY_NOTIFICATIONS},
-     *            {@link Environment#DIRECTORY_PICTURES}, or
-     *            {@link Environment#DIRECTORY_MOVIES}.
+     *            {@link android.os.Environment#DIRECTORY_MUSIC},
+     *            {@link android.os.Environment#DIRECTORY_PODCASTS},
+     *            {@link android.os.Environment#DIRECTORY_RINGTONES},
+     *            {@link android.os.Environment#DIRECTORY_ALARMS},
+     *            {@link android.os.Environment#DIRECTORY_NOTIFICATIONS},
+     *            {@link android.os.Environment#DIRECTORY_PICTURES}, or
+     *            {@link android.os.Environment#DIRECTORY_MOVIES}.
      * @return the absolute paths to application-specific directories. Some
      *         individual paths may be {@code null} if that shared storage is
      *         not currently available. The first path returned is the same as
@@ -958,7 +958,7 @@ public abstract class Context {
      * these files.
      * </ul>
      * <p>
-     * Starting in {@link Build.VERSION_CODES#KITKAT}, no permissions
+     * Starting in {@link android.os.Build.VERSION_CODES#KITKAT}, no permissions
      * are required to read or write to the returned path; it's always
      * accessible to the calling app. This only applies to paths generated for
      * package name of the calling application. To access paths belonging to
@@ -1079,7 +1079,7 @@ public abstract class Context {
      * storage, and thus may not automatically delete these files. Apps should
      * always manage the maximum space used in this location. Currently the only
      * time files here will be deleted by the platform is when running on
-     * {@link Build.VERSION_CODES#JELLY_BEAN_MR1} or later and
+     * {@link android.os.Build.VERSION_CODES#JELLY_BEAN_MR1} or later and
      * {@link Environment#isExternalStorageEmulated(File)} returns true.
      * <li>Shared storage may not always be available, since removable media can
      * be ejected by the user. Media state can be checked using
@@ -1096,7 +1096,7 @@ public abstract class Context {
      * benefit to storing data here instead of the private directory returned by
      * {@link #getCacheDir()}.
      * <p>
-     * Starting in {@link Build.VERSION_CODES#KITKAT}, no permissions
+     * Starting in {@link android.os.Build.VERSION_CODES#KITKAT}, no permissions
      * are required to read or write to the returned path; it's always
      * accessible to the calling app. This only applies to paths generated for
      * package name of the calling application. To access paths belonging to
@@ -1135,7 +1135,7 @@ public abstract class Context {
      * storage, and thus may not automatically delete these files. Apps should
      * always manage the maximum space used in this location. Currently the only
      * time files here will be deleted by the platform is when running on
-     * {@link Build.VERSION_CODES#JELLY_BEAN_MR1} or later and
+     * {@link android.os.Build.VERSION_CODES#JELLY_BEAN_MR1} or later and
      * {@link Environment#isExternalStorageEmulated(File)} returns true.
      * <li>Shared storage may not always be available, since removable media can
      * be ejected by the user. Media state can be checked using
@@ -1540,7 +1540,7 @@ public abstract class Context {
      *
      * @param intents An array of Intents to be started.
      * @param options Additional options for how the Activity should be started.
-     * See {@link Context#startActivity(Intent, Bundle)
+     * See {@link android.content.Context#startActivity(Intent, Bundle)
      * Context.startActivity(Intent, Bundle)} for more details.
      *
      * @throws ActivityNotFoundException &nbsp;
@@ -1567,7 +1567,7 @@ public abstract class Context {
      * @param intents An array of Intents to be started.
      * @param options Additional options for how the Activity should be started.
      * @param userHandle The user for whom to launch the activities
-     * See {@link Context#startActivity(Intent, Bundle)
+     * See {@link android.content.Context#startActivity(Intent, Bundle)
      * Context.startActivity(Intent, Bundle)} for more details.
      *
      * @throws ActivityNotFoundException &nbsp;
@@ -1614,7 +1614,7 @@ public abstract class Context {
      * <var>flagsMask</var>
      * @param extraFlags Always set to 0.
      * @param options Additional options for how the Activity should be started.
-     * See {@link Context#startActivity(Intent, Bundle)
+     * See {@link android.content.Context#startActivity(Intent, Bundle)
      * Context.startActivity(Intent, Bundle)} for more details.  If options
      * have also been supplied by the IntentSender, options given here will
      * override any that conflict with those given by the IntentSender.
@@ -1850,8 +1850,8 @@ public abstract class Context {
             @Nullable BroadcastReceiver resultReceiver, @Nullable Handler scheduler,
             int initialCode, @Nullable String initialData, @Nullable Bundle initialExtras);
     /**
-     * Like {@link #sendOrderedBroadcast(Intent, String, BroadcastReceiver, Handler,
-     * int, String, Bundle)}, but also allows specification
+     * Like {@link #sendOrderedBroadcast(Intent, String, BroadcastReceiver, android.os.Handler,
+     * int, String, android.os.Bundle)}, but also allows specification
      * of an associated app op as per {@link android.app.AppOpsManager}.
      * @hide
      */
@@ -2175,7 +2175,7 @@ public abstract class Context {
      *
      * <p>See {@link BroadcastReceiver} for more information on Intent broadcasts.
      *
-     * <p>As of {@link Build.VERSION_CODES#ICE_CREAM_SANDWICH}, receivers
+     * <p>As of {@link android.os.Build.VERSION_CODES#ICE_CREAM_SANDWICH}, receivers
      * registered with this method will correctly respect the
      * {@link Intent#setPackage(String)} specified for an Intent being broadcast.
      * Prior to that, it would be ignored and delivered to all matching registered
@@ -2211,7 +2211,7 @@ public abstract class Context {
      *
      * <p>See {@link BroadcastReceiver} for more information on Intent broadcasts.
      *
-     * <p>As of {@link Build.VERSION_CODES#ICE_CREAM_SANDWICH}, receivers
+     * <p>As of {@link android.os.Build.VERSION_CODES#ICE_CREAM_SANDWICH}, receivers
      * registered with this method will correctly respect the
      * {@link Intent#setPackage(String)} specified for an Intent being broadcast.
      * Prior to that, it would be ignored and delivered to all matching registered
@@ -2573,7 +2573,7 @@ public abstract class Context {
      *  <dd> A {@link android.app.ActivityManager} for interacting with the
      *  global activity state of the system.
      *  <dt> {@link #POWER_SERVICE} ("power")
-     *  <dd> A {@link PowerManager} for controlling power
+     *  <dd> A {@link android.os.PowerManager} for controlling power
      *  management.
      *  <dt> {@link #ALARM_SERVICE} ("alarm")
      *  <dd> A {@link android.app.AlarmManager} for receiving intents at the
@@ -2642,7 +2642,7 @@ public abstract class Context {
      * @see #ACTIVITY_SERVICE
      * @see android.app.ActivityManager
      * @see #POWER_SERVICE
-     * @see PowerManager
+     * @see android.os.PowerManager
      * @see #ALARM_SERVICE
      * @see android.app.AlarmManager
      * @see #NOTIFICATION_SERVICE
@@ -2694,7 +2694,7 @@ public abstract class Context {
      * <p>
      * Currently available classes are:
      * {@link android.view.WindowManager}, {@link android.view.LayoutInflater},
-     * {@link android.app.ActivityManager}, {@link PowerManager},
+     * {@link android.app.ActivityManager}, {@link android.os.PowerManager},
      * {@link android.app.AlarmManager}, {@link android.app.NotificationManager},
      * {@link android.app.KeyguardManager}, {@link android.location.LocationManager},
      * {@link android.app.SearchManager}, {@link android.os.Vibrator},
@@ -2733,7 +2733,7 @@ public abstract class Context {
     public abstract String getSystemServiceName(Class<?> serviceClass);
     /**
      * Use with {@link #getSystemService} to retrieve a
-     * {@link PowerManager} for controlling power management,
+     * {@link android.os.PowerManager} for controlling power management,
      * including "wake locks," which let you keep the device on while
      * you're running long tasks.
      */
@@ -3590,11 +3590,11 @@ public abstract class Context {
      * "content://foo".  It will not remove any prefix grants that exist at a
      * higher level.
      *
-     * <p>Prior to {@link Build.VERSION_CODES#LOLLIPOP}, if you did not have
+     * <p>Prior to {@link android.os.Build.VERSION_CODES#LOLLIPOP}, if you did not have
      * regular permission access to a Uri, but had received access to it through
      * a specific Uri permission grant, you could not revoke that grant with this
      * function and a {@link SecurityException} would be thrown.  As of
-     * {@link Build.VERSION_CODES#LOLLIPOP}, this function will not throw a security exception,
+     * {@link android.os.Build.VERSION_CODES#LOLLIPOP}, this function will not throw a security exception,
      * but will remove whatever permission grants to the Uri had been given to the app
      * (or none).</p>
      *
@@ -3848,10 +3848,10 @@ public abstract class Context {
      * are not shared, however they share common state (Resources, ClassLoader,
      * etc) so the Context instance itself is fairly lightweight.
      *
-     * <p>Throws {@link PackageManager.NameNotFoundException} if there is no
+     * <p>Throws {@link android.content.pm.PackageManager.NameNotFoundException} if there is no
      * application with the given package name.
      *
-     * <p>Throws {@link SecurityException} if the Context requested
+     * <p>Throws {@link java.lang.SecurityException} if the Context requested
      * can not be loaded into the caller's process for security reasons (see
      * {@link #CONTEXT_INCLUDE_CODE} for more information}.
      *
@@ -3878,7 +3878,7 @@ public abstract class Context {
             String packageName, int flags, UserHandle user)
             throws PackageManager.NameNotFoundException;
     /**
-     * Creates a context given an {@link ApplicationInfo}.
+     * Creates a context given an {@link android.content.pm.ApplicationInfo}.
      *
      * @hide
      */

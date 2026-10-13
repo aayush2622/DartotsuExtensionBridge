@@ -254,7 +254,7 @@ public abstract class PackageManager {
     public static final int GET_RESOLVED_FILTER         = 0x00000040;
     /**
      * {@link ComponentInfo} flag: return the {@link ComponentInfo#metaData}
-     * data {@link Bundle}s that are associated with a component.
+     * data {@link android.os.Bundle}s that are associated with a component.
      * This applies for any API returning a ComponentInfo subclass.
      */
     public static final int GET_META_DATA               = 0x00000080;
@@ -335,7 +335,7 @@ public abstract class PackageManager {
     public static final int MATCH_DISABLED_UNTIL_USED_COMPONENTS = 0x00008000;
     /**
      * Resolution and querying flag: if set, only filters that support the
-     * {@link Intent#CATEGORY_DEFAULT} will be considered for
+     * {@link android.content.Intent#CATEGORY_DEFAULT} will be considered for
      * matching.  This is a synonym for including the CATEGORY_DEFAULT in your
      * supplied Intent.
      */
@@ -737,7 +737,7 @@ public abstract class PackageManager {
     public @interface EnabledFlags {}
     /**
      * Flag parameter for
-     * {@link #setComponentEnabledSetting(ComponentName, int, int)} to indicate
+     * {@link #setComponentEnabledSetting(android.content.ComponentName, int, int)} to indicate
      * that you don't want to kill the app containing the component.  Be careful when you set this
      * since changing component states can make the containing application's behavior unpredictable.
      */
@@ -3080,8 +3080,8 @@ public abstract class PackageManager {
      * Grant a runtime permission to an application which the application does not
      * already have. The permission must have been requested by the application.
      * If the application is not allowed to hold the permission, a {@link
-     * SecurityException} is thrown. If the package or permission is
-     * invalid, a {@link IllegalArgumentException} is thrown.
+     * java.lang.SecurityException} is thrown. If the package or permission is
+     * invalid, a {@link java.lang.IllegalArgumentException} is thrown.
      * <p>
      * <strong>Note: </strong>Using this API requires holding
      * android.permission.GRANT_RUNTIME_PERMISSIONS and if the user id is
@@ -3092,7 +3092,7 @@ public abstract class PackageManager {
      * @param permissionName The permission name to grant.
      * @param user The user for which to grant the permission.
      *
-     * @see #revokeRuntimePermission(String, String, UserHandle)
+     * @see #revokeRuntimePermission(String, String, android.os.UserHandle)
      *
      * @hide
      */
@@ -3101,11 +3101,11 @@ public abstract class PackageManager {
                                                 @NonNull String permissionName, @NonNull UserHandle user);
     /**
      * Revoke a runtime permission that was previously granted by {@link
-     * #grantRuntimePermission(String, String, UserHandle)}. The
+     * #grantRuntimePermission(String, String, android.os.UserHandle)}. The
      * permission must have been requested by and granted to the application.
      * If the application is not allowed to hold the permission, a {@link
-     * SecurityException} is thrown. If the package or permission is
-     * invalid, a {@link IllegalArgumentException} is thrown.
+     * java.lang.SecurityException} is thrown. If the package or permission is
+     * invalid, a {@link java.lang.IllegalArgumentException} is thrown.
      * <p>
      * <strong>Note: </strong>Using this API requires holding
      * android.permission.REVOKE_RUNTIME_PERMISSIONS and if the user id is
@@ -3116,7 +3116,7 @@ public abstract class PackageManager {
      * @param permissionName The permission name to revoke.
      * @param user The user for which to revoke the permission.
      *
-     * @see #grantRuntimePermission(String, String, UserHandle)
+     * @see #grantRuntimePermission(String, String, android.os.UserHandle)
      *
      * @hide
      */
@@ -3165,8 +3165,8 @@ public abstract class PackageManager {
      */
     public abstract boolean shouldShowRequestPermissionRationale(String permission);
     /**
-     * Returns an {@link Intent} suitable for passing to
-     * {@link android.app.Activity#startActivityForResult(Intent, int)}
+     * Returns an {@link android.content.Intent} suitable for passing to
+     * {@link android.app.Activity#startActivityForResult(android.content.Intent, int)}
      * which prompts the user to grant permissions to this application.
      *
      * @throws NullPointerException if {@code permissions} is {@code null} or empty.
@@ -3519,8 +3519,8 @@ public abstract class PackageManager {
      * ComponentName specified), be sure to consider whether to set the
      * {@link #MATCH_DEFAULT_ONLY} only flag. You need to do so to resolve the
      * activity in the same way that
-     * {@link Context#startActivity(Intent)} and
-     * {@link Intent#resolveActivity(PackageManager)
+     * {@link android.content.Context#startActivity(Intent)} and
+     * {@link android.content.Intent#resolveActivity(PackageManager)
      * Intent.resolveActivity(PackageManager)} do.
      * </p>
      *
@@ -3529,7 +3529,7 @@ public abstract class PackageManager {
      * @param flags Additional option flags to modify the data returned. The
      *            most important is {@link #MATCH_DEFAULT_ONLY}, to limit the
      *            resolution to only those activities that support the
-     *            {@link Intent#CATEGORY_DEFAULT}.
+     *            {@link android.content.Intent#CATEGORY_DEFAULT}.
      * @return Returns a ResolveInfo object containing the final activity intent
      *         that was determined to be the best action. Returns null if no
      *         matching activity was found. If multiple matching activities are
@@ -3546,8 +3546,8 @@ public abstract class PackageManager {
      * ComponentName specified), be sure to consider whether to set the
      * {@link #MATCH_DEFAULT_ONLY} only flag. You need to do so to resolve the
      * activity in the same way that
-     * {@link Context#startActivity(Intent)} and
-     * {@link Intent#resolveActivity(PackageManager)
+     * {@link android.content.Context#startActivity(Intent)} and
+     * {@link android.content.Intent#resolveActivity(PackageManager)
      * Intent.resolveActivity(PackageManager)} do.
      * </p>
      *
@@ -3556,7 +3556,7 @@ public abstract class PackageManager {
      * @param flags Additional option flags to modify the data returned. The
      *            most important is {@link #MATCH_DEFAULT_ONLY}, to limit the
      *            resolution to only those activities that support the
-     *            {@link Intent#CATEGORY_DEFAULT}.
+     *            {@link android.content.Intent#CATEGORY_DEFAULT}.
      * @param userId The user id.
      * @return Returns a ResolveInfo object containing the final activity intent
      *         that was determined to be the best action. Returns null if no
@@ -3574,7 +3574,7 @@ public abstract class PackageManager {
      * @param flags Additional option flags to modify the data returned. The
      *            most important is {@link #MATCH_DEFAULT_ONLY}, to limit the
      *            resolution to only those activities that support the
-     *            {@link Intent#CATEGORY_DEFAULT}. Or, set
+     *            {@link android.content.Intent#CATEGORY_DEFAULT}. Or, set
      *            {@link #MATCH_ALL} to prevent any filtering of the results.
      * @return Returns a List of ResolveInfo objects containing one entry for
      *         each matching activity, ordered from best to worst. In other
@@ -3592,7 +3592,7 @@ public abstract class PackageManager {
      * @param flags Additional option flags to modify the data returned. The
      *            most important is {@link #MATCH_DEFAULT_ONLY}, to limit the
      *            resolution to only those activities that support the
-     *            {@link Intent#CATEGORY_DEFAULT}. Or, set
+     *            {@link android.content.Intent#CATEGORY_DEFAULT}. Or, set
      *            {@link #MATCH_ALL} to prevent any filtering of the results.
      * @return Returns a List of ResolveInfo objects containing one entry for
      *         each matching activity, ordered from best to worst. In other
@@ -3620,7 +3620,7 @@ public abstract class PackageManager {
      * @param flags Additional option flags to modify the data returned. The
      *            most important is {@link #MATCH_DEFAULT_ONLY}, to limit the
      *            resolution to only those activities that support the
-     *            {@link Intent#CATEGORY_DEFAULT}.
+     *            {@link android.content.Intent#CATEGORY_DEFAULT}.
      * @return Returns a List of ResolveInfo objects containing one entry for
      *         each matching activity. The list is ordered first by all of the
      *         intents resolved in <var>specifics</var> and then any additional
@@ -4043,7 +4043,7 @@ public abstract class PackageManager {
      * If the target user is a managed profile, then this returns a badged copy of the given icon
      * to be able to distinguish it from the original icon. For badging an arbitrary drawable use
      * {@link #getUserBadgedDrawableForDensity(
-     * android.graphics.drawable.Drawable, UserHandle, Rect, int)}.
+     * android.graphics.drawable.Drawable, UserHandle, android.graphics.Rect, int)}.
      * <p>
      * If the original drawable is a BitmapDrawable and the backing bitmap is
      * mutable as per {@link android.graphics.Bitmap#isMutable()}, the badging
@@ -5235,7 +5235,7 @@ public abstract class PackageManager {
     /**
      * Checks whether the calling package is allowed to request package installs through package
      * installer. Apps are encouraged to call this API before launching the package installer via
-     * intent {@link Intent#ACTION_INSTALL_PACKAGE}. Starting from Android O, the
+     * intent {@link android.content.Intent#ACTION_INSTALL_PACKAGE}. Starting from Android O, the
      * user can explicitly choose what external sources they trust to install apps on the device.
      * If this API returns false, the install request will be blocked by the package installer and
      * a dialog will be shown to the user with an option to launch settings to change their
@@ -5244,7 +5244,7 @@ public abstract class PackageManager {
      *
      * @return true if the calling package is trusted by the user to request install packages on
      * the device, false otherwise.
-     * @see Intent#ACTION_INSTALL_PACKAGE
+     * @see android.content.Intent#ACTION_INSTALL_PACKAGE
      * @see android.provider.Settings#ACTION_MANAGE_UNKNOWN_APP_SOURCES
      */
     public abstract boolean canRequestPackageInstalls();
@@ -5252,7 +5252,7 @@ public abstract class PackageManager {
      * Return the {@link ComponentName} of the activity providing Settings for the Instant App
      * resolver.
      *
-     * @see {@link Intent#ACTION_INSTANT_APP_RESOLVER_SETTINGS}
+     * @see {@link android.content.Intent#ACTION_INSTANT_APP_RESOLVER_SETTINGS}
      * @hide
      */
     @SystemApi
@@ -5261,7 +5261,7 @@ public abstract class PackageManager {
      * Return the {@link ComponentName} of the activity responsible for installing instant
      * applications.
      *
-     * @see {@link Intent#ACTION_INSTALL_INSTANT_APP_PACKAGE}
+     * @see {@link android.content.Intent#ACTION_INSTALL_INSTANT_APP_PACKAGE}
      * @hide
      */
     @SystemApi

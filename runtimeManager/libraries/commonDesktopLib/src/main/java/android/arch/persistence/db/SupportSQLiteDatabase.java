@@ -32,7 +32,7 @@ import java.util.Locale;
 
 /**
  * A database abstraction which removes the framework dependency and allows swapping underlying
- * sql versions. It mimics the behavior of {@link SQLiteDatabase}
+ * sql versions. It mimics the behavior of {@link android.database.sqlite.SQLiteDatabase}
  */
 @SuppressWarnings("unused")
 public interface SupportSQLiteDatabase extends Closeable {

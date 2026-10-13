@@ -35,8 +35,8 @@ import java.util.ArrayList;
  * Application.  In most situations, static singletons can provide the same
  * functionality in a more modular way.  If your singleton needs a global
  * context (for example to register broadcast receivers), include
- * {@link Context#getApplicationContext() Context.getApplicationContext()}
- * as a {@link Context} argument when invoking your singleton's
+ * {@link android.content.Context#getApplicationContext() Context.getApplicationContext()}
+ * as a {@link android.content.Context} argument when invoking your singleton's
  * <code>getInstance()</code> method.
  * </p>
  */

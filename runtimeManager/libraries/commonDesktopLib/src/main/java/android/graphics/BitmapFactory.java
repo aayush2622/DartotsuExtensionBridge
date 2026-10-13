@@ -25,7 +25,7 @@ public class BitmapFactory {
          * If set, decode methods that take the Options object will attempt to
          * reuse this bitmap when loading content. If the decode operation
          * cannot use this bitmap, the decode method will throw an
-         * {@link IllegalArgumentException}. The
+         * {@link java.lang.IllegalArgumentException}. The
          * current implementation necessitates that the reused bitmap be
          * mutable, and the resulting reused bitmap will continue to remain
          * mutable even when decoding a resource which would normally result in
@@ -54,7 +54,7 @@ public class BitmapFactory {
          * additional constraints apply: The image being decoded (whether as a
          * resource or as a stream) must be in jpeg or png format. Only equal
          * sized bitmaps are supported, with {@link #inSampleSize} set to 1.
-         * Additionally, the {@link Bitmap.Config
+         * Additionally, the {@link android.graphics.Bitmap.Config
          * configuration} of the reused bitmap will override the setting of
          * {@link #inPreferredConfig}, if set.</p>
          *
@@ -70,7 +70,7 @@ public class BitmapFactory {
          * formats supported by BitmapRegionDecoder support Bitmap reuse via
          * {@link #inBitmap}.</p>
          *
-         * @see Bitmap#reconfigure(int,int, Bitmap.Config)
+         * @see Bitmap#reconfigure(int,int, android.graphics.Bitmap.Config)
          */
         public Bitmap inBitmap;
 
@@ -79,7 +79,7 @@ public class BitmapFactory {
          * an immutable one. This can be used for instance to programmatically apply
          * effects to a Bitmap loaded through BitmapFactory.
          * <p>Can not be set simultaneously with inPreferredConfig =
-         * {@link Bitmap.Config#HARDWARE},
+         * {@link android.graphics.Bitmap.Config#HARDWARE},
          * because hardware bitmaps are always immutable.
          */
         public boolean inMutable;
@@ -191,7 +191,7 @@ public class BitmapFactory {
          *
          * <p>If this is 0,
          * {@link BitmapFactory#decodeResource(Resources, int)},
-         * {@link BitmapFactory#decodeResource(Resources, int, Options)},
+         * {@link BitmapFactory#decodeResource(Resources, int, android.graphics.BitmapFactory.Options)},
          * and {@link BitmapFactory#decodeResourceStream}
          * will fill in the density associated with the resource.  The other
          * functions will leave it as-is and no density will be applied.
@@ -212,7 +212,7 @@ public class BitmapFactory {
          *
          * <p>If this is 0,
          * {@link BitmapFactory#decodeResource(Resources, int)},
-         * {@link BitmapFactory#decodeResource(Resources, int, Options)},
+         * {@link BitmapFactory#decodeResource(Resources, int, android.graphics.BitmapFactory.Options)},
          * and {@link BitmapFactory#decodeResourceStream}
          * will fill in the density associated the Resources object's
          * DisplayMetrics.  The other
@@ -301,8 +301,8 @@ public class BitmapFactory {
          *
          * <p class="note"><strong>Note:</strong> This flag is ignored when used
          * with {@link #decodeResource(Resources, int,
-         * Options)} or {@link #decodeFile(String,
-         * Options)}.</p>
+         * android.graphics.BitmapFactory.Options)} or {@link #decodeFile(String,
+         * android.graphics.BitmapFactory.Options)}.</p>
          */
         @Deprecated
         public boolean inPurgeable;

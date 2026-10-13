@@ -39,10 +39,12 @@ tasks.shadowJar {
             exclude(dependency("org.jogamp.gluegen:.*"))
             exclude(dependency("net.java.dev.jna:jna:.*"))
             exclude(dependency("net.java.dev.jna:jna-platform:.*"))
+            exclude(dependency("org.apache.commons:commons-compress:.*"))
         }
         exclude(
             "org/cef/**", "org/jogamp/**", "com/jogamp/**", "jogamp/**",
             "com/sun/jna/**", "native/**", "jni/**",
+            "org/apache/commons/compress/**",
             "**/*.dll", "**/*.dylib", "**/*.so", "**/*.jnilib",
             "darwin*/**", "win32-*/**", "linux-*/**",
             "okhttp3/zstd/**", "com/squareup/zstd/**",

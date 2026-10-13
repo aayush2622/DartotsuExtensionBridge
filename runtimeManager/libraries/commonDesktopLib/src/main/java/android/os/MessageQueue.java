@@ -190,8 +190,8 @@ public final class MessageQueue {
      * @see #removeOnFileDescriptorEventListener
      */
     public void addOnFileDescriptorEventListener(@NonNull FileDescriptor fd,
-                                                 @OnFileDescriptorEventListener.Events int events,
-                                                 @NonNull OnFileDescriptorEventListener listener) {
+            @OnFileDescriptorEventListener.Events int events,
+            @NonNull OnFileDescriptorEventListener listener) {
         if (fd == null) {
             throw new IllegalArgumentException("fd must not be null");
         }
@@ -227,7 +227,7 @@ public final class MessageQueue {
     }
 
     private void updateOnFileDescriptorEventListenerLocked(FileDescriptor fd, int events,
-                                                           OnFileDescriptorEventListener listener) {
+            OnFileDescriptorEventListener listener) {
         throw new RuntimeException("Stub!");
 //        final int fdNum = fd.getInt$();
 //
@@ -821,7 +821,7 @@ public final class MessageQueue {
 
             // Remove all messages at front.
             while (p != null && p.target == h && p.what == what
-                    && (object == null || p.obj == object)) {
+                   && (object == null || p.obj == object)) {
                 Message n = p.next;
                 mMessages = n;
                 if (p.isAsynchronous()) {
@@ -868,7 +868,7 @@ public final class MessageQueue {
 
             // Remove all messages at front.
             while (p != null && p.target == h && p.what == what
-                    && (object == null || object.equals(p.obj))) {
+                   && (object == null || object.equals(p.obj))) {
                 Message n = p.next;
                 mMessages = n;
                 if (p.isAsynchronous()) {
@@ -915,7 +915,7 @@ public final class MessageQueue {
 
             // Remove all messages at front.
             while (p != null && p.target == h && p.callback == r
-                    && (object == null || p.obj == object)) {
+                   && (object == null || p.obj == object)) {
                 Message n = p.next;
                 mMessages = n;
                 if (p.isAsynchronous()) {
@@ -962,7 +962,7 @@ public final class MessageQueue {
 
             // Remove all messages at front.
             while (p != null && p.target == h && p.callback == r
-                    && (object == null || object.equals(p.obj))) {
+                   && (object == null || object.equals(p.obj))) {
                 Message n = p.next;
                 mMessages = n;
                 if (p.isAsynchronous()) {
@@ -1234,7 +1234,7 @@ public final class MessageQueue {
         public int mSeq;
 
         public FileDescriptorRecord(FileDescriptor descriptor,
-                                    int events, OnFileDescriptorEventListener listener) {
+                int events, OnFileDescriptorEventListener listener) {
             mDescriptor = descriptor;
             mEvents = events;
             mListener = listener;

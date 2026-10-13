@@ -23,16 +23,36 @@ class SidecarBridge implements JavaBridge {
 
   bool _initialized = false;
 
+  // Remembered so `call()` can restart a sidecar that died or never started.
+  String? _pluginJarPath;
+
+  Future<void>? _starting;
+
   @override
   Future<void> init({required String pluginJarPath}) async {
+    _pluginJarPath = pluginJarPath;
     if (_initialized) return;
 
+    // Concurrent callers share a single start instead of spawning several JVMs.
+    final inFlight = _starting;
+    if (inFlight != null) return inFlight;
+
+    final start = _start(pluginJarPath);
+    _starting = start;
+    try {
+      await start;
+    } finally {
+      _starting = null;
+    }
+  }
+
+  Future<void> _start(String pluginJarPath) async {
     Logger.log('Starting sidecar: $pluginJarPath');
     final javaPath = await JavaRuntimeManager.ensureInstalled();
 
     if (javaPath == null) throw Exception('Java runtime not found');
 
-    _process = await Process.start(javaPath, [
+    final process = _process = await Process.start(javaPath, [
       '-Dfile.encoding=UTF-8',
       '-Dsun.stdout.encoding=UTF-8',
       '-Dsun.stderr.encoding=UTF-8',
@@ -58,8 +78,11 @@ class SidecarBridge implements JavaBridge {
     });
 
     unawaited(
-      _process!.exitCode.then((code) {
+      process.exitCode.then((code) {
         Logger.log('Sidecar exited with code $code');
+
+        // A replacement sidecar may already be running; don't clobber it.
+        if (!identical(_process, process)) return;
 
         // Without this, every call() made after the sidecar dies still
         // passes the `_initialized` guard, writes to a dead stdin, and
@@ -70,7 +93,7 @@ class SidecarBridge implements JavaBridge {
 
         for (final c in _pending.values) {
           if (!c.isCompleted) {
-            c.completeError(Exception('Sidecar exited with code $code'));
+            c.completeError(_SidecarExited(code));
           }
         }
 
@@ -114,10 +137,38 @@ class SidecarBridge implements JavaBridge {
     Map<String, dynamic>? args,
     bool throwError = false,
   ]) async {
-    if (!_initialized) {
-      throw Exception('Sidecar bridge not initialized');
+    if (!_initialized || _process == null) {
+      final jar = _pluginJarPath;
+      if (jar == null) throw Exception('Sidecar bridge not initialized');
+      Logger.log('Sidecar not running, restarting');
+      await init(pluginJarPath: jar);
     }
 
+    try {
+      return await _callOnce<T>(method, args, throwError);
+    } on _SidecarExited catch (e) {
+      // The sidecar died mid-call: restart it once and retry.
+      final jar = _pluginJarPath;
+      if (jar == null) {
+        if (throwError) rethrow;
+        return emptyJavaBridgeValue<T>();
+      }
+      Logger.log('Sidecar died during "$method" ($e), restarting', show: true);
+      try {
+        await init(pluginJarPath: jar);
+        return await _callOnce<T>(method, args, throwError);
+      } catch (e2) {
+        if (throwError) rethrow;
+        return emptyJavaBridgeValue<T>();
+      }
+    }
+  }
+
+  Future<T> _callOnce<T>(
+    String method,
+    Map<String, dynamic>? args,
+    bool throwError,
+  ) async {
     final process = _process;
 
     if (process == null) {
@@ -157,6 +208,8 @@ class SidecarBridge implements JavaBridge {
       }
 
       return decoded as T;
+    } on _SidecarExited {
+      rethrow;
     } catch (e, c) {
       Logger.log('[SIDECAR] Call failed: $e\n$c', show: true);
 
@@ -201,5 +254,16 @@ class SidecarBridge implements JavaBridge {
     _process = null;
 
     _initialized = false;
+
+    // Explicit disposal must not be undone by the auto-restart path.
+    _pluginJarPath = null;
   }
+}
+
+class _SidecarExited implements Exception {
+  final int code;
+  _SidecarExited(this.code);
+
+  @override
+  String toString() => 'Sidecar exited with code $code';
 }

@@ -195,7 +195,7 @@ public class WebViewClient {
     @Deprecated
     @Nullable
     public WebResourceResponse shouldInterceptRequest(WebView view,
-                                                      String url) {
+            String url) {
         return null;
     }
 
@@ -231,7 +231,7 @@ public class WebViewClient {
      */
     @Nullable
     public WebResourceResponse shouldInterceptRequest(WebView view,
-                                                      WebResourceRequest request) {
+            WebResourceRequest request) {
         return shouldInterceptRequest(view, request.getUrl().toString());
     }
 
@@ -249,7 +249,7 @@ public class WebViewClient {
      */
     @Deprecated
     public void onTooManyRedirects(WebView view, Message cancelMsg,
-                                   Message continueMsg) {
+            Message continueMsg) {
         cancelMsg.sendToTarget();
     }
 
@@ -321,7 +321,7 @@ public class WebViewClient {
      */
     @Deprecated
     public void onReceivedError(WebView view, int errorCode,
-                                String description, String failingUrl) {
+            String description, String failingUrl) {
     }
 
     /**
@@ -365,7 +365,7 @@ public class WebViewClient {
      * @param resend The message to send if the browser should resend data
      */
     public void onFormResubmission(WebView view, Message dontResend,
-                                   Message resend) {
+            Message resend) {
         dontResend.sendToTarget();
     }
 
@@ -377,7 +377,7 @@ public class WebViewClient {
      * @param isReload {@code true} if this url is being reloaded.
      */
     public void doUpdateVisitedHistory(WebView view, String url,
-                                       boolean isReload) {
+            boolean isReload) {
     }
 
     /**
@@ -411,7 +411,7 @@ public class WebViewClient {
      * @param error SSL error object.
      */
     public void onReceivedSslError(WebView view, SslErrorHandler handler,
-                                   SslError error) {
+            SslError error) {
         handler.cancel();
     }
 
@@ -468,7 +468,7 @@ public class WebViewClient {
      * @see WebView#getHttpAuthUsernamePassword
      */
     public void onReceivedHttpAuthRequest(WebView view,
-                                          HttpAuthHandler handler, String host, String realm) {
+            HttpAuthHandler handler, String host, String realm) {
         handler.cancel();
     }
 
@@ -555,7 +555,7 @@ public class WebViewClient {
      * @param args Authenticator specific arguments used to log in the user.
      */
     public void onReceivedLoginRequest(WebView view, String realm,
-                                       @Nullable String account, String args) {
+            @Nullable String account, String args) {
     }
 
     /**
@@ -603,7 +603,7 @@ public class WebViewClient {
      * @param callback Applications must invoke one of the callback methods.
      */
     public void onSafeBrowsingHit(WebView view, WebResourceRequest request,
-                                  @SafeBrowsingThreat int threatType, SafeBrowsingResponse callback) {
+            @SafeBrowsingThreat int threatType, SafeBrowsingResponse callback) {
         callback.showInterstitial(/* allowReporting */ true);
     }
 }

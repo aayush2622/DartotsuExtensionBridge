@@ -43,7 +43,7 @@ import java.util.List;
 /**
  * Maintains communication state with the zygote processes. This class is responsible
  * for the sockets opened to the zygotes and for starting processes on behalf of the
- * {@link Process} class.
+ * {@link android.os.Process} class.
  *
  * {@hide}
  */

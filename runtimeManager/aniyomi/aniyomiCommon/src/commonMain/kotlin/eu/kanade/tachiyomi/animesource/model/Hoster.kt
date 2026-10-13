@@ -7,7 +7,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
-open class Hoster @JvmOverloads constructor(
+open class Hoster(
     val hosterUrl: String = "",
     val hosterName: String = "",
     val videoList: List<Video>? = null,
@@ -25,6 +25,28 @@ open class Hoster @JvmOverloads constructor(
      */
     val memo: JsonObject = JsonObject(emptyMap()),
 ) {
+    /**
+     * Binary-compat shim for extensions compiled against extensions-lib 16 and
+     * earlier (before [memo] existed). Kotlin's default-argument calling
+     * convention doesn't use plain overloads - a caller that omits trailing
+     * defaulted args compiles to a call against a synthetic
+     * `<init>(..., int mask, DefaultConstructorMarker)` bridge tied to the
+     * exact parameter list the constructor had *at the caller's compile
+     * time*. Adding [memo] changed that bridge's shape for the primary
+     * constructor, so pre-lib-17 extensions calling the old 5-param bridge
+     * got `NoSuchMethodError` even though `@JvmOverloads` provided a matching
+     * plain overload - `@JvmOverloads` doesn't regenerate this bridge, only
+     * a constructor's own defaults do. This secondary constructor exists
+     * solely so Kotlin generates that exact missing bridge again.
+     */
+    constructor(
+        hosterUrl: String = "",
+        hosterName: String = "",
+        videoList: List<Video>? = null,
+        internalData: String = "",
+        lazy: Boolean = false,
+    ) : this(hosterUrl, hosterName, videoList, internalData, lazy, JsonObject(emptyMap()))
+
     @Transient
     @Volatile
     var status: State = State.IDLE

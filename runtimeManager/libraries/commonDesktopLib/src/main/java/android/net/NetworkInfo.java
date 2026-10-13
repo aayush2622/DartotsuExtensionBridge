@@ -28,7 +28,7 @@ import java.util.EnumMap;
 public class NetworkInfo implements Parcelable {
     /**
      * Coarse-grained network state. This is probably what most applications should
-     * use, rather than {@link DetailedState DetailedState}.
+     * use, rather than {@link android.net.NetworkInfo.DetailedState DetailedState}.
      * The mapping between the two is as follows:
      * <br/><br/>
      * <table>
@@ -54,7 +54,7 @@ public class NetworkInfo implements Parcelable {
     /**
      * The fine-grained state of a network connection. This level of detail
      * is probably of interest to few applications. Most should use
-     * {@link State State} instead.
+     * {@link android.net.NetworkInfo.State State} instead.
      */
     public enum DetailedState {
         /** Ready to start data connection setup. */
@@ -238,7 +238,7 @@ public class NetworkInfo implements Parcelable {
      * @return {@code true} if network connectivity exists or is in the process
      * of being established, {@code false} otherwise.
      * @deprecated Apps should instead use the
-     *             {@link ConnectivityManager.NetworkCallback} API to
+     *             {@link android.net.ConnectivityManager.NetworkCallback} API to
      *             learn about connectivity changes.
      *             {@link ConnectivityManager#registerDefaultNetworkCallback} and
      *             {@link ConnectivityManager#registerNetworkCallback}. These will
@@ -276,7 +276,7 @@ public class NetworkInfo implements Parcelable {
      * returns info for available networks.
      * @return {@code true} if the network is available, {@code false} otherwise
      * @deprecated Apps should instead use the
-     *             {@link ConnectivityManager.NetworkCallback} API to
+     *             {@link android.net.ConnectivityManager.NetworkCallback} API to
      *             learn about connectivity changes.
      *             {@link ConnectivityManager#registerDefaultNetworkCallback} and
      *             {@link ConnectivityManager#registerNetworkCallback}. These will
@@ -362,7 +362,7 @@ public class NetworkInfo implements Parcelable {
      * Reports the current coarse-grained state of the network.
      * @return the coarse-grained state
      * @deprecated Apps should instead use the
-     *             {@link ConnectivityManager.NetworkCallback} API to
+     *             {@link android.net.ConnectivityManager.NetworkCallback} API to
      *             learn about connectivity changes.
      *             {@link ConnectivityManager#registerDefaultNetworkCallback} and
      *             {@link ConnectivityManager#registerNetworkCallback}. These will
