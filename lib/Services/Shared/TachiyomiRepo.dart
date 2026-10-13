@@ -549,6 +549,8 @@ mixin TachiyomiRepoBackend on Extension {
   /// the Android behaviour.
   bool get refreshExtensionCountOnFetch => false;
 
+  final Map<String, List<Source>> _primedIndex = {};
+
   @override
   Stream<double> addRepo(String repoUrl, ItemType type) {
     // The index fetch + parse here has no natural byte-progress signal (a
@@ -556,6 +558,7 @@ mixin TachiyomiRepoBackend on Extension {
     // Kotatsu's parsers jar) - this just reports start/done via
     // progressStream rather than granular progress.
     return progressStream((_) async {
+      state(type).loadingRepo.value = true;
       try {
         final uri = Uri.tryParse(repoUrl);
         if (uri == null || !uri.hasScheme) {
@@ -581,6 +584,7 @@ mixin TachiyomiRepoBackend on Extension {
           url: normalizedUrl,
           extensions: parsed.length.toString(),
         );
+        _primedIndex['${type.name}|$normalizedUrl'] = parsed;
         final updatedRepos = List<Repo>.from(repos)..add(repo);
         saveRepos(updatedRepos, type);
         state(type).repos.value = updatedRepos;
@@ -588,12 +592,16 @@ mixin TachiyomiRepoBackend on Extension {
       } catch (e) {
         Logger.log("Failed to add repo $repoUrl: $e");
         rethrow;
+      } finally {
+        state(type).loadingRepo.value = false;
       }
     });
   }
 
   @override
   Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
+    final primed = _primedIndex.remove('${type.name}|${repo.url}');
+    if (primed != null) return primed;
     try {
       final index = await fetchTachiyomiRepoIndex(repoClient, repo.url);
       final extensions = await compute(parseIndexIsolate, (
