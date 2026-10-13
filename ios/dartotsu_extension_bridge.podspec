@@ -30,13 +30,13 @@ Android and desktop are unaffected (Dalvik bridge / `java` subprocess).
   s.author           = { 'aayush262' => 'aayush262@users.noreply.github.com' }
   s.source           = { :path => '.' }
 
-  s.source_files = 'dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/**/*.{h,m,mm,swift}'
-  s.public_header_files = 'dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/include/**/*.h'
+  s.source_files = 'dartotsu_extension_bridge/Sources/**/*.{h,m,mm,swift}'
+  s.public_header_files = 'dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/include/**/*.h'
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
 
   # Builds dartotsu_extension_bridge/Frameworks/OpenJDKRuntime.xcframework and
-  # stages dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/
+  # stages dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/
   # (the embedded-bridge JAR, the java.util.logging shim, cacerts). Idempotent.
   # Also vendors Frameworks/TorrServerKit.xcframework (no build step, just a
   # checksum-verified download+unzip - see PrepareTorrServerRuntime.sh).
@@ -47,7 +47,7 @@ Android and desktop are unaffected (Dalvik bridge / `java` subprocess).
     'dartotsu_extension_bridge/Frameworks/TorrServerKit.xcframework',
   ]
   s.resource_bundles = {
-    'dartotsu_extension_bridge_runtime' => ['dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/Runtime/**/*'],
+    'dartotsu_extension_bridge_runtime' => ['dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/**/*'],
     'dartotsu_extension_bridge_privacy' => ['dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/PrivacyInfo.xcprivacy'],
   }
   s.preserve_paths = 'RuntimeSources/**/*', 'PrepareEmbeddedRuntime.sh', 'PrepareTorrServerRuntime.sh'

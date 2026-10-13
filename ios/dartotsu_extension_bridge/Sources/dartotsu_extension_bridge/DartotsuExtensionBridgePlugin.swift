@@ -1,5 +1,8 @@
 import Flutter
 import UIKit
+#if canImport(dartotsu_embedded_jvm)
+import dartotsu_embedded_jvm
+#endif
 
 /// iOS entry point for dartotsu_extension_bridge.
 ///
