@@ -111,8 +111,8 @@ class TorrServerControllerSubprocess implements TorrServerController {
 
     try {
       final process = await Process.start(
-        binaryPath,
-        args,
+        Platform.isAndroid ? '/system/bin/linker64' : binaryPath,
+        Platform.isAndroid ? [binaryPath, ...args] : args,
         mode: ProcessStartMode.normal,
       );
 
