@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../Logger.dart';
 import 'JniBridge.dart' show JavaBridge, emptyJavaBridgeValue;
@@ -37,15 +39,48 @@ class EmbeddedJvmBridge implements JavaBridge {
   String? _jarPath;
   bool _loaded = false;
 
+  static const _crashWindow = Duration(days: 3);
+
+  static Future<File> _crashFlag() async {
+    final dir = await getApplicationSupportDirectory();
+    return File('${dir.path}/embedded_jvm_start.flag');
+  }
+
+  static Future<void> clearCrashFlag() async {
+    final flag = await _crashFlag();
+    if (await flag.exists()) await flag.delete();
+  }
+
+  static Future<void> _startVm() async {
+    final flag = await _crashFlag();
+    if (await flag.exists()) {
+      final started = DateTime.tryParse(await flag.readAsString());
+      if (started != null &&
+          DateTime.now().difference(started) < _crashWindow) {
+        throw Exception(
+          'The embedded Java runtime closed the app the last time it started '
+          'on this device, so it is turned off. Java based sources are '
+          'unavailable here.',
+        );
+      }
+    }
+    await flag.writeAsString(DateTime.now().toIso8601String(), flush: true);
+    try {
+      await _channel.invokeMethod<void>('start');
+    } catch (_) {
+      if (await flag.exists()) await flag.delete();
+      rethrow;
+    }
+    if (await flag.exists()) await flag.delete();
+  }
+
   @override
   Future<void> init({required String pluginJarPath}) async {
     if (_loaded) return;
     _jarPath = pluginJarPath;
 
-    await (_vmStart ??= _channel.invokeMethod<void>('start').catchError((
-      Object e,
-    ) {
-      _vmStart = null; // let a later backend retry a failed VM boot
+    await (_vmStart ??= _startVm().catchError((Object e) {
+      _vmStart = null;
       throw e;
     }));
 
