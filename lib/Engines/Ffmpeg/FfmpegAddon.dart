@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
@@ -58,17 +57,12 @@ class FfmpegAddon extends Addon {
   static const _release =
       'https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/ffmpeg';
 
-  static const _native = MethodChannel('dartotsu/nativeBinaries');
-
   String get _versionKey => '${id}_version';
 
-  Future<File?> _bundled() async {
-    if (!Platform.isAndroid) return null;
-    final dir = await _native.invokeMethod<String>('libraryDir');
-    if (dir == null) return null;
-    final file = File(p.join(dir, 'libffmpeg.so'));
-    return await file.exists() ? file : null;
-  }
+  static const _linker = '/system/bin/linker64';
+
+  static (String, List<String>) launch(String binary, List<String> args) =>
+      Platform.isAndroid ? (_linker, [binary, ...args]) : (binary, args);
 
   bool get supported {
     if (Platform.isIOS) return false;
@@ -93,7 +87,6 @@ class FfmpegAddon extends Addon {
       File(p.join((await _directory).path, _binaryName));
 
   Future<String?> get binaryPath async {
-    if (Platform.isAndroid) return (await _bundled())?.path;
     final file = await _binaryFile;
     return await file.exists() ? file.path : null;
   }
@@ -140,7 +133,6 @@ class FfmpegAddon extends Addon {
   @override
   Future<bool> isInstalled() async {
     if (!supported) return false;
-    if (Platform.isAndroid) return (await _bundled()) != null;
     return (await _binaryFile).exists();
   }
 
@@ -149,15 +141,6 @@ class FfmpegAddon extends Addon {
     if (downloading.value) return;
     if (!supported) {
       throw UnsupportedError('FFmpeg is not available on this platform');
-    }
-    if (Platform.isAndroid) {
-      if (await _bundled() == null) {
-        throw Exception('This build has no bundled FFmpeg for this device');
-      }
-      installed.value = true;
-      hasUpdate.value = false;
-      setVal(_versionKey, _version);
-      return;
     }
     downloading.value = true;
     progress.value = 0;
@@ -173,7 +156,8 @@ class FfmpegAddon extends Addon {
         if (!Platform.isWindows) {
           await Process.run('chmod', ['755', binary.path]);
         }
-        final probe = await Process.run(binary.path, ['-version']);
+        final (probeExe, probeArgs) = launch(binary.path, ['-version']);
+        final probe = await Process.run(probeExe, probeArgs);
         if (probe.exitCode != 0) throw Exception('it does not run here');
       } catch (e) {
         if (await binary.exists()) await binary.delete();
@@ -186,7 +170,8 @@ class FfmpegAddon extends Addon {
       if (!Platform.isWindows) {
         await Process.run('chmod', ['755', binary.path]);
       }
-      final check = await Process.run(binary.path, ['-version']);
+      final (checkExe, checkArgs) = launch(binary.path, ['-version']);
+      final check = await Process.run(checkExe, checkArgs);
       if (check.exitCode != 0) {
         await binary.delete();
         throw Exception('The downloaded FFmpeg does not run on this device');
@@ -268,8 +253,8 @@ class FfmpegAddon extends Addon {
     final total = response.contentLength ?? 0;
     try {
       await for (final chunk in response.stream.timeout(
-      const Duration(seconds: 60),
-    )) {
+        const Duration(seconds: 60),
+      )) {
         sink.add(chunk);
         received += chunk.length;
         if (total > 0) progress.value = received / total * 0.95;
@@ -282,7 +267,6 @@ class FfmpegAddon extends Addon {
 
   @override
   Future<void> uninstall() async {
-    if (Platform.isAndroid) return;
     final dir = await _directory;
     if (await dir.exists()) await dir.delete(recursive: true);
     installed.value = false;
@@ -305,12 +289,13 @@ class FfmpegAddon extends Addon {
   }) async {
     final binary = await binaryPath;
     if (binary == null) throw StateError('FFmpeg is not installed');
-    final process = await Process.start(binary, [
+    final (exe, exeArgs) = launch(binary, [
       '-hide_banner',
       '-nostdin',
       '-y',
       ...args,
     ]);
+    final process = await Process.start(exe, exeArgs);
     cancel?._process = process;
     if (cancel?.cancelled ?? false) process.kill();
     final tail = <String>[];
