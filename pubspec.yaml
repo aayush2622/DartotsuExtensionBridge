@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   ffi: ^2.2.0
-  archive: ^4.3.0
+  archive: ^4.5.1
   plugin_platform_interface: ^2.1.8
   http: ^1.6.0
   isar_community: ^3.3.2
@@ -33,14 +33,14 @@ dependencies:
   flutter_qjs:
     git:
       url: https://github.com/kodjodevf/flutter_qjs.git
-      ref: f3cef51
+      ref: main
 
   epubx:
     git:
       url: https://github.com/kodjodevf/epubx.dart.git
       ref: dev
   install_plugin: ^2.1.0
-  installed_apps: ^2.2.0
+  installed_apps: ^2.2.1
   jnigen:
     git:
       url: https://github.com/dart-lang/native.git

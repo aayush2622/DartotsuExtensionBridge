@@ -5,6 +5,7 @@ import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.Response
+import java.io.IOException
 import kotlin.collections.List
 import kotlin.collections.isNotEmpty
 import kotlin.text.isNullOrEmpty
@@ -51,7 +52,13 @@ class CookieInterceptor : Interceptor {
             request
         }
 
-        val response = chain.proceed(newRequest)
+        val response = try {
+            chain.proceed(newRequest)
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Throwable) {
+            throw IOException(e.message, e)
+        }
 
         val setCookies = response.headers("Set-Cookie")
         if (setCookies.isNotEmpty()) {

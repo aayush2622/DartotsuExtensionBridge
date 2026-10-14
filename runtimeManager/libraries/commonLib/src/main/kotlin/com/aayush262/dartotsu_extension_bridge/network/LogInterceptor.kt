@@ -4,6 +4,7 @@ import com.aayush262.dartotsu_extension_bridge.logger.LogLevel
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import okhttp3.Interceptor
 import okhttp3.Response
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class LogInterceptor : Interceptor {
@@ -37,7 +38,7 @@ class LogInterceptor : Interceptor {
 
             return response
 
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             val tookMs = TimeUnit.NANOSECONDS.toMillis(
                 System.nanoTime() - startTime
             )
@@ -45,7 +46,7 @@ class LogInterceptor : Interceptor {
             Logger.log(
                 "× ${request.method} ${request.url} (${tookMs}ms)\n$e"
             )
-            throw e
+            throw if (e is IOException) e else IOException(e.message, e)
         }
     }
 }

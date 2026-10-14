@@ -7,6 +7,7 @@ import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.dnsoverhttps.DnsOverHttps
+import java.io.IOException
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
@@ -84,7 +85,14 @@ object Network {
                         original
                     }
 
-                    chain.proceed(request)
+                    try {
+                        chain.proceed(request)
+                    } catch (e: IOException) {
+                        throw e
+                    } catch (e: Throwable) {
+                        Logger.log("Unexpected error during request: $e", LogLevel.ERROR)
+                        throw IOException(e.message, e)
+                    }
                 }
                 .addInterceptor(CookieInterceptor())
                 .addInterceptor(LogInterceptor())
