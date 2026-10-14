@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
 import '../Logger.dart';
@@ -129,14 +130,24 @@ abstract class Extension {
 
   bool get isFailed => _initState == InitState.failed;
 
+  String? initError;
+
+  static String describeError(Object e) {
+    if (e is PlatformException) return e.message ?? e.code;
+    final text = e.toString();
+    return text.startsWith('Exception: ') ? text.substring(11) : text;
+  }
+
   Future<void> initialize() async {
     if (_initCompleter != null) return _initCompleter!.future;
 
     final completer = _initCompleter = Completer<void>();
+    completer.future.ignore();
 
     try {
       final ok = await onInitialize();
       _initState = ok ? InitState.success : InitState.failed;
+      initError = ok ? null : initError;
 
       // A failed init must not pin _initCompleter forever - ensureInitialized
       // short-circuits on InitState.failed without ever calling initialize()
@@ -150,6 +161,7 @@ abstract class Extension {
       completer.complete();
     } catch (e, s) {
       _initState = InitState.failed;
+      initError = describeError(e);
       _initCompleter = null;
       completer.completeError(e, s);
       rethrow;

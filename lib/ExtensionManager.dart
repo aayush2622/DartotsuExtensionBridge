@@ -101,19 +101,23 @@ class ExtensionManager extends GetxController {
     });
   }
 
-  void switchManager(ItemType type, String id) {
+  Future<String?> switchManager(ItemType type, String id) async {
     final next = _findById(id);
 
-    if (next == null) return;
-    if (!next.supports(type)) return;
-    if (current[type]! == next) return;
+    if (next == null) return null;
+    if (!next.supports(type)) return null;
+    if (current[type]! == next) return null;
 
     current[type] = next;
 
     setVal("${type.name}Manager", id);
 
+    final ready = await next.ensureInitialized();
+    if (!ready && next.isFailed) return next.initError ?? 'Failed to start';
+
     unawaited(next.initializeInstalled(type));
     unawaited(next.initializeAvailable(type));
+    return null;
   }
 
   Extension _resolveManager(ItemType type, String? id) {
