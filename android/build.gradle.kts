@@ -63,7 +63,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.2.0")
-    implementation("com.squareup.okio:okio:3.16.4")
+    implementation("com.squareup.okio:okio:3.18.2")
     implementation(files(commonJar))
 
     compileOnly("io.flutter:flutter_embedding_debug:1.0.0-ef0cd000916d64fa0c5d09cc809fa7ad244a5767")
