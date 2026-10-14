@@ -20,7 +20,7 @@ class KotatsuDesktopExtensions extends Extension
   String get id => 'kotatsu_desktop';
 
   @override
-  String get name => 'Kotatsu (Desktop)';
+  String get name => Platform.isIOS ? 'Kotatsu' : 'Kotatsu (Desktop)';
 
   @override
   String get icon =>

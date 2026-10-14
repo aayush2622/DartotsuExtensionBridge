@@ -23,7 +23,7 @@ import 'Models/Source.dart';
 class CloudStreamDesktopExtensions extends Extension
     with CloudStreamRepoBackend<CdSource> {
   @override
-  String get name => 'CloudStream (Desktop)';
+  String get name => Platform.isIOS ? 'CloudStream' : 'CloudStream (Desktop)';
 
   @override
   String get id => 'cloudstream_desktop';

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +24,7 @@ class TsundokuDesktopExtensions extends Extension
   String get id => 'tsundoku_desktop';
 
   @override
-  String get name => 'Tsundoku (Desktop)';
+  String get name => Platform.isIOS ? 'Tsundoku' : 'Tsundoku (Desktop)';
 
   @override
   String get icon =>
