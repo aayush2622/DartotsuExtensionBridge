@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +24,7 @@ class IReaderDesktopExtensions extends Extension
   String get id => 'ireader_desktop';
 
   @override
-  String get name => 'Ireader (Desktop)';
+  String get name => Platform.isIOS ? 'Ireader' : 'Ireader (Desktop)';
 
   @override
   String get icon =>

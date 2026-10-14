@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +24,7 @@ class AniyomiDesktopExtensions extends Extension
   String get id => 'aniyomi_desktop';
 
   @override
-  String get name => 'Aniyomi (Desktop)';
+  String get name => Platform.isIOS ? 'Aniyomi' : 'Aniyomi (Desktop)';
 
   @override
   String get icon =>
