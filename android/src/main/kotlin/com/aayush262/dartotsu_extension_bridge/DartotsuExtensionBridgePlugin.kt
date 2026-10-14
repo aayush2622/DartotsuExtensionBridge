@@ -19,6 +19,7 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
     private lateinit var kotatsuBridge: KotatsuBridge
     private lateinit var loggerChannel: MethodChannel
     private lateinit var networkChannel: MethodChannel
+    private lateinit var binariesChannel: MethodChannel
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         loggerChannel = MethodChannel(
             binding.binaryMessenger, "flutterKotlinBridge.logger"
@@ -26,6 +27,15 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
         networkChannel = MethodChannel(
             binding.binaryMessenger, "flutterKotlinBridge.network"
         )
+
+        binariesChannel = MethodChannel(
+            binding.binaryMessenger, "dartotsu/nativeBinaries"
+        )
+        val nativeLibraryDir = binding.applicationContext.applicationInfo.nativeLibraryDir
+        binariesChannel.setMethodCallHandler { call, result ->
+            if (call.method == "libraryDir") result.success(nativeLibraryDir)
+            else result.notImplemented()
+        }
 
         Logger.init(loggerChannel)
         val customMethods = CustomMethods(networkChannel)
@@ -58,6 +68,7 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
         kotatsuBridge.detach()
         loggerChannel.setMethodCallHandler(null)
         networkChannel.setMethodCallHandler(null)
+        binariesChannel.setMethodCallHandler(null)
 
     }
 }
