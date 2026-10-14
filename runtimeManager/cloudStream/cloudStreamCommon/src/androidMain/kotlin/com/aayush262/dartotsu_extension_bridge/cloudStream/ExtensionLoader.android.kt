@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import dalvik.system.PathClassLoader
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.lagradost.cloudstream3.APIHolder
+import com.lagradost.cloudstream3.AcraApplication
 import com.lagradost.cloudstream3.CloudStreamApp
 import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.plugins.BasePlugin
@@ -17,7 +18,10 @@ import kotlin.jvm.java
 @SuppressLint("StaticFieldLeak")
 actual object ExtensionLoader {
 
-    val context = CloudStreamApp.context ?: error("Context is null")
+    private val context: android.content.Context
+        get() = CloudStreamApp.context
+            ?: AcraApplication.context
+            ?: error("Context is null")
     actual var plugins = mutableMapOf<String, LoadedPlugin>()
     actual fun loadExtensions(path: String) {
         val privateDir = File(context.filesDir, "cloudstream-plugins")

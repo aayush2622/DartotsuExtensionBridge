@@ -8,9 +8,10 @@ import com.lagradost.cloudstream3.utils.DataStore
 
 actual object PlatformInit {
     actual fun initializeAndroid(context: Any) {
-        DataStore.init(context as Context)
-        AcraApplication.context = context
-        CloudStreamApp.context = context
+        val app = (context as Context).applicationContext ?: context
+        DataStore.init(app)
+        AcraApplication.context = app
+        CloudStreamApp.context = app
     }
 
     actual fun initializeDesktop(basePath: String) {
