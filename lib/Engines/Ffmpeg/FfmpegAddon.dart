@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
@@ -39,7 +40,7 @@ class FfmpegFailure implements Exception {
 /// Windows, Linux, macOS and Android (arm64) at app runtime. iOS (no
 /// subprocesses) cannot use it.
 class FfmpegAddon extends Addon {
-  final _client = MClient.init();
+  final _client = MClient.download();
 
   @override
   String get id => 'ffmpeg';
@@ -57,7 +58,17 @@ class FfmpegAddon extends Addon {
   static const _release =
       'https://raw.githubusercontent.com/aayush2622/DartotsuExtensionBridge/master/ffmpeg';
 
+  static const _native = MethodChannel('dartotsu/nativeBinaries');
+
   String get _versionKey => '${id}_version';
+
+  Future<File?> _bundled() async {
+    if (!Platform.isAndroid) return null;
+    final dir = await _native.invokeMethod<String>('libraryDir');
+    if (dir == null) return null;
+    final file = File(p.join(dir, 'libffmpeg.so'));
+    return await file.exists() ? file : null;
+  }
 
   bool get supported {
     if (Platform.isIOS) return false;
@@ -82,6 +93,7 @@ class FfmpegAddon extends Addon {
       File(p.join((await _directory).path, _binaryName));
 
   Future<String?> get binaryPath async {
+    if (Platform.isAndroid) return (await _bundled())?.path;
     final file = await _binaryFile;
     return await file.exists() ? file.path : null;
   }
@@ -128,6 +140,7 @@ class FfmpegAddon extends Addon {
   @override
   Future<bool> isInstalled() async {
     if (!supported) return false;
+    if (Platform.isAndroid) return (await _bundled()) != null;
     return (await _binaryFile).exists();
   }
 
@@ -136,6 +149,15 @@ class FfmpegAddon extends Addon {
     if (downloading.value) return;
     if (!supported) {
       throw UnsupportedError('FFmpeg is not available on this platform');
+    }
+    if (Platform.isAndroid) {
+      if (await _bundled() == null) {
+        throw Exception('This build has no bundled FFmpeg for this device');
+      }
+      installed.value = true;
+      hasUpdate.value = false;
+      setVal(_versionKey, _version);
+      return;
     }
     downloading.value = true;
     progress.value = 0;
@@ -245,7 +267,9 @@ class FfmpegAddon extends Addon {
     var received = 0;
     final total = response.contentLength ?? 0;
     try {
-      await for (final chunk in response.stream) {
+      await for (final chunk in response.stream.timeout(
+      const Duration(seconds: 60),
+    )) {
         sink.add(chunk);
         received += chunk.length;
         if (total > 0) progress.value = received / total * 0.95;
@@ -258,6 +282,7 @@ class FfmpegAddon extends Addon {
 
   @override
   Future<void> uninstall() async {
+    if (Platform.isAndroid) return;
     final dir = await _directory;
     if (await dir.exists()) await dir.delete(recursive: true);
     installed.value = false;

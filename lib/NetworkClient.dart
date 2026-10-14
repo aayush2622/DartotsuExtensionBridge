@@ -68,6 +68,16 @@ class MClient {
   static http.Client Function(Map<String, dynamic>? reqcopyWith)?
   clientFactoryOverride;
 
+  static InterceptedClient download() {
+    final context = DartotsuExtensionBridge.context;
+    final client = context.downloadHttp ?? context.http;
+    if (client == null) return init();
+    return InterceptedClient.build(
+      client: _SharedClient(client),
+      interceptors: const [],
+    );
+  }
+
   static InterceptedClient init({Map<String, dynamic>? reqcopyWith}) {
     final override = clientFactoryOverride;
     if (override != null) {

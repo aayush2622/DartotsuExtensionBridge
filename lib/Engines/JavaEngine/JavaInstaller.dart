@@ -193,7 +193,7 @@ class JavaRuntimeManager {
 
     final file = File('${root.path}/jre.$extension');
 
-    final client = MClient.init();
+    final client = MClient.download();
 
     final request = http.Request('GET', Uri.parse(_jreUrl));
 
@@ -210,7 +210,9 @@ class JavaRuntimeManager {
     int downloaded = 0;
     int lastLogged = DateTime.now().millisecondsSinceEpoch;
 
-    await for (final chunk in response.stream) {
+    await for (final chunk in response.stream.timeout(
+      const Duration(seconds: 60),
+    )) {
       downloaded += chunk.length;
       sink.add(chunk);
 

@@ -25,7 +25,7 @@ import 'TorrServerControllerSubprocess.dart';
 /// how it actually gets invoked (subprocess exec, dlopen/FFI, ...) is up to
 /// the caller.
 class TorrServerAddon extends Addon {
-  final _client = MClient.init();
+  final _client = MClient.download();
 
   TorrServerController? _controller;
   String? _activeHash;
@@ -449,7 +449,9 @@ class TorrServerAddon extends Addon {
     int received = 0;
     final total = response.contentLength ?? 0;
 
-    await for (final chunk in response.stream) {
+    await for (final chunk in response.stream.timeout(
+      const Duration(seconds: 60),
+    )) {
       sink.add(chunk);
       received += chunk.length;
       if (total > 0) {

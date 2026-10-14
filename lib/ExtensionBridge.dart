@@ -23,6 +23,9 @@ class DartotsuExtensionBridge {
   ///
   /// [http] is an optional HTTP client for network requests.
   ///
+  /// [downloadHttp] is an optional client without a total request timeout,
+  /// used for large addon downloads; falls back to [http].
+  ///
   /// [isarInstance] provides your Isar client and must include [isarSchema].
   /// If omitted, a new instance will be initialized internally.
   /// [network] is an optional network interface for DNS, proxy, and cookie management.
@@ -30,6 +33,7 @@ class DartotsuExtensionBridge {
   static Future<void> init({
     required GetDirectory getDirectory,
     Client? http,
+    Client? downloadHttp,
     Isar? isarInstance,
     BridgeNetwork? network,
     Function(String log, bool show) onLog = onLog,
@@ -41,6 +45,7 @@ class DartotsuExtensionBridge {
     context = BridgeContext(
       isar: isar,
       http: http,
+      downloadHttp: downloadHttp,
       getDirectory: getDirectory,
       network: network,
       onLog: onLog,
@@ -124,6 +129,7 @@ typedef GetDirectory =
 class BridgeContext {
   final Isar isar;
   final Client? http;
+  final Client? downloadHttp;
   final GetDirectory getDirectory;
   final BridgeNetwork? network;
 
@@ -132,6 +138,7 @@ class BridgeContext {
   const BridgeContext({
     required this.isar,
     this.http,
+    this.downloadHttp,
     required this.getDirectory,
     this.network,
     this.onLog = DartotsuExtensionBridge.onLog,
