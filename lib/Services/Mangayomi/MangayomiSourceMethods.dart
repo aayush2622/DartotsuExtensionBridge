@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import '../../Extensions/SourceMethods.dart';
@@ -7,6 +9,7 @@ import '../../Models/Page.dart';
 import '../../Models/Pages.dart';
 import '../../Models/SourcePreference.dart' as s;
 import '../../Models/Video.dart' as app;
+import 'Eval/dart/model/filter.dart';
 import 'Eval/dart/model/m_manga.dart';
 import 'Eval/dart/model/m_pages.dart';
 import 'Eval/dart/model/page.dart' as ev;
@@ -15,7 +18,7 @@ import 'Eval/dart/model/video.dart' as ev;
 import 'Models/Source.dart';
 import 'Util/ChapterRecognition.dart';
 import 'Util/extension_preferences_providers.dart';
-import 'Worker/MangayomiWorkerClient.dart';
+import 'Util/lib.dart';
 
 class MangayomiSourceMethods implements SourceMethods {
   @override
@@ -23,8 +26,44 @@ class MangayomiSourceMethods implements SourceMethods {
 
   MangayomiSourceMethods(this.source);
 
-  Future<T> _call<T>(String op, List args) =>
-      MangayomiWorkerClient.instance.call<T>(source, op, args);
+  static void invalidate(String? sourceId) {
+    invalidateExtensionService(sourceId);
+    if (sourceId != null) knownSources.remove(sourceId);
+  }
+
+  static void disposeAll() {
+    disposeAllExtensionServices();
+    knownSources.clear();
+  }
+
+  Future<T> _call<T>(String op, List args) async {
+    final id = source.id;
+    if (id != null) knownSources[id] = source;
+    final service = getExtensionService(source);
+    try {
+      final Object? result = switch (op) {
+        'getPopular' => await service.getPopular(args[0] as int),
+        'getLatestUpdates' => await service.getLatestUpdates(args[0] as int),
+        'search' => await service.search(
+          args[0] as String,
+          args[1] as int,
+          fromJsonFilterValuesToList(args[2] as List),
+        ),
+        'getDetail' => await service.getDetail(args[0] as String),
+        'getPageList' => await service.getPageList(args[0] as String),
+        'getVideoList' => await service.getVideoList(args[0] as String),
+        'getHtmlContent' => await service.getHtmlContent(
+          args[0] as String,
+          args[1] as String,
+        ),
+        'getSourcePreferences' => service.getSourcePreferences(),
+        _ => throw UnsupportedError('Unknown operation: $op'),
+      };
+      return result as T;
+    } finally {
+      releaseExtensionService(source, service);
+    }
+  }
 
   @override
   Future<DMedia> getDetail(DMedia media) async {
@@ -89,7 +128,26 @@ class MangayomiSourceMethods implements SourceMethods {
   @override
   Future<List<PageUrl>> getPageList(DEpisode episode) async {
     final data = await _call<List<ev.PageUrl>>('getPageList', [episode.url!]);
-    return data.map((e) => PageUrl(e.url, headers: e.headers)).toList();
+    return pagesWithHeaders(
+      data.map((e) => PageUrl(e.url, headers: e.headers)).toList(),
+      baseUrl: source.baseUrl,
+      headers: _sourceHeaders(),
+    );
+  }
+
+  Map<String, String> _sourceHeaders() {
+    final raw = source.headers;
+    if (raw == null || raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return const {};
+      return {
+        for (final e in decoded.entries)
+          if (e.value != null) '${e.key}': '${e.value}',
+      };
+    } catch (_) {
+      return const {};
+    }
   }
 
   @override

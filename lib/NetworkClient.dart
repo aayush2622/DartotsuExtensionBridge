@@ -63,11 +63,6 @@ class MClient {
     return Socket.startConnect(host, port);
   }
 
-  /// Set inside worker isolates, where the host app's client and network
-  /// context don't exist; requests are forwarded to the main isolate instead.
-  static http.Client Function(Map<String, dynamic>? reqcopyWith)?
-  clientFactoryOverride;
-
   static InterceptedClient download() {
     final context = DartotsuExtensionBridge.context;
     final client = context.downloadHttp ?? context.http;
@@ -79,14 +74,6 @@ class MClient {
   }
 
   static InterceptedClient init({Map<String, dynamic>? reqcopyWith}) {
-    final override = clientFactoryOverride;
-    if (override != null) {
-      return InterceptedClient.build(
-        client: _SharedClient(override(reqcopyWith)),
-        interceptors: const [],
-      );
-    }
-
     var appHttpClient = DartotsuExtensionBridge.context.http;
     var useFallback =
         reqcopyWith?["useDartHttpClient"] == true || appHttpClient == null;

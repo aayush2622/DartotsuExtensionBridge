@@ -11,7 +11,6 @@ import '../Shared/SimpleInstalledSourceStore.dart';
 import 'MangayomiSourceMethods.dart';
 import 'Models/Source.dart';
 import 'Util/lib.dart';
-import 'Worker/MangayomiWorkerClient.dart';
 
 class MangayomiExtensions extends Extension
     with SimpleInstalledSourceStore<MSource> {
@@ -97,7 +96,7 @@ class MangayomiExtensions extends Extension
           rethrow;
         }
 
-        MangayomiWorkerClient.instance.invalidate(m.id);
+        MangayomiSourceMethods.invalidate(m.id);
 
         final installed = m..headers = headers;
 
@@ -124,8 +123,7 @@ class MangayomiExtensions extends Extension
   @override
   void dispose() {
     super.dispose();
-    disposeAllExtensionServices();
-    MangayomiWorkerClient.instance.disposeAll();
+    MangayomiSourceMethods.disposeAll();
   }
 
   @override
@@ -137,8 +135,7 @@ class MangayomiExtensions extends Extension
       final installed = loadInstalled(type);
 
       installed.removeWhere((e) => e.id == s.id);
-      invalidateExtensionService(s.id);
-      MangayomiWorkerClient.instance.invalidate(s.id);
+      MangayomiSourceMethods.invalidate(s.id);
 
       saveInstalled(installed, type);
       state(type).installed.value = List.unmodifiable(installed);
@@ -176,7 +173,7 @@ class MangayomiExtensions extends Extension
         ..version = s.version
         ..hasUpdate = false;
 
-      MangayomiWorkerClient.instance.invalidate(s.id);
+      MangayomiSourceMethods.invalidate(s.id);
 
       saveInstalled(installed, type);
 
