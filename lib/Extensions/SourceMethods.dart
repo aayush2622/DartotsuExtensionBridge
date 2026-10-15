@@ -27,3 +27,39 @@ abstract class SourceMethods {
 
   Future<bool> setPreference(SourcePreference pref, dynamic value);
 }
+
+List<PageUrl> pagesWithHeaders(
+  List<PageUrl> pages, {
+  String? baseUrl,
+  Map<String, String> headers = const {},
+}) {
+  final origin = _originOf(baseUrl);
+  if (origin == null && headers.isEmpty) return pages;
+  return [
+    for (final page in pages)
+      PageUrl(
+        page.url,
+        headers: _merged(origin, headers, page.headers),
+        process: page.process,
+      ),
+  ];
+}
+
+Map<String, String>? _merged(
+  String? origin,
+  Map<String, String> shared,
+  Map<String, String>? own,
+) {
+  final out = {...shared, ...?own};
+  if (origin != null && !out.keys.any((k) => k.toLowerCase() == 'referer')) {
+    out['Referer'] = origin;
+  }
+  return out.isEmpty ? null : out;
+}
+
+String? _originOf(String? baseUrl) {
+  if (baseUrl == null || baseUrl.isEmpty) return null;
+  final uri = Uri.tryParse(baseUrl);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
+  return '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}/';
+}
