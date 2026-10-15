@@ -26,7 +26,7 @@ class AidokuExtensions extends Extension
 
   @override
   String get icon =>
-      "packages/dartotsu_extension_bridge/assets/images/aidoku.png";
+      "packages/dartotsu_extension_bridge/assets/images/aidoku.svg";
 
   @override
   bool get supportsAnime => false;

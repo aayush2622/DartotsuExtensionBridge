@@ -28,7 +28,7 @@ class AniyomiDesktopExtensions extends Extension
 
   @override
   String get icon =>
-      "packages/dartotsu_extension_bridge/assets/images/aniyomi.png";
+      "packages/dartotsu_extension_bridge/assets/images/aniyomi.svg";
 
   @override
   bool get supportsNovel => false;

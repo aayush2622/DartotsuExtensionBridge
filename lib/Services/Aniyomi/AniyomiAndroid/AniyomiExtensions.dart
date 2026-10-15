@@ -39,7 +39,7 @@ class AniyomiExtensions extends Extension
 
   @override
   String get icon =>
-      "packages/dartotsu_extension_bridge/assets/images/aniyomi.png";
+      "packages/dartotsu_extension_bridge/assets/images/aniyomi.svg";
 
   @override
   (Type, SourceMethods Function(Source)) get sourceMethodFactories => (

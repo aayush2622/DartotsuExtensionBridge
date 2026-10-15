@@ -28,7 +28,7 @@ class TsundokuDesktopExtensions extends Extension
 
   @override
   String get icon =>
-      "packages/dartotsu_extension_bridge/assets/images/tsundoku.png";
+      "packages/dartotsu_extension_bridge/assets/images/tsundoku.svg";
 
   @override
   bool get supportsAnime => false;

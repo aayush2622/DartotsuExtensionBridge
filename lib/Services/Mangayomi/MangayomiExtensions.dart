@@ -24,7 +24,7 @@ class MangayomiExtensions extends Extension
 
   @override
   String get icon =>
-      "packages/dartotsu_extension_bridge/assets/images/mangayomi.png";
+      "packages/dartotsu_extension_bridge/assets/images/mangayomi.svg";
   @override
   (Type, SourceMethods Function(Source)) get sourceMethodFactories =>
       (MSource, (source) => MangayomiSourceMethods(source as MSource));

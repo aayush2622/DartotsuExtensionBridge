@@ -22,7 +22,7 @@ class LnReaderExtensions extends Extension
 
   @override
   String get icon =>
-      "packages/dartotsu_extension_bridge/assets/images/lnreader.png";
+      "packages/dartotsu_extension_bridge/assets/images/lnreader.svg";
 
   @override
   bool get supportsAnime => false;
