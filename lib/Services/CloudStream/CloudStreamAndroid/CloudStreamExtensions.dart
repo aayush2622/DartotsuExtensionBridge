@@ -25,7 +25,7 @@ class CloudStreamExtensions extends Extension
 
   @override
   String get icon =>
-      "packages/dartotsu_extension_bridge/assets/images/cloudstream.png";
+      "packages/dartotsu_extension_bridge/assets/images/cloudstream.svg";
 
   @override
   bool get supportsNovel => false;

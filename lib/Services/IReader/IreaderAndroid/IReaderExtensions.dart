@@ -33,7 +33,7 @@ class IReaderExtensions extends Extension
 
   @override
   String get icon =>
-      "packages/dartotsu_extension_bridge/assets/images/ireader.png";
+      "packages/dartotsu_extension_bridge/assets/images/ireader.svg";
 
   @override
   (Type, SourceMethods Function(Source)) get sourceMethodFactories => (

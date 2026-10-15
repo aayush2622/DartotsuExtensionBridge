@@ -42,7 +42,7 @@ class TsundokuExtensions extends Extension
 
   @override
   String get icon =>
-      "packages/dartotsu_extension_bridge/assets/images/tsundoku.png";
+      "packages/dartotsu_extension_bridge/assets/images/tsundoku.svg";
 
   @override
   (Type, SourceMethods Function(Source)) get sourceMethodFactories => (
