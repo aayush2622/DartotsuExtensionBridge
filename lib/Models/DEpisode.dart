@@ -25,7 +25,7 @@ class DEpisode {
         double.tryParse(json['episode_number']?.toString() ?? '');
 
     String episodeStr;
-    if (episodeNum != null) {
+    if (episodeNum != null && episodeNum.isFinite) {
       episodeStr = episodeNum == episodeNum.toInt()
           ? episodeNum.toInt().toString()
           : episodeNum.toString();
