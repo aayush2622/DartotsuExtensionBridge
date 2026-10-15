@@ -209,5 +209,20 @@ void main() {
       expect(media.episodes, hasLength(1));
       expect(media.episodes!.single.name, 'Ep 1');
     });
+
+    test('DMedia.fromJson keeps chapters with a non-finite number', () {
+      final media = DMedia.fromJson({
+        'title': 'M',
+        'url': '/m',
+        'episodes': [
+          {'name': 'Ep 1', 'url': '/1', 'episodeNumber': 'NaN'},
+          {'name': 'Ep 2', 'url': '/2', 'episodeNumber': 'Infinity'},
+          {'name': 'Ep 3', 'url': '/3', 'episodeNumber': '3'},
+        ],
+      });
+
+      expect(media.episodes!.map((e) => e.episodeNumber), ['', '', '3']);
+      expect(media.episodes!.map((e) => e.url), ['/1', '/2', '/3']);
+    });
   });
 }

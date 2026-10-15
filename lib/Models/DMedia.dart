@@ -45,8 +45,17 @@ class DMedia {
       try {
         episodes.add(DEpisode.fromJson(Map<String, dynamic>.from(e)));
       } catch (_) {
-        // One malformed chapter entry should not take down the whole
-        // media's episode list.
+        if (e is! Map) continue;
+        final map = e;
+        episodes.add(
+          DEpisode(
+            url: map['url']?.toString(),
+            name: map['name']?.toString(),
+            dateUpload: map['dateUpload']?.toString(),
+            scanlator: map['scanlator']?.toString(),
+            episodeNumber: '',
+          ),
+        );
       }
     }
     return episodes;
