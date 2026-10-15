@@ -7,7 +7,7 @@ part of 'KvStore.dart';
 // **************************************************************************
 
 // coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types, experimental_member_use
 
 extension GetKvEntryCollection on Isar {
   IsarCollection<KvEntry> get kvEntrys => this.collection();
@@ -20,6 +20,7 @@ const KvEntrySchema = CollectionSchema(
     r'key': PropertySchema(id: 0, name: r'key', type: IsarType.string),
     r'value': PropertySchema(id: 1, name: r'value', type: IsarType.string),
   },
+
   estimateSize: _kvEntryEstimateSize,
   serialize: _kvEntrySerialize,
   deserialize: _kvEntryDeserialize,
@@ -42,10 +43,11 @@ const KvEntrySchema = CollectionSchema(
   },
   links: {},
   embeddedSchemas: {},
+
   getId: _kvEntryGetId,
   getLinks: _kvEntryGetLinks,
   attach: _kvEntryAttach,
-  version: '3.3.2',
+  version: '3.4.1',
 );
 
 int _kvEntryEstimateSize(
