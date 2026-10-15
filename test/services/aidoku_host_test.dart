@@ -1,8 +1,10 @@
 import 'package:dartotsu_extension_bridge/Services/Aidoku/AidokuDates.dart';
 import 'package:dartotsu_extension_bridge/Services/Aidoku/AidokuImages.dart';
+import 'package:dartotsu_extension_bridge/Services/Aidoku/AidokuSettings.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  settingsTests();
   test('swift date formats', () {
     expect(parseAidokuDate('2024-03-05', 'yyyy-MM-dd'), 1709596800);
     expect(parseAidokuDate('March 5, 2024', 'MMMM d, yyyy'), 1709596800);
@@ -37,5 +39,23 @@ void main() {
     );
     expect(canvas.image.getPixel(2, 2).r, 255);
     expect(canvas.image.getPixel(7, 7).a, 0);
+  });
+}
+
+void settingsTests() {
+  test('preferences use the app type names', () {
+    final settings = parseAidokuSettings('''
+[{"type":"group","items":[
+ {"type":"select","key":"a","title":"A","values":["x","y"],"titles":["X","Y"],"default":"x"},
+ {"type":"multi-select","key":"b","title":"B","values":["p","q"]},
+ {"type":"switch","key":"c","title":"C"},
+ {"type":"text","key":"d","title":"D"}]}]''');
+    final prefs = buildAidokuPreferences(settings, (_) => null);
+    expect(prefs.map((p) => p.type), [
+      'list',
+      'multi_select',
+      'switch',
+      'text',
+    ]);
   });
 }

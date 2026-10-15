@@ -124,23 +124,22 @@ class AidokuSourceMethods extends SourceMethods {
   @override
   Future<bool> setPreference(SourcePreference pref, dynamic value) async {
     final key = pref.key;
-    final type = pref.type;
-    if (key == null || type == null) return false;
-    if (type.startsWith('login-')) {
+    if (key == null) return false;
+    if (key.contains(':')) {
       final split = key.split(':');
-      final field = type.substring(6);
-      setVal(_loginKey(split.first, field), '${value ?? ''}');
-      final user = getVal<String>(_loginKey(split.first, 'username')) ?? '';
-      final password = getVal<String>(_loginKey(split.first, 'password')) ?? '';
+      final field = split.last;
+      final loginKey = split.first;
+      setVal(_loginKey(loginKey, field), '${value ?? ''}');
+      final user = getVal<String>(_loginKey(loginKey, 'username')) ?? '';
+      final password = getVal<String>(_loginKey(loginKey, 'password')) ?? '';
       if (user.isEmpty || password.isEmpty) return true;
-      return (await _runtime()).basicLogin(split.first, user, password);
+      return (await _runtime()).basicLogin(loginKey, user, password);
     }
-    setVal(_prefKey(key), base64Encode(encodeAidokuValue(type, value)));
     final settings = parseAidokuSettings(_source.defaults?[aidokuSettingsKey]);
-    final notification = settings
-        .where((s) => s.key == key)
-        .map((s) => s.notification)
-        .firstOrNull;
+    final setting = settings.where((s) => s.key == key).firstOrNull;
+    if (setting == null) return false;
+    setVal(_prefKey(key), base64Encode(encodeAidokuValue(setting.type, value)));
+    final notification = setting.notification;
     if (notification != null) await (await _runtime()).notify(notification);
     return true;
   }
