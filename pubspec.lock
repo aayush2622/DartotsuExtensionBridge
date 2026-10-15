@@ -371,7 +371,7 @@ packages:
     source: hosted
     version: "4.1.2"
   image:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: image
       sha256: "89ed75b2f8231fe676808c5564f9590d728024ded7ac782a7ed8474f1c95b72a"
@@ -864,6 +864,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "15.3.0"
+  wasd:
+    dependency: "direct main"
+    description:
+      name: wasd
+      sha256: ffafc8a6efe5de9a967ef156d440c8aad6b9c3d2f0aadafb5ac9fe1b24117aba
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.2"
   watcher:
     dependency: transitive
     description:

@@ -12,6 +12,7 @@ dependencies:
     sdk: flutter
   ffi: ^2.2.0
   archive: ^4.5.1
+  image: ^4.5.4
   plugin_platform_interface: ^2.1.8
   http: ^1.6.0
   isar_community: ^3.4.1
@@ -30,6 +31,7 @@ dependencies:
   xpath_selector_html_parser: ^3.0.1
   js_packer: ^0.0.6
   crypto: ^3.0.7
+  wasd: ^0.5.2
   flutter_qjs:
     git:
       url: https://github.com/kodjodevf/flutter_qjs.git
