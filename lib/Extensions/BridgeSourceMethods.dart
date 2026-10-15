@@ -105,7 +105,8 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
       'episode': jsonEncode(_episodeToJson(episode)),
     });
 
-    return compute(parsePageUrls, result);
+    final pages = await compute(parsePageUrls, result);
+    return pagesWithHeaders(pages, baseUrl: source.baseUrl);
   }
 
   @override

@@ -369,7 +369,8 @@ class LegadoSourceMethods extends SourceMethods {
   @override
   Future<List<PageUrl>> getPageList(DEpisode episode) async {
     final url = episode.url;
-    return (url != null && url.isNotEmpty) ? [PageUrl(url)] : const [];
+    if (url == null || url.isEmpty) return const [];
+    return pagesWithHeaders([PageUrl(url)], baseUrl: source.baseUrl);
   }
 
   @override

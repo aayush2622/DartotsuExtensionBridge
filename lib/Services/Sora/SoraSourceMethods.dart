@@ -301,7 +301,8 @@ class SoraSourceMethods extends SourceMethods {
   @override
   Future<List<PageUrl>> getPageList(DEpisode episode) async {
     final data = await _call("extractImages", [episode.url]);
-    return await compute(_parsePageListResult, data);
+    final pages = await compute(_parsePageListResult, data);
+    return pagesWithHeaders(pages, baseUrl: source.baseUrl);
   }
 
   @override
