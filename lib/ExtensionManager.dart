@@ -7,6 +7,7 @@ import 'Extensions/Extensions.dart';
 import 'Extensions/SourceMethods.dart';
 import 'Logger.dart';
 import 'Models/Source.dart';
+import 'Services/Aidoku/AidokuExtensions.dart';
 import 'Services/Aniyomi/AniyomiAndroid/AniyomiExtensions.dart';
 import 'Services/Aniyomi/AniyomiDesktop/AniyomiDesktopExtensions.dart';
 import 'Services/CloudStream/CloudStreamAndroid/CloudStreamExtensions.dart';
@@ -43,6 +44,7 @@ class ExtensionManager extends GetxController {
     SoraExtensions.new,
     LnReaderExtensions.new,
     LegadoExtensions.new,
+    AidokuExtensions.new,
     if (Platform.isAndroid) AniyomiExtensions.new,
     if (Platform.isAndroid) CloudStreamExtensions.new,
     if (Platform.isAndroid) IReaderExtensions.new,
