@@ -119,7 +119,7 @@ List<SourcePreference> buildAidokuPreferences(
           SourcePreference(
             id: id++,
             key: s.key,
-            type: s.type,
+            type: 'switch',
             switchPreferenceCompat: SwitchPreferenceCompat(
               title: s.title,
               summary: summary,
@@ -134,7 +134,7 @@ List<SourcePreference> buildAidokuPreferences(
           SourcePreference(
             id: id++,
             key: s.key,
-            type: s.type,
+            type: 'list',
             listPreference: ListPreference(
               title: s.title,
               summary: summary,
@@ -150,7 +150,7 @@ List<SourcePreference> buildAidokuPreferences(
           SourcePreference(
             id: id++,
             key: s.key,
-            type: s.type,
+            type: 'multi_select',
             multiSelectListPreference: MultiSelectListPreference(
               title: s.title,
               summary: summary,
@@ -165,7 +165,7 @@ List<SourcePreference> buildAidokuPreferences(
           SourcePreference(
             id: id++,
             key: s.key,
-            type: s.type,
+            type: 'text',
             editTextPreference: EditTextPreference(
               title: s.title,
               summary: s.placeholder ?? summary,
@@ -182,7 +182,7 @@ List<SourcePreference> buildAidokuPreferences(
               SourcePreference(
                 id: id++,
                 key: '${s.key}:$field',
-                type: 'login-$field',
+                type: 'text',
                 editTextPreference: EditTextPreference(
                   title: '${s.title} ($field)',
                   summary: summary,
