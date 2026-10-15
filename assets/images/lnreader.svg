@@ -1,0 +1,7 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+    <!-- Lighter teal circle -->
+    <circle cx="256" cy="256" r="168" fill="#1A5A66"/>
+
+    <!-- Kanji 読 -->
+    <text x="256" y="310" font-family="serif" font-size="220" font-weight="bold" text-anchor="middle" fill="#E8F4F6">読</text>
+</svg>

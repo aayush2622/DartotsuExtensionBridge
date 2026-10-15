@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+    <!-- Red circle -->
+    <circle cx="256" cy="256" r="168" fill="#BE1622"/>
+
+    <!-- White stylized mark -->
+    <g fill="#FFFFFF">
+        <!-- Top bar -->
+        <rect x="156" y="178" width="200" height="20" rx="1"/>
+        <!-- Left slanted leg -->
+        <path d="M174 198 L152 348 L186 348 L204 198 Z"/>
+        <!-- Right slanted leg -->
+        <path d="M338 198 L360 348 L326 348 L308 198 Z"/>
+        <!-- Center vertical bar -->
+        <rect x="230" y="214" width="52" height="68" rx="1"/>
+    </g>
+</svg>
