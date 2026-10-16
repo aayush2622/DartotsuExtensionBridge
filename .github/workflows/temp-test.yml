@@ -1,6 +1,6 @@
-# TEMPORARY: end-to-end checks for the sidecar / iOS embedded-JVM rework.
+# TEMPORARY: iOS-only checks for the embedded-JVM bridge.
 # Delete together with .github/ci/ once it has served its purpose.
-name: Temp test everything
+name: Temp iOS test
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: temp-test-${{ github.ref }}
+  group: temp-ios-test-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -20,30 +20,8 @@ env:
   APK_COUNT: "5"
 
 jobs:
-  dart:
-    name: Dart analyze + tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - run: flutter pub get
-
-      - name: No jnigen / package:jni left
-        run: |
-          ! grep -rn "package:jni\|JniBridge\|JniExtensionBridge" lib test
-          ! grep -n "jnigen\|^  jni:" pubspec.yaml
-
-      - run: dart analyze lib test
-
-      - run: flutter test
-
   jvm:
-    name: Plugin JARs + embedded bridge JNI harness
+    name: iOS embedded bridge (JNI harness, desktop HotSpot)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -56,25 +34,10 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
-        with:
-          packages: "platform-tools"
-
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build every plugin + embedded-bridge.jar
-        run: ./gradlew buildEverything --console=plain
-
-      - name: One JAR per desktop plugin, no -ios variant
-        run: |
-          ls -la builds/*/
-          if ls builds/*/*-plugin-ios.* >/dev/null 2>&1; then
-            echo "::error::an -ios plugin variant was produced"; exit 1
-          fi
-          for p in aniyomi cloudStream ireader kotatsu tsundoku; do
-            test -f "builds/${p}Desktop/${p}Desktop-plugin.jar"
-            grep -q '"platform": "desktop"' "builds/${p}Desktop/${p}Desktop-plugin.json"
-          done
+      - name: Build embedded-bridge.jar and the aniyomi desktop JAR iOS downloads
+        run: ./gradlew buildEmbeddedBridge :aniyomi:aniyomiDesktop:buildPlugin --console=plain
 
       - name: Committed iOS embedded-bridge.jar has the log capture
         run: |
@@ -126,7 +89,6 @@ jobs:
             /tmp/harness/harness.txt
             /tmp/harness/jvm.log
             /tmp/harness/hs_err.log
-            runtimeManager/builds/*/*.json
           if-no-files-found: ignore
 
   ios:
@@ -214,38 +176,3 @@ jobs:
             ${{ runner.temp }}/ci_app/device.log
             ${{ runner.temp }}/ci_app/simulator.log
           if-no-files-found: ignore
-
-  android:
-    name: Android app build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Create a host app that depends on the plugin
-        run: |
-          flutter create --platforms=android --org dev.ci --project-name ci_app "$RUNNER_TEMP/ci_app"
-          cd "$RUNNER_TEMP/ci_app"
-          flutter pub add dartotsu_extension_bridge --path "$GITHUB_WORKSPACE"
-          cat > lib/main.dart <<'EOF'
-          import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
-          import 'package:flutter/material.dart';
-
-          void main() {
-            debugPrint('bridge: $DartotsuExtensionBridge');
-            runApp(const MaterialApp(home: Scaffold(body: Text('ci'))));
-          }
-          EOF
-
-      - name: Build APK
-        working-directory: ${{ runner.temp }}/ci_app
-        run: flutter build apk --debug

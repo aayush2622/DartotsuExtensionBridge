@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
   check(strstr(r, "\"success\":true") != NULL, "getInstalledAnimeExtensions succeeds");
   if (expectedApks > 0) {
     int found = 0; for (const char *p = r; (p = strstr(p, "pkgName")); p++) found++;
-    printf("   %d of %d APKs loaded as sources\n", found, expectedApks);
+    printf("   %d sources loaded from %d APKs\n", found, expectedApks);
     check(found > 0, "real extension APKs load as sources");
   }
   free(r);
