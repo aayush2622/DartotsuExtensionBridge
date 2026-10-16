@@ -1,5 +1,11 @@
 // swift-tools-version: 5.9
+import Foundation
 import PackageDescription
+
+let ffmpegZip = "Frameworks/ffmpeg-v1/DartotsuFfmpeg.xcframework.zip"
+let hasFfmpeg = FileManager.default.fileExists(
+    atPath: URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent(ffmpegZip).path
+)
 
 // SwiftPM resolves both binary frameworks itself, so a plain
 // `flutter build ios` needs no prepare script.
@@ -14,6 +20,10 @@ import PackageDescription
 //
 // The Runtime/ folder (embedded-bridge.jar, logging shim, cacerts) and the
 // jdk/ headers are committed; the CocoaPods path still regenerates them.
+let ffmpegTargets: [Target] = hasFfmpeg ? [
+    .binaryTarget(name: "DartotsuFfmpeg", path: ffmpegZip)
+] : []
+
 let package = Package(
     name: "dartotsu_extension_bridge",
     platforms: [
@@ -23,7 +33,7 @@ let package = Package(
         .library(name: "dartotsu-extension-bridge", targets: ["dartotsu_extension_bridge"])
     ],
     dependencies: [],
-    targets: [
+    targets: ffmpegTargets + [
         .binaryTarget(
             name: "OpenJDKRuntime",
             path: "Frameworks/ios-runtime-v1/OpenJDKRuntime.xcframework.zip"
@@ -46,7 +56,8 @@ let package = Package(
         ),
         .target(
             name: "dartotsu_extension_bridge",
-            dependencies: ["dartotsu_embedded_jvm", "TorrServerKit"],
+            dependencies: ["dartotsu_embedded_jvm", "TorrServerKit"]
+                + (hasFfmpeg ? ["DartotsuFfmpeg"] : []),
             resources: [
                 .process("PrivacyInfo.xcprivacy"),
             ]

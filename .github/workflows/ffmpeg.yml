@@ -47,3 +47,23 @@ jobs:
           name: ffmpeg-${{ matrix.target }}
           path: dist/*
 
+
+  ios:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build device slice
+        run: ./scripts/build_ffmpeg_ios.sh ios-arm64 ${{ inputs.version }}
+      - name: Build simulator slice
+        run: ./scripts/build_ffmpeg_ios.sh ios-sim-arm64 ${{ inputs.version }}
+      - name: Create xcframework
+        run: |
+          xcodebuild -create-xcframework \
+            -library dist/libdartotsu_ffmpeg-ios-arm64.a -headers ios/FfmpegRuntime/include \
+            -library dist/libdartotsu_ffmpeg-ios-sim-arm64.a -headers ios/FfmpegRuntime/include \
+            -output dist/DartotsuFfmpeg.xcframework
+          ditto -c -k --sequesterRsrc --keepParent dist/DartotsuFfmpeg.xcframework dist/DartotsuFfmpeg.xcframework.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DartotsuFfmpeg.xcframework
+          path: dist/DartotsuFfmpeg.xcframework.zip

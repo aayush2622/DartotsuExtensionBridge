@@ -30,7 +30,7 @@ Android and desktop are unaffected (Dalvik bridge / `java` subprocess).
   s.author           = { 'aayush262' => 'aayush262@users.noreply.github.com' }
   s.source           = { :path => '.' }
 
-  s.source_files = 'dartotsu_extension_bridge/Sources/**/*.{h,m,mm,swift}'
+  s.source_files = 'dartotsu_extension_bridge/Sources/**/*.{h,c,m,mm,swift}'
   s.public_header_files = 'dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/include/**/*.h'
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
@@ -41,16 +41,20 @@ Android and desktop are unaffected (Dalvik bridge / `java` subprocess).
   # Also vendors Frameworks/TorrServerKit.xcframework (no build step, just a
   # checksum-verified download+unzip - see PrepareTorrServerRuntime.sh).
   # dartotsu_extension_bridge/Package.swift reads these same generated paths.
-  s.prepare_command = 'sh PrepareEmbeddedRuntime.sh && sh PrepareTorrServerRuntime.sh'
+  s.prepare_command = 'sh PrepareEmbeddedRuntime.sh && sh PrepareTorrServerRuntime.sh && sh PrepareFfmpegRuntime.sh'
+  ffmpeg_zip = File.join(__dir__, 'dartotsu_extension_bridge/Frameworks/ffmpeg-v1/DartotsuFfmpeg.xcframework.zip')
   s.vendored_frameworks = [
     'dartotsu_extension_bridge/Frameworks/OpenJDKRuntime.xcframework',
     'dartotsu_extension_bridge/Frameworks/TorrServerKit.xcframework',
   ]
+  if File.exist?(ffmpeg_zip)
+    s.vendored_frameworks << 'dartotsu_extension_bridge/Frameworks/DartotsuFfmpeg.xcframework'
+  end
   s.resource_bundles = {
     'dartotsu_extension_bridge_runtime' => ['dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/**/*'],
     'dartotsu_extension_bridge_privacy' => ['dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/PrivacyInfo.xcprivacy'],
   }
-  s.preserve_paths = 'RuntimeSources/**/*', 'PrepareEmbeddedRuntime.sh', 'PrepareTorrServerRuntime.sh'
+  s.preserve_paths = 'RuntimeSources/**/*', 'PrepareEmbeddedRuntime.sh', 'PrepareTorrServerRuntime.sh', 'PrepareFfmpegRuntime.sh'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
