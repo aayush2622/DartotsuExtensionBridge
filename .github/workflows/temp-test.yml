@@ -1,0 +1,251 @@
+# TEMPORARY: end-to-end checks for the sidecar / iOS embedded-JVM rework.
+# Delete together with .github/ci/ once it has served its purpose.
+name: Temp test everything
+
+on:
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - "plugins.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ANIYOMI_REPO: https://raw.githubusercontent.com/yuzono/anime-repo/repo
+  APK_COUNT: "5"
+
+jobs:
+  dart:
+    name: Dart analyze + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: No jnigen / package:jni left
+        run: |
+          ! grep -rn "package:jni\|JniBridge\|JniExtensionBridge" lib test
+          ! grep -n "jnigen\|^  jni:" pubspec.yaml
+
+      - run: dart analyze lib test
+
+      - run: flutter test
+
+  jvm:
+    name: Plugin JARs + embedded bridge JNI harness
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtimeManager
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build every plugin + embedded-bridge.jar
+        run: ./gradlew buildEverything --console=plain
+
+      - name: One JAR per desktop plugin, no -ios variant
+        run: |
+          ls -la builds/*/
+          if ls builds/*/*-plugin-ios.* >/dev/null 2>&1; then
+            echo "::error::an -ios plugin variant was produced"; exit 1
+          fi
+          for p in aniyomi cloudStream ireader kotatsu tsundoku; do
+            test -f "builds/${p}Desktop/${p}Desktop-plugin.jar"
+            grep -q '"platform": "desktop"' "builds/${p}Desktop/${p}Desktop-plugin.json"
+          done
+
+      - name: Committed iOS embedded-bridge.jar has the log capture
+        run: |
+          JAR=../ios/dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/embedded-bridge.jar
+          javap -cp "$JAR" com.aayush262.dartotsu_extension_bridge.EmbeddedBridge | tee /tmp/api.txt
+          grep -q "static final native void nativeLog(int, java.lang.String)" /tmp/api.txt
+          grep -q "static final void installLogCapture()" /tmp/api.txt
+
+      - name: Download real Aniyomi extension APKs
+        run: |
+          mkdir -p /tmp/harness/data/extensions/Anime
+          curl -fsSL --retry 3 "$ANIYOMI_REPO/index.min.json" -o /tmp/index.json
+          python3 - <<'EOF' > /tmp/apks.txt
+          import json, os
+          entries = json.load(open("/tmp/index.json"))
+          for e in entries[: int(os.environ["APK_COUNT"])]:
+              print(e["apk"])
+          EOF
+          while read -r apk; do
+            curl -fsSL --retry 3 "$ANIYOMI_REPO/apk/$apk" -o "/tmp/harness/data/extensions/Anime/$apk"
+          done < /tmp/apks.txt
+          ls -la /tmp/harness/data/extensions/Anime
+
+      - name: Build the JNI harness
+        run: |
+          gcc -Wall -O1 -o /tmp/harness/harness ../.github/ci/jvm_harness.c \
+            -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" \
+            -L"$JAVA_HOME/lib/server" -ljvm -Wl,-rpath,"$JAVA_HOME/lib/server"
+
+      - name: Run the harness against the desktop aniyomi JAR
+        working-directory: /tmp/harness
+        env:
+          JAVA_TOOL_OPTIONS: -Xlog:gc:stdout
+        run: |
+          R="$GITHUB_WORKSPACE/runtimeManager"
+          COUNT=$(ls data/extensions/Anime/*.apk | wc -l)
+          timeout 900 ./harness \
+            "$R/libraries/commonDesktopLib/build/libs/embedded-bridge.jar" \
+            "$R/builds/aniyomiDesktop/aniyomiDesktop-plugin.jar" \
+            /tmp/harness/data "$COUNT" 2>&1 | tee harness.txt
+          exit "${PIPESTATUS[0]}"
+
+      - name: Upload harness output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jvm-harness
+          path: |
+            /tmp/harness/harness.txt
+            /tmp/harness/jvm.log
+            /tmp/harness/hs_err.log
+            runtimeManager/builds/*/*.json
+          if-no-files-found: ignore
+
+  ios:
+    name: iOS app build (${{ matrix.mode }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [cocoapods, swiftpm]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Stage the native frameworks
+        working-directory: ios
+        run: |
+          ditto -x -k dartotsu_extension_bridge/Frameworks/ios-runtime-v1/OpenJDKRuntime.xcframework.zip \
+            dartotsu_extension_bridge/Frameworks/
+          ls dartotsu_extension_bridge/Frameworks
+          sh PrepareEmbeddedRuntime.sh
+          sh PrepareTorrServerRuntime.sh
+          sh PrepareFfmpegRuntime.sh
+          ls dartotsu_extension_bridge/Frameworks dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime
+
+      - name: Package manager mode
+        run: |
+          if [ "${{ matrix.mode }}" = swiftpm ]; then
+            flutter config --enable-swift-package-manager
+          else
+            flutter config --no-enable-swift-package-manager
+          fi
+
+      - name: Create a host app that depends on the plugin
+        run: |
+          flutter create --platforms=ios --org dev.ci --project-name ci_app "$RUNNER_TEMP/ci_app"
+          cd "$RUNNER_TEMP/ci_app"
+          flutter pub add dartotsu_extension_bridge --path "$GITHUB_WORKSPACE"
+          cat > lib/main.dart <<'EOF'
+          import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
+          import 'package:flutter/material.dart';
+
+          void main() {
+            debugPrint('bridge: $DartotsuExtensionBridge');
+            runApp(const MaterialApp(home: Scaffold(body: Text('ci'))));
+          }
+          EOF
+          if [ -f ios/Podfile ]; then
+            sed -i '' "s/^# platform :ios.*/platform :ios, '13.0'/" ios/Podfile
+          fi
+
+      - name: Device build (compiles the real EmbeddedJvm.mm)
+        working-directory: ${{ runner.temp }}/ci_app
+        run: flutter build ios --release --no-codesign -v 2>&1 | tee device.log | tail -80; exit "${PIPESTATUS[0]}"
+
+      - name: The app bundle carries the JVM runtime
+        working-directory: ${{ runner.temp }}/ci_app
+        run: |
+          APP=build/ios/iphoneos/Runner.app
+          find "$APP" -name "OpenJDKRuntime.framework" -maxdepth 3 | grep -q .
+          find "$APP" -name "embedded-bridge.jar" | tee /tmp/jar.txt | grep -q .
+          find "$APP" -name "java-logging-shim.jar" | grep -q .
+          find "$APP" -path "*lib/security/cacerts" | grep -q .
+          cmp "$(head -1 /tmp/jar.txt)" \
+            "$GITHUB_WORKSPACE/ios/dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/embedded-bridge.jar"
+
+      - name: Simulator build
+        working-directory: ${{ runner.temp }}/ci_app
+        run: flutter build ios --simulator --debug -v 2>&1 | tee simulator.log | tail -80; exit "${PIPESTATUS[0]}"
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-${{ matrix.mode }}
+          path: |
+            ${{ runner.temp }}/ci_app/device.log
+            ${{ runner.temp }}/ci_app/simulator.log
+          if-no-files-found: ignore
+
+  android:
+    name: Android app build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create a host app that depends on the plugin
+        run: |
+          flutter create --platforms=android --org dev.ci --project-name ci_app "$RUNNER_TEMP/ci_app"
+          cd "$RUNNER_TEMP/ci_app"
+          flutter pub add dartotsu_extension_bridge --path "$GITHUB_WORKSPACE"
+          cat > lib/main.dart <<'EOF'
+          import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
+          import 'package:flutter/material.dart';
+
+          void main() {
+            debugPrint('bridge: $DartotsuExtensionBridge');
+            runApp(const MaterialApp(home: Scaffold(body: Text('ci'))));
+          }
+          EOF
+
+      - name: Build APK
+        working-directory: ${{ runner.temp }}/ci_app
+        run: flutter build apk --debug

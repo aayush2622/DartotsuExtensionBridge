@@ -35,13 +35,11 @@ rootProject.tasks.register("buildEmbeddedBridge") {
     dependsOn(":libraries:commonDesktopLib:embeddedBridgeJar")
 }
 
-// Everything a single invocation can produce: desktop + android plugin JARs
-// and the embedded-bridge shim. The iOS plugin JARs come from re-running
-// `buildAllPlugins -PiosRuntime=true` (a Gradle invocation only holds one
-// value for the `iosRuntime` project property).
+// Desktop + android plugin artifacts and the embedded-bridge shim. iOS runs
+// the desktop JARs unchanged inside the embedded VM.
 rootProject.tasks.register("buildEverything") {
     group = "plugin"
-    description = "buildAllPlugins + buildEmbeddedBridge (desktop/android variant)"
+    description = "buildAllPlugins + buildEmbeddedBridge"
     dependsOn("buildAllPlugins", "buildEmbeddedBridge")
 }
 
@@ -53,12 +51,11 @@ rootProject.tasks.register("printBuildVariants") {
             """
             Plugin build variants
             ---------------------
-            Desktop + Android : ./gradlew buildAllPlugins
-            iOS               : ./gradlew buildAllPlugins -PiosRuntime=true
+            Desktop/iOS + Android : ./gradlew buildAllPlugins
             Embedded bridge   : ./gradlew buildEmbeddedBridge
             Desktop + bridge  : ./gradlew buildEverything
 
-            Outputs: builds/<plugin>/<plugin>-plugin[-ios].jar (+ .json)
+            Outputs: builds/<plugin>/<plugin>-plugin.jar|apk (+ .json)
                      libraries/commonDesktopLib/build/libs/embedded-bridge.jar
             """.trimIndent(),
         )

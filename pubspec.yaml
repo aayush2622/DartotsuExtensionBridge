@@ -43,12 +43,6 @@ dependencies:
       ref: dev
   install_plugin: ^2.1.0
   installed_apps: ^2.2.1
-  jnigen:
-    git:
-      url: https://github.com/dart-lang/native.git
-      path: pkgs/jnigen
-      ref: d8ea533
-  jni: ^1.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -58,7 +52,6 @@ dev_dependencies:
 
 flutter:
   assets:
-    - assets/jni/
     - assets/images/
   plugin:
     platforms:

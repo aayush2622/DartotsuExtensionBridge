@@ -1,6 +1,9 @@
 package com.aayush262.dartotsu_extension_bridge
 
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.OutputStream
+import java.io.PrintStream
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.net.URLClassLoader
@@ -45,19 +48,69 @@ object EmbeddedBridge {
 
     private val loaded = ConcurrentHashMap<String, Loaded>()
 
+    /** Registered by the native host; stream 1 = stdout, 2 = stderr. */
+    @JvmStatic
+    external fun nativeLog(stream: Int, line: String)
+
+    /**
+     * Routes System.out/err (shared by every backend loader, since
+     * java.lang.System is a boot class) and uncaught exceptions to the host
+     * log. Called by the native host once [nativeLog] is registered.
+     */
+    @JvmStatic
+    fun installLogCapture() {
+        System.setOut(PrintStream(LineSink(1), true, Charsets.UTF_8))
+        System.setErr(PrintStream(LineSink(2), true, Charsets.UTF_8))
+        Thread.setDefaultUncaughtExceptionHandler { thread, error ->
+            nativeLog(2, "Uncaught exception in thread \"${thread.name}\": ${error.stackTraceToString()}")
+        }
+        nativeLog(1, "Java log capture installed (java ${System.getProperty("java.version")}, " +
+            "${System.getProperty("java.vm.name")} ${System.getProperty("java.vm.info")}, " +
+            "max heap ${Runtime.getRuntime().maxMemory() / (1024 * 1024)} MB)")
+    }
+
+    private class LineSink(private val stream: Int) : OutputStream() {
+        private val buffer = ByteArrayOutputStream()
+
+        @Synchronized
+        override fun write(b: Int) {
+            if (b == '\n'.code) emit() else buffer.write(b)
+        }
+
+        @Synchronized
+        override fun write(b: ByteArray, off: Int, len: Int) {
+            for (i in off until off + len) write(b[i].toInt())
+        }
+
+        private fun emit() {
+            val line = buffer.toString(Charsets.UTF_8).trimEnd('\r')
+            buffer.reset()
+            nativeLog(stream, line)
+        }
+    }
+
     @JvmStatic
     fun load(jarPath: String) {
         loaded.computeIfAbsent(jarPath) {
-            val file = File(jarPath)
-            require(file.isFile) { "Backend JAR not found: $jarPath" }
+            val started = System.nanoTime()
+            try {
+                val file = File(jarPath)
+                require(file.isFile) { "Backend JAR not found: $jarPath" }
 
-            val loader = URLClassLoader(
-                arrayOf(file.toURI().toURL()),
-                ClassLoader.getPlatformClassLoader(),
-            )
-            val mainClass = Class.forName(MAIN_CLASS, true, loader)
-            val handle = mainClass.getMethod("handle", String::class.java)
-            Loaded(loader, handle)
+                val loader = URLClassLoader(
+                    arrayOf(file.toURI().toURL()),
+                    ClassLoader.getPlatformClassLoader(),
+                )
+                val mainClass = Class.forName(MAIN_CLASS, true, loader)
+                val handle = mainClass.getMethod("handle", String::class.java)
+                System.out.println(
+                    "Loaded ${file.name} (${file.length() / 1024} KB) in ${(System.nanoTime() - started) / 1_000_000} ms",
+                )
+                Loaded(loader, handle)
+            } catch (e: Throwable) {
+                System.err.println("Loading $jarPath failed: ${e.stackTraceToString()}")
+                throw e
+            }
         }
     }
 
@@ -72,6 +125,7 @@ object EmbeddedBridge {
             entry.handle.invoke(null, requestJson) as String
         } catch (e: Throwable) {
             val cause = (e as? InvocationTargetException)?.targetException ?: e
+            System.err.println("Call failed: ${cause.stackTraceToString()}")
             errorEnvelope(
                 cause.message ?: cause.javaClass.simpleName,
                 cause.stackTraceToString(),
@@ -84,6 +138,7 @@ object EmbeddedBridge {
     @JvmStatic
     fun unload(jarPath: String) {
         loaded.remove(jarPath)?.loader?.let { runCatching { it.close() } }
+        System.out.println("Unloaded $jarPath")
     }
 
     /**

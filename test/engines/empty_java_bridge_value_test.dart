@@ -1,4 +1,4 @@
-import 'package:dartotsu_extension_bridge/Engines/JavaEngine/Bridge/JniBridge.dart';
+import 'package:dartotsu_extension_bridge/Engines/JavaEngine/Bridge/JavaBridge.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

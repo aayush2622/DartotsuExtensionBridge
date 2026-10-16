@@ -31,9 +31,13 @@ class CustomMethods : BridgeCallbacks {
     }
 
     override fun log(level: String, message: String) {
-        FlutterBridge.call("logger", mapOf(
+        val response = FlutterBridge.call("logger", mapOf(
             "level" to level,
             "message" to "[EXT] $message"
         ))
+        // The host captures stdout, so a log the loopback server refused is not lost.
+        if (response["success"]?.asBoolean != true) {
+            println("[$level] $message")
+        }
     }
 }

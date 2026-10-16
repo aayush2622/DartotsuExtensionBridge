@@ -113,14 +113,45 @@ The harness mimics the native side (reflect `EmbeddedBridge.load` / `.call`):
 - two overlapping calls to one source (`getPopular` + `getLatestUpdates`) both
   returned clean envelopes — `withSourceLock` serialized them, no corruption
 
-## Build variants (`./gradlew printBuildVariants`)
+## Same JAR as desktop
 
-| command | output |
-|---|---|
-| `./gradlew buildAllPlugins` | desktop + android `builds/<p>/<p>-plugin.jar` |
-| `./gradlew buildAllPlugins -PiosRuntime=true` | `builds/<p>/<p>-plugin-ios.jar` — Chromium/JOGL/JNA + native payloads stripped; `platform:"ios"` in the `.json` |
-| `./gradlew buildEmbeddedBridge` | `libraries/commonDesktopLib/build/libs/embedded-bridge.jar` — ONLY `EmbeddedBridge` + kotlin-stdlib (~6.5 MB). Its sole job is to `URLClassLoader` each backend JAR and reflect into `Main.handle`; needs no gson/coroutines/Server/ExtensionApi. |
-| `./gradlew buildEverything` | `buildAllPlugins` + `buildEmbeddedBridge` |
+iOS downloads and runs the exact `*-plugin.jar` desktop uses (the
+`-PiosRuntime=true` trimmed variant is gone). The old variant stripped JCEF,
+the zstd/JNA natives *and* the Android `res/` + `resources.arsc` (~15 MB) that
+AndroidCompat resolves resources from, and it was built separately, so it
+drifted behind desktop. Native binaries for other OSes inside the JAR are just
+unused zip entries. The only thing that cannot work on iOS is the Chromium
+WebView: `CefHelper` sees `-Ddartotsu.runtime=ios` and fails fast instead of
+downloading a desktop JetBrains Runtime.
+
+`./gradlew buildEverything` builds the plugin JARs + `embedded-bridge.jar`.
+After changing `EmbeddedBridge.kt`, copy
+`libraries/commonDesktopLib/build/libs/embedded-bridge.jar` into
+`ios/dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/`
+(SwiftPM reads the committed copy).
+
+## Logging
+
+Everything the VM prints reaches the app log (`Logger`, prefixed `[JVM]`) and
+`<bridge>/logs/jvm.log`, written synchronously so it survives a crash:
+
+- HotSpot output through the `vfprintf` JNI option hook; `exit`/`abort` hooks
+  record the VM taking the process down.
+- `-XX:ErrorFile=<bridge>/logs/hs_err.log`; the next start logs it and renames
+  it to `hs_err.previous.log`.
+- Java `System.out`/`System.err` (every backend loader shares them) and
+  uncaught exceptions via `EmbeddedBridge.installLogCapture` → the native
+  `nativeLog` registered with `RegisterNatives`. An older `embedded-bridge.jar`
+  without these still boots; only this capture is skipped.
+- Kotlin `Logger` → `CustomMethods.log` → loopback `JavaBridgeServer`
+  (`BridgeChannels` now starts it on iOS too; before, every Kotlin log and
+  cookie callback on iOS was dropped). Falls back to stdout if the post fails.
+- Dart logs each `start`/`load`/`call` with its duration, and failed calls
+  with the Java stack trace from the envelope's `trace`.
+
+`jvm.log` is rotated to `jvm.previous.log` at every start. Strings cross JNI as
+UTF-16 (`NewString`/`GetStringChars`); modified UTF-8 turned any response
+containing an emoji into a nil result.
 
 ## Swift Package Manager support
 
@@ -170,19 +201,17 @@ unverified plugin-based workaround.
 
 ## Still on you (needs macOS / an on-device run)
 
-1. **`CloudflareInterceptor` degrade path.** The `-PiosRuntime` shadow drops
-   JCEF but the classes stay compiled in; a CF challenge on iOS hits
-   `localhost:8191` and fails (as seen in the Linux test). Guard it behind a
+1. **`CloudflareInterceptor` degrade path.** A CF challenge on iOS hits the
+   FlareSolverr URL `localhost:8191` and fails, same as desktop without
+   FlareSolverr running. Guard it behind a
    capability check that returns "unsupported" instead — M-Extension-Server
    does this in its `CloudflareInterceptor`.
 2. **Daemon-flag the `Looper` thread** in each `*ExtensionApi.desktop.kt`
    `PlatformInit.initializeDesktop` (`isDaemon = true`). Harmless on desktop
    (process exits anyway); on iOS the VM is shared and long-lived so a
    non-daemon looper per backend is a leak.
-3. **`DownloadablePlugin` platform filter.** CI now builds `*-plugin-ios.jar`
-   and `prepare_release.py` emits an `ios` row per backend in
-   `builds/plugins.json`. Teach the Dart `DownloadablePlugin` to pick the row
-   whose `platform` matches (`ios` on iOS).
+3. ~~**`DownloadablePlugin` platform filter.**~~ — obsolete: iOS uses the
+   `desktop` row.
 4. ~~**Publish `embedded-bridge.jar`**~~ — done: CI's `build` job already
    stages it into every `latest` release (confirmed live at
    `.../releases/download/latest/embedded-bridge.jar`).

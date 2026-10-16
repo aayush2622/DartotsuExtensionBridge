@@ -17,7 +17,6 @@ class JavaRuntimeManager {
   static const _minJavaMajorVersion = 21;
 
   static String? _cachedJavaPath;
-  static String? _cachedJvmPath;
   static Future<String?>? _installFuture;
   static Future<Directory> get _runtimeDir async {
     final dir = await DartotsuExtensionBridge.context.getDirectory(
@@ -77,45 +76,6 @@ class JavaRuntimeManager {
         );
       }
     } catch (_) {}
-
-    return null;
-  }
-
-  static Future<String?> getJvmPath() async {
-    await ensureInstalled();
-
-    if (_cachedJvmPath != null) {
-      return _cachedJvmPath;
-    }
-
-    final javaPath = await getJavaPath();
-
-    if (javaPath == null || javaPath == 'java') {
-      return null;
-    }
-
-    final javaFile = File(javaPath);
-    final javaHome = javaFile.parent.parent;
-
-    if (Platform.isWindows) {
-      final jvm = File('${javaHome.path}\\bin\\server\\jvm.dll');
-
-      if (await jvm.exists()) {
-        return _cachedJvmPath = jvm.path;
-      }
-    } else if (Platform.isMacOS) {
-      final jvm = File('${javaHome.path}/lib/server/libjvm.dylib');
-
-      if (await jvm.exists()) {
-        return _cachedJvmPath = jvm.path;
-      }
-    } else {
-      final jvm = File('${javaHome.path}/lib/server/libjvm.so');
-
-      if (await jvm.exists()) {
-        return _cachedJvmPath = jvm.path;
-      }
-    }
 
     return null;
   }
@@ -337,7 +297,6 @@ class JavaRuntimeManager {
     }
 
     _cachedJavaPath = null;
-    _cachedJvmPath = null;
     _installFuture = null;
   }
 }
