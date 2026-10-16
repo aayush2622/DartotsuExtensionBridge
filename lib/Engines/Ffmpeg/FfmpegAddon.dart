@@ -38,11 +38,12 @@ class FfmpegFailure implements Exception {
   String toString() => 'ffmpeg exited with $code: $output';
 }
 
-/// Downloads a minimal remux-only `ffmpeg` (a few MB, built by
-/// `scripts/build_ffmpeg.sh`, committed in the repo's `ffmpeg/` folder) for
+/// Downloads a minimal remux-only `ffmpeg` (a few MB, committed in
+/// the repo's `ffmpeg/` folder) for
 /// Windows, Linux, macOS and Android (arm64) at app runtime. iOS (no
 /// subprocesses) links the same minimal build statically into the app
-/// (`scripts/build_ffmpeg_ios.sh`) and calls it in process.
+/// (the prebuilt xcframework in `ios/.../Frameworks/ffmpeg-v1/`) and calls it
+/// in process.
 class FfmpegAddon extends Addon {
   final _client = MClient.download();
 
