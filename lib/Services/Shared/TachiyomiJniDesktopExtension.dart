@@ -38,7 +38,7 @@ mixin TachiyomiJniDesktopExtension on Extension {
       final sources = result.map(fromJson).where((s) => s.itemType == type);
 
       final deduped = _dedupeById(sources);
-      await _pruneObsoletePackageFiles(dir, deduped);
+      if (deduped.isNotEmpty) await _pruneObsoletePackageFiles(dir, deduped);
       return deduped;
     } catch (e, s) {
       Logger.log("Desktop loadInstalled error: $e\n$s");
@@ -160,6 +160,11 @@ mixin TachiyomiJniDesktopExtension on Extension {
       final avail = state(type).available;
       avail.value = avail.value.where((e) => e.id != s.id).toList();
       await fetchInstalledExtensions(type);
+      if (!state(type).installed.value.any((e) => e.id == s.id)) {
+        throw Exception(
+          'The Java engine could not load ${s.name ?? 'the extension'}',
+        );
+      }
       detectUpdates(state(type).rawAvailable.value, type);
     });
   }

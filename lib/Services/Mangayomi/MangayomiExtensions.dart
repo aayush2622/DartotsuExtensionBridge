@@ -113,8 +113,8 @@ class MangayomiExtensions extends Extension
         avail.value = avail.value.where((e) => e.id != m.id).toList();
         final raw = state(type).rawAvailable.value;
         detectUpdates(raw, type);
-      } catch (e) {
-        Logger.log("Install failed ${m.id}: $e");
+      } catch (e, st) {
+        Logger.log("Install failed ${m.id}: $e\n$st");
         rethrow;
       }
     });
