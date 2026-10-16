@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:archive/archive_io.dart';
+import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
@@ -16,11 +18,13 @@ import '../../Settings/KvStore.dart';
 
 class FfmpegCancel {
   Process? _process;
+  bool running = false;
   bool cancelled = false;
 
   void cancel() {
     cancelled = true;
     _process?.kill();
+    if (running) FfmpegAddon._cancelEmbedded();
   }
 }
 
@@ -37,9 +41,56 @@ class FfmpegFailure implements Exception {
 /// Downloads a minimal remux-only `ffmpeg` (a few MB, built by
 /// `scripts/build_ffmpeg.sh`, committed in the repo's `ffmpeg/` folder) for
 /// Windows, Linux, macOS and Android (arm64) at app runtime. iOS (no
-/// subprocesses) cannot use it.
+/// subprocesses) links the same minimal build statically into the app
+/// (`scripts/build_ffmpeg_ios.sh`) and calls it in process.
 class FfmpegAddon extends Addon {
   final _client = MClient.download();
+
+  FfmpegAddon() {
+    if (Platform.isIOS && _embedded) installed.value = true;
+  }
+
+  static final bool _embedded = _probeEmbedded();
+
+  static bool _probeEmbedded() {
+    if (!Platform.isIOS) return false;
+    try {
+      return DynamicLibrary.process().providesSymbol('dartotsu_ffmpeg_run');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static void _cancelEmbedded() {
+    try {
+      DynamicLibrary.process()
+          .lookupFunction<Void Function(), void Function()>(
+            'dartotsu_ffmpeg_cancel',
+          )();
+    } catch (_) {}
+  }
+
+  static int _runEmbedded(List<String> argv) {
+    final lib = DynamicLibrary.process();
+    final run = lib
+        .lookupFunction<
+          Int32 Function(Int32, Pointer<Pointer<Utf8>>),
+          int Function(int, Pointer<Pointer<Utf8>>)
+        >('dartotsu_ffmpeg_run');
+    final args = ['ffmpeg', ...argv];
+    final vector = calloc<Pointer<Utf8>>(args.length + 1);
+    for (var i = 0; i < args.length; i++) {
+      vector[i] = args[i].toNativeUtf8();
+    }
+    try {
+      return run(args.length, vector);
+    } finally {
+      for (var i = 0; i < args.length; i++) {
+        calloc.free(vector[i]);
+      }
+      calloc.free(vector);
+    }
+  }
 
   @override
   String get id => 'ffmpeg';
@@ -65,7 +116,7 @@ class FfmpegAddon extends Addon {
       Platform.isAndroid ? (_linker, [binary, ...args]) : (binary, args);
 
   bool get supported {
-    if (Platform.isIOS) return false;
+    if (Platform.isIOS) return _embedded;
     if (Platform.isAndroid) return Abi.current() == Abi.androidArm64;
     return true;
   }
@@ -132,12 +183,14 @@ class FfmpegAddon extends Addon {
 
   @override
   Future<bool> isInstalled() async {
+    if (Platform.isIOS) return _embedded;
     if (!supported) return false;
     return (await _binaryFile).exists();
   }
 
   @override
   Future<void> install() async {
+    if (Platform.isIOS) return;
     if (downloading.value) return;
     if (!supported) {
       throw UnsupportedError('FFmpeg is not available on this platform');
@@ -267,6 +320,7 @@ class FfmpegAddon extends Addon {
 
   @override
   Future<void> uninstall() async {
+    if (Platform.isIOS) return;
     final dir = await _directory;
     if (await dir.exists()) await dir.delete(recursive: true);
     installed.value = false;
@@ -287,6 +341,7 @@ class FfmpegAddon extends Addon {
     FfmpegCancel? cancel,
     void Function(String line)? onOutput,
   }) async {
+    if (Platform.isIOS) return _runEmbeddedAsync(args, cancel);
     final binary = await binaryPath;
     if (binary == null) throw StateError('FFmpeg is not installed');
     final (exe, exeArgs) = launch(binary, [
@@ -313,6 +368,23 @@ class FfmpegAddon extends Addon {
     listen(process.stderr);
     final code = await process.exitCode;
     if (code != 0) throw FfmpegFailure(code, tail.join('\n'));
+  }
+
+  Future<void> _runEmbeddedAsync(
+    List<String> args,
+    FfmpegCancel? cancel,
+  ) async {
+    if (cancel?.cancelled ?? false) {
+      throw const FfmpegFailure(255, 'cancelled');
+    }
+    cancel?.running = true;
+    final full = ['-hide_banner', '-nostdin', '-y', ...args];
+    try {
+      final code = await Isolate.run(() => _runEmbedded(full));
+      if (code != 0) throw FfmpegFailure(code, '');
+    } finally {
+      cancel?.running = false;
+    }
   }
 
   /// Joins a local HLS playlist (segments, keys and init files already on
