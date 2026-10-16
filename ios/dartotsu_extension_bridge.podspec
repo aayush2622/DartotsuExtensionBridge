@@ -58,12 +58,21 @@ Android and desktop are unaffected (Dalvik bridge / `java` subprocess).
   }
   s.preserve_paths = 'RuntimeSources/**/*', 'PrepareEmbeddedRuntime.sh', 'PrepareTorrServerRuntime.sh', 'PrepareFfmpegRuntime.sh'
 
+  # DartotsuFfmpeg.xcframework only has an arm64 simulator slice; CocoaPods'
+  # copy step fails for an arm64+x86_64 simulator build, so the app target
+  # has to drop x86_64 too.
+  simulator_excluded_archs = File.exist?(ffmpeg_zip) ? 'i386 x86_64' : 'i386'
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'CLANG_CXX_LANGUAGE_STANDARD' => 'gnu++20',
     'HEADER_SEARCH_PATHS[sdk=iphoneos*]' =>
       '$(inherited) "$(PODS_TARGET_SRCROOT)/dartotsu_extension_bridge/Frameworks/OpenJDKRuntime.xcframework/ios-arm64/OpenJDKRuntime.framework/Headers"',
-    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => simulator_excluded_archs,
   }
+  if File.exist?(ffmpeg_zip)
+    s.user_target_xcconfig = {
+      'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386 x86_64',
+    }
+  end
   s.swift_version = '5.0'
 end
