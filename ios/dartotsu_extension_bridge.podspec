@@ -43,13 +43,15 @@ Android and desktop are unaffected (Dalvik bridge / `java` subprocess).
   # dartotsu_extension_bridge/Package.swift reads these same generated paths.
   s.prepare_command = 'sh PrepareEmbeddedRuntime.sh && sh PrepareTorrServerRuntime.sh && sh PrepareFfmpegRuntime.sh'
   ffmpeg_zip = File.join(__dir__, 'dartotsu_extension_bridge/Frameworks/ffmpeg-v1/DartotsuFfmpeg.xcframework.zip')
-  s.vendored_frameworks = [
+  # The DSL has no vendored_frameworks getter, so build the list first.
+  vendored_frameworks = [
     'dartotsu_extension_bridge/Frameworks/OpenJDKRuntime.xcframework',
     'dartotsu_extension_bridge/Frameworks/TorrServerKit.xcframework',
   ]
   if File.exist?(ffmpeg_zip)
-    s.vendored_frameworks << 'dartotsu_extension_bridge/Frameworks/DartotsuFfmpeg.xcframework'
+    vendored_frameworks << 'dartotsu_extension_bridge/Frameworks/DartotsuFfmpeg.xcframework'
   end
+  s.vendored_frameworks = vendored_frameworks
   s.resource_bundles = {
     'dartotsu_extension_bridge_runtime' => ['dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/**/*'],
     'dartotsu_extension_bridge_privacy' => ['dartotsu_extension_bridge/Sources/dartotsu_extension_bridge/PrivacyInfo.xcprivacy'],
