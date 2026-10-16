@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
-import '../Engines/JavaEngine/Bridge/JniBridge.dart';
+import '../Engines/JavaEngine/Bridge/JavaBridge.dart';
 
 abstract class ExtensionBridge {
   Future<T> call<T>(String method, Map<String, dynamic> args);
@@ -25,10 +25,10 @@ class MethodChannelBridge implements ExtensionBridge {
   }
 }
 
-class JniExtensionBridge implements ExtensionBridge {
+class JavaExtensionBridge implements ExtensionBridge {
   final JavaBridge bridge;
 
-  JniExtensionBridge(this.bridge);
+  JavaExtensionBridge(this.bridge);
 
   @override
   Future<T> call<T>(String method, Map<String, dynamic> args) =>

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
-import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
+import '../../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../dartotsu_extension_bridge.dart';
@@ -37,14 +37,14 @@ class KotatsuDesktopExtensions extends Extension
     KotatsuDesktopSource,
     (source) => KotatsuSourceMethods(
       source as KotatsuDesktopSource,
-      JniExtensionBridge(jni),
+      JavaExtensionBridge(java),
     ),
   );
 
   @override
   DownloadablePlugin plugin = KotatsuDesktopPlugin();
 
-  final JavaBridge jni = createJavaBridge();
+  final JavaBridge java = createJavaBridge();
 
   final _context = DartotsuExtensionBridge.context;
 
@@ -58,13 +58,13 @@ class KotatsuDesktopExtensions extends Extension
     final filePath = await plugin.getPath();
 
     await BridgeChannels.init();
-    await jni.init(pluginJarPath: filePath);
+    await java.init(pluginJarPath: filePath);
 
     final dir = await sourcesDir;
-    await jni.call<void>("initializeDesktop", {"path": dir!.path});
+    await java.call<void>("initializeDesktop", {"path": dir!.path});
 
     if (_context.network != null) {
-      await jni.call<void>("initClient", {
+      await java.call<void>("initClient", {
         "data": jsonEncode({
           'dns': _context.network?.dns,
           'proxy': _context.network?.proxy,
@@ -78,7 +78,7 @@ class KotatsuDesktopExtensions extends Extension
   @override
   void dispose() async {
     super.dispose();
-    jni.dispose();
+    java.dispose();
   }
 
   @override
@@ -92,7 +92,7 @@ class KotatsuDesktopExtensions extends Extension
   Future<List<KotatsuDesktopSource>> loadInstalledFromNative(
     Directory dir,
   ) async {
-    final result = await jni.call<List<Map<String, dynamic>>>(
+    final result = await java.call<List<Map<String, dynamic>>>(
       'getInstalledMangaExtensions',
       {'path': dir.path},
     );

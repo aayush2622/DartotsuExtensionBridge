@@ -21,11 +21,8 @@ abstract class DownloadablePlugin {
 
   String get _versionKey => "${name}_version";
 
-  static String get _platformKey => Platform.isIOS
-      ? "ios"
-      : Platform.isAndroid
-      ? "android"
-      : "desktop";
+  // iOS runs the desktop JARs unchanged in its embedded VM.
+  static String get _platformKey => Platform.isAndroid ? "android" : "desktop";
 
   Future<bool> _needsUpdate(Map<String, dynamic> remote) async {
     final remoteVersion = remote["versionCode"] ?? 0;

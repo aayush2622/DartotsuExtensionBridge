@@ -66,6 +66,11 @@ object CefHelper {
 
             withContext(Dispatchers.IO) {
                 try {
+                    if (isEmbeddedIos()) {
+                        throw UnsupportedOperationException(
+                            "WebView is not available on iOS: Chromium (JCEF) cannot run inside an iOS app",
+                        )
+                    }
                     val cefDir = installDir()
                     // Each backend (aniyomi/cloudStream/ireader/kotatsu/tsundoku) runs as its own
                     // JVM process, so [initMutex] alone doesn't stop two of them from racing to
@@ -175,6 +180,9 @@ object CefHelper {
 
         return os to arch
     }
+
+    // Set by the iOS embedded VM's launch options (EmbeddedJvm.mm).
+    private fun isEmbeddedIos() = System.getProperty("dartotsu.runtime") == "ios"
 
     private fun isLinux() = System.getProperty("os.name").lowercase().contains("linux")
 

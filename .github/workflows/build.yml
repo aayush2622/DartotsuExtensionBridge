@@ -47,9 +47,6 @@ jobs:
       - name: Build all plugins (desktop + android + embedded-bridge)
         run: ./gradlew buildEverything
 
-      - name: Build iOS-runtime plugin variants
-        run: ./gradlew buildAllPlugins -PiosRuntime=true
-
       - name: Stage embedded-bridge.jar for release
         run: |
           mkdir -p builds/embeddedBridge

@@ -3,35 +3,35 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
-import '../../Engines/JavaEngine/Bridge/JniBridge.dart';
+import '../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../Logger.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'PackagedSource.dart';
 import 'TachiyomiRepo.dart';
 
-mixin TachiyomiJniDesktopExtension on Extension {
+mixin TachiyomiJavaDesktopExtension on Extension {
   http.Client get repoClient;
 
-  String get jniDataDir;
+  String get javaDataDir;
 
-  JavaBridge get jni;
+  JavaBridge get java;
 
   Future<Directory?> _extensionsDir(ItemType type) =>
       DartotsuExtensionBridge.context.getDirectory(
-        subPath: 'bridge/$jniDataDir/extensions/${type.toString()}',
+        subPath: 'bridge/$javaDataDir/extensions/${type.toString()}',
         useSystemPath: false,
         useCustomPath: true,
       );
 
-  Future<List<T>> loadInstalledJniSources<T extends PackagedSource>(
-    String jniMethod,
+  Future<List<T>> loadInstalledJavaSources<T extends PackagedSource>(
+    String javaMethod,
     ItemType type,
     T Function(Map<String, dynamic>) fromJson,
   ) async {
     try {
       final dir = await _extensionsDir(type);
 
-      final result = await jni.call<List<Map<String, dynamic>>>(jniMethod, {
+      final result = await java.call<List<Map<String, dynamic>>>(javaMethod, {
         "path": dir!.path,
       });
 

@@ -4,7 +4,7 @@ import 'dart:io';
 
 import '../../../Logger.dart';
 import '../JavaInstaller.dart';
-import 'JniBridge.dart';
+import 'JavaBridge.dart';
 
 class SidecarBridge implements JavaBridge {
   // Safety net for a response that will never arrive (e.g. the sidecar
@@ -126,7 +126,7 @@ class SidecarBridge implements JavaBridge {
 
         completer.completeError(Exception(json['error']));
       }
-    } catch (_, _) {
+    } catch (_) {
       Logger.log(line);
     }
   }

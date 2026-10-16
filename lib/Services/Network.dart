@@ -14,7 +14,7 @@ class BridgeChannels {
   static bool _initialized = false;
 
   static Future<void> init() async {
-    if (_initialized || Platform.isIOS) return;
+    if (_initialized) return;
 
     _initialized = true;
 

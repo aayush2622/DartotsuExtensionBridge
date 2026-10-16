@@ -43,7 +43,7 @@ ExtensionBridge` transport) — same base name, different directory.
 | `Extensions/Extensions.dart` | `abstract class Extension` — the per-ecosystem manager. Per-`ItemType` `ExtensionState` (installed/available/repos/languages as Rx). Repo CRUD, language filtering, version compare, init state machine (`InitState`, `ensureInitialized`). Also defines `Repo`. `enum ItemType { manga, anime, novel }` (that order — `anime.index == 1`) lives in `Models/Source.dart`. |
 | `Extensions/SourceMethods.dart` | `abstract class SourceMethods` — the uniform per-source API: `getPopular`, `getLatestUpdates`, `search`, `getDetail`, `getPageList`, `getVideoList`, `getNovelContent`, `getPreference`, `setPreference`. |
 | `Extensions/BridgeSourceMethods.dart` | `SourceMethods` base for backends that call across an `ExtensionBridge` (JSON marshalling of `DMedia`/`DEpisode`). Used by CloudStream + Aniyomi. |
-| `Extensions/ExtensionBridge.dart` | `abstract ExtensionBridge` + `MethodChannelBridge` (Android platform channel) and `JniExtensionBridge` (desktop JNI). |
+| `Extensions/ExtensionBridge.dart` | `abstract ExtensionBridge` + `MethodChannelBridge` (Android platform channel) and `JavaExtensionBridge` (wraps a `JavaBridge`: desktop sidecar / iOS embedded VM). |
 | `Extensions/DownloadablePlugin.dart` | Base for downloadable helper plugins (JAR/APK) resolved from `plugins.json`; resumable download with retry, tracks `installed`, `availableInRepo`, download `progress`. Each desktop backend subclasses it. |
 | `Extensions/ExtensionSettings.dart` | `ExtensionSetting` UI-model (`normal`/`switchType`/`slider`/`inputBox`) returned by `Extension.settings(context)`. |
 | `Extensions/Addon.dart` | `abstract class Addon` (install/uninstall/update/checkForUpdate). |
@@ -67,7 +67,7 @@ used as the factory key.
 |---|---|---|---|
 | **Mangayomi** | `MangayomiExtensions` | all (incl. iOS) | Repo of JS/Dart source scripts. Heavy sub-tree — see below. |
 | **Sora** | `SoraExtensions` | all (incl. iOS) | JS "modules"; no novel support. `Services/Sora/JsEngine/`. |
-| **Aniyomi** | `AniyomiExtensions` (Android) / `AniyomiDesktopExtensions` (desktop) | Android + desktop | Android: APK extensions via platform channel + `install_plugin`. Desktop: JNI/sidecar bridge into `runtimeManager`. `Generated/` = jnigen output. |
+| **Aniyomi** | `AniyomiExtensions` (Android) / `AniyomiDesktopExtensions` (desktop) | Android + desktop | Android: APK extensions via platform channel + `install_plugin`. Desktop/iOS: sidecar (desktop) or embedded VM (iOS) bridge into `runtimeManager`. |
 | **CloudStream** | `CloudStreamExtensions` / `CloudStreamDesktopExtensions` | Android + desktop | `CloudStreamSourceMethods` extends `BridgeSourceMethods`; video-only (page list / prefs unimplemented). |
 | **iReader** | `IReaderExtensions` / `IReaderDesktopExtensions` | Android + desktop | Novels. |
 | **Tsundoku** | `TsundokuExtensions` / `TsundokuDesktopExtensions` | Android + desktop | |
@@ -111,7 +111,7 @@ iOS through an embedded JVM, see `JavaEngine/` below).
 | Dir | Purpose |
 |---|---|
 | `JavaScriptEngine/JsEngine.dart` | `JsEngineEnv` singleton wrapping a shared `flutter_qjs` `QuickJsRuntime2`. |
-| `JavaEngine/` | Talk to a JVM that hosts Aniyomi/CloudStream desktop runtime. `JavaBridgeServer.dart` (localhost HTTP, port 4567), `JavaHandler.dart`, `JavaInstaller.dart`. Transports implement `JavaBridge`: `Bridge/JniBridge.dart` (in-process JNI via `package:jni`), `Bridge/SidecarBridge.dart` (out-of-process `java -jar`, desktop), `Bridge/EmbeddedJvmBridge.dart` (iOS — one embedded interpreter-only OpenJDK Zero VM via method channel `dartotsu_extension_bridge/embedded_jvm`; native side in `ios/`, Kotlin entrypoint `EmbeddedBridge` in `runtimeManager/libraries/commonDesktopLib`, and `runtimeManager/EMBEDDED_IOS_NOTES.md`). `Bridge/JavaBridgeFactory.dart` picks per platform. |
+| `JavaEngine/` | Talk to a JVM that hosts Aniyomi/CloudStream desktop runtime. `JavaBridgeServer.dart` (localhost HTTP, port 4567 — Kotlin `Logger` and cookie callbacks post here; started on desktop *and* iOS), `JavaInstaller.dart`. Transports implement `Bridge/JavaBridge.dart`: `Bridge/SidecarBridge.dart` (one `java -jar` process per backend, desktop), `Bridge/EmbeddedJvmBridge.dart` (iOS — one embedded interpreter-only OpenJDK Zero VM via method channel `dartotsu_extension_bridge/embedded_jvm`; native side in `ios/`, Kotlin entrypoint `EmbeddedBridge` in `runtimeManager/libraries/commonDesktopLib`, and `runtimeManager/EMBEDDED_IOS_NOTES.md`). `Bridge/JavaBridgeFactory.dart` picks per platform. No jnigen/`package:jni`: an in-process JVM is one-per-process, so desktop uses sidecars. iOS runs the **same desktop plugin JARs** (no `-ios` variant; `DownloadablePlugin` picks the `desktop` row) — only Chromium/JCEF WebView is unavailable there (`CefHelper` refuses on `-Ddartotsu.runtime=ios`). iOS JVM logging: HotSpot output (`vfprintf`/`exit`/`abort` hooks), Java stdout/stderr (`EmbeddedBridge.installLogCapture` → `nativeLog`) and uncaught exceptions go to `Logger` as `[JVM] …` and to `bridge/logs/jvm.log` (rotated to `jvm.previous.log` each start); fatal reports land in `bridge/logs/hs_err.log` and are logged on the next start. |
 | `TorrentEngine/` | libtorrent via `dart:ffi` (`ffi_bindings.dart`, `LibtorrentFlutter.dart` session + HTTP streaming server + tracker fetch, `LibTorrentAddon.dart` = the `Addon`, `Models.dart`). |
 | `WasmEngine/WasmEngine.dart` | `WasmEngine` - thin wrapper around `package:wasd` (pure-Dart WebAssembly runtime, no native binaries). One instance per wasm module (own linear memory/state), unlike `JsEngineEnv`'s shared singleton. Used by Aidoku; `instantiate(bytes, imports)` requires every host import the module declares to be supplied by the caller. `call(name, args)` is async - host imports (e.g. Aidoku's `net`) may do real I/O, and wasd's interpreter transparently switches an export to its async invocation path if any host import it calls is async. |
 
@@ -128,7 +128,7 @@ iOS through an embedded JVM, see `JavaEngine/` below).
 - New backend = new `Services/<Name>/` with an `Extension` subclass + `SourceMethods` + `Models/Source.dart` subtype, then add it to `ExtensionManager._extensionManagers` and it self-registers its factory via `sourceMethodFactories`.
 - Async init is guarded by `Completer`s and `InitState`; call `ensureInitialized()` / `runIfReady()` rather than assuming readiness.
 - Persist through `getVal`/`setVal`, never touch Isar directly.
-- `*.g.dart` and `Services/**/Generated/**` (jnigen) are generated — don't hand-edit.
+- `*.g.dart` are generated — don't hand-edit.
 - `_parseExtensions` static methods are passed to `compute()` — keep them (and
   anything they call) isolate-safe: no `DartotsuExtensionBridge.context`, so log
   with `debugPrint`, not `Logger`.
@@ -137,15 +137,15 @@ iOS through an embedded JVM, see `JavaEngine/` below).
 
 ```
 dart run build_runner build --delete-conflicting-outputs   # KvStore.g.dart
-dart run jnigen --config jnigen_aniyomi.yaml                # + jnigen_cloud_stream.yaml, jnigen_ireader.yaml
 flutter test                                                # test/ — pure-Dart model + helper unit tests
 dart analyze lib test
 ```
 
 `runtimeManager/` (the JVM backend JARs, out of scope above) builds via
 `./gradlew buildEverything` (desktop + android + the `embedded-bridge.jar`
-shim) and `./gradlew buildAllPlugins -PiosRuntime=true` for the iOS variant
-(Chromium/JOGL/JNA stripped). `./gradlew printBuildVariants` lists them; see
+shim). iOS uses the desktop JARs; after changing `EmbeddedBridge.kt`, copy the
+rebuilt `embedded-bridge.jar` into
+`ios/dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/`. See
 `runtimeManager/EMBEDDED_IOS_NOTES.md`.
 
 `analysis_options.yaml` uses `flutter_lints`.

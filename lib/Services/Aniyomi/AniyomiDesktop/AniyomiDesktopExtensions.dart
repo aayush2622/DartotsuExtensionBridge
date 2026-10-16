@@ -5,7 +5,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
+import '../../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
@@ -13,13 +13,13 @@ import '../../../Extensions/ExtensionSettings.dart';
 import '../../../NetworkClient.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
-import '../../Shared/TachiyomiJniDesktopExtension.dart';
+import '../../Shared/TachiyomiJavaDesktopExtension.dart';
 import '../../Shared/TachiyomiRepo.dart';
 import '../AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
 
 class AniyomiDesktopExtensions extends Extension
-    with TachiyomiRepoBackend, TachiyomiJniDesktopExtension {
+    with TachiyomiRepoBackend, TachiyomiJavaDesktopExtension {
   @override
   String get id => 'aniyomi_desktop';
 
@@ -37,13 +37,13 @@ class AniyomiDesktopExtensions extends Extension
   (Type, SourceMethods Function(Source)) get sourceMethodFactories => (
     AdSource,
     (source) =>
-        AniyomiSourceMethods(source as AdSource, JniExtensionBridge(jni)),
+        AniyomiSourceMethods(source as AdSource, JavaExtensionBridge(java)),
   );
   @override
   DownloadablePlugin plugin = AniyomiDesktopPlugin();
 
   @override
-  final JavaBridge jni = createJavaBridge();
+  final JavaBridge java = createJavaBridge();
 
   final _client = MClient.init();
   final _context = DartotsuExtensionBridge.context;
@@ -52,7 +52,7 @@ class AniyomiDesktopExtensions extends Extension
   http.Client get repoClient => _client;
 
   @override
-  String get jniDataDir => 'aniyomi';
+  String get javaDataDir => 'aniyomi';
 
   @override
   List<Source> Function((Uint8List body, String repoUrl, ItemType type))
@@ -72,14 +72,14 @@ class AniyomiDesktopExtensions extends Extension
 
     await BridgeChannels.init();
 
-    await jni.init(pluginJarPath: filePath);
+    await java.init(pluginJarPath: filePath);
 
     var file = await _context.getDirectory(subPath: 'bridge/aniyomi');
 
-    await jni.call<void>("initializeDesktop", {"path": file!.path});
+    await java.call<void>("initializeDesktop", {"path": file!.path});
 
     if (_context.network != null) {
-      await jni.call<void>("initClient", {
+      await java.call<void>("initClient", {
         "data": jsonEncode({
           "dns": _context.network?.dns,
           "proxy": _context.network?.proxy,
@@ -94,7 +94,7 @@ class AniyomiDesktopExtensions extends Extension
   @override
   void dispose() async {
     super.dispose();
-    jni.dispose();
+    java.dispose();
   }
 
   @override
@@ -128,7 +128,7 @@ class AniyomiDesktopExtensions extends Extension
   }
 
   Future<List<Source>> _loadInstalled(String method, ItemType type) =>
-      loadInstalledJniSources(method, type, AdSource.fromJson);
+      loadInstalledJavaSources(method, type, AdSource.fromJson);
 
   @override
   Set<String> get schemes => {"aniyomi", "tachiyomi"};

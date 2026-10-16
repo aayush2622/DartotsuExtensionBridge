@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
-import '../../../Engines/JavaEngine/Bridge/JniBridge.dart';
+import '../../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../ExtensionBridge.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
@@ -42,13 +42,13 @@ class CloudStreamDesktopExtensions extends Extension
   (Type, SourceMethods Function(Source)) get sourceMethodFactories => (
     CdSource,
     (source) =>
-        CloudStreamSourceMethods(source as CdSource, JniExtensionBridge(jni)),
+        CloudStreamSourceMethods(source as CdSource, JavaExtensionBridge(java)),
   );
 
   @override
   DownloadablePlugin plugin = CloudStreamDesktopPlugin();
 
-  final JavaBridge jni = createJavaBridge();
+  final JavaBridge java = createJavaBridge();
 
   final _client = MClient.init();
 
@@ -80,14 +80,14 @@ class CloudStreamDesktopExtensions extends Extension
 
     await BridgeChannels.init();
 
-    await jni.init(pluginJarPath: filePath);
+    await java.init(pluginJarPath: filePath);
 
     var file = await _context.getDirectory(subPath: 'bridge/aniyomi');
 
-    await jni.call<void>("initializeDesktop", {"path": file!.path});
+    await java.call<void>("initializeDesktop", {"path": file!.path});
 
     if (_context.network != null) {
-      await jni.call<void>("initClient", {
+      await java.call<void>("initClient", {
         "data": jsonEncode({
           "dns": _context.network?.dns,
           "proxy": _context.network?.proxy,
@@ -108,7 +108,7 @@ class CloudStreamDesktopExtensions extends Extension
         useSystemPath: false,
         useCustomPath: true,
       );
-      final result = await jni.call<List<Map<String, dynamic>>>(
+      final result = await java.call<List<Map<String, dynamic>>>(
         "getInstalledAnimeExtensions",
         {"path": dir!.path},
       );
@@ -153,7 +153,7 @@ class CloudStreamDesktopExtensions extends Extension
   @override
   void dispose() async {
     super.dispose();
-    jni.dispose();
+    java.dispose();
   }
 
   static List<CdSource> _parseExtensions(

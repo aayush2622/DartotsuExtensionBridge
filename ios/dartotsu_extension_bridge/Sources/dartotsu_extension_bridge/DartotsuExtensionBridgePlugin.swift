@@ -20,6 +20,9 @@ public final class DartotsuExtensionBridgePlugin: NSObject, FlutterPlugin {
       binaryMessenger: registrar.messenger())
     let instance = DartotsuExtensionBridgePlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
+    EmbeddedJvmSetLogHandler { lines in
+      channel.invokeMethod("log", arguments: lines)
+    }
     instance.observeApplicationLifecycle()
     instance.torrServerBridge.attach(to: registrar)
   }
@@ -28,7 +31,7 @@ public final class DartotsuExtensionBridgePlugin: NSObject, FlutterPlugin {
     switch call.method {
     case "start":
       vmRequested = true
-      EmbeddedJvmStart { error in
+      EmbeddedJvmStart(Self.stringArg(call, "logDirectory")) { error in
         Self.finish(result, error: error, ok: nil)
       }
 
