@@ -31,6 +31,17 @@ import kotlin.io.path.Path
 
 object PackageTools {
 
+    private val converterStamp: Long by lazy {
+        runCatching {
+            File(BytecodeEditor::class.java.protectionDomain.codeSource.location.toURI()).lastModified()
+        }.getOrDefault(0L)
+    }
+
+    /** Whether [converted] must be rebuilt from [source]: missing, older than it, or than this converter. */
+    fun needsConversion(source: File, converted: File): Boolean =
+        !converted.exists() ||
+            source.lastModified() > converted.lastModified() ||
+            converterStamp > converted.lastModified()
 
     /**
      * Convert dex to jar, a wrapper for the dex2jar library.
