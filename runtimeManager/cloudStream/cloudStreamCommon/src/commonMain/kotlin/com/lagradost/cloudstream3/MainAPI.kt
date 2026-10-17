@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
+import kotlinx.serialization.json.Json
 import com.lagradost.cloudstream3.APIHolder.mapper
 // import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.MvvmMock.logError
@@ -53,6 +54,12 @@ const val USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
 
 class ErrorLoadingException(message: String? = null) : Exception(message)
+
+val json = Json {
+    encodeDefaults = true
+    explicitNulls = false
+    ignoreUnknownKeys = true
+}
 
 val mapper: JsonMapper
     get() = APIHolder.mapper

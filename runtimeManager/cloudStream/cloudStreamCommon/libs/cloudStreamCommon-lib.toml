@@ -10,6 +10,7 @@ tmdb = "2.10.0"
 retrofit = "2.11.0"
 jackson = "2.13.1"
 ktor = "3.3.2"
+serialization = "1.11.0"
 [libraries]
 injekt-core = { module = "uy.kohesive.injekt:injekt-core", version.ref = "injekt" }
 
@@ -39,6 +40,10 @@ retrofit-jackson = { module = "com.squareup.retrofit2:converter-jackson", versio
 # throws NoClassDefFoundError.
 ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
 
+# MainAPI's `json` and the JW Player helper use kotlinx.serialization; on
+# desktop it also comes with commonDesktopLib, on Android only from here.
+serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+
 [bundles]
 common = [
     "injekt-core",
@@ -53,4 +58,5 @@ common = [
     "retrofit",
     "retrofit-jackson",
     "ktor-http",
+    "serialization-json",
 ]

@@ -1,6 +1,8 @@
 package com.aayush262.dartotsu_extension_bridge.cloudStream
 
 import android.annotation.SuppressLint
+import android.content.res.AssetManager
+import android.content.res.Resources
 import dalvik.system.PathClassLoader
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.lagradost.cloudstream3.APIHolder
@@ -118,6 +120,9 @@ actual object ExtensionLoader {
                     .newInstance()
 
             plugin.filename = file.absolutePath
+            if (plugin is Plugin && manifest.requiresResources) {
+                plugin.resources = pluginResources(file)
+            }
 
             plugins[file.absolutePath] = LoadedPlugin(
                 plugin = plugin,
@@ -140,6 +145,15 @@ actual object ExtensionLoader {
             )
             false
         }
+    }
+
+    private fun pluginResources(file: File): Resources {
+        val assets = AssetManager::class.java.getDeclaredConstructor().newInstance()
+        AssetManager::class.java.getMethod("addAssetPath", String::class.java)
+            .invoke(assets, file.absolutePath)
+        val base = context.resources
+        @Suppress("DEPRECATION")
+        return Resources(assets, base.displayMetrics, base.configuration)
     }
 
     actual fun unloadExtensions() {

@@ -3,11 +3,18 @@ package com.aayush262.dartotsu_extension_bridge
 import com.aayush262.dartotsu_extension_bridge.cloudStream.CloudStreamSourceMethods
 import com.aayush262.dartotsu_extension_bridge.cloudStream.ExtensionLoader
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
-import com.aayush262.dartotsu_extension_bridge.network.Network.enableNetworking
+import com.aayush262.dartotsu_extension_bridge.network.Network
+import com.lagradost.cloudstream3.bridgeClient
 import com.google.gson.Gson
+import com.aayush262.dartotsu_extension_bridge.cloudStream.SourcePreferences
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import com.lagradost.cloudstream3.APIHolder.allProviders
 import com.lagradost.cloudstream3.APIHolder.mapper
+import com.lagradost.cloudstream3.CommonActivity
 import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainActivity
+import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.app
 import kotlin.collections.get
 
@@ -28,7 +35,8 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
     }
 
     override fun initClient(data: String) {
-        app.baseClient = enableNetworking(data)
+        Network.configure(data)
+        app.baseClient = bridgeClient()
     }
 
     private val gson = Gson()
@@ -117,5 +125,32 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
         return mapper.writeValueAsString(
             methods(sourceId).loadLinks(epMap["url"] as String)
         )
+    }
+
+    override suspend fun getPreference(sourceId: String, isAnime: Boolean): String =
+        withContext(Dispatchers.IO) { SourcePreferences.get(provider(sourceId)) }
+
+    override suspend fun saveSourcePreference(sourceId: String, key: String, value: String?): Boolean =
+        withContext(Dispatchers.IO) { SourcePreferences.save(provider(sourceId), key, value) }
+
+    private fun settingsOf(sourceId: String): ((android.content.Context) -> Unit)? {
+        val loader = provider(sourceId).javaClass.classLoader
+        val plugin = ExtensionLoader.plugins.values
+            .map { it.plugin }
+            .firstOrNull { it.javaClass.classLoader === loader } as? Plugin
+        return plugin?.openSettings
+    }
+
+    override fun hasSettings(sourceId: String): Boolean =
+        runCatching { settingsOf(sourceId) != null }.getOrDefault(false)
+
+    override fun openSettings(sourceId: String, host: Any): Boolean {
+        val open = runCatching { settingsOf(sourceId) }.getOrNull() ?: return false
+        (host as? android.app.Activity)?.let {
+            CommonActivity.setActivityInstance(it)
+            MainActivity.activity = it
+        }
+        open(host as android.content.Context)
+        return true
     }
 }
