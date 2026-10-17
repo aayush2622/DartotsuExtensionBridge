@@ -40,7 +40,7 @@ interface ExtensionApi {
 
     suspend fun getPreference(
         sourceId: String, isAnime: Boolean
-    ): String = ""
+    ): String = "[]"
 
     suspend fun saveSourcePreference(
         sourceId: String, key: String, value: String?
