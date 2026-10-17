@@ -8,7 +8,7 @@ import '../../Models/Pages.dart';
 import '../../Models/Source.dart';
 import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
 import '../../Settings/KvStore.dart';
 import 'AidokuDefaults.dart';
 import 'AidokuSettings.dart';

@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import '../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../Logger.dart';
+import '../../Network/MClient.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'PackagedSource.dart';
 import 'TachiyomiRepo.dart';
@@ -128,7 +129,7 @@ mixin TachiyomiJavaDesktopExtension on Extension {
 
       try {
         await downloadPackageFile(
-          repoClient,
+          MClient.download(),
           downloadUrl,
           file.path,
           onProgress: (received, total) {

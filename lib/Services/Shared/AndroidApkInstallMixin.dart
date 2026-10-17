@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../Logger.dart';
+import '../../Network/MClient.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'PackagedSource.dart';
@@ -110,7 +111,7 @@ mixin AndroidApkInstallMixin on Extension {
 
       final request = http.Request('GET', Uri.parse(s.apkUrl!));
 
-      final response = await repoClient.send(request);
+      final response = await MClient.download().send(request);
 
       if (response.statusCode != 200) {
         throw Exception('Extension download failed (${response.statusCode})');

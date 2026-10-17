@@ -8,7 +8,7 @@ import 'package:isar_community/isar.dart';
 
 import 'AddonManager.dart';
 import 'ExtensionManager.dart';
-import 'Network/NetworkSettingsSync.dart';
+import 'Network/NativeNetwork.dart';
 import 'Settings/KvStore.dart';
 
 class DartotsuExtensionBridge {
@@ -22,19 +22,16 @@ class DartotsuExtensionBridge {
   /// [getDirectory] is required to resolve directories for Isar and WebView data.
   /// {@macro get_directory_contract}
   ///
-  /// [http] is an optional HTTP client for network requests.
-  ///
-  /// [downloadHttp] is an optional client without a total request timeout,
-  /// used for large addon downloads; falls back to [http].
-  ///
   /// [isarInstance] provides your Isar client and must include [isarSchema].
   /// If omitted, a new instance will be initialized internally.
-  /// [network] is an optional network interface for DNS, proxy, and cookie management.
+  ///
+  /// [network] is the app's network stack (HTTP clients, DNS, proxy,
+  /// User-Agent, cookie jar, challenge UI) that every backend shares. Without
+  /// one the bridge uses a plain `dart:io` client and no shared cookies.
+  ///
   /// [onLog] is a callback for logging messages, defaulting to printing to the console.
   static Future<void> init({
     required GetDirectory getDirectory,
-    Client? http,
-    Client? downloadHttp,
     Isar? isarInstance,
     BridgeNetwork? network,
     Function(String log, bool show) onLog = onLog,
@@ -45,8 +42,6 @@ class DartotsuExtensionBridge {
 
     context = BridgeContext(
       isar: isar,
-      http: http,
-      downloadHttp: downloadHttp,
       getDirectory: getDirectory,
       network: network,
       onLog: onLog,
@@ -93,7 +88,7 @@ class DartotsuExtensionBridge {
   /// backend rebuilds its HTTP clients with the new settings.
   static Future<void> networkChanged() async {
     if (!_initialized) return;
-    await NetworkSettingsSync.broadcast();
+    await NativeNetwork.broadcast();
   }
 
   static void dispose() {
@@ -106,31 +101,44 @@ class DartotsuExtensionBridge {
 
 Isar isar = DartotsuExtensionBridge.isar;
 
-abstract interface class BridgeNetwork {
+/// The app's network stack, shared by every backend: Dart sources send
+/// through [httpClient], JVM sources get the same DNS, proxy, User-Agent and
+/// cookie jar, and every WebView the bridge opens uses them too.
+///
+/// Members are read on every use, so changes (a rebuilt client, a new proxy)
+/// apply right away; call [DartotsuExtensionBridge.networkChanged] afterwards
+/// so the JVM backends rebuild their clients as well.
+abstract class BridgeNetwork {
+  /// Client for normal requests.
+  Client get httpClient;
+
+  /// Client without a total request timeout, for large downloads.
+  Client get downloadClient => httpClient;
+
   /// DNS-over-HTTPS resolver endpoint (e.g. `https://cloudflare-dns.com/dns-query`),
   /// or `null` to use the platform's normal DNS resolution.
-  String? get dns;
+  String? get dns => null;
 
-  String? get proxy;
+  String? get proxy => null;
 
   /// The `User-Agent` header every backend should send by default, or `null`
   /// to leave a backend's own default untouched.
-  String? get userAgent;
+  String? get userAgent => null;
 
   /// Returns cookies valid for [url] as a JSON-encoded array of
   /// `{name, value, domain, hostOnly, path, expires, secure, httpOnly}`
   /// objects (the shape the native `CookieInterceptor` in `runtimeManager`
   /// also expects), or `null`/empty for none.
-  Future<String?> getCookies(String url);
+  Future<String?> getCookies(String url) async => null;
 
-  Future<void> setCookies(String url, List<String> cookies);
+  Future<void> setCookies(String url, List<String> cookies) async {}
 
   /// Shows [page] above the app (a full-screen route) and completes once it
   /// is closed. The bridge uses this for a Cloudflare challenge its
   /// background WebView couldn't clear; the page closes itself when done.
   ///
   /// Return false without showing anything when the app can't show UI now.
-  Future<bool> presentChallenge(Widget page);
+  Future<bool> presentChallenge(Widget page) async => false;
 }
 
 /// {@macro get_directory_contract}
@@ -143,8 +151,6 @@ typedef GetDirectory =
 
 class BridgeContext {
   final Isar isar;
-  final Client? http;
-  final Client? downloadHttp;
   final GetDirectory getDirectory;
   final BridgeNetwork? network;
 
@@ -152,8 +158,6 @@ class BridgeContext {
 
   const BridgeContext({
     required this.isar,
-    this.http,
-    this.downloadHttp,
     required this.getDirectory,
     this.network,
     this.onLog = DartotsuExtensionBridge.onLog,

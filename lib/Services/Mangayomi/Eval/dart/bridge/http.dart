@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:d4rt/d4rt.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
-import '../../../../../NetworkClient.dart';
+import '../../../../../Network/MClient.dart';
 
 class HttpBridge {
   final clientBridgedClass = BridgedClass(

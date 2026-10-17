@@ -1,18 +1,30 @@
-import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import '../../Extensions/Extensions.dart';
+import '../../Extensions/RepoGuard.dart';
 import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
+import '../Shared/JsonRepoBackend.dart';
 import '../Shared/SimpleInstalledSourceStore.dart';
 import 'LnReaderSourceMethods.dart';
 import 'Manifest.dart';
 import 'Models/Source.dart';
 
 class LnReaderExtensions extends Extension
-    with SimpleInstalledSourceStore<LSource> {
+    with SimpleInstalledSourceStore<LSource>, JsonRepoBackend {
   static final _client = MClient.init();
+
+  @override
+  http.Client get repoClient => _client;
+
+  @override
+  List<Source> Function((String body, String repoUrl, ItemType type))
+  get parseRepoIsolate => _parseExtensions;
+
+  @override
+  Set<RepoFormat> get repoFormats => const {RepoFormat.lnReader};
 
   @override
   String get id => 'lnreader';
@@ -53,67 +65,6 @@ class LnReaderExtensions extends Extension
   Future<void> fetchInstalledNovelExtensions() async {
     await super.fetchInstalledNovelExtensions();
     novel.installed.value = loadInstalled(ItemType.novel);
-  }
-
-  @override
-  Stream<double> addRepo(String repoUrl, ItemType type) {
-    return progressStream((_) async {
-      try {
-        final uri = Uri.tryParse(repoUrl);
-        if (uri == null || !uri.hasScheme) {
-          throw Exception("Invalid repo URL");
-        }
-
-        final repos = loadRepos(type);
-        if (repos.any((r) => r.url == repoUrl)) return;
-
-        final res = await _client.get(uri).timeout(const Duration(seconds: 15));
-        if (res.statusCode != 200) {
-          throw Exception("Failed to fetch repo (${res.statusCode})");
-        }
-
-        final parsed = await compute(_parseExtensions, (
-          res.body,
-          repoUrl,
-          type,
-        ));
-
-        final repo = Repo(
-          url: repoUrl,
-          name: repoNameFromUrl(repoUrl),
-          extensions: parsed.length.toString(),
-        );
-
-        final updatedRepos = List<Repo>.from(repos)..add(repo);
-        saveRepos(updatedRepos, type);
-        state(type).repos.value = updatedRepos;
-        await selectRepo(repo, type);
-      } catch (e) {
-        Logger.log("Failed to add repo $repoUrl: $e");
-        rethrow;
-      }
-    });
-  }
-
-  @override
-  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
-    try {
-      final res = await _client
-          .get(Uri.parse(repo.url))
-          .timeout(const Duration(seconds: 15));
-      if (res.statusCode != 200) return const [];
-
-      final extensions = await compute(_parseExtensions, (
-        res.body,
-        repo.url,
-        type,
-      ));
-      await updateRepoExtensionCount(repo, type, extensions.length);
-      return extensions;
-    } catch (e) {
-      Logger.log("Repo failed ${repo.url}: $e");
-      return const [];
-    }
   }
 
   static List<Source> _parseExtensions(

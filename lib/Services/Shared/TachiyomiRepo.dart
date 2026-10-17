@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -5,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../Extensions/Extensions.dart';
+import '../../Extensions/RepoGuard.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
 import 'PackagedSource.dart';
@@ -478,49 +480,73 @@ ItemType? _pbItemType(String? pkgName) {
 String? tachiyomiPbExtensionLib(ProtoMessage extension) =>
     extension.readString(_pbExtLib);
 
-/// Result of a repo index fetch: the raw bytes plus the URL they came from
-/// (which may be the jsDelivr mirror rather than the URL originally asked for).
-typedef RepoIndexResponse = ({Uint8List body, String url});
+/// Result of a repo index fetch: the raw bytes, the URL they came from
+/// (which may be the jsDelivr mirror) and the index URL as published.
+typedef RepoIndexResponse = ({Uint8List body, String url, String indexUrl});
 
-/// Fetches a repository index, trying [repoUrl] first and falling back to the
-/// jsDelivr mirror when the primary host fails.
+/// The index URLs to try for [repoUrl]: the URL itself when it names an
+/// index file, otherwise `index.pb` (what current Mihon repos publish; their
+/// `index.min.json` is often only an "update your app" placeholder) and then
+/// `index.min.json`.
+List<String> tachiyomiIndexCandidates(String repoUrl) {
+  if (repoUrl.endsWith('.json') || repoUrl.endsWith('.pb')) return [repoUrl];
+  final base = repoUrl.replaceAll(RegExp(r'/+$'), '');
+  return ['$base/index.pb', '$base/index.min.json'];
+}
+
+/// Fetches a repository index: each of [tachiyomiIndexCandidates] in turn,
+/// each from its own host first and the jsDelivr mirror second.
 ///
-/// Works for both `index.min.json` and `index.pb` — the bytes are returned
-/// undecoded so the caller can dispatch on [tachiyomiIndexFormat]. Throws when
-/// both the primary and the fallback fail.
-///
-/// This replaces the primary/fallback block that each backend used to inline
-/// twice (once in `addRepo`, once in `fetchRepo`).
+/// The bytes are returned undecoded so the caller can dispatch on
+/// [tachiyomiIndexFormat]. Throws a [RepoException] saying why when no
+/// candidate works.
 Future<RepoIndexResponse> fetchTachiyomiRepoIndex(
   http.Client client,
   String repoUrl, {
   Duration timeout = const Duration(seconds: 10),
 }) async {
-  final primary = tachiyomiIndexUrl(repoUrl);
+  RepoException? failure;
 
-  try {
-    final res = await client.get(Uri.parse(primary)).timeout(timeout);
-    if (res.statusCode == 200) return (body: res.bodyBytes, url: primary);
-    throw Exception('Primary index fetch failed (${res.statusCode})');
-  } catch (e) {
-    Logger.log('Primary repo failed: $primary → $e');
-
-    final fallback = tachiyomiFallbackRepoUrl(repoUrl);
-    if (fallback == null) {
-      throw Exception('Failed to fetch repo and no fallback available');
-    }
-
-    final fallbackUrl = tachiyomiIndexUrl(fallback);
-
-    try {
-      final res = await client.get(Uri.parse(fallbackUrl)).timeout(timeout);
-      if (res.statusCode == 200) return (body: res.bodyBytes, url: fallbackUrl);
-      throw Exception('Fallback index fetch failed (${res.statusCode})');
-    } catch (e2) {
-      Logger.log('Fallback failed: $fallbackUrl → $e2');
-      throw Exception('Failed to fetch repo (primary + fallback)');
+  for (final indexUrl in tachiyomiIndexCandidates(repoUrl)) {
+    final fallback = tachiyomiFallbackRepoUrl(indexUrl);
+    for (final url in [indexUrl, ?fallback]) {
+      try {
+        final res = await client.get(Uri.parse(url)).timeout(timeout);
+        if (res.statusCode == 200 && _plausibleIndex(res.bodyBytes, url)) {
+          return (body: res.bodyBytes, url: url, indexUrl: indexUrl);
+        }
+        failure ??= res.statusCode == 200
+            ? null
+            : RepoException(
+                res.statusCode == 404
+                    ? 'No repository index was found at this link (HTTP 404). '
+                          'Check the repository URL.'
+                    : 'The repository returned an error (HTTP ${res.statusCode}).',
+              );
+        if (res.statusCode == 404) break;
+      } on TimeoutException {
+        failure ??= const RepoException(
+          'The repository took too long to respond. Try again later.',
+        );
+      } catch (e) {
+        failure ??= RepoException(
+          'Could not reach the repository: ${Extension.describeError(e)}',
+        );
+      }
+      Logger.log('Repo index failed: $url');
     }
   }
+
+  throw failure ??
+      const RepoException('This link does not lead to a repository index.');
+}
+
+/// A `.pb` URL that answers with text (a web page or JSON) is a host that
+/// serves something for every path, not a protobuf index.
+bool _plausibleIndex(Uint8List body, String url) {
+  if (!url.endsWith('.pb') || body.isEmpty) return body.isNotEmpty;
+  final first = body.first;
+  return first != 0x3c && first != 0x7b && first != 0x5b;
 }
 
 // ---------------------------------------------------------------------------
@@ -549,72 +575,49 @@ mixin TachiyomiRepoBackend on Extension {
   /// the Android behaviour.
   bool get refreshExtensionCountOnFetch => false;
 
-  final Map<String, List<Source>> _primedIndex = {};
+  @override
+  Set<RepoFormat> get repoFormats => const {RepoFormat.tachiyomi};
 
   @override
-  Stream<double> addRepo(String repoUrl, ItemType type) {
-    // The index fetch + parse here has no natural byte-progress signal (a
-    // single JSON/protobuf response, not a large streamed binary like
-    // Kotatsu's parsers jar) - this just reports start/done via
-    // progressStream rather than granular progress.
-    return progressStream((_) async {
-      state(type).loadingRepo.value = true;
-      try {
-        final uri = Uri.tryParse(repoUrl);
-        if (uri == null || !uri.hasScheme) {
-          throw Exception("Invalid repo URL");
+  Stream<double> addRepo(String repoUrl, ItemType type) =>
+      addRepoTask(repoUrl, type, (url, _) async {
+        final index = await fetchTachiyomiRepoIndex(repoClient, url);
+        if (index.indexUrl != url && hasRepo(index.indexUrl, type)) return;
+        final parsed = await _parse(index, type);
+        if (parsed.isEmpty) {
+          throw invalidRepo(type, body: index.body, url: index.url);
         }
-
-        final normalizedUrl = repoUrl.replaceAll(RegExp(r'/+$'), '');
-
-        final repos = loadRepos(type);
-        if (repos.any((r) => r.url == normalizedUrl)) {
-          return;
-        }
-
-        final index = await fetchTachiyomiRepoIndex(repoClient, normalizedUrl);
-        final parsed = await compute(parseIndexIsolate, (
-          index.body,
-          index.url,
+        await commitRepo(
+          Repo(
+            name: repoNameFromUrl(url),
+            url: index.indexUrl,
+            extensions: parsed.length.toString(),
+          ),
           type,
-        ));
-
-        final repo = Repo(
-          name: repoNameFromUrl(repoUrl),
-          url: normalizedUrl,
-          extensions: parsed.length.toString(),
+          sources: parsed,
         );
-        _primedIndex['${type.name}|$normalizedUrl'] = parsed;
-        final updatedRepos = List<Repo>.from(repos)..add(repo);
-        saveRepos(updatedRepos, type);
-        state(type).repos.value = updatedRepos;
-        await selectRepo(repo, type);
-      } catch (e) {
-        Logger.log("Failed to add repo $repoUrl: $e");
-        rethrow;
-      } finally {
-        state(type).loadingRepo.value = false;
-      }
-    });
-  }
+      });
 
   @override
   Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
-    final primed = _primedIndex.remove('${type.name}|${repo.url}');
-    if (primed != null) return primed;
     try {
       final index = await fetchTachiyomiRepoIndex(repoClient, repo.url);
-      final extensions = await compute(parseIndexIsolate, (
-        index.body,
-        index.url,
-        type,
-      ));
+      final extensions = await _parse(index, type);
       if (refreshExtensionCountOnFetch) {
         await updateRepoExtensionCount(repo, type, extensions.length);
       }
       return extensions;
     } catch (e) {
       Logger.log("Failed to fetch repo ${repo.url}: $e");
+      return const [];
+    }
+  }
+
+  Future<List<Source>> _parse(RepoIndexResponse index, ItemType type) async {
+    try {
+      return await compute(parseIndexIsolate, (index.body, index.url, type));
+    } catch (e) {
+      Logger.log('Could not parse repo index ${index.url}: $e');
       return const [];
     }
   }

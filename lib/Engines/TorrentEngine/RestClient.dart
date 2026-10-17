@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
 import 'Exceptions.dart';
 import 'Models/TorrentInfo.dart';
 import 'Models/TorrServerSettings.dart';

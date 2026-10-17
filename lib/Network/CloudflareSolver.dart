@@ -5,7 +5,7 @@ import 'package:webview_all/webview_all.dart';
 
 import '../ExtensionBridge.dart';
 import '../Logger.dart';
-import '../NetworkClient.dart';
+import 'MClient.dart';
 import 'WebViewCookieSync.dart';
 
 /// Clears Cloudflare challenges for every backend.

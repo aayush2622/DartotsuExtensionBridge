@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:webview_all/webview_all.dart';
 
 import '../Logger.dart';
-import '../NetworkClient.dart';
+import 'MClient.dart';
 import 'WebViewCookieSync.dart';
 
 /// Background WebView tasks for backends whose sources need a real browser

@@ -1,20 +1,32 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import '../../Extensions/Extensions.dart';
+import '../../Extensions/RepoGuard.dart';
 import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
+import '../Shared/JsonRepoBackend.dart';
 import '../Shared/SimpleInstalledSourceStore.dart';
 import 'MangayomiSourceMethods.dart';
 import 'Models/Source.dart';
 import 'Util/lib.dart';
 
 class MangayomiExtensions extends Extension
-    with SimpleInstalledSourceStore<MSource> {
+    with SimpleInstalledSourceStore<MSource>, JsonRepoBackend {
   static final _client = MClient.init();
+
+  @override
+  http.Client get repoClient => _client;
+
+  @override
+  List<Source> Function((String body, String repoUrl, ItemType type))
+  get parseRepoIsolate => _parseExtensions;
+
+  @override
+  Set<RepoFormat> get repoFormats => const {RepoFormat.mangayomi};
 
   @override
   String get id => 'mangayomi';
@@ -213,59 +225,6 @@ class MangayomiExtensions extends Extension
       saveInstalled(installed, type);
       state(type).installed.value = List.unmodifiable(installed);
     }
-  }
-
-  @override
-  Stream<double> addRepo(String repoUrl, ItemType type) {
-    return progressStream((_) async {
-      try {
-        final uri = Uri.tryParse(repoUrl);
-        if (uri == null || !uri.hasScheme) {
-          throw Exception("Invalid URL");
-        }
-
-        final repos = loadRepos(type);
-
-        if (repos.any((r) => r.url == repoUrl)) {
-          return;
-        }
-
-        final res = await _client.get(uri);
-        if (res.statusCode != 200) {
-          throw Exception("Failed to fetch repo");
-        }
-
-        final repo = Repo(name: repoNameFromUrl(repoUrl), url: repoUrl);
-        final updatedRepos = List<Repo>.from(repos)..add(repo);
-
-        saveRepos(updatedRepos, type);
-        state(type).repos.value = updatedRepos;
-        await selectRepo(repo, type);
-      } catch (e) {
-        Logger.log("Failed to add repo $repoUrl: $e");
-        rethrow;
-      }
-    });
-  }
-
-  @override
-  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
-    final indexUrl = repo.url;
-    final res = await _client
-        .get(Uri.parse(indexUrl))
-        .timeout(const Duration(seconds: 10));
-
-    if (res.statusCode == 200) {
-      var extensions = await compute(_parseExtensions, (
-        res.body,
-        indexUrl,
-        type,
-      ));
-      await updateRepoExtensionCount(repo, type, extensions.length);
-
-      return extensions;
-    }
-    return [];
   }
 
   static List<Source> _parseExtensions(

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http_interceptor/http_interceptor.dart';
 import 'package:js_packer/js_packer.dart';
 
-import '../../../NetworkClient.dart';
+import '../../../Network/MClient.dart';
 import '../Eval/dart/model/video.dart';
 import '../Util/string_extensions.dart';
 import '../Util/xpath_selector.dart';

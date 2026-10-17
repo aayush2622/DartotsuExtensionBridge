@@ -9,7 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../ExtensionBridge.dart';
 import '../../Extensions/Addon.dart';
 import '../../Logger.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
 import '../../Settings/KvStore.dart';
 import 'Models/TorrentInfo.dart';
 import 'TorrServerController.dart';

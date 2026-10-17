@@ -41,7 +41,7 @@ class MangayomiSourceMethods extends SourceMethods {
     if (id != null) knownSources[id] = source;
     final service = getExtensionService(source);
     try {
-      final Object? result = switch (op) {
+      final Object result = switch (op) {
         'getPopular' => await service.getPopular(args[0] as int),
         'getLatestUpdates' => await service.getLatestUpdates(args[0] as int),
         'search' => await service.search(

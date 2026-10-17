@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
 import '../Logger.dart';
-import '../NetworkClient.dart';
+import '../Network/MClient.dart';
 import '../Settings/KvStore.dart';
 import '../dartotsu_extension_bridge.dart';
 

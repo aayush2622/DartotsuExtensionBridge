@@ -9,17 +9,16 @@ import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Extensions/ExtensionSettings.dart';
-import '../../../NetworkClient.dart';
+import '../../../Network/MClient.dart';
 import '../../../dartotsu_extension_bridge.dart';
-import '../../Network.dart';
+import '../../Shared/JvmBackend.dart';
 import '../../Shared/TachiyomiJavaDesktopExtension.dart';
 import '../../Shared/TachiyomiRepo.dart';
 import '../AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
-import '../../../Network/NetworkSettingsSync.dart';
 
 class AniyomiDesktopExtensions extends Extension
-    with TachiyomiRepoBackend, TachiyomiJavaDesktopExtension {
+    with JvmBackend, DesktopJvmBackend, TachiyomiRepoBackend, TachiyomiJavaDesktopExtension {
   @override
   String get id => 'aniyomi_desktop';
 
@@ -46,7 +45,6 @@ class AniyomiDesktopExtensions extends Extension
   final JavaBridge java = createJavaBridge();
 
   final _client = MClient.init();
-  final _context = DartotsuExtensionBridge.context;
 
   @override
   http.Client get repoClient => _client;
@@ -61,37 +59,7 @@ class AniyomiDesktopExtensions extends Extension
   @override
   bool get refreshExtensionCountOnFetch => true;
 
-  @override
-  Future<bool> onInitialize() async {
-    plugin.installed.value = await plugin.isInstalled();
-    if (!plugin.installed.value) return false;
 
-    unawaited(plugin.autoUpdate());
-
-    final filePath = await plugin.getPath();
-
-    await BridgeChannels.init();
-
-    await java.init(pluginJarPath: filePath);
-
-    var file = await _context.getDirectory(subPath: 'bridge/aniyomi');
-
-    await java.call<void>("initializeDesktop", {"path": file!.path});
-
-    await NetworkSettingsSync.register(
-      this,
-      (data) => java.call<void>('initClient', {'data': data}),
-    );
-
-    return true;
-  }
-
-  @override
-  void dispose() async {
-    super.dispose();
-    NetworkSettingsSync.unregister(this);
-    java.dispose();
-  }
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {

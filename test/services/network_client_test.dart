@@ -1,4 +1,4 @@
-import 'package:dartotsu_extension_bridge/NetworkClient.dart';
+import 'package:dartotsu_extension_bridge/Network/MClient.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
