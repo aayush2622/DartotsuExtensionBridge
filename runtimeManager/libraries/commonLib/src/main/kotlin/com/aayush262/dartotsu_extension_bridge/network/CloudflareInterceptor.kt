@@ -29,6 +29,13 @@ class CloudflareInterceptor : Interceptor {
         if (!Cloudflare.solve(request.url)) return response
 
         response.close()
+        val retried = chain.proceed(request.newBuilder().header("User-Agent", Network.userAgent).build())
+        if (!Cloudflare.isChallenge(retried)) return retried
+
+        // The clearance the app reported did not pass; the app asks the user this time.
+        Logger.log("Cloudflare still blocks ${request.url.host} after clearing, asking again", LogLevel.DEBUG)
+        if (!Cloudflare.solve(request.url)) return retried
+        retried.close()
         return chain.proceed(request.newBuilder().header("User-Agent", Network.userAgent).build())
     }
 }
