@@ -213,10 +213,12 @@ actual object KotatsuExtensionLoader {
                     f.name == "plugin.jar" || f.name == "kotatsu_plugin.jar" ||
                         (f.extension == "jar" && f.name.contains("kotatsu"))
                     )
-            }.orEmpty()
+            }.orEmpty().sortedByDescending { it.lastModified() }
 
             val convertedDir = File(folder, "converted").apply { mkdirs() }
             val list = mutableListOf<Map<String, Any?>>()
+            // Several repos can ship the same source; the newest jar's copy wins.
+            val seen = HashSet<String>()
 
             for (jar in jars) {
                 try {
@@ -261,6 +263,7 @@ actual object KotatsuExtensionLoader {
                             // LUNARSCAN); stripping it collapsed them onto one id and caused
                             // duplicate-key crashes in the list UI.
                             val idStr = "kotatsu_" + source.name.lowercase()
+                            if (!seen.add(idStr)) continue
                             loadedParsers[idStr] = parser
                             sourceIdToClassName[idStr] = className
 
