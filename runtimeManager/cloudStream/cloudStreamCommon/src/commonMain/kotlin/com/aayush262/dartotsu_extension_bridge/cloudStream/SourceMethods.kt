@@ -71,14 +71,18 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         )
 
         val episodes: List<Map<String, Any?>> = when (res) {
-            is TvSeriesLoadResponse -> res.episodes.mapIndexed { i, ep -> episodeToMap(ep, i + 1) }
+            is TvSeriesLoadResponse -> res.episodes.let { list ->
+                list.mapIndexed { i, ep -> episodeToMap(ep, fallbackNumber(list, i)) }
+            }
             is AnimeLoadResponse -> {
                 res.episodes.flatMap { (key, epList) ->
                     epList.map { it to key }
                 }
                     .distinctBy { it.first.data }
-                    .mapIndexed { i, (ep, key) ->
-                        episodeToMap(ep, i + 1, mapOf("episodeGroup" to key))
+                    .let { list ->
+                        list.mapIndexed { i, (ep, key) ->
+                            episodeToMap(ep, fallbackNumber(list.map { it.first }, i), mapOf("episodeGroup" to key))
+                        }
                     }
             }
             is MovieLoadResponse -> listOf(
@@ -311,6 +315,17 @@ fun SearchResponse.toMap(): Map<String, Any?> {
     )
     val usedKeys = setOf("name", "url", "apiName", "posterUrl", "type", "id", "quality", "score")
     return this.withExtraData(topLevel, usedKeys)
+}
+
+/**
+ * Number for an episode that has none: its place in the list, counted from
+ * the end when the list runs newest first (its dates decrease), so titles
+ * and numbers don't end up reversed.
+ */
+private fun fallbackNumber(list: List<Episode>, index: Int): Int {
+    val dates = list.mapNotNull { it.date }
+    val newestFirst = dates.size > 1 && dates.first() > dates.last()
+    return if (newestFirst) list.size - index else index + 1
 }
 
 fun episodeToMap(
