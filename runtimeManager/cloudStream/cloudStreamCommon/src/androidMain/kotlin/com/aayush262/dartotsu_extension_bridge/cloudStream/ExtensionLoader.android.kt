@@ -68,6 +68,7 @@ actual object ExtensionLoader {
             }
         }
 
+        plugins.keys.forEach { AndroidPreferenceRecorder.unregister(File(it).nameWithoutExtension) }
         plugins.clear()
 
         privateDir.listFiles()
@@ -99,6 +100,7 @@ actual object ExtensionLoader {
                 file.absolutePath,
                 parent
             )
+            AndroidPreferenceRecorder.register(file.nameWithoutExtension, loader)
 
             val manifestText =
                 loader.getResourceAsStream("manifest.json")
@@ -140,6 +142,7 @@ actual object ExtensionLoader {
 
             true
         } catch (e: Throwable) {
+            AndroidPreferenceRecorder.unregister(file.nameWithoutExtension)
             Logger.log(
                 "Failed loading ${file.name}: ${e.message}\n${e.stackTraceToString()}"
             )
@@ -160,11 +163,12 @@ actual object ExtensionLoader {
         APIHolder.allProviders.clear()
         APIHolder.apis.clear()
 
-        plugins.values.forEach {
+        plugins.forEach { (path, loaded) ->
             try {
-                it.plugin.beforeUnload()
+                loaded.plugin.beforeUnload()
             } catch (_: Exception) {
             }
+            AndroidPreferenceRecorder.unregister(File(path).nameWithoutExtension)
         }
         extractorApis.clear()
         plugins.clear()
