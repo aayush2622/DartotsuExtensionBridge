@@ -1281,18 +1281,18 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @NonNull
     public int[] getAttributeResolutionStack(@AttrRes int attribute) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @NonNull
     @SuppressWarnings("AndroidFrameworkEfficientCollections")
     public Map<Integer, Integer> getAttributeSourceResourceMap() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @StyleRes
     public int getExplicitStyle() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     View() {
@@ -1300,266 +1300,266 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public final boolean isShowingLayoutBounds() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @TestApi
     public final void setShowingLayoutBounds(boolean debugLayout) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final void saveAttributeDataForStyleable(@NonNull Context context,
             @NonNull int[] styleable, @Nullable AttributeSet attrs, @NonNull TypedArray t,
             int defStyleAttr, int defStyleRes) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void initializeFadingEdge(TypedArray a) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void initializeFadingEdgeInternal(TypedArray a) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getVerticalFadingEdgeLength() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setFadingEdgeLength(int length) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void clearPendingCredentialRequest() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     // public void setPendingCredentialRequest(@NonNull GetCredentialRequest request,
     //         @NonNull OutcomeReceiver<GetCredentialResponse, GetCredentialException> callback) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // @Nullable
     // public ViewCredentialHandler getViewCredentialHandler() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     public int getHorizontalFadingEdgeLength() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getVerticalScrollbarWidth() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected int getHorizontalScrollbarHeight() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected void initializeScrollbars(TypedArray a) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void initializeScrollbarsInternal(TypedArray a) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setVerticalScrollbarThumbDrawable(@Nullable Drawable drawable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setVerticalScrollbarTrackDrawable(@Nullable Drawable drawable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setHorizontalScrollbarThumbDrawable(@Nullable Drawable drawable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setHorizontalScrollbarTrackDrawable(@Nullable Drawable drawable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public @Nullable Drawable getVerticalScrollbarThumbDrawable() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public @Nullable Drawable getVerticalScrollbarTrackDrawable() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public @Nullable Drawable getHorizontalScrollbarThumbDrawable() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public @Nullable Drawable getHorizontalScrollbarTrackDrawable() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setVerticalScrollbarPosition(int position) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getVerticalScrollbarPosition() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     boolean isOnScrollbar(float x, float y) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean isOnScrollbarThumb(float x, float y) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean isDraggingScrollBar() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setScrollIndicators(@ScrollIndicators int indicators) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setScrollIndicators(@ScrollIndicators int indicators, @ScrollIndicators int mask) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ScrollIndicators
     public int getScrollIndicators() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     // ListenerInfo getListenerInfo() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     public void setOnScrollChangeListener(OnScrollChangeListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setOnFocusChangeListener(OnFocusChangeListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void addOnLayoutChangeListener(OnLayoutChangeListener listener) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void removeOnLayoutChangeListener(OnLayoutChangeListener listener) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void addOnAttachStateChangeListener(OnAttachStateChangeListener listener) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void removeOnAttachStateChangeListener(OnAttachStateChangeListener listener) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public OnFocusChangeListener getOnFocusChangeListener() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setOnClickListener(@Nullable OnClickListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean hasOnClickListeners() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setOnLongClickListener(@Nullable OnLongClickListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean hasOnLongClickListeners() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @Nullable
     public OnLongClickListener getOnLongClickListener() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setOnContextClickListener(@Nullable OnContextClickListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setOnCreateContextMenuListener(OnCreateContextMenuListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void addFrameMetricsListener(Window window,
             Window.OnFrameMetricsAvailableListener listener,
             Handler handler) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void removeFrameMetricsListener(
             Window.OnFrameMetricsAvailableListener listener) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     /** @hide */
     public void setNotifyAutofillManagerOnClick(boolean notify) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     // NOTE: other methods on View should not call this method directly, but performClickInternal()
     // instead, to guarantee that the autofill manager is notified when necessary (as subclasses
     // could extend this method without calling super.performClick()).
     public boolean performClick() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean callOnClick() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean performLongClick() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean performLongClick(float x, float y) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean performContextClick(float x, float y) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean performContextClick() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     protected boolean performButtonActionOnTouchDown(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean showContextMenu() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean showContextMenu(float x, float y) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public ActionMode startActionMode(ActionMode.Callback callback) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public ActionMode startActionMode(ActionMode.Callback callback, int type) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void startActivityForResult(Intent intent, int requestCode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean dispatchActivityResult(
             String who, int requestCode, int resultCode, Intent data) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -1567,386 +1567,388 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public void setOnKeyListener(OnKeyListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setOnTouchListener(OnTouchListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setOnGenericMotionListener(OnGenericMotionListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setOnHoverListener(OnHoverListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setOnDragListener(OnDragListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void handleFocusGainInternal(@FocusRealDirection int direction, Rect previouslyFocusedRect) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final void setRevealOnFocusHint(boolean revealOnFocus) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final boolean getRevealOnFocusHint() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void getHotspotBounds(Rect outRect) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean requestRectangleOnScreen(Rect rectangle) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean requestRectangleOnScreen(Rect rectangle, boolean immediate) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void clearFocus() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void clearFocusInternal(View focused, boolean propagate, boolean refocus) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void notifyGlobalFocusCleared(View oldFocus) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     boolean rootViewRequestFocus() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     void unFocus(View focused) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "focus")
     public boolean hasFocus() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     public boolean hasFocusable() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean hasExplicitFocusable() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean hasFocusable(boolean allowAutoFocus, boolean dispatchExplicit) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @CallSuper
     protected void onFocusChanged(boolean gainFocus, @FocusDirection int direction,
             @Nullable Rect previouslyFocusedRect) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     /** @hide */
     public void notifyEnterOrExitForAutoFillIfNeeded(boolean enter) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setAccessibilityPaneTitle(@Nullable CharSequence accessibilityPaneTitle) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public CharSequence getAccessibilityPaneTitle() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void sendAccessibilityEvent(int eventType) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     public void announceForAccessibility(CharSequence text) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void sendAccessibilityEventInternal(int eventType) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void sendAccessibilityEventUnchecked(AccessibilityEvent event) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void sendAccessibilityEventUncheckedInternal(AccessibilityEvent event) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean dispatchPopulateAccessibilityEvent(AccessibilityEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchPopulateAccessibilityEventInternal(AccessibilityEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @CallSuper
     public void onPopulateAccessibilityEvent(AccessibilityEvent event) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onPopulateAccessibilityEventInternal(AccessibilityEvent event) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
     public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onInitializeAccessibilityEventInternal(AccessibilityEvent event) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public AccessibilityNodeInfo createAccessibilityNodeInfo() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public @Nullable AccessibilityNodeInfo createAccessibilityNodeInfoInternal() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @CallSuper
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void getBoundsOnScreen(Rect outRect) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @TestApi
     public void getBoundsOnScreen(@NonNull Rect outRect, boolean clipToParent) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void getBoundsOnScreen(RectF outRect, boolean clipToParent) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void getBoundsInWindow(Rect outRect, boolean clipToParent) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void mapRectFromViewToScreenCoords(RectF rect, boolean clipToParent) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void mapRectFromViewToWindowCoords(RectF rect, boolean clipToParent) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public CharSequence getAccessibilityClassName() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void onProvideStructure(ViewStructure structure) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onProvideAutofillStructure(ViewStructure structure, @AutofillFlags int flags) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onProvideContentCaptureStructure(@NonNull ViewStructure structure, int flags) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     /** @hide */
     protected void onProvideStructure(@NonNull ViewStructure structure,
             @ViewStructureType int viewFor, int flags) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onProvideVirtualStructure(ViewStructure structure) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onProvideAutofillVirtualStructure(ViewStructure structure, int flags) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     // public void setOnReceiveContentListener(
     //         @SuppressLint("NullableCollection") @Nullable String[] mimeTypes,
     //         @Nullable OnReceiveContentListener listener) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // @Nullable
     // public ContentInfo performReceiveContent(@NonNull ContentInfo payload) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // @Nullable
     // public ContentInfo onReceiveContent(@NonNull ContentInfo payload) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     @SuppressLint("NullableCollection")
     @Nullable
     public String[] getReceiveContentMimeTypes() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void autofill(@SuppressWarnings("unused") AutofillValue value) {
     }
 
     public void autofill(@NonNull @SuppressWarnings("unused") SparseArray<AutofillValue> values) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     // public void onGetCredentialResponse(GetCredentialResponse response) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     public void onGetCredentialException(String errorType, String errorMsg) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final AutofillId getAutofillId() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     // @Nullable
     // public final GetCredentialRequest getPendingCredentialRequest() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // @Nullable
     // public final OutcomeReceiver<GetCredentialResponse,
     //         GetCredentialException> getPendingCredentialCallback() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     public void setAutofillId(@Nullable AutofillId id) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void resetSubtreeAutofillIds() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public @AutofillType int getAutofillType() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @ViewDebug.ExportedProperty()
     @Nullable public String[] getAutofillHints() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return null;
+}
 
     @TestApi
     public boolean isAutofilled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean hideAutofillHighlight() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @Nullable
     public AutofillValue getAutofillValue() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public @AutofillImportance int getImportantForAutofill() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setImportantForAutofill(@AutofillImportance int mode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final boolean isImportantForAutofill() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public final void setContentSensitivity(@ContentSensitivity int mode)  {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public @ContentSensitivity final int getContentSensitivity() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public final boolean isContentSensitive() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public @ContentCaptureImportance int getImportantForContentCapture() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setImportantForContentCapture(@ContentCaptureImportance int mode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final boolean isImportantForContentCapture() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
     /** @hide */
     protected boolean getNotifiedContentCaptureAppeared() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
 
     public void setContentCaptureSession(@Nullable ContentCaptureSession contentCaptureSession) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public final ContentCaptureSession getContentCaptureSession() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     final boolean isActivityDeniedForAutofillForUnimportantView() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     final boolean isMatchingAutofillableHeuristics() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
     /** @hide */
     public boolean canNotifyAutofillEnterExitEvent() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void dispatchProvideStructure(ViewStructure structure) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void dispatchProvideAutofillStructure(@NonNull ViewStructure structure,
             @AutofillFlags int flags) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void dispatchInitialProvideContentCaptureStructure() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     /** @hide */
     void dispatchProvideContentCaptureStructure() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onInitializeAccessibilityNodeInfoInternal(AccessibilityNodeInfo info) {
-        throw new RuntimeException("Stub!");
+        
     }
 
 
@@ -1956,181 +1958,186 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public boolean isVisibleToUserForAutofill(int virtualId) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean isVisibleToUser() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     protected boolean isVisibleToUser(Rect boundInView) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public AccessibilityDelegate getAccessibilityDelegate() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setAccessibilityDelegate(@Nullable AccessibilityDelegate delegate) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public AccessibilityNodeProvider getAccessibilityNodeProvider() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public int getAccessibilityViewId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getAutofillViewId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getAccessibilityWindowId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @ViewDebug.ExportedProperty(category = "accessibility")
     public final @Nullable CharSequence getStateDescription() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return null;
+}
 
     @ViewDebug.ExportedProperty(category = "accessibility")
     public CharSequence getContentDescription() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return null;
+}
 
     @ViewDebug.ExportedProperty(category = "accessibility")
     @Nullable
     public CharSequence getSupplementalDescription() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return null;
+}
 
     public void setStateDescription(@Nullable CharSequence stateDescription) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setContentDescription(CharSequence contentDescription) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setSupplementalDescription(@Nullable CharSequence supplementalDescription) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setAccessibilityTraversalBefore(@IdRes int beforeId) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @IdRes
     public int getAccessibilityTraversalBefore() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setAccessibilityTraversalAfter(@IdRes int afterId) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @IdRes
     public int getAccessibilityTraversalAfter() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @IdRes
     @ViewDebug.ExportedProperty(category = "accessibility")
     public int getLabelFor() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setLabelFor(@IdRes int id) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
     protected void onFocusLost() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "focus")
     public boolean isFocused() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     public View findFocus() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public boolean isScrollContainer() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setScrollContainer(boolean isScrollContainer) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     @DrawingCacheQuality
     public int getDrawingCacheQuality() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @Deprecated
     public void setDrawingCacheQuality(@DrawingCacheQuality int quality) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean getKeepScreenOn() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setKeepScreenOn(boolean keepScreenOn) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @IdRes
     public int getNextFocusLeftId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setNextFocusLeftId(@IdRes int nextFocusLeftId) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @IdRes
     public int getNextFocusRightId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setNextFocusRightId(@IdRes int nextFocusRightId) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @IdRes
     public int getNextFocusUpId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setNextFocusUpId(@IdRes int nextFocusUpId) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @IdRes
     public int getNextFocusDownId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setNextFocusDownId(@IdRes int nextFocusDownId) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @IdRes
     public int getNextFocusForwardId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setNextFocusForwardId(@IdRes int nextFocusForwardId) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @IdRes
@@ -2139,265 +2146,265 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public void setNextClusterForwardId(@IdRes int nextClusterForwardId) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isShown() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @Deprecated
     protected boolean fitSystemWindows(Rect insets) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public WindowInsets onApplyWindowInsets(WindowInsets insets) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setOnApplyWindowInsetsListener(OnApplyWindowInsetsListener listener) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public WindowInsets dispatchApplyWindowInsets(WindowInsets insets) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setWindowInsetsAnimationCallback(
             @Nullable WindowInsetsAnimation.Callback callback) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean hasWindowInsetsAnimationCallback() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void dispatchWindowInsetsAnimationPrepare(
             @NonNull WindowInsetsAnimation animation) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @NonNull
     public Bounds dispatchWindowInsetsAnimationStart(
             @NonNull WindowInsetsAnimation animation, @NonNull Bounds bounds) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @NonNull
     public WindowInsets dispatchWindowInsetsAnimationProgress(@NonNull WindowInsets insets,
             @NonNull List<WindowInsetsAnimation> runningAnimations) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void dispatchWindowInsetsAnimationEnd(@NonNull WindowInsetsAnimation animation) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setSystemGestureExclusionRects(@NonNull List<Rect> rects) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void updateSystemGestureExclusionRects() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @NonNull
     public List<Rect> getSystemGestureExclusionRects() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public final void setPreferKeepClear(boolean preferKeepClear) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final boolean isPreferKeepClear() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public final void setPreferKeepClearRects(@NonNull List<Rect> rects) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @NonNull
     public final List<Rect> getPreferKeepClearRects() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @SystemApi
     public final void setUnrestrictedPreferKeepClearRects(@NonNull List<Rect> rects) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @SystemApi
     @NonNull
     public final List<Rect> getUnrestrictedPreferKeepClearRects() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     void updateKeepClearRects() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @NonNull
     List<Rect> collectPreferKeepClearRects() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @NonNull
     List<Rect> collectUnrestrictedPreferKeepClearRects() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setHandwritingBoundsOffsets(float offsetLeft, float offsetTop,
             float offsetRight, float offsetBottom) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public float getHandwritingBoundsOffsetLeft() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public float getHandwritingBoundsOffsetTop() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public float getHandwritingBoundsOffsetRight() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public float getHandwritingBoundsOffsetBottom() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
 
     public void setHandwritingArea(@Nullable Rect rect) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public Rect getHandwritingArea() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     void updateHandwritingArea() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     boolean shouldInitiateHandwriting() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean shouldTrackHandwritingArea() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setHandwritingDelegatorCallback(@Nullable Runnable callback) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public Runnable getHandwritingDelegatorCallback() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setAllowedHandwritingDelegatePackage(@Nullable String allowedPackageName) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public String getAllowedHandwritingDelegatePackageName() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setIsHandwritingDelegate(boolean isHandwritingDelegate) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isHandwritingDelegate() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setAllowedHandwritingDelegatorPackage(@Nullable String allowedPackageName) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public String getAllowedHandwritingDelegatorPackageName() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setHandwritingDelegateFlags(
             int flags) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getHandwritingDelegateFlags() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void getLocationInSurface(@NonNull @Size(2) int[] location) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public WindowInsets getRootWindowInsets() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public @Nullable WindowInsetsController getWindowInsetsController() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     // @Nullable
     // public final OnBackInvokedDispatcher findOnBackInvokedDispatcher() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     @Deprecated
     protected boolean computeFitSystemWindows(Rect inoutInsets, Rect outLocalInsets) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public WindowInsets computeSystemWindowInsets(WindowInsets in, Rect outLocalInsets) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     protected boolean hasContentOnApplyWindowInsetsListener() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setFitsSystemWindows(boolean fitSystemWindows) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty
     public boolean getFitsSystemWindows() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     /** @hide */
     public boolean fitsSystemWindows() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @Deprecated
     public void requestFitSystemWindows() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void requestApplyInsets() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void makeOptionalFitsSystemWindows() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void makeFrameworkOptionalFitsSystemWindows() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isFrameworkOptionalFitsSystemWindows() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @ViewDebug.ExportedProperty(mapping = {
@@ -2407,59 +2414,59 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     })
     @Visibility
     public int getVisibility() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setVisibility(@Visibility int visibility) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty
     public boolean isEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setEnabled(boolean enabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setFocusable(boolean focusable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setFocusable(@Focusable int focusable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setFocusableInTouchMode(boolean focusableInTouchMode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setAutofillHints(@Nullable String... autofillHints) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @TestApi
     public void setAutofilled(boolean isAutofilled, boolean hideHighlight) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setSoundEffectsEnabled(boolean soundEffectsEnabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty
     public boolean isSoundEffectsEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setHapticFeedbackEnabled(boolean hapticFeedbackEnabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty
     public boolean isHapticFeedbackEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @ViewDebug.ExportedProperty(category = "layout", mapping = {
@@ -2470,11 +2477,11 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     })
     @LayoutDir
     public int getRawLayoutDirection() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setLayoutDirection(@LayoutDir int layoutDirection) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "layout", mapping = {
@@ -2483,98 +2490,102 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     })
     @ResolvedLayoutDir
     public int getLayoutDirection() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @ViewDebug.ExportedProperty(category = "layout")
     public boolean isLayoutRtl() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     @ViewDebug.ExportedProperty(category = "layout")
     public boolean hasTransientState() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     public void setHasTransientState(boolean hasTransientState) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setHasTranslationTransientState(boolean hasTranslationTransientState) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean hasTranslationTransientState() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void clearTranslationState() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isAttachedToWindow() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean isLaidOut() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean isLayoutValid() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setWillNotDraw(boolean willNotDraw) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public boolean willNotDraw() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     @Deprecated
     public void setWillNotCacheDrawing(boolean willNotCacheDrawing) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     @Deprecated
     public boolean willNotCacheDrawing() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     @ViewDebug.ExportedProperty
     public boolean isClickable() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setClickable(boolean clickable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setAllowClickWhenDisabled(boolean clickableWhenDisabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isLongClickable() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setLongClickable(boolean longClickable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isContextClickable() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setContextClickable(boolean contextClickable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setPressed(boolean pressed) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void dispatchSetPressed(boolean pressed) {
@@ -2582,47 +2593,48 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @ViewDebug.ExportedProperty
     public boolean isPressed() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean isAssistBlocked() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setAssistBlocked(boolean enabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isSaveEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setSaveEnabled(boolean enabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty
     public boolean getFilterTouchesWhenObscured() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setFilterTouchesWhenObscured(boolean enabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isSaveFromParentEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setSaveFromParentEnabled(boolean enabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
 
     @ViewDebug.ExportedProperty(category = "focus")
     public final boolean isFocusable() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     @ViewDebug.ExportedProperty(mapping = {
             @ViewDebug.IntToString(from = NOT_FOCUSABLE, to = "NOT_FOCUSABLE"),
@@ -2631,137 +2643,141 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
             }, category = "focus")
     @Focusable
     public int getFocusable() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @ViewDebug.ExportedProperty(category = "focus")
     public final boolean isFocusableInTouchMode() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     public boolean isScreenReaderFocusable() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setScreenReaderFocusable(boolean screenReaderFocusable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isAccessibilityHeading() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setAccessibilityHeading(boolean isHeading) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public View focusSearch(@FocusRealDirection int direction) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @ViewDebug.ExportedProperty(category = "focus")
     public final boolean isKeyboardNavigationCluster() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     View findKeyboardNavigationCluster() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setKeyboardNavigationCluster(boolean isCluster) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @TestApi
     public final void setFocusedInCluster() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "focus")
     public final boolean isFocusedByDefault() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     public void setFocusedByDefault(boolean isFocusedByDefault) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     boolean hasDefaultFocus() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public View keyboardNavigationClusterSearch(View currentCluster,
             @FocusDirection int direction) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public boolean dispatchUnhandledMove(View focused, @FocusRealDirection int direction) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setDefaultFocusHighlightEnabled(boolean defaultFocusHighlightEnabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "focus")
     public final boolean getDefaultFocusHighlightEnabled() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     View findUserSetNextFocus(View root, @FocusDirection int direction) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     View findUserSetNextKeyboardNavigationCluster(View root, @FocusDirection int direction) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public ArrayList<View> getFocusables(@FocusDirection int direction) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void addFocusables(ArrayList<View> views, @FocusDirection int direction) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void addFocusables(ArrayList<View> views, @FocusDirection int direction,
             @FocusableMode int focusableMode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void addKeyboardNavigationClusters(
             @NonNull Collection<View> views,
             int direction) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void findViewsWithText(ArrayList<View> outViews, CharSequence searched,
             @FindViewFlags int flags) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public ArrayList<View> getTouchables() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void addTouchables(ArrayList<View> views) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isAccessibilityFocused() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean requestAccessibilityFocus() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void clearAccessibilityFocus() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void clearAccessibilityFocusNoCallbacks(int action) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final boolean requestFocus() {
@@ -2770,62 +2786,62 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @TestApi
     public boolean restoreFocusInCluster(@FocusRealDirection int direction) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @TestApi
     public boolean restoreFocusNotInCluster() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean restoreDefaultFocus() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public final boolean requestFocus(int direction) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean requestFocus(int direction, Rect previouslyFocusedRect) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     void clearParentsWantFocus() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final boolean requestFocusFromTouch() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public int getImportantForAccessibility() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setAccessibilityLiveRegion(int mode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getAccessibilityLiveRegion() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setImportantForAccessibility(int mode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isImportantForAccessibility() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public ViewParent getParentForAccessibility() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     /** @hide */
     @Nullable
     View getSelfOrParentImportantForA11y() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void addChildrenForAccessibility(ArrayList<View> outChildren) {
@@ -2833,155 +2849,156 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public boolean includeForAccessibility() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean includeForAccessibility(boolean forNodeTree) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @ViewDebug.ExportedProperty(category = "accessibility")
     public boolean isAccessibilityDataSensitive() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     void calculateAccessibilityDataSensitive() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setAccessibilityDataSensitive(
             @AccessibilityDataSensitive int accessibilityDataSensitive) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isActionableForAccessibility() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void notifyViewAccessibilityStateChangedIfNeeded(int changeType) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void notifySubtreeAccessibilityStateChangedIfNeeded() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setTransitionVisibility(@Visibility int visibility) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void resetSubtreeAccessibilityStateChanged() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean dispatchNestedPrePerformAccessibilityAction(int action,
             @Nullable Bundle arguments) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean performAccessibilityAction(int action, @Nullable Bundle arguments) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean performAccessibilityActionInternal(int action, @Nullable Bundle arguments) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public CharSequence getIterableTextForAccessibility() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public boolean isAccessibilitySelectionExtendable() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void prepareForExtendedAccessibilitySelection() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getAccessibilitySelectionStart() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getAccessibilitySelectionEnd() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setAccessibilitySelection(int start, int end) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     // public TextSegmentIterator getIteratorForGranularity(int granularity) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     public final boolean isTemporarilyDetached() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @CallSuper
     public void dispatchStartTemporaryDetach() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onStartTemporaryDetach() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
     public void dispatchFinishTemporaryDetach() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onFinishTemporaryDetach() {
     }
 
     public KeyEvent.DispatcherState getKeyDispatcherState() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public boolean dispatchKeyEventPreIme(KeyEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchKeyEvent(KeyEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchKeyShortcutEvent(KeyEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchTouchEvent(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean isAccessibilityFocusedViewOrHost() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     protected boolean canReceivePointerEvents() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean onFilterTouchEventForSecurity(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchTrackballEvent(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchCapturedPointerEvent(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchGenericMotionEvent(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     protected boolean dispatchHoverEvent(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     protected boolean hasHoveredChild() {
@@ -3001,97 +3018,97 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public final boolean dispatchPointerEvent(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void dispatchWindowFocusChanged(boolean hasFocus) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onWindowFocusChanged(boolean hasWindowFocus) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean hasWindowFocus() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean hasImeFocus() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     protected void dispatchVisibilityChanged(@NonNull View changedView,
             @Visibility int visibility) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void onVisibilityChanged(@NonNull View changedView, @Visibility int visibility) {
     }
 
     public void dispatchDisplayHint(@Visibility int hint) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void onDisplayHint(@Visibility int hint) {
     }
 
     public void dispatchWindowVisibilityChanged(@Visibility int visibility) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void onWindowVisibilityChanged(@Visibility int visibility) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isAggregatedVisible() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean dispatchVisibilityAggregated(boolean isVisible) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @CallSuper
     public void onVisibilityAggregated(boolean isVisible) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Visibility
     public int getWindowVisibility() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void getWindowVisibleDisplayFrame(Rect outRect) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @TestApi
     public void getWindowDisplayFrame(@NonNull Rect outRect) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void dispatchConfigurationChanged(Configuration newConfig) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void onConfigurationChanged(Configuration newConfig) {
     }
 
     // void dispatchCollectViewAttributes(AttachInfo attachInfo, int visibility) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // void performCollectViewAttributes(AttachInfo attachInfo, int visibility) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     void needGlobalAttributesUpdate(boolean force) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty
     public boolean isInTouchMode() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @ViewDebug.CapturedViewProperty
@@ -3100,19 +3117,19 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public boolean onKeyPreIme(int keyCode, KeyEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean onKeyLongPress(int keyCode, KeyEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean onKeyMultiple(int keyCode, int repeatCount, KeyEvent event) {
@@ -3141,7 +3158,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public void createContextMenu(ContextMenu menu) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected ContextMenuInfo getContextMenuInfo() {
@@ -3160,67 +3177,67 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public boolean onHoverEvent(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @ViewDebug.ExportedProperty
     public boolean isHovered() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setHovered(boolean hovered) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onHoverChanged(boolean hovered) {
     }
 
     protected boolean handleScrollBarDragging(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean onTouchEvent(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean isInScrollingContainer() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void cancelLongPress() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setTouchDelegate(TouchDelegate delegate) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public TouchDelegate getTouchDelegate() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public final void requestUnbufferedDispatch(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final void requestUnbufferedDispatch(int source) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void setFlags(int flags, int mask) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void bringToFront() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void disableRotaryScrollFeedback() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void onScrollChanged(int l, int t, int oldl, int oldt) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public interface OnScrollChangeListener {
@@ -3240,694 +3257,717 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public final ViewParent getParent() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setScrollX(int value) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setScrollY(int value) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final int getScrollX() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public final int getScrollY() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @ViewDebug.ExportedProperty(category = "layout")
     public final int getWidth() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     @ViewDebug.ExportedProperty(category = "layout")
     public final int getHeight() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void getDrawingRect(Rect outRect) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final int getMeasuredWidth() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public final int getMeasuredWidthAndState() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public final int getMeasuredHeight() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public final int getMeasuredHeightAndState() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public final int getMeasuredState() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public Matrix getMatrix() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public final boolean hasIdentityMatrix() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     void ensureTransformationInfo() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final Matrix getInverseMatrix() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public float getCameraDistance() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setCameraDistance(float distance) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getRotation() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setRotation(float rotation) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getRotationY() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setRotationY(float rotationY) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getRotationX() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setRotationX(float rotationX) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getScaleX() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setScaleX(float scaleX) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getScaleY() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setScaleY(float scaleY) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getPivotX() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setPivotX(float pivotX) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getPivotY() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setPivotY(float pivotY) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isPivotSet() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void resetPivot() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getAlpha() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void forceHasOverlappingRendering(boolean hasOverlappingRendering) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final boolean getHasOverlappingRendering() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public boolean hasOverlappingRendering() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     public void setAlpha(@FloatRange(from=0.0, to=1.0) float alpha) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     boolean setAlphaNoInvalidation(float alpha) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     void setAlphaInternal(float alpha) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setTransitionAlpha(float alpha) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getTransitionAlpha() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setForceDarkAllowed(boolean allow) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public boolean isForceDarkAllowed() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     @ViewDebug.CapturedViewProperty
     public final int getTop() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public final void setTop(int top) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.CapturedViewProperty
     public final int getBottom() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public boolean isDirty() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public final void setBottom(int bottom) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.CapturedViewProperty
     public final int getLeft() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public final void setLeft(int left) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.CapturedViewProperty
     public final int getRight() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public final void setRight(int right) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getX() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setX(float x) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getY() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setY(float y) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getZ() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setZ(float z) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getElevation() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setElevation(float elevation) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getTranslationX() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setTranslationX(float translationX) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getTranslationY() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setTranslationY(float translationY) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public float getTranslationZ() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public void setTranslationZ(float translationZ) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setAnimationMatrix(@Nullable Matrix matrix) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public Matrix getAnimationMatrix() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public StateListAnimator getStateListAnimator() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setStateListAnimator(StateListAnimator stateListAnimator) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final boolean getClipToOutline() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setClipToOutline(boolean clipToOutline) {
-        throw new RuntimeException("Stub!");
+        
     }
 
 
     public void setOutlineProvider(ViewOutlineProvider provider) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public ViewOutlineProvider getOutlineProvider() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void invalidateOutline() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public boolean hasShadow() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     public void setOutlineSpotShadowColor(@ColorInt int color) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public @ColorInt int getOutlineSpotShadowColor() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setOutlineAmbientShadowColor(@ColorInt int color) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public @ColorInt int getOutlineAmbientShadowColor() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
 
     /** @hide */
     public void setRevealClip(boolean shouldClip, float x, float y, float radius) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void getHitRect(Rect outRect) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     /*package*/ final boolean pointInView(float localX, float localY) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean pointInView(float localX, float localY, float slop) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void getFocusedRect(Rect r) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean getGlobalVisibleRect(Rect r, Point globalOffset) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public final boolean getGlobalVisibleRect(Rect r) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public final boolean getLocalVisibleRect(Rect r) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void offsetTopAndBottom(int offset) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void offsetLeftAndRight(int offset) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(deepExport = true, prefix = "layout_")
     public ViewGroup.LayoutParams getLayoutParams() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return null;
+}
 
     public void setLayoutParams(ViewGroup.LayoutParams params) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void resolveLayoutParams() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void scrollTo(int x, int y) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void scrollBy(int x, int y) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected boolean awakenScrollBars() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     protected boolean awakenScrollBars(int startDelay) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     protected boolean awakenScrollBars(int startDelay, boolean invalidate) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @Deprecated
     public void invalidate(Rect dirty) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     public void invalidate(int l, int t, int r, int b) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void invalidate() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void invalidate(boolean invalidateCache) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void invalidateInternal(int l, int t, int r, int b, boolean invalidateCache,
             boolean fullInvalidate) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void invalidateViewProperty(boolean invalidateParent, boolean forceRedraw) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void damageInParent() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void invalidateParentCaches() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void invalidateParentIfNeeded() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void invalidateParentIfNeededAndWasQuickRejected() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public boolean isOpaque() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     protected void computeOpaqueFlags() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected boolean hasOpaqueScrollbars() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public Handler getHandler() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     // public ViewRootImpl getViewRootImpl() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public ThreadedRenderer getThreadedRenderer() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     public boolean post(Runnable action) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean postDelayed(Runnable action, long delayMillis) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void postOnAnimation(Runnable action) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void postOnAnimationDelayed(Runnable action, long delayMillis) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean removeCallbacks(Runnable action) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void postInvalidate() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void postInvalidate(int left, int top, int right, int bottom) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void postInvalidateDelayed(long delayMilliseconds) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void postInvalidateDelayed(long delayMilliseconds, int left, int top,
             int right, int bottom) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void postInvalidateOnAnimation() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void postInvalidateOnAnimation(int left, int top, int right, int bottom) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void computeScroll() {
     }
 
     public boolean isHorizontalFadingEdgeEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setHorizontalFadingEdgeEnabled(boolean horizontalFadingEdgeEnabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isVerticalFadingEdgeEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setVerticalFadingEdgeEnabled(boolean verticalFadingEdgeEnabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getFadingEdge() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getFadingEdgeLength() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected float getTopFadingEdgeStrength() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected float getBottomFadingEdgeStrength() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected float getLeftFadingEdgeStrength() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected float getRightFadingEdgeStrength() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public boolean isHorizontalScrollBarEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setHorizontalScrollBarEnabled(boolean horizontalScrollBarEnabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isVerticalScrollBarEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setVerticalScrollBarEnabled(boolean verticalScrollBarEnabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void recomputePadding() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setScrollbarFadingEnabled(boolean fadeScrollbars) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isScrollbarFadingEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public int getScrollBarDefaultDelayBeforeFade() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setScrollBarDefaultDelayBeforeFade(int scrollBarDefaultDelayBeforeFade) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getScrollBarFadeDuration() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setScrollBarFadeDuration(int scrollBarFadeDuration) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getScrollBarSize() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setScrollBarSize(int scrollBarSize) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setScrollBarStyle(@ScrollBarStyle int style) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ScrollBarStyle
     public int getScrollBarStyle() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected int computeHorizontalScrollRange() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected int computeHorizontalScrollOffset() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected int computeHorizontalScrollExtent() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected int computeVerticalScrollRange() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected int computeVerticalScrollOffset() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected int computeVerticalScrollExtent() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public boolean canScrollHorizontally(int direction) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean canScrollVertically(int direction) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     void getScrollIndicatorBounds(@NonNull Rect out) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected final void onDrawScrollBars(@NonNull Canvas canvas) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected boolean isVerticalScrollBarHidden() {
@@ -3936,12 +3976,12 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     protected void onDrawHorizontalScrollBar(@NonNull Canvas canvas, Drawable scrollBar,
             int l, int t, int r, int b) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void onDrawVerticalScrollBar(@NonNull Canvas canvas, Drawable scrollBar,
             int l, int t, int r, int b) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void onDraw(@NonNull Canvas canvas) {
@@ -3952,32 +3992,32 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * (This allows addViewInLayout to not request a new layout.)
      */
     void assignParent(ViewParent parent) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
     protected void onAttachedToWindow() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean resolveRtlPropertiesIfNeeded() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @TestApi
     public void resetRtlProperties() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void dispatchScreenStateChanged(int screenState) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onScreenStateChanged(int screenState) {
     }
 
     void dispatchMovedToDisplay(Display display, Configuration config) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onMovedToDisplay(int displayId, Configuration config) {
@@ -3987,41 +4027,41 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public boolean resolveLayoutDirection() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean canResolveLayoutDirection() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @TestApi
     public void resetResolvedLayoutDirection() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isLayoutDirectionInherited() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean isLayoutDirectionResolved() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean isPaddingResolved() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void resolvePadding() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @TestApi
     public void resetResolvedPadding() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void resetResolvedPaddingInternal() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
@@ -4030,198 +4070,199 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @CallSuper
     protected void onDetachedFromWindowInternal() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public IBinder getWindowToken() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public WindowId getWindowId() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public IBinder getApplicationWindowToken() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public Display getDisplay() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     // /*package*/ IWindowSession getWindowSession() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // protected IWindow getWindow() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     int combineVisibility(int vis1, int vis2) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void fakeFocusAfterAttachingToWindow() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     // void dispatchAttachedToWindow(AttachInfo info, int visibility) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     void dispatchDetachedFromWindow() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final void cancelPendingInputEvents() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void dispatchCancelPendingInputEvents() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onCancelPendingInputEvents() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void saveHierarchyState(SparseArray<Parcelable> container) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void dispatchSaveInstanceState(SparseArray<Parcelable> container) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
     @Nullable protected Parcelable onSaveInstanceState() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void restoreHierarchyState(SparseArray<Parcelable> container) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void dispatchRestoreInstanceState(SparseArray<Parcelable> container) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
     protected void onRestoreInstanceState(Parcelable state) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public long getDrawingTime() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setDuplicateParentStateEnabled(boolean enabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isDuplicateParentStateEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setLayerType(@LayerType int layerType, @Nullable Paint paint) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     // public void setRenderEffect(@Nullable RenderEffect renderEffect) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public void setBackdropRenderEffect(@Nullable RenderEffect renderEffect) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     public void setLayerPaint(@Nullable Paint paint) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @LayerType
     public int getLayerType() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void buildLayer() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean probablyHasInput() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @CallSuper
     protected void destroyHardwareResources() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     public void setDrawingCacheEnabled(boolean enabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     @ViewDebug.ExportedProperty(category = "drawing")
     public boolean isDrawingCacheEnabled() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     @SuppressWarnings({"UnusedDeclaration"})
     public void outputDirtyFlags(String indent, boolean clear, int clearMask) {
-        throw new RuntimeException("Stub!");
+        return;
     }
 
     protected void dispatchGetDisplayList() {}
 
     public boolean canHaveDisplayList() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @NonNull
     public RenderNode updateDisplayListIfDirty() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @Deprecated
     public Bitmap getDrawingCache() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @Deprecated
     public Bitmap getDrawingCache(boolean autoScale) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @Deprecated
     public void destroyDrawingCache() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     public void setDrawingCacheBackgroundColor(@ColorInt int color) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     @ColorInt
     public int getDrawingCacheBackgroundColor() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @Deprecated
     public void buildDrawingCache() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     public void buildDrawingCache(boolean autoScale) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     // public Bitmap createSnapshot(ViewDebug.CanvasProvider canvasProvider, boolean skipChildren) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     public boolean isInEditMode() {
@@ -4249,62 +4290,63 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     protected int getFadeTop(boolean offsetRequired) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected int getFadeHeight(boolean offsetRequired) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
     public boolean isHardwareAccelerated() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return false;
+}
 
     public void setClipBounds(Rect clipBounds) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public Rect getClipBounds() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
 
     public boolean getClipBounds(Rect outRect) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     void setDisplayListProperties(RenderNode renderNode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected final boolean drawsWithRenderNode(@NonNull Canvas canvas) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean draw(@NonNull Canvas canvas, ViewGroup parent, long drawingTime) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     static Paint getDebugPaint() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     final int dipsToPixels(int dips) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @CallSuper
     public void draw(@NonNull Canvas canvas) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void setBackgroundBounds() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public ViewOverlay getOverlay() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @ViewDebug.ExportedProperty(category = "drawing")
@@ -4314,35 +4356,35 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public boolean isLayoutRequested() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public static boolean isLayoutModeOptical(Object o) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public static void setTraceLayoutSteps(boolean traceLayoutSteps) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public static void setTracedRequestLayoutClassClass(String s) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @SuppressWarnings({"unchecked"})
     public void layout(int l, int t, int r, int b) {
-        throw new RuntimeException("Stub!");
+        return;
     }
 
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
     }
 
     protected boolean setFrame(int left, int top, int right, int bottom) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public final void setLeftTopRightBottom(int left, int top, int right, int bottom) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
@@ -4350,34 +4392,34 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public Resources getResources() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @Override
     public void invalidateDrawable(@NonNull Drawable drawable) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Override
     public void scheduleDrawable(@NonNull Drawable who, @NonNull Runnable what, long when) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Override
     public void unscheduleDrawable(@NonNull Drawable who, @NonNull Runnable what) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void unscheduleDrawable(Drawable who) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void resolveDrawables() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     boolean areDrawablesResolved() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void onResolveDrawables(@ResolvedLayoutDir int layoutDirection) {
@@ -4385,217 +4427,217 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @TestApi
     protected void resetResolvedDrawables() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void resetResolvedDrawablesInternal() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
     protected boolean verifyDrawable(@NonNull Drawable who) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @CallSuper
     protected void drawableStateChanged() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
     public void drawableHotspotChanged(float x, float y) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void dispatchDrawableHotspotChanged(float x, float y) {
     }
 
     public void refreshDrawableState() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @TestApi
     public boolean isDefaultFocusHighlightNeeded(Drawable background, Drawable foreground) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public final int[] getDrawableState() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     protected int[] onCreateDrawableState(int extraSpace) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     protected static int[] mergeDrawableStates(int[] baseState, int[] additionalState) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @CallSuper
     public void jumpDrawablesToCurrentState() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setBackgroundColor(@ColorInt int color) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setBackgroundResource(@DrawableRes int resid) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setBackground(Drawable background) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     public void setBackgroundDrawable(Drawable background) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public Drawable getBackground() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setBackgroundTintList(@Nullable ColorStateList tint) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public ColorStateList getBackgroundTintList() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setBackgroundTintMode(@Nullable PorterDuff.Mode tintMode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setBackgroundTintBlendMode(@Nullable BlendMode blendMode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public PorterDuff.Mode getBackgroundTintMode() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public @Nullable BlendMode getBackgroundTintBlendMode() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public Drawable getForeground() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setForeground(Drawable foreground) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isForegroundInsidePadding() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public int getForegroundGravity() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setForegroundGravity(int gravity) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setForegroundTintList(@Nullable ColorStateList tint) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public ColorStateList getForegroundTintList() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setForegroundTintMode(@Nullable PorterDuff.Mode tintMode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setForegroundTintBlendMode(@Nullable BlendMode blendMode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public PorterDuff.Mode getForegroundTintMode() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public @Nullable BlendMode getForegroundTintBlendMode() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void onDrawForeground(@NonNull Canvas canvas) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setPadding(int left, int top, int right, int bottom) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void internalSetPadding(int left, int top, int right, int bottom) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setPaddingRelative(int start, int top, int end, int bottom) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @LayoutRes
     public int getSourceLayoutResId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getPaddingTop() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getPaddingBottom() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getPaddingLeft() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getPaddingStart() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getPaddingRight() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getPaddingEnd() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public boolean isPaddingRelative() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     Insets computeOpticalInsets() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void resetPaddingToInitialValues() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public Insets getOpticalInsets() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setOpticalInsets(Insets insets) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setSelected(boolean selected) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void dispatchSetSelected(boolean selected) {
@@ -4603,11 +4645,11 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @ViewDebug.ExportedProperty
     public boolean isSelected() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setActivated(boolean activated) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void dispatchSetActivated(boolean activated) {
@@ -4615,35 +4657,35 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @ViewDebug.ExportedProperty
     public boolean isActivated() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public ViewTreeObserver getViewTreeObserver() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public View getRootView() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public boolean toGlobalMotionEvent(MotionEvent ev) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean toLocalMotionEvent(MotionEvent ev) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void transformMatrixToGlobal(@NonNull Matrix matrix) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void transformMatrixToLocal(@NonNull Matrix matrix) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void transformMatrixRootToLocal(@NonNull Matrix matrix) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty(category = "layout", indexMapping = {
@@ -4651,223 +4693,224 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
             @ViewDebug.IntToString(from = 1, to = "y")
     })
     public int[] getLocationOnScreen() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void getLocationOnScreen(@Size(2) int[] outLocation) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void getLocationInWindow(@Size(2) int[] outLocation) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     /** @hide */
     public void transformFromViewToWindowSpace(@Size(2) int[] inOutLocation) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected <T extends View> T findViewTraversal(@IdRes int id) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     protected <T extends View> T findViewWithTagTraversal(Object tag) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     protected <T extends View> T findViewByPredicateTraversal(Predicate<View> predicate,
             View childToSkip) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     // Strictly speaking this should be marked as @Nullable but the nullability of the return value
     // is deliberately left unspecified as idiomatically correct code can make assumptions either
     // way based on local context, e.g. layout specification.
     public final <T extends View> T findViewById(@IdRes int id) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @NonNull
     public final <T extends View> T requireViewById(@IdRes int id) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public <T extends View> T findViewByAccessibilityIdTraversal(int accessibilityId) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public <T extends View> T findViewByAutofillIdTraversal(int autofillId) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
 
     public void findAutofillableViewsByTraversal(@NonNull List<View> autofillableViews) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final <T extends View> T findViewWithTag(Object tag) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public final <T extends View> T findViewByPredicate(Predicate<View> predicate) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public final <T extends View> T findViewByPredicateInsideOut(
             View start, Predicate<View> predicate) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setId(@IdRes int id) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @TestApi
     public void setIsRootNamespace(boolean isRoot) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isRootNamespace() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @IdRes
     @ViewDebug.CapturedViewProperty
     public int getId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public long getUniqueDrawingId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @ViewDebug.ExportedProperty
     public Object getTag() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setTag(final Object tag) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public Object getTag(int key) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setTag(int key, final Object tag) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setTagInternal(int key, Object tag) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void debug() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void debug(int depth) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected static String debugIndent(int depth) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @ViewDebug.ExportedProperty(category = "layout")
     public int getBaseline() {
-        throw new RuntimeException("Stub!");
-    }
+        
+            return 0;
+}
 
     public boolean isInLayout() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @CallSuper
     public void requestLayout() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void forceLayout() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final void measure(int widthMeasureSpec, int heightMeasureSpec) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected final void setMeasuredDimension(int measuredWidth, int measuredHeight) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public static int combineMeasuredStates(int curState, int newState) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public static int resolveSize(int size, int measureSpec) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public static int resolveSizeAndState(int size, int measureSpec, int childMeasuredState) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public static int getDefaultSize(int size, int measureSpec) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected int getSuggestedMinimumHeight() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected int getSuggestedMinimumWidth() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getMinimumHeight() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setMinimumHeight(int minHeight) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getMinimumWidth() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setMinimumWidth(int minWidth) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public Animation getAnimation() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void startAnimation(Animation animation) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void clearAnimation() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setAnimation(Animation animation) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
     protected void onAnimationStart() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
     protected void onAnimationEnd() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected boolean onSetAlpha(int alpha) {
@@ -4875,39 +4918,39 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public boolean gatherTransparentRegion(@Nullable Region region) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void playSoundEffect(int soundConstant) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean performHapticFeedback(int feedbackConstant) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean performHapticFeedback(int feedbackConstant, int flags) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void performHapticFeedbackForInputDevice(int feedbackConstant, int inputDeviceId,
             int inputSource, int flags) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     public void setSystemUiVisibility(int visibility) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     public int getSystemUiVisibility() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @Deprecated
     public int getWindowSystemUiVisibility() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     @Deprecated
@@ -4916,26 +4959,26 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @Deprecated
     public void dispatchWindowSystemUiVisiblityChanged(int visible) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     public void setOnSystemUiVisibilityChangeListener(OnSystemUiVisibilityChangeListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Deprecated
     public void dispatchSystemUiVisibilityChanged(int visibility) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     boolean updateLocalSystemUiVisibility(int localValue, int localChanges) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     /** @hide */
     public void setDisabledSystemUiVisibility(int flags) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onSystemBarAppearanceChanged(int appearance) {
@@ -4943,100 +4986,100 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     public static class DragShadowBuilder {
         public DragShadowBuilder(View view) {
-            throw new RuntimeException("Stub!");
+            
         }
 
         public DragShadowBuilder() {
-            throw new RuntimeException("Stub!");
+            
         }
 
         @SuppressWarnings({"JavadocReference"})
         final public View getView() {
-            throw new RuntimeException("Stub!");
+            return null;
         }
 
         public void onProvideShadowMetrics(Point outShadowSize, Point outShadowTouchPoint) {
-            throw new RuntimeException("Stub!");
+            
         }
 
         public void onDrawShadow(@NonNull Canvas canvas) {
-            throw new RuntimeException("Stub!");
+            
         }
     }
 
     @Deprecated
     public final boolean startDrag(ClipData data, DragShadowBuilder shadowBuilder,
                                    Object myLocalState, int flags) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public final boolean startDragAndDrop(ClipData data, DragShadowBuilder shadowBuilder,
             Object myLocalState, int flags) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     static boolean hasActivityPendingIntents(ClipData data) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     static void cleanUpPendingIntents(ClipData data) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void setAccessibilityDragStarted(boolean started) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final void cancelDragAndDrop() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final void updateDragShadow(DragShadowBuilder shadowBuilder) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final boolean startMovingTask(float startX, float startY) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void finishMovingTask() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean onDragEvent(DragEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     // Dispatches ACTION_DRAG_ENTERED and ACTION_DRAG_EXITED events for pre-Nougat apps.
     boolean dispatchDragEnterExitInPreN(DragEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchDragEvent(DragEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     final boolean callDragEventHandler(DragEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean canAcceptDrag() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     void sendWindowContentChangedAccessibilityEvent(int changeType) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void onCloseSystemDialogs(String reason) {
     }
 
     public void applyDrawableToTransparentRegion(Drawable dr, Region region) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public static View inflate(Context context, @LayoutRes int resource, ViewGroup root) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @SuppressWarnings({"UnusedParameters"})
@@ -5045,7 +5088,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
             int scrollRangeX, int scrollRangeY,
             int maxOverScrollX, int maxOverScrollY,
             boolean isTouchEvent) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     protected void onOverScrolled(int scrollX, int scrollY,
@@ -5054,162 +5097,162 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public int getOverScrollMode() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setOverScrollMode(int overScrollMode) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setNestedScrollingEnabled(boolean enabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isNestedScrollingEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean startNestedScroll(int axes) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void stopNestedScroll() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean hasNestedScrollingParent() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchNestedScroll(int dxConsumed, int dyConsumed,
             int dxUnconsumed, int dyUnconsumed, @Nullable @Size(2) int[] offsetInWindow) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchNestedPreScroll(int dx, int dy,
             @Nullable @Size(2) int[] consumed, @Nullable @Size(2) int[] offsetInWindow) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchNestedFling(float velocityX, float velocityY, boolean consumed) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean dispatchNestedPreFling(float velocityX, float velocityY) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     protected float getVerticalScrollFactor() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected float getHorizontalScrollFactor() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getRawTextDirection() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setTextDirection(int textDirection) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getTextDirection() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public boolean resolveTextDirection() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean canResolveTextDirection() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @TestApi
     public void resetResolvedTextDirection() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isTextDirectionInherited() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean isTextDirectionResolved() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @TextAlignment
     public int getRawTextAlignment() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setTextAlignment(@TextAlignment int textAlignment) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @TextAlignment
     public int getTextAlignment() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public boolean resolveTextAlignment() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean canResolveTextAlignment() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     @TestApi
     public void resetResolvedTextAlignment() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isTextAlignmentInherited() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean isTextAlignmentResolved() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public static int generateViewId() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void captureTransitioningViews(List<View> transitioningViews) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void findNamedViews(Map<String, View> namedElements) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public PointerIcon onResolvePointerIcon(MotionEvent event, int pointerIndex) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setPointerIcon(PointerIcon pointerIcon) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public PointerIcon getPointerIcon() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public boolean hasPointerCapture() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void requestPointerCapture() {
-        throw new RuntimeException("Stub!");
+        
     }
 
 
     public void releasePointerCapture() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @CallSuper
@@ -5217,7 +5260,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public void dispatchPointerCaptureChanged(boolean hasCapture) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean onCapturedPointerEvent(MotionEvent event) {
@@ -5229,7 +5272,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public void setOnCapturedPointerListener(OnCapturedPointerListener l) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     // Properties
@@ -5273,42 +5316,42 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
         public static int makeMeasureSpec(@IntRange(from = 0, to = (1 << MeasureSpec.MODE_SHIFT) - 1) int size,
                                           @MeasureSpecMode int mode) {
-            throw new RuntimeException("Stub!");
+            return 0;
         }
 
         public static int makeSafeMeasureSpec(int size, int mode) {
-            throw new RuntimeException("Stub!");
+            return 0;
         }
 
         @MeasureSpecMode
         public static int getMode(int measureSpec) {
-            throw new RuntimeException("Stub!");
+            return 0;
         }
 
         public static int getSize(int measureSpec) {
-            throw new RuntimeException("Stub!");
+            return 0;
         }
 
         static int adjust(int measureSpec, int delta) {
-            throw new RuntimeException("Stub!");
+            return 0;
         }
 
         public static String toString(int measureSpec) {
-            throw new RuntimeException("Stub!");
+            return null;
         }
     }
 
     public ViewPropertyAnimator animate() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public final void setTransitionName(String transitionName) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @ViewDebug.ExportedProperty
     public String getTransitionName() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void requestKeyboardShortcuts(List<KeyboardShortcutGroup> data, int deviceId) {
@@ -5440,48 +5483,48 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     public static class AccessibilityDelegate {
 
         public void sendAccessibilityEvent(@NonNull View host, int eventType) {
-            throw new RuntimeException("Stub!");
+            
         }
 
         public boolean performAccessibilityAction(@NonNull View host, int action,
                 @Nullable Bundle args) {
-            throw new RuntimeException("Stub!");
+            return false;
         }
 
         public void sendAccessibilityEventUnchecked(@NonNull View host,
                 @NonNull AccessibilityEvent event) {
-            throw new RuntimeException("Stub!");
+            
         }
 
         public boolean dispatchPopulateAccessibilityEvent(@NonNull View host,
                 @NonNull AccessibilityEvent event) {
-            throw new RuntimeException("Stub!");
+            return false;
         }
 
         public void onPopulateAccessibilityEvent(@NonNull View host,
                 @NonNull AccessibilityEvent event) {
-            throw new RuntimeException("Stub!");
+            
         }
 
         public void onInitializeAccessibilityEvent(@NonNull View host,
                 @NonNull AccessibilityEvent event) {
-            throw new RuntimeException("Stub!");
+            
         }
 
         public void onInitializeAccessibilityNodeInfo(@NonNull View host,
                 @NonNull AccessibilityNodeInfo info) {
-            throw new RuntimeException("Stub!");
+            
         }
 
         public void addExtraDataToAccessibilityNodeInfo(@NonNull View host,
                 @NonNull AccessibilityNodeInfo info, @NonNull String extraDataKey,
                 @Nullable Bundle arguments) {
-            throw new RuntimeException("Stub!");
+            
         }
 
         public boolean onRequestSendAccessibilityEvent(@NonNull ViewGroup host, @NonNull View child,
                 @NonNull AccessibilityEvent event) {
-            throw new RuntimeException("Stub!");
+            return false;
         }
 
         public @Nullable AccessibilityNodeProvider getAccessibilityNodeProvider(
@@ -5490,140 +5533,140 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
         }
 
         public AccessibilityNodeInfo createAccessibilityNodeInfo(@NonNull View host) {
-            throw new RuntimeException("Stub!");
+            return null;
         }
     }
 
     @ScrollCaptureHint
     public int getScrollCaptureHint() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setScrollCaptureHint(@ScrollCaptureHint int hint) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     // public final void setScrollCaptureCallback(@Nullable ScrollCaptureCallback callback) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // /** {@hide} */
     // @Nullable
     // public ScrollCaptureCallback createScrollCaptureCallbackInternal(@NonNull Rect localVisibleRect,
     //         @NonNull Point windowOffset) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public void dispatchScrollCaptureSearch(
     //         @NonNull Rect localVisibleRect, @NonNull Point windowOffset,
     //         @NonNull Consumer<ScrollCaptureTarget> targets) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public void onScrollCaptureSearch(@NonNull Rect localVisibleRect,
     //         @NonNull Point windowOffset, @NonNull Consumer<ScrollCaptureTarget> targets) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // /** {@hide} */
     // public void encode(@NonNull ViewHierarchyEncoder stream) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // /** {@hide} */
     // @CallSuper
     // protected void encodeProperties(@NonNull ViewHierarchyEncoder stream) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     boolean shouldDrawRoundScrollbar() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void setTooltipText(@Nullable CharSequence tooltipText) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setTooltip(@Nullable CharSequence tooltipText) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Nullable
     public CharSequence getTooltipText() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @Nullable
     public CharSequence getTooltip() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     void hideTooltip() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     boolean dispatchTooltipHoverEvent(MotionEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     void handleTooltipKey(KeyEvent event) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @TestApi
     public View getTooltipView() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     @TestApi
     public static boolean isDefaultFocusHighlightEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     View dispatchUnhandledKeyEvent(KeyEvent evt) {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     boolean onUnhandledKeyEvent(@NonNull KeyEvent event) {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     boolean hasUnhandledKeyListener() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public void addOnUnhandledKeyEventListener(OnUnhandledKeyEventListener listener) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void removeOnUnhandledKeyEventListener(OnUnhandledKeyEventListener listener) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     protected void setDetached(boolean detached) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setIsCredential(boolean isCredential) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isCredential() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     // TODO(316208691): Revive following removed API docs.
     // @see EditorInfo#setStylusHandwritingEnabled(boolean)
     public void setAutoHandwritingEnabled(boolean enabled) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public boolean isAutoHandwritingEnabled() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     public boolean isStylusHandwritingAvailable() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     // public void onCreateViewTranslationRequest(@NonNull int[] supportedFormats,
@@ -5639,28 +5682,28 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     // @Nullable
     // public ViewTranslationCallback getViewTranslationCallback() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public void setViewTranslationCallback(@NonNull ViewTranslationCallback callback) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public void clearViewTranslationCallback() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // @Nullable
     // public ViewTranslationResponse getViewTranslationResponse() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public void onViewTranslationResponse(@NonNull ViewTranslationResponse response) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public void clearViewTranslationResponse() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public void onVirtualViewTranslationResponses(
@@ -5672,13 +5715,13 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     //         @NonNull int[] supportedFormats,
     //         @NonNull TranslationCapability capability,
     //         @NonNull List<ViewTranslationRequest> requests) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public void generateDisplayHash(@NonNull String hashAlgorithm,
     //         @Nullable Rect bounds, @NonNull Executor executor,
     //         @NonNull DisplayHashResultCallback callback) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     /**
@@ -5691,58 +5734,58 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * and {@link #onDetachedFromWindow}.
      */
     // public @Nullable AttachedSurfaceControl getRootSurfaceControl() {
-    //     throw new RuntimeException("Stub!");
+    //     return null;
     // }
 
     protected int calculateFrameRateCategory() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected void votePreferredFrameRate() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setFrameContentVelocity(float pixelsPerSecond) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public float getFrameContentVelocity() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setRequestedFrameRate(float frameRate) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public float getRequestedFrameRate() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     void overrideFrameRate(float frameRate, boolean forceOverride) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     void setForcedOverrideFrameRateFlag(boolean forcedOverride) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     boolean getForcedOverrideFrameRateFlag() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     void setSelfRequestedFrameRateFlag(boolean forcedOverride) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     boolean getSelfRequestedFrameRateFlag() {
-        throw new RuntimeException("Stub!");
+        return false;
     }
 
     // public void reportAppJankStats(@NonNull AppJankStats appJankStats) {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 
     // public @Nullable JankTracker getJankTracker() {
-    //     throw new RuntimeException("Stub!");
+    //     
     // }
 }
