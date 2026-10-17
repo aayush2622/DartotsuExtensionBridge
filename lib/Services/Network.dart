@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -5,6 +6,9 @@ import 'package:flutter/services.dart';
 import '../Engines/JavaEngine/JavaBridgeServer.dart';
 import '../ExtensionBridge.dart';
 import '../Logger.dart';
+import '../Network/BridgeWebView.dart';
+import '../Network/CloudflareSolver.dart';
+import '../NetworkClient.dart';
 
 class BridgeChannels {
   static const _networkChannel = MethodChannel('flutterKotlinBridge.network');
@@ -41,6 +45,20 @@ class BridgeChannels {
           (args['cookies'] as List).cast<String>(),
         );
         return true;
+
+      case 'getUserAgent':
+        return bridgeUserAgent();
+
+      case 'solveCloudflare':
+        final url = Uri.tryParse(args['url'] as String? ?? '');
+        if (url == null || !url.hasAuthority) return false;
+        return CloudflareSolver.solve(url);
+
+      case 'webView':
+        final request = jsonDecode(args['request'] as String);
+        return jsonEncode(
+          await BridgeWebView.run(Map<String, dynamic>.from(request as Map)),
+        );
 
       default:
         throw Exception('Unknown method: $method');

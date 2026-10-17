@@ -10,6 +10,7 @@ import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
 import '../../Shared/KotatsuRepoBackend.dart';
 import '../KotatsuSourceMethods.dart';
+import '../../../Network/NetworkSettingsSync.dart';
 
 class KotatsuExtensions extends Extension
     with KotatsuRepoBackend<KotatsuSource> {
@@ -57,17 +58,10 @@ class KotatsuExtensions extends Extension
     await platform.invokeMethod('loadPlugin', {"path": filePath});
     await BridgeChannels.init();
 
-    final network = DartotsuExtensionBridge.context.network;
-    if (network != null) {
-      await platform.invokeMethod(
-        'initClient',
-        jsonEncode({
-          'dns': network.dns,
-          'proxy': network.proxy,
-          'userAgent': network.userAgent,
-        }),
-      );
-    }
+    await NetworkSettingsSync.register(
+      this,
+      (data) => platform.invokeMethod('initClient', data),
+    );
     return true;
   }
 

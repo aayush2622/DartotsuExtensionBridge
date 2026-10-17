@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
@@ -17,6 +16,7 @@ import '../../Shared/TachiyomiJavaDesktopExtension.dart';
 import '../../Shared/TachiyomiRepo.dart';
 import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
+import '../../../Network/NetworkSettingsSync.dart';
 
 class IReaderDesktopExtensions extends Extension
     with TachiyomiRepoBackend, TachiyomiJavaDesktopExtension {
@@ -81,15 +81,10 @@ class IReaderDesktopExtensions extends Extension
 
     await java.call<void>("initializeDesktop", {"path": file!.path});
 
-    if (_context.network != null) {
-      await java.call<void>("initClient", {
-        "data": jsonEncode({
-          "dns": _context.network?.dns,
-          "proxy": _context.network?.proxy,
-          "userAgent": _context.network?.userAgent,
-        }),
-      });
-    }
+    await NetworkSettingsSync.register(
+      this,
+      (data) => java.call<void>('initClient', {'data': data}),
+    );
 
     return true;
   }
@@ -97,6 +92,7 @@ class IReaderDesktopExtensions extends Extension
   @override
   void dispose() async {
     super.dispose();
+    NetworkSettingsSync.unregister(this);
     java.dispose();
   }
 

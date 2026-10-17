@@ -7,6 +7,7 @@ import 'package:http/io_client.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
 import 'ExtensionBridge.dart';
+import 'Network/CloudflareSolver.dart';
 import 'Logger.dart';
 
 class MClient {
@@ -90,17 +91,133 @@ class MClient {
 
 /// Every [MClient.init] caller gets its own wrapper over one shared client, so
 /// a caller's `close()` must not dispose the client everyone else is using.
+///
+/// It also clears Cloudflare challenges: a challenge response to a plain
+/// [Request] goes to [CloudflareSolver], and once the app's cookie jar has
+/// clearance the request is sent again with those cookies and the app's
+/// User-Agent (the pair Cloudflare checks). Streamed and multipart requests
+/// can't be replayed and come back as they are.
 class _SharedClient extends http.BaseClient {
   _SharedClient(this._inner);
 
   final http.Client _inner;
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) =>
-      _inner.send(request);
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final replay = request is http.Request ? _copy(request) : null;
+    final response = await _inner.send(request);
+    if (replay == null || !_mayBeChallenge(response)) return response;
+
+    final bytes = await response.stream.toBytes();
+    final buffered = _rebuild(response, bytes);
+    if (!_isChallenge(response, bytes)) return buffered;
+
+    Logger.log('[Cloudflare] Challenge on ${request.url.host}, clearing it');
+    if (!await CloudflareSolver.solve(request.url)) return buffered;
+
+    await _withAppSession(replay, mergeCookies: true);
+    return _inner.send(replay);
+  }
 
   @override
   void close() {}
+
+  static http.Request _copy(http.Request request) {
+    return http.Request(request.method, request.url)
+      ..bodyBytes = request.bodyBytes
+      ..headers.addAll(request.headers)
+      ..followRedirects = request.followRedirects
+      ..maxRedirects = request.maxRedirects
+      ..persistentConnection = request.persistentConnection;
+  }
+
+  static http.StreamedResponse _rebuild(
+    http.StreamedResponse response,
+    List<int> bytes,
+  ) {
+    return http.StreamedResponse(
+      http.ByteStream.fromBytes(bytes),
+      response.statusCode,
+      contentLength: bytes.length,
+      request: response.request,
+      headers: response.headers,
+      isRedirect: response.isRedirect,
+      persistentConnection: response.persistentConnection,
+      reasonPhrase: response.reasonPhrase,
+    );
+  }
+
+  static bool _mayBeChallenge(http.BaseResponse response) {
+    if (!const {403, 429, 503}.contains(response.statusCode)) return false;
+    if (response.headers['cf-mitigated']?.toLowerCase() == 'challenge') {
+      return true;
+    }
+    return (response.headers['server'] ?? '').toLowerCase().startsWith(
+      'cloudflare',
+    );
+  }
+
+  static bool _isChallenge(http.BaseResponse response, List<int> bytes) {
+    if (response.headers['cf-mitigated']?.toLowerCase() == 'challenge') {
+      return true;
+    }
+    final length = bytes.length < 65536 ? bytes.length : 65536;
+    return _looksLikeAntiBotChallenge(
+      utf8.decode(bytes.sublist(0, length), allowMalformed: true),
+    );
+  }
+}
+
+/// The app's User-Agent ([BridgeNetwork.userAgent]), the one its WebViews
+/// and every backend send, or [defaultUserAgent] without one.
+String bridgeUserAgent() {
+  final ua = DartotsuExtensionBridge.context.network?.userAgent;
+  return (ua != null && ua.isNotEmpty) ? ua : defaultUserAgent;
+}
+
+/// Adds the app's session to [request]: its cookies for the URL (with
+/// [mergeCookies], next to the ones the request already carries, which win;
+/// otherwise only when it carries none) and its User-Agent when the request
+/// has none or carries a `cf_clearance` cookie, which Cloudflare only accepts
+/// with the User-Agent that earned it.
+Future<void> _withAppSession(
+  http.BaseRequest request, {
+  required bool mergeCookies,
+}) async {
+  final network = DartotsuExtensionBridge.context.network;
+  final headers = request.headers;
+  String? keyOf(String name) {
+    for (final key in headers.keys) {
+      if (key.toLowerCase() == name) return key;
+    }
+    return null;
+  }
+
+  final cookieKey = keyOf('cookie');
+  var cookie = cookieKey == null ? '' : headers.remove(cookieKey)!;
+  if (network != null && (mergeCookies || cookie.isEmpty)) {
+    final present = {
+      for (final part in cookie.split(';'))
+        if (part.contains('=')) part.substring(0, part.indexOf('=')).trim(),
+    };
+    final jar = cookieHeaderFromStoredCookies(
+      await network.getCookies(request.url.toString()),
+      exclude: present,
+    );
+    if (jar != null && jar.isNotEmpty) {
+      cookie = cookie.isEmpty ? jar : '$cookie; $jar';
+    }
+  }
+  if (cookie.isNotEmpty) headers['Cookie'] = cookie;
+
+  final uaKey = keyOf('user-agent');
+  final hasClearance = cookie
+      .split(';')
+      .any((part) => part.trim().startsWith('cf_clearance='));
+  if (uaKey == null || hasClearance) {
+    if (uaKey != null) headers.remove(uaKey);
+    headers['User-Agent'] = bridgeUserAgent();
+  }
 }
 
 /// The default `User-Agent` MClient sends when neither the caller nor
@@ -111,12 +228,11 @@ const defaultUserAgent =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
     '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-/// Bridges every [MClient] request through [BridgeContext.network]: fills in
-/// a default `User-Agent` and `Cookie` header when the caller hasn't already
-/// set their own (some extractors manage a source-specific session cookie or
-/// need a specific UA to pass anti-bot checks, and must not be overridden),
-/// and feeds observed `Set-Cookie` responses back into the host app's shared
-/// cookie jar so every backend reads/writes the same cookie store.
+/// Bridges every [MClient] request through [BridgeContext.network]: adds the
+/// app's cookies next to the caller's own (which win) and the app's
+/// User-Agent (see [_withAppSession]), and feeds observed `Set-Cookie`
+/// responses back into the host app's shared cookie jar so every backend
+/// reads/writes the same cookie store.
 class _NetworkContextInterceptor implements HttpInterceptor {
   const _NetworkContextInterceptor();
 
@@ -128,24 +244,7 @@ class _NetworkContextInterceptor implements HttpInterceptor {
 
   @override
   Future<BaseRequest> interceptRequest({required BaseRequest request}) async {
-    final network = DartotsuExtensionBridge.context.network;
-    final headerNames = request.headers.keys.map((k) => k.toLowerCase());
-
-    if (!headerNames.contains('user-agent')) {
-      final ua = network?.userAgent;
-      request.headers['User-Agent'] = (ua != null && ua.isNotEmpty)
-          ? ua
-          : defaultUserAgent;
-    }
-
-    if (network != null && !headerNames.contains('cookie')) {
-      final raw = await network.getCookies(request.url.toString());
-      final header = cookieHeaderFromStoredCookies(raw);
-      if (header != null && header.isNotEmpty) {
-        request.headers['Cookie'] = header;
-      }
-    }
-
+    await _withAppSession(request, mergeCookies: true);
     return request;
   }
 
@@ -217,7 +316,10 @@ bool _looksLikeAntiBotChallenge(String body) {
 /// Parses [BridgeNetwork.getCookies]'s JSON-encoded `[{name, value, ...}]`
 /// array (the same shape the native `CookieInterceptor` in `runtimeManager`
 /// decodes) into a `name=value; name2=value2` `Cookie` header value.
-String? cookieHeaderFromStoredCookies(String? json) {
+String? cookieHeaderFromStoredCookies(
+  String? json, {
+  Set<String> exclude = const {},
+}) {
   if (json == null || json.isEmpty) return null;
 
   try {
@@ -229,7 +331,7 @@ String? cookieHeaderFromStoredCookies(String? json) {
       if (entry is! Map) continue;
       final name = entry['name'];
       final value = entry['value'];
-      if (name is String && value is String) {
+      if (name is String && value is String && !exclude.contains(name)) {
         pairs.add('$name=$value');
       }
     }

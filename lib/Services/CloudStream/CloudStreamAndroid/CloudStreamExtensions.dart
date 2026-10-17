@@ -14,6 +14,7 @@ import '../../Network.dart';
 import '../../Shared/CloudStreamRepoBackend.dart';
 import '../CloudStreamSourceMethods.dart';
 import 'Models/CloudStreamSource.dart';
+import '../../../Network/NetworkSettingsSync.dart';
 
 class CloudStreamExtensions extends Extension
     with CloudStreamRepoBackend<CSource> {
@@ -75,16 +76,10 @@ class CloudStreamExtensions extends Extension
 
     await platform.invokeMethod('loadPlugin', {"path": filePath});
     await BridgeChannels.init();
-    if (_context.network != null) {
-      await platform.invokeMethod(
-        'initClient',
-        jsonEncode({
-          'dns': _context.network?.dns,
-          'proxy': _context.network?.proxy,
-          'userAgent': _context.network?.userAgent,
-        }),
-      );
-    }
+    await NetworkSettingsSync.register(
+      this,
+      (data) => platform.invokeMethod('initClient', data),
+    );
     return true;
   }
 
