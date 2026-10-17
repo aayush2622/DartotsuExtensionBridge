@@ -197,7 +197,8 @@ class SidecarBridge implements JavaBridge {
         },
       );
 
-      final decoded = _toDart(jsonDecode(result as String));
+      final text = result as String;
+      final decoded = text.trim().isEmpty ? null : _toDart(jsonDecode(text));
 
       if (decoded is List && decoded.every((e) => e is Map<String, dynamic>)) {
         return List<Map<String, dynamic>>.from(decoded) as T;
