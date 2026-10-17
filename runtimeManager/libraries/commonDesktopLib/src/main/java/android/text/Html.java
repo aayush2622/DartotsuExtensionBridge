@@ -4,6 +4,8 @@ package android.text;
 import android.graphics.drawable.Drawable;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.parser.Parser;
 import org.jsoup.safety.Safelist;
 import org.xml.sax.XMLReader;
 
@@ -17,13 +19,38 @@ import org.xml.sax.XMLReader;
 
 public class Html {
 
+    public static final int FROM_HTML_MODE_LEGACY = 0;
+    public static final int FROM_HTML_MODE_COMPACT = 63;
+    public static final int TO_HTML_PARAGRAPH_LINES_CONSECUTIVE = 0;
+    public static final int TO_HTML_PARAGRAPH_LINES_INDIVIDUAL = 1;
+
     public static Spanned fromHtml(String source) {
-        return new FakeSpanned(Jsoup.clean(source, Safelist.none()));
+        return new FakeSpanned(toText(source));
+    }
+
+    public static Spanned fromHtml(String source, int flags) {
+        return fromHtml(source);
     }
 
     public static Spanned fromHtml(String source, ImageGetter imageGetter, TagHandler tagHandler) {
-        throw new RuntimeException("Stub!");
+        return fromHtml(source);
     }
+
+    public static Spanned fromHtml(String source, int flags, ImageGetter imageGetter, TagHandler tagHandler) {
+        return fromHtml(source);
+    }
+
+    private static String toText(String source) {
+        if (source == null) return "";
+        String marked = source
+                .replaceAll("(?i)<br\\s*/?>", "\uE000")
+                .replaceAll("(?i)</(p|div|h[1-6]|li)>", "\uE000\uE000");
+        String text = Parser.unescapeEntities(Jsoup.clean(marked, "", Safelist.none(), OUTPUT), false);
+        return text.replaceAll("\\s+", " ").replace("\uE000 ", "\uE000").replace(" \uE000", "\uE000")
+                .replaceAll("\uE000{3,}", "\uE000\uE000").replace('\uE000', '\n').trim();
+    }
+
+    private static final Document.OutputSettings OUTPUT = new Document.OutputSettings().prettyPrint(false);
 
     public static String toHtml(Spanned text) {
         return text.toString();
@@ -62,8 +89,9 @@ public class Html {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public <T> T[] getSpans(int i, int i1, Class<T> aClass) {
-            return null;
+            return (T[]) java.lang.reflect.Array.newInstance(aClass, 0);
         }
 
         @Override
@@ -83,22 +111,22 @@ public class Html {
 
         @Override
         public int nextSpanTransition(int i, int i1, Class aClass) {
-            return 0;
+            return i1;
         }
 
         @Override
         public int length() {
-            return 0;
+            return string.length();
         }
 
         @Override
         public char charAt(int index) {
-            return 0;
+            return string.charAt(index);
         }
 
         @Override
         public CharSequence subSequence(int start, int end) {
-            return null;
+            return string.subSequence(start, end);
         }
 
         @NotNull

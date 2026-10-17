@@ -58,6 +58,34 @@ public final class Rect {
         this.bottom = r.bottom;
     }
 
+    public final int width() {
+        return right - left;
+    }
+
+    public final int height() {
+        return bottom - top;
+    }
+
+    public final int centerX() {
+        return (left + right) >> 1;
+    }
+
+    public final int centerY() {
+        return (top + bottom) >> 1;
+    }
+
+    public final float exactCenterX() {
+        return (left + right) * 0.5f;
+    }
+
+    public final float exactCenterY() {
+        return (top + bottom) * 0.5f;
+    }
+
+    public final boolean isEmpty() {
+        return left >= right || top >= bottom;
+    }
+
     public final int getWidth() {
         return right - left;
     }

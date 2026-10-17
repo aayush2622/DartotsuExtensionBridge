@@ -6,6 +6,8 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
+import org.objectweb.asm.commons.ClassRemapper
+import org.objectweb.asm.commons.SimpleRemapper
 import org.objectweb.asm.tree.AbstractInsnNode
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldInsnNode
@@ -199,7 +201,7 @@ object BytecodeEditor {
             val framesOnly = originalBytes?.let { bytes ->
                 try {
                     val freshNode = ClassNode(Opcodes.ASM9)
-                    ClassReader(bytes).accept(freshNode, ClassReader.EXPAND_FRAMES)
+                    ClassReader(remapReplaced(bytes)).accept(freshNode, ClassReader.EXPAND_FRAMES)
                     recomputeFramesAndVerify(freshNode, loader, jarLabel)
                 } catch (e: Throwable) {
                     Logger.log(
@@ -220,6 +222,8 @@ object BytecodeEditor {
                         "unresolved malformed-construction site — keeping untouched original bytes",
                 LogLevel.ERROR,
             )
+            originalBytes?.let { bytes -> runCatching { remapReplaced(bytes) }.getOrNull() }
+                ?.let { rewritten[entryName] = it }
         }
 
         writeJarAtomically(jarFile, entries, rewritten, jarLabel)
@@ -393,6 +397,17 @@ object BytecodeEditor {
             classReference = classReference.replace(it, "$REPLACEMENT_PATH/$it")
         }
         return classReference
+    }
+
+    /**
+     * Applies the replacements to a class kept from its original bytes, so its
+     * declarations still match the rewritten call sites in the other classes.
+     */
+    private fun remapReplaced(bytes: ByteArray): ByteArray {
+        val writer = ClassWriter(0)
+        val mapping = classesToReplace.associateWith { "$REPLACEMENT_PATH/$it" }
+        ClassReader(bytes).accept(ClassRemapper(writer, SimpleRemapper(mapping)), 0)
+        return writer.toByteArray()
     }
 
     private fun rewriteReplacedReferences(cn: ClassNode) {

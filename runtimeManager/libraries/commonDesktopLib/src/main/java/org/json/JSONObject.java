@@ -570,6 +570,15 @@ public class JSONObject {
      * Returns the value mapped by {@code name} if it exists and is a double or
      * can be coerced to a double, or {@code NaN} otherwise.
      */
+    public float optFloat(@Nullable String name) {
+        return optFloat(name, Float.NaN);
+    }
+
+    public float optFloat(@Nullable String name, float fallback) {
+        double result = optDouble(name, Double.NaN);
+        return Double.isNaN(result) ? fallback : (float) result;
+    }
+
     public double optDouble(@Nullable String name) {
         return optDouble(name, Double.NaN);
     }
