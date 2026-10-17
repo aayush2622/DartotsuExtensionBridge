@@ -22,10 +22,12 @@ class CloudflareSolver {
 
   static const _backgroundTimeout = Duration(seconds: 30);
   static const _settleTime = Duration(seconds: 3);
+  static const _retryWindow = Duration(minutes: 2);
   static const _askAgainAfter = Duration(minutes: 10);
 
   static final _inflight = <String, Future<bool>>{};
   static final _dismissed = <String, DateTime>{};
+  static final _clearedAt = <String, DateTime>{};
   static Future<void> _promptQueue = Future.value();
 
   /// Clears the challenge for [url]. Returns true once the app's cookie jar
@@ -38,7 +40,16 @@ class CloudflareSolver {
   }
 
   static Future<bool> _solve(Uri url, bool interactive) async {
+    // Asked again right after a background "cleared": that clearance did not
+    // pass (an old cookie, a plain block), so only the user can clear it.
+    final last = _clearedAt[url.host];
+    if (last != null && DateTime.now().difference(last) < _retryWindow) {
+      _clearedAt.remove(url.host);
+      Logger.log('[Cloudflare] ${url.host}: clearance was rejected, asking the user');
+      return interactive && await _askUser(url);
+    }
     final outcome = await _solveInBackground(url);
+    if (outcome == _Outcome.cleared) _clearedAt[url.host] = DateTime.now();
     Logger.log('[Cloudflare] ${url.host}: background attempt ${outcome.name}');
     switch (outcome) {
       case _Outcome.cleared:
