@@ -9,7 +9,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import dalvik.system.DexClassLoader
-import ireader.core.http.HttpClients
+import ireader.core.http.HttpClientsInterface
 import ireader.core.prefs.PreferenceStore
 import com.aayush262.dartotsu_extension_bridge.ireader.prefs.PrefixedPreferenceStore
 import dalvik.system.PathClassLoader
@@ -122,7 +122,7 @@ actual object ExtensionLoader {
         )
 
         val deps = Dependencies(
-            getKoin().get<HttpClients>(), prefs
+            getKoin().get<HttpClientsInterface>(), prefs
         )
 
         val loader = if (extensionInfo.isShared) {
