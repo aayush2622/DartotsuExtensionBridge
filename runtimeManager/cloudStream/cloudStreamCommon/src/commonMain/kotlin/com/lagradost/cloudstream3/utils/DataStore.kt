@@ -63,6 +63,9 @@ object DataStore {
         return getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
 
+    fun Context.getDefaultSharedPrefs(): SharedPreferences =
+        android.preference.PreferenceManager.getDefaultSharedPreferences(this)
+
     @PublishedApi internal fun getFolderName(folder: String, path: String): String = "$folder/$path"
 
     fun Context.getKeys(folder: String): List<String> {

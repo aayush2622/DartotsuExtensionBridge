@@ -1,5 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.cloudStream
 
+import com.lagradost.cloudstream3.plugins.PluginData
+import com.lagradost.cloudstream3.plugins.PluginManager
 import android.app.Application
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.aayush262.dartotsu_extension_bridge.util.ExtensionConvert
@@ -125,6 +127,9 @@ actual object ExtensionLoader {
                 plugin = plugin,
                 manifest = manifest
             )
+            PluginManager.register(
+                PluginData(manifest.name, null, true, file.absolutePath, manifest.version)
+            )
             val app: Application by KoinPlatformTools.defaultContext().get().inject()
             if (plugin is Plugin) {
                 plugin.load(app.applicationContext)
@@ -158,6 +163,7 @@ actual object ExtensionLoader {
         }
         extractorApis.clear()
         plugins.clear()
+        PluginManager.clear()
 
         Logger.log("Unloaded all plugins")
     }

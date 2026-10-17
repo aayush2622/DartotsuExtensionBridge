@@ -1,29 +1,36 @@
 package com.lagradost.cloudstream3.network
 
+import com.aayush262.dartotsu_extension_bridge.network.BridgeWebView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 
 /**
- * Desktop has no WebView, so this can't actually resolve a JS challenge or
- * collect requests fired by a page - it degrades to a plain passthrough:
- * `intercept()` proceeds the original request unmodified, and
- * `resolveUsingWebView` returns the request it was given with no additional
- * URLs, rather than crashing plugins that reference this class at all
- * (previously NoClassDefFoundError, e.g. AllWish.cs3).
- * */
+ * Runs the page in the Flutter app's background WebView
+ * (`lib/Network/BridgeWebView.dart`), with the app's cookies, and collects
+ * the requests it makes that match [interceptUrl] and [additionalUrls].
+ *
+ * The page's own User-Agent is the app's, so [userAgent] is not applied. A
+ * request matched in the WebView is rebuilt with that User-Agent and the
+ * page as its referer; the WebView's other request headers aren't visible.
+ */
 actual class WebViewResolver actual constructor(
-    interceptUrl: Regex,
-    additionalUrls: List<Regex>,
+    private val interceptUrl: Regex,
+    private val additionalUrls: List<Regex>,
     userAgent: String?,
     useOkhttp: Boolean,
-    script: String?,
-    scriptCallback: ((String) -> Unit)?,
-    timeout: Long
+    private val script: String?,
+    private val scriptCallback: ((String) -> Unit)?,
+    private val timeout: Long
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        return chain.proceed(chain.request())
+        val request = chain.request()
+        val resolved = runBlocking { resolveUsingWebView(request) { false }.first }
+        return chain.proceed(resolved ?: request)
     }
 
     actual companion object {
@@ -52,8 +59,35 @@ actual class WebViewResolver actual constructor(
     actual suspend fun resolveUsingWebView(
         request: Request,
         requestCallBack: (Request) -> Boolean
-    ): Pair<Request?, List<Request>> {
-        requestCallBack(request)
-        return request to emptyList()
+    ): Pair<Request?, List<Request>> = withContext(Dispatchers.IO) {
+        val pageUrl = request.url.toString()
+        val headers = request.headers.toMap().filterKeys { !it.equals("user-agent", ignoreCase = true) }
+
+        val result = BridgeWebView.resolve(
+            url = pageUrl,
+            headers = headers,
+            interceptUrl = interceptUrl,
+            additionalUrls = additionalUrls,
+            script = script,
+            timeoutMs = timeout,
+        ) ?: return@withContext null to emptyList()
+
+        result.userAgent?.let { webViewUserAgent = it }
+        result.scriptResult?.let { scriptCallback?.invoke(it) }
+
+        fun toRequest(url: String) = Request.Builder()
+            .url(url)
+            .apply {
+                result.userAgent?.let { header("User-Agent", it) }
+                header("Referer", pageUrl)
+            }
+            .build()
+
+        val main = result.url?.let(::toRequest)
+        val extra = result.additional.map(::toRequest)
+        for (matched in listOfNotNull(main) + extra) {
+            if (requestCallBack(matched)) break
+        }
+        main to extra
     }
 }
