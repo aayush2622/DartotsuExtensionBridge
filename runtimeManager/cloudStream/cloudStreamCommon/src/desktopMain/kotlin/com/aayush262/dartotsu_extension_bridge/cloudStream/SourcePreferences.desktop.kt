@@ -8,14 +8,14 @@ import com.aayush262.dartotsu_extension_bridge.logger.LogLevel
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.aayush262.dartotsu_extension_bridge.prefs.PreferenceRecorder
 import com.aayush262.dartotsu_extension_bridge.prefs.PreferenceRecorder.Type
+import com.aayush262.dartotsu_extension_bridge.ui.PluginResources
+import com.aayush262.dartotsu_extension_bridge.ui.ScreenSettings
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.utils.PREFERENCES_NAME
 import org.koin.mp.KoinPlatformTools
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 
 /**
  * Desktop has no Android views, so an extension's settings screen can't be
@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit
 actual object SourcePreferences {
     private const val SEPARATOR = "::"
     private val gson = Gson()
-    private val probed = ConcurrentHashMap.newKeySet<String>()
     private val internalName = Regex("(time|date|expir|stamp|last|cache|count|version|cookie|session|^_)", RegexOption.IGNORE_CASE)
 
     private val context: Context by lazy {
@@ -40,7 +39,11 @@ actual object SourcePreferences {
     }
 
     actual fun get(provider: MainAPI): String {
-        probeSettingsScreen(provider)
+        val screen = runCatching { screenFor(provider)?.list() }
+            .onFailure { Logger.log("Settings screen of ${provider.name} failed: ${it.stackTraceToString()}", LogLevel.WARNING) }
+            .getOrNull().orEmpty()
+        if (screen.isNotEmpty()) return gson.toJson(screen)
+
         val loader = provider.javaClass.classLoader ?: return "[]"
         val entries = PreferenceRecorder.keysFor(loader)
             .filter(::isUserSetting)
@@ -49,6 +52,11 @@ actual object SourcePreferences {
     }
 
     actual fun save(provider: MainAPI, key: String, value: String?): Boolean {
+        if (ScreenSettings.isScreenKey(key)) {
+            val raw = value?.let { JsonParser.parseString(it).asJsonObject.get("value") }
+            val text = raw?.takeUnless { it.isJsonNull }?.asString
+            return runCatching { screenFor(provider)?.save(key, text) }.getOrNull() ?: false
+        }
         val loader = provider.javaClass.classLoader ?: return false
         val (storeName, prefKey) = key.split(SEPARATOR, limit = 2).takeIf { it.size == 2 } ?: return false
         val recorded = PreferenceRecorder.keysFor(loader).firstOrNull { it.store == storeName && it.key == prefKey }
@@ -81,29 +89,20 @@ actual object SourcePreferences {
     }
 
     /**
-     * Starts the extension's settings screen once, off-screen, so the
-     * preferences it reads while being built are recorded. It stops at the
-     * first missing Android view; only the reads before that count.
+     * The extension's own settings screen, when it has one and its resources
+     * were loaded: opened off-screen and read as preferences ([ScreenSettings]).
      */
-    private fun probeSettingsScreen(provider: MainAPI) {
-        val loader = provider.javaClass.classLoader ?: return
+    private fun screenFor(provider: MainAPI): ScreenSettings? {
+        val loader = provider.javaClass.classLoader ?: return null
         val plugin = ExtensionLoader.plugins.values
             .map { it.plugin }
-            .firstOrNull { it.javaClass.classLoader === loader } as? Plugin ?: return
-        val open = plugin.openSettings ?: return
-        if (!probed.add(plugin.filename ?: plugin.javaClass.name)) return
+            .firstOrNull { it.javaClass.classLoader === loader } as? Plugin
+            ?: return null.also { Logger.log("${provider.name}: plugin not found for its loader", LogLevel.INFO) }
+        val open = plugin.openSettings ?: return null.also { Logger.log("${plugin.filename}: no settings screen", LogLevel.INFO) }
+        val resources = plugin.resources as? PluginResources ?: return null.also { Logger.log("${plugin.filename}: no resources", LogLevel.INFO) }
 
         if (Fragment.hostContext == null) Fragment.hostContext = context
-        val thread = Thread {
-            try {
-                PreferenceRecorder.whileBuildingSettings { open(context) }
-            } catch (_: Throwable) {
-                // Expected: the screen needs views desktop doesn't have.
-            }
-        }
-        thread.isDaemon = true
-        thread.start()
-        thread.join(TimeUnit.SECONDS.toMillis(5))
+        return ScreenSettings(resources) { open(context) }
     }
 
     private fun isUserSetting(key: PreferenceRecorder.Key): Boolean {

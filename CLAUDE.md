@@ -179,20 +179,28 @@ and `BridgeWebView`. Aniyomi/Tsundoku (`NetworkHelper`), CloudStream
 (`bridgeClient()`, `CloudflareKiller`), Kotatsu and iReader
 (`BridgeHttpClients`) all build on it. No FlareSolverr.
 
-CloudStream settings: neither platform opens an extension's native settings
-screen. Desktop's `PreferenceRecorder` (commonDesktopLib) records every
-`SharedPreferences` read/write per extension class loader, found by
-attributing each read/write to the call stack's first frame outside the
-bridge's own classes (desktop has a real JVM `StackWalker`); it also probes
-the extension's settings screen off-screen once, so keys it reads before
-hitting a missing stub view show up immediately. Android's
-`AndroidPreferenceRecorder` (`cloudStreamCommon` androidMain) does the same
-attribution without `StackWalker` (unavailable on Android): it matches each
-stack frame's class against the `PathClassLoader` registered for each loaded
-plugin, and never probes (that would show a real native screen - the thing
-being avoided), so a key only appears once the extension actually reads or
-writes it while running. Both `SourcePreferences.{desktop,android}.kt` serve
-the result as the same switch/text preferences (keys `store::key`).
+CloudStream settings: Android never opens an extension's native settings
+screen; it records the preferences the extension reads/writes as it runs
+(`AndroidPreferenceRecorder`, `cloudStreamCommon` androidMain: attributes each
+read/write by matching call-stack frames against the `PathClassLoader`
+registered for each loaded plugin, since Android has no `StackWalker`) and
+serves them as switch/text preferences (keys `store::key`).
+
+Desktop builds the screen itself. `SourcePreferences.desktop.kt` runs the
+plugin's `openSettings` under `UiCapture` (commonDesktopLib): `DialogFragment.show`
+hands the fragment over, `PluginResources` reads the plugin's `resources.arsc`
+and `res/layout` from its converted jar (through the jar's own URL, since the
+bridge's class loader would answer from its parent first), `LayoutInflater`
+builds stand-in widgets (`android.widget.*` sources in commonDesktopLib keep
+text/checked/listeners; every other Android UI method no-ops instead of
+throwing "Stub!"), and `ScreenReader`/`ScreenSettings` turn the tree into
+`switch`/`text`/`list` preferences with keys `ui::<sheets>::<control>`.
+Rows that open another sheet are followed one level (this presses them, so
+their side effects run); saving reopens the screen, sets the control and
+presses the sheet's save button so the extension stores the value itself.
+A plugin whose screen yields nothing falls back to `PreferenceRecorder`'s
+recorded keys (every `SharedPreferences` read/write attributed per class
+loader via `StackWalker`, same `store::key` form).
 
 ## Support
 
