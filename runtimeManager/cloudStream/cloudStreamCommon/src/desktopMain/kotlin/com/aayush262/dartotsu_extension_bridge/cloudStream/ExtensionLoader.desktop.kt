@@ -71,6 +71,10 @@ actual object ExtensionLoader {
                             file.absolutePath,
                             jarFile.absolutePath
                         )
+
+                        // Same path as the previous build: a cached loader would keep
+                        // serving the old jar (and manifest version) after an update.
+                        PackageTools.invalidateClassLoader(jarFile.absolutePath)
                     }
                 }
 
