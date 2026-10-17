@@ -38,12 +38,6 @@ class FfmpegFailure implements Exception {
   String toString() => 'ffmpeg exited with $code: $output';
 }
 
-/// Downloads a minimal remux-only `ffmpeg` (a few MB, committed in
-/// the repo's `ffmpeg/` folder) for
-/// Windows, Linux, macOS and Android (arm64) at app runtime. iOS (no
-/// subprocesses) links the same minimal build statically into the app
-/// (the prebuilt xcframework in `ios/.../Frameworks/ffmpeg-v1/`) and calls it
-/// in process.
 class FfmpegAddon extends Addon {
   final _client = MClient.download();
 
@@ -335,8 +329,6 @@ class FfmpegAddon extends Addon {
   @override
   Future<void> update() async {}
 
-  /// Runs ffmpeg with [args]; throws [FfmpegFailure] on a non-zero exit.
-  /// [cancel] stops it (the future then completes with a failure).
   Future<void> run(
     List<String> args, {
     FfmpegCancel? cancel,
@@ -388,8 +380,6 @@ class FfmpegAddon extends Addon {
     }
   }
 
-  /// Joins a local HLS playlist (segments, keys and init files already on
-  /// disk next to it) into one mp4 without re-encoding.
   Future<void> remuxPlaylist({
     required String playlist,
     required String output,

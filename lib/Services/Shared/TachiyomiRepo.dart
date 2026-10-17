@@ -303,10 +303,6 @@ void detectTachiyomiUpdates(
   }
 }
 
-// ---------------------------------------------------------------------------
-// index.pb (protobuf) repositories
-// ---------------------------------------------------------------------------
-
 /// Wire format of a repository index.
 enum RepoIndexFormat {
   /// The historical `index.min.json` array.
@@ -548,10 +544,6 @@ bool _plausibleIndex(Uint8List body, String url) {
   final first = body.first;
   return first != 0x3c && first != 0x7b && first != 0x5b;
 }
-
-// ---------------------------------------------------------------------------
-// Shared backend behaviour
-// ---------------------------------------------------------------------------
 
 /// Repo plumbing shared by every Tachiyomi-style backend (Aniyomi, IReader,
 /// Tsundoku — Android and desktop).
