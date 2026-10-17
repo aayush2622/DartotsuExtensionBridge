@@ -59,13 +59,7 @@ actual object ExtensionLoader {
 
             when (file.extension.lowercase()) {
                 "cs3" -> {
-                    val shouldBuildJar = when {
-                        !jarFile.exists() -> true
-                        file.lastModified() > jarFile.lastModified() -> true
-                        else -> false
-                    }
-
-                    if (shouldBuildJar) {
+                    if (PackageTools.needsConversion(file, jarFile)) {
                         Logger.log("Building jar for ${file.name}")
 
                         PackageTools.dex2jar(

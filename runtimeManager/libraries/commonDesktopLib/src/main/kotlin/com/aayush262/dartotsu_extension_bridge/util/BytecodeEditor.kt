@@ -148,6 +148,16 @@ object BytecodeEditor {
             fixSelfInstantiatingSingletons(cn, jarLabel)
         }
 
+        for (cn in classNodes.values) {
+            adoptPluginRequests(cn, jarLabel)
+        }
+
+        val runtimeLoader = loader.parent
+        val resolved = HashMap<String, Boolean>()
+        for (cn in classNodes.values) {
+            skipMissingUiCalls(cn, classNodes.keys, runtimeLoader, resolved, jarLabel)
+        }
+
         val constructorsNeeded = LinkedHashSet<Pair<String, String>>() // (owner, desc)
         for (cn in classNodes.values) {
             repairMalformedConstructions(cn, classNodes, loader, constructorsNeeded, jarLabel, dexNewInstances)
@@ -430,6 +440,132 @@ object BytecodeEditor {
                 node = node.next
             }
         }
+    }
+
+    // ---------------------------------------------------------------------
+    // Pass A2: CloudStream `Requests` an extension builds itself
+    // ---------------------------------------------------------------------
+
+    private const val REQUESTS = "com/lagradost/nicehttp/Requests"
+    private const val REQUESTS_HOOK = "com/aayush262/dartotsu_extension_bridge/PluginRequests"
+
+    /**
+     * A `Requests()` built by the extension gets a plain OkHttp client without
+     * the app's cookies, Cloudflare solver, DoH or proxy. After each
+     * `new Requests(...)` whose result stays on the stack, hand it to
+     * `PluginRequests.adopt`, which puts the shared network on its client.
+     */
+    private fun adoptPluginRequests(cn: ClassNode, jarLabel: String) {
+        if (cn.name.startsWith("com/lagradost/nicehttp/")) return
+        for (method in cn.methods) {
+            val calls = method.instructions.toArray().filterIsInstance<MethodInsnNode>().filter {
+                it.opcode == Opcodes.INVOKESPECIAL && it.owner == REQUESTS && it.name == "<init>"
+            }
+            if (calls.isEmpty()) continue
+            val frames = try {
+                Analyzer(ProvenanceInterpreter()).analyze(cn.name, method)
+            } catch (_: Throwable) {
+                continue
+            }
+            val targets = calls.filter { call ->
+                val frame = frames[method.instructions.indexOf(call)] ?: return@filter false
+                val receiver = frame.stackSize - 1 - Type.getArgumentTypes(call.desc).size
+                if (receiver < 1) return@filter false
+                val created = frame.getStack(receiver).insns.singleOrNull()
+                created is TypeInsnNode && created.opcode == Opcodes.NEW &&
+                        frame.getStack(receiver - 1).insns.singleOrNull() === created
+            }
+            for (call in targets) {
+                method.instructions.insert(call, InsnList().apply {
+                    add(InsnNode(Opcodes.DUP))
+                    add(MethodInsnNode(Opcodes.INVOKESTATIC, REQUESTS_HOOK, "adopt", "(L$REQUESTS;)V", false))
+                })
+            }
+            if (targets.isNotEmpty()) {
+                Logger.log("[$jarLabel] ${cn.name}.${method.name}: shared network on ${targets.size} Requests", LogLevel.INFO)
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Pass A3: calls into Android UI members the stubs don't have
+    // ---------------------------------------------------------------------
+
+    private val uiPackages = listOf(
+        "android/widget/", "android/view/", "android/graphics/",
+        "android/app/", "android/text/", "androidx/",
+    )
+
+    /**
+     * Settings screens and dialogs touch far more of the Android UI API than
+     * the stubs implement. A call to a member the runtime doesn't have would
+     * throw `NoSuchMethodError` and abort the whole screen, so it's replaced
+     * with popping its arguments and pushing a default result.
+     */
+    private fun skipMissingUiCalls(
+        cn: ClassNode,
+        ownClasses: Set<String>,
+        runtimeLoader: ClassLoader,
+        resolved: MutableMap<String, Boolean>,
+        jarLabel: String,
+    ) {
+        var skipped = 0
+        for (method in cn.methods) {
+            for (insn in method.instructions.toArray()) {
+                if (insn !is MethodInsnNode || insn.name == "<init>") continue
+                if (uiPackages.none { insn.owner.startsWith(it) } || insn.owner in ownClasses) continue
+                val key = "${insn.owner}.${insn.name}${insn.desc}"
+                if (resolved.getOrPut(key) { methodResolves(runtimeLoader, insn.owner, insn.name, insn.desc) }) continue
+
+                val replacement = InsnList()
+                for (arg in Type.getArgumentTypes(insn.desc).reversed()) {
+                    replacement.add(InsnNode(if (arg.size == 2) Opcodes.POP2 else Opcodes.POP))
+                }
+                if (insn.opcode != Opcodes.INVOKESTATIC) replacement.add(InsnNode(Opcodes.POP))
+                defaultValue(Type.getReturnType(insn.desc))?.let(replacement::add)
+                method.instructions.insertBefore(insn, replacement)
+                method.instructions.remove(insn)
+                skipped++
+            }
+        }
+        if (skipped > 0) {
+            Logger.log("[$jarLabel] ${cn.name}: skipped $skipped call(s) to missing Android UI members", LogLevel.INFO)
+        }
+    }
+
+    private fun defaultValue(type: Type): AbstractInsnNode? = when (type.sort) {
+        Type.VOID -> null
+        Type.FLOAT -> InsnNode(Opcodes.FCONST_0)
+        Type.LONG -> InsnNode(Opcodes.LCONST_0)
+        Type.DOUBLE -> InsnNode(Opcodes.DCONST_0)
+        Type.ARRAY, Type.OBJECT -> InsnNode(Opcodes.ACONST_NULL)
+        else -> InsnNode(Opcodes.ICONST_0)
+    }
+
+    private fun methodResolves(loader: ClassLoader, owner: String, name: String, desc: String): Boolean {
+        val start = try {
+            Class.forName(owner.replace('/', '.'), false, loader)
+        } catch (_: ClassNotFoundException) {
+            return false
+        } catch (_: LinkageError) {
+            return false
+        } catch (_: Throwable) {
+            return true
+        }
+        val seen = HashSet<Class<*>>()
+        val queue = ArrayDeque<Class<*>>().apply { add(start) }
+        try {
+            while (queue.isNotEmpty()) {
+                val c = queue.removeFirst()
+                if (!seen.add(c)) continue
+                if (c.declaredMethods.any { it.name == name && Type.getMethodDescriptor(it) == desc }) return true
+                c.superclass?.let(queue::add)
+                queue.addAll(c.interfaces)
+            }
+        } catch (_: Throwable) {
+            return true
+        }
+        return false
     }
 
     // ---------------------------------------------------------------------
