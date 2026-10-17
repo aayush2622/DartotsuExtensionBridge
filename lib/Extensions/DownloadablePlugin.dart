@@ -209,6 +209,10 @@ abstract class DownloadablePlugin {
     return _needsUpdate(remote);
   }
 
+  /// Called after [update] has replaced the file, so whatever runs the old
+  /// version can switch to the new one without an app restart.
+  Future<void> Function()? onUpdated;
+
   Future<void> update() async {
     if (!await isInstalled() || downloading.value) return;
 
@@ -236,6 +240,12 @@ abstract class DownloadablePlugin {
       rethrow;
     } finally {
       downloading.value = false;
+    }
+
+    try {
+      await onUpdated?.call();
+    } catch (e) {
+      Logger.log("$name could not switch to v$remoteVersion: $e");
     }
   }
 

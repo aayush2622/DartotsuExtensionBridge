@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../ExtensionBridge.dart';
+import '../../Extensions/DownloadablePlugin.dart';
 import '../../Extensions/Extensions.dart';
 import '../../Network/NativeNetwork.dart';
 
@@ -25,16 +26,32 @@ mixin JvmBackend on Extension {
     plugin.installed.value = await plugin.isInstalled();
     if (!plugin.installed.value) return false;
 
+    plugin.onUpdated = reloadRuntime;
     unawaited(plugin.autoUpdate());
 
     await NativeNetwork.start();
+    await _boot(plugin);
+    return true;
+  }
+
+  Future<void> _boot(DownloadablePlugin plugin) async {
     await startRuntime(await plugin.getPath());
     await NativeNetwork.attach(this, sendNetworkSettings);
-    return true;
+  }
+
+  /// Restarts the runtime on the plugin file just downloaded, so an update
+  /// applies while the app runs.
+  Future<void> reloadRuntime() async {
+    final plugin = this.plugin;
+    if (plugin == null || !plugin.installed.value) return;
+    NativeNetwork.detach(this);
+    stopRuntime();
+    await _boot(plugin);
   }
 
   @override
   void dispose() {
+    plugin?.onUpdated = null;
     NativeNetwork.detach(this);
     stopRuntime();
     super.dispose();
