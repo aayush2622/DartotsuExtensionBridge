@@ -111,12 +111,13 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
 
   @override
   Future<List<SourcePreference>> getPreference() async {
-    final result = await bridge.call<List<dynamic>>('getPreference', {
+    // A backend with no settings may answer with an empty payload.
+    final result = await bridge.call<List<dynamic>?>('getPreference', {
       'sourceId': source.id,
       'isAnime': isAnime,
     });
 
-    return result
+    return (result ?? const [])
         .map((e) => mapToSourcePreference(Map<String, dynamic>.from(e)))
         .toList();
   }
