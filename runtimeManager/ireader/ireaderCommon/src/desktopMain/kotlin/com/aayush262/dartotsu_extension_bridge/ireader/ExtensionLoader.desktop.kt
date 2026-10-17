@@ -5,7 +5,7 @@ import com.aayush262.dartotsu_extension_bridge.util.ExtensionConvert
 import com.aayush262.dartotsu_extension_bridge.util.PackageTools
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.parser.Parser
-import ireader.core.http.HttpClients
+import ireader.core.http.HttpClientsInterface
 import ireader.core.prefs.PreferenceStore
 import com.aayush262.dartotsu_extension_bridge.ireader.prefs.PrefixedPreferenceStore
 import ireader.core.source.CatalogSource
@@ -93,7 +93,7 @@ actual object ExtensionLoader {
         )
 
         val deps = Dependencies(
-            getKoin().get<HttpClients>(),
+            getKoin().get<HttpClientsInterface>(),
             prefs
         )
 

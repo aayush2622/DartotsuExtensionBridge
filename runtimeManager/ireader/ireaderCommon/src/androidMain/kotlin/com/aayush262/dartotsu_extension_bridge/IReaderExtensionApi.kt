@@ -8,6 +8,8 @@ import ireader.core.http.AcceptAllCookiesStorage
 import ireader.core.http.BrowserEngine
 import ireader.core.http.CookieSynchronizer
 import ireader.core.http.HttpClients
+import ireader.core.http.HttpClientsInterface
+import com.aayush262.dartotsu_extension_bridge.ireader.BridgeHttpClients
 import ireader.core.http.WebViewCookieJar
 import ireader.core.http.WebViewManger
 import ireader.core.prefs.PreferenceStore
@@ -41,7 +43,7 @@ actual object PlatformInit {
                 module {
                     single<Application> { ctx as Application }
                     single<PreferenceStore> { preferences }
-                    single<HttpClients> { httpClients }
+                    single<HttpClientsInterface> { BridgeHttpClients(httpClients) }
                 },
             )
         }

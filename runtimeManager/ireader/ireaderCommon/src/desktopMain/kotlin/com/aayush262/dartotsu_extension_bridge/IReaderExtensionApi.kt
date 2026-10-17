@@ -5,6 +5,8 @@ import android.os.Looper
 import com.aayush262.dartotsu_extension_bridge.ireader.prefs.PreferenceStoreFactory
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import ireader.core.http.HttpClients
+import ireader.core.http.HttpClientsInterface
+import com.aayush262.dartotsu_extension_bridge.ireader.BridgeHttpClients
 import ireader.core.prefs.PreferenceStore
 import com.aayush262.dartotsu_extension_bridge.ireader.prefs.PrefixedPreferenceStore
 import org.koin.core.context.GlobalContext
@@ -51,7 +53,7 @@ actual object PlatformInit {
                 module {
                     single<Application> { application }
                     single<PreferenceStore> { preferences }
-                    single<HttpClients> { httpClients }
+                    single<HttpClientsInterface> { BridgeHttpClients(httpClients) }
                 },
                 androidCompatModule(root),
             )

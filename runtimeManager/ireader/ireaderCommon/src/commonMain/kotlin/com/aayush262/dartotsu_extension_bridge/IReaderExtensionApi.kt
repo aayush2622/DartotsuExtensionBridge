@@ -1,5 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge
 
+import com.aayush262.dartotsu_extension_bridge.network.Network
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
 import com.aayush262.dartotsu_extension_bridge.ireader.ExtensionLoader
 import com.google.gson.Gson
@@ -253,7 +254,7 @@ class IReaderExtensionApi : ExtensionApi, ExtensionBridgeApi {
     }
 
     override fun initClient(data: String) {
-
+        Network.configure(data)
     }
 
 }
