@@ -92,15 +92,15 @@
   },
   {
     "name": "kotatsuDesktop",
-    "versionCode": 8,
-    "versionName": "2.0.6",
+    "versionCode": 9,
+    "versionName": "2.0.7",
     "description": "A plugin that allows you to run kotatsu extensions on desktop",
     "author": "aayush262/Ryan",
-    "createdAt": 1792249635204,
+    "createdAt": 1792253540667,
     "platform": "desktop",
     "type": "jar",
     "fileName": "kotatsuDesktop-plugin.jar",
-    "fileSize": 66634681,
+    "fileSize": 66636190,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/kotatsuDesktop-plugin.jar"
   },
   {
