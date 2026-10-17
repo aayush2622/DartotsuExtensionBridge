@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.plugins.PluginData
 import com.lagradost.cloudstream3.plugins.PluginManager
 import android.app.Application
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
+import com.aayush262.dartotsu_extension_bridge.ui.PluginResources
 import com.aayush262.dartotsu_extension_bridge.util.ExtensionConvert
 import com.aayush262.dartotsu_extension_bridge.util.PackageTools
 import java.util.concurrent.ConcurrentHashMap
@@ -130,6 +131,7 @@ actual object ExtensionLoader {
             )
             val app: Application by KoinPlatformTools.defaultContext().get().inject()
             if (plugin is Plugin) {
+                plugin.resources = PluginResources(loader)
                 plugin.load(app.applicationContext)
             } else {
                 plugin.load()
