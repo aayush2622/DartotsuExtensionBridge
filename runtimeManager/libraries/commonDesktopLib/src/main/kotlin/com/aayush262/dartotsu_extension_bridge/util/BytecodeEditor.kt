@@ -691,7 +691,10 @@ object BytecodeEditor {
     private fun isConcreteInstantiable(internalName: String, loader: ClassLoader): Boolean =
         classifyType(internalName, loader) == TypeKind.CONCRETE
 
-    private fun mostSpecificType(types: Set<String>, loader: ClassLoader): String? {
+    private fun mostSpecificType(allTypes: Set<String>, loader: ClassLoader): String? {
+        // Everything is an Object, so it never narrows the type - and a lone real type
+        // needs no class loading (which fails for classes extending a sealed parent).
+        val types = allTypes.filterTo(LinkedHashSet()) { it != "java/lang/Object" }.ifEmpty { allTypes }
         if (types.size == 1) return types.first()
         val resolved = types.mapNotNull { t ->
             try { t to Class.forName(t.replace('/', '.'), false, loader) } catch (_: Throwable) { null }
