@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
@@ -10,6 +9,7 @@ import '../../../dartotsu_extension_bridge.dart';
 import '../../Network.dart';
 import '../../Shared/KotatsuRepoBackend.dart';
 import '../KotatsuSourceMethods.dart';
+import '../../../Network/NetworkSettingsSync.dart';
 
 class KotatsuDesktopExtensions extends Extension
     with KotatsuRepoBackend<KotatsuDesktopSource> {
@@ -63,21 +63,17 @@ class KotatsuDesktopExtensions extends Extension
     final dir = await sourcesDir;
     await java.call<void>("initializeDesktop", {"path": dir!.path});
 
-    if (_context.network != null) {
-      await java.call<void>("initClient", {
-        "data": jsonEncode({
-          'dns': _context.network?.dns,
-          'proxy': _context.network?.proxy,
-          'userAgent': _context.network?.userAgent,
-        }),
-      });
-    }
+    await NetworkSettingsSync.register(
+      this,
+      (data) => java.call<void>('initClient', {'data': data}),
+    );
     return true;
   }
 
   @override
   void dispose() async {
     super.dispose();
+    NetworkSettingsSync.unregister(this);
     java.dispose();
   }
 

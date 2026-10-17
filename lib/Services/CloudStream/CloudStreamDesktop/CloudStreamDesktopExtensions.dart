@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -19,6 +18,7 @@ import '../../Network.dart';
 import '../../Shared/CloudStreamRepoBackend.dart';
 import '../CloudStreamSourceMethods.dart';
 import 'Models/Source.dart';
+import '../../../Network/NetworkSettingsSync.dart';
 
 class CloudStreamDesktopExtensions extends Extension
     with CloudStreamRepoBackend<CdSource> {
@@ -82,19 +82,14 @@ class CloudStreamDesktopExtensions extends Extension
 
     await java.init(pluginJarPath: filePath);
 
-    var file = await _context.getDirectory(subPath: 'bridge/aniyomi');
+    var file = await _context.getDirectory(subPath: 'bridge/cloudStream');
 
     await java.call<void>("initializeDesktop", {"path": file!.path});
 
-    if (_context.network != null) {
-      await java.call<void>("initClient", {
-        "data": jsonEncode({
-          "dns": _context.network?.dns,
-          "proxy": _context.network?.proxy,
-          "userAgent": _context.network?.userAgent,
-        }),
-      });
-    }
+    await NetworkSettingsSync.register(
+      this,
+      (data) => java.call<void>('initClient', {'data': data}),
+    );
 
     return true;
   }
@@ -153,6 +148,7 @@ class CloudStreamDesktopExtensions extends Extension
   @override
   void dispose() async {
     super.dispose();
+    NetworkSettingsSync.unregister(this);
     java.dispose();
   }
 

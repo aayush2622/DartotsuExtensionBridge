@@ -15,6 +15,8 @@ export './Models/Pages.dart';
 export './Models/Source.dart';
 export './Models/SourcePreference.dart';
 export './Models/Video.dart';
+export './Network/CloudflareSolver.dart';
+export './Network/WebViewCookieSync.dart';
 // maybe needed sometimes
 export './Services/Mangayomi/Models/Source.dart';
 export './Services/LnReader/Models/Source.dart';

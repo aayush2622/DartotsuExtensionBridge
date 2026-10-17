@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +15,7 @@ import '../../Shared/AndroidApkInstallMixin.dart';
 import '../../Shared/TachiyomiRepo.dart';
 import '../AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
+import '../../../Network/NetworkSettingsSync.dart';
 
 class AniyomiExtensions extends Extension
     with TachiyomiRepoBackend, AndroidApkInstallMixin {
@@ -71,17 +71,10 @@ class AniyomiExtensions extends Extension
 
     await platform.invokeMethod('loadPlugin', {"path": filePath});
     await BridgeChannels.init();
-    var context = DartotsuExtensionBridge.context;
-    if (context.network != null) {
-      await platform.invokeMethod(
-        'initClient',
-        jsonEncode({
-          'dns': context.network?.dns,
-          'proxy': context.network?.proxy,
-          'userAgent': context.network?.userAgent,
-        }),
-      );
-    }
+    await NetworkSettingsSync.register(
+      this,
+      (data) => platform.invokeMethod('initClient', data),
+    );
     return true;
   }
 

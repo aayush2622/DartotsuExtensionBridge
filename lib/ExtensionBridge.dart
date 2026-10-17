@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart';
 import 'package:isar_community/isar.dart';
 
 import 'AddonManager.dart';
 import 'ExtensionManager.dart';
+import 'Network/NetworkSettingsSync.dart';
 import 'Settings/KvStore.dart';
 
 class DartotsuExtensionBridge {
@@ -88,6 +89,13 @@ class DartotsuExtensionBridge {
     debugPrint('DartotsuExtensionBridge: $log');
   }
 
+  /// Call after the app changes its DNS, proxy or User-Agent: every running
+  /// backend rebuilds its HTTP clients with the new settings.
+  static Future<void> networkChanged() async {
+    if (!_initialized) return;
+    await NetworkSettingsSync.broadcast();
+  }
+
   static void dispose() {
     if (_initialized) {
       _initialized = false;
@@ -116,6 +124,13 @@ abstract interface class BridgeNetwork {
   Future<String?> getCookies(String url);
 
   Future<void> setCookies(String url, List<String> cookies);
+
+  /// Shows [page] above the app (a full-screen route) and completes once it
+  /// is closed. The bridge uses this for a Cloudflare challenge its
+  /// background WebView couldn't clear; the page closes itself when done.
+  ///
+  /// Return false without showing anything when the app can't show UI now.
+  Future<bool> presentChallenge(Widget page);
 }
 
 /// {@macro get_directory_contract}
