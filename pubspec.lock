@@ -275,9 +275,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: main
-      resolved-ref: b64d2e3a8b2bf3b32ab4c3acef34a11636d5b87f
-      url: "https://github.com/kodjodevf/flutter_qjs.git"
+      ref: dartotsu-ios-exedir-fix
+      resolved-ref: "6f7e8de0cde6074cc31cb993523bdeb1ed31fd73"
+      url: "https://github.com/aayush2622/flutter_qjs.git"
     source: git
     version: "0.0.1"
   flutter_test:
