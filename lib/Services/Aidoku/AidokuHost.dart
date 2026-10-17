@@ -750,8 +750,9 @@ class AidokuHost {
     try {
       final htmlStr = _readStr((a[0] as num).toInt(), (a[1] as num).toInt());
       final baseUrl = _readStr((a[2] as num).toInt(), (a[3] as num).toInt());
-      final frag = html_parser.parseFragment(htmlStr);
-      return _alloc(_NodeResource(frag, baseUrl));
+      // Like SwiftSoup's parseBodyFragment: a document whose body holds it.
+      final doc = html_parser.parse('<body>$htmlStr');
+      return _alloc(_NodeResource(doc, baseUrl));
     } catch (_) {
       return -3;
     }
