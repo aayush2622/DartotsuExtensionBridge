@@ -68,7 +68,7 @@ used as the factory key.
 | **Mangayomi** | `MangayomiExtensions` | all (incl. iOS) | Repo of JS/Dart source scripts. Heavy sub-tree — see below. |
 | **Sora** | `SoraExtensions` | all (incl. iOS) | JS "modules"; no novel support. `Services/Sora/JsEngine/`. |
 | **Aniyomi** | `AniyomiExtensions` (Android) / `AniyomiDesktopExtensions` (desktop) | Android + desktop | Android: APK extensions via platform channel + `install_plugin`. Desktop/iOS: sidecar (desktop) or embedded VM (iOS) bridge into `runtimeManager`. |
-| **CloudStream** | `CloudStreamExtensions` / `CloudStreamDesktopExtensions` | Android + desktop | `CloudStreamSourceMethods` extends `BridgeSourceMethods`; video-only (page list / prefs unimplemented). |
+| **CloudStream** | `CloudStreamExtensions` / `CloudStreamDesktopExtensions` | Android + desktop | `CloudStreamSourceMethods` extends `BridgeSourceMethods`; video-only (no page list). Desktop preferences come from `PreferenceRecorder` (see Network layer). |
 | **iReader** | `IReaderExtensions` / `IReaderDesktopExtensions` | Android + desktop | Novels. |
 | **Tsundoku** | `TsundokuExtensions` / `TsundokuDesktopExtensions` | Android + desktop | |
 | **LnReader** | `LnReaderExtensions` | all (incl. iOS) | Independent backend for LNReader novel plugins. Reads the LNReader `plugins.min.json` manifest (`Manifest.dart`); each plugin is a JS module run in its own QuickJS runtime via `LnReaderSourceMethods`. Self-contained polyfills under `Services/LnReader/Js/` (`Polyfills`, `Libs`, `HttpClient` = `@libs/fetch`, `Cheerio` + `DomSelector`, `HtmlParser`, `Storage` = `@libs/storage`). Novel-only. No Mangayomi coupling. |
@@ -114,6 +114,45 @@ iOS through an embedded JVM, see `JavaEngine/` below).
 | `JavaEngine/` | Talk to a JVM that hosts Aniyomi/CloudStream desktop runtime. `JavaBridgeServer.dart` (localhost HTTP, port 4567 — Kotlin `Logger` and cookie callbacks post here; started on desktop *and* iOS), `JavaInstaller.dart`. Transports implement `Bridge/JavaBridge.dart`: `Bridge/SidecarBridge.dart` (one `java -jar` process per backend, desktop), `Bridge/EmbeddedJvmBridge.dart` (iOS — one embedded interpreter-only OpenJDK Zero VM via method channel `dartotsu_extension_bridge/embedded_jvm`; native side in `ios/`, Kotlin entrypoint `EmbeddedBridge` in `runtimeManager/libraries/commonDesktopLib`, and `runtimeManager/EMBEDDED_IOS_NOTES.md`). `Bridge/JavaBridgeFactory.dart` picks per platform. No jnigen/`package:jni`: an in-process JVM is one-per-process, so desktop uses sidecars. iOS runs the **same desktop plugin JARs** (no `-ios` variant; `DownloadablePlugin` picks the `desktop` row) — only Chromium/JCEF WebView is unavailable there (`CefHelper` refuses on `-Ddartotsu.runtime=ios`). iOS JVM logging: HotSpot output (`vfprintf`/`exit`/`abort` hooks), Java stdout/stderr (`EmbeddedBridge.installLogCapture` → `nativeLog`) and uncaught exceptions go to `Logger` as `[JVM] …` and to `bridge/logs/jvm.log` (rotated to `jvm.previous.log` each start); fatal reports land in `bridge/logs/hs_err.log` and are logged on the next start. |
 | `TorrentEngine/` | libtorrent via `dart:ffi` (`ffi_bindings.dart`, `LibtorrentFlutter.dart` session + HTTP streaming server + tracker fetch, `LibTorrentAddon.dart` = the `Addon`, `Models.dart`). |
 | `WasmEngine/WasmEngine.dart` | `WasmEngine` - thin wrapper around `package:wasd` (pure-Dart WebAssembly runtime, no native binaries). One instance per wasm module (own linear memory/state), unlike `JsEngineEnv`'s shared singleton. Used by Aidoku; `instantiate(bytes, imports)` requires every host import the module declares to be supplied by the caller. `call(name, args)` is async - host imports (e.g. Aidoku's `net`) may do real I/O, and wasd's interpreter transparently switches an export to its async invocation path if any host import it calls is async. |
+
+## Network layer (`lib/Network/`, `lib/NetworkClient.dart`, `runtimeManager/libraries/commonLib/.../network/`)
+
+One session for every backend, owned by the host app through `BridgeNetwork`:
+its cookie jar, its User-Agent (`bridgeUserAgent()` - also what every WebView
+uses, so a Cloudflare challenge cleared in the app's own WebView works for
+every extension), DoH resolver and proxy.
+
+- `CloudflareSolver.dart` - clears a challenge for a URL: an offscreen
+  `webview_all` session loads it with the app UA + jar cookies and waits for a
+  fresh `cf_clearance` (written back to the jar); if that fails, shows
+  `CloudflareChallengePage` via `BridgeNetwork.presentChallenge`. Deduped per
+  host, prompts queued, a dismissed host isn't asked again for 10 min.
+- `WebViewCookieSync.dart` - WebView cookie store <-> app jar.
+- `BridgeWebView.dart` - background WebView tasks for JVM sources (request
+  interception via fetch/XHR/resource hooks, script results): CloudStream's
+  desktop `WebViewResolver`, Kotatsu's `evaluateJs`.
+- `NetworkSettingsSync.dart` - sends `{dns, proxy, userAgent}` to every
+  running JVM backend (`initClient`) and re-sends on
+  `DartotsuExtensionBridge.networkChanged()` (host calls it when settings change).
+- `MClient` (`NetworkClient.dart`) - Dart backends: merges jar cookies, forces
+  the app UA with `cf_clearance`, retries a plain `Request` once after the
+  solver clears a challenge.
+- `Services/Network.dart` (`BridgeChannels`) answers the JVM callbacks:
+  `getCookies`/`setCookies`/`getUserAgent`/`solveCloudflare`/`webView`
+  (desktop + iOS over `JavaBridgeServer`, Android over `flutterKotlinBridge.network`).
+
+JVM side: `commonLib` `Network` (`applyTo(builder)`/`newClient()`), with
+`UserAgentInterceptor`, `CloudflareInterceptor` (asks the app's solver, then
+retries), network-level `CookieInterceptor` (app jar; forces the app UA with
+`cf_clearance`), `FlutterCookieJar`, `NetworkBound` (rebuild on new settings)
+and `BridgeWebView`. Aniyomi/Tsundoku (`NetworkHelper`), CloudStream
+(`bridgeClient()`, `CloudflareKiller`), Kotatsu and iReader
+(`BridgeHttpClients`) all build on it. No FlareSolverr.
+
+CloudStream settings on desktop: `PreferenceRecorder` (commonDesktopLib)
+records every `SharedPreferences` read/write per extension class loader;
+`SourcePreferences.desktop.kt` serves them as switch/text preferences
+(keys `store::key`) after probing the extension's settings screen off-screen.
 
 ## Support
 
