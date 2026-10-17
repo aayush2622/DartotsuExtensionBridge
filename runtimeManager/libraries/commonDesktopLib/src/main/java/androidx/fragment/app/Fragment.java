@@ -25,7 +25,16 @@ public class Fragment {
     private String tag;
     private final FragmentManager childFragmentManager = new FragmentManager();
 
+    private View view;
+    private LayoutInflater inflater;
+    FragmentManager parentManager;
+
     public Fragment() {}
+
+    /** Called by the bridge's UI capture once it has built the fragment's screen. */
+    public void attachInflater(LayoutInflater inflater) { this.inflater = inflater; }
+
+    public void attachView(View view) { this.view = view; }
 
     void setTag(String tag) { this.tag = tag; }
 
@@ -60,20 +69,21 @@ public class Fragment {
     public Fragment getParentFragment() { return null; }
 
     public FragmentManager getParentFragmentManager() {
-        throw new IllegalStateException("Fragment " + this + " not associated with a fragment manager.");
+        return parentManager != null ? parentManager : new FragmentManager();
     }
 
     public FragmentManager getChildFragmentManager() { return childFragmentManager; }
 
-    public LayoutInflater getLayoutInflater() { return null; }
+    public LayoutInflater getLayoutInflater() { return inflater; }
 
-    public View getView() { return null; }
+    public View getView() { return view; }
 
     public View requireView() {
+        if (view != null) return view;
         throw new IllegalStateException("Fragment " + this + " did not return a View from onCreateView() or this was called before onCreateView().");
     }
 
-    public boolean isAdded() { return false; }
+    public boolean isAdded() { return view != null; }
 
     public boolean isVisible() { return false; }
 

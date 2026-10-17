@@ -160,6 +160,8 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
 
     int mChildUnhandledKeyListeners = 0;
 
+    private final java.util.List<View> mKids = new java.util.ArrayList<>();
+
     public ViewGroup(Context context) {
         this(context, null);
     }
@@ -881,11 +883,21 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
 
     @Override
     protected <T extends View> T findViewTraversal(@IdRes int id) {
+        if (id == getId()) return (T) this;
+        for (View child : mKids) {
+            T found = child.findViewById(id);
+            if (found != null) return found;
+        }
         return null;
     }
 
     @Override
     protected <T extends View> T findViewWithTagTraversal(Object tag) {
+        if (tag != null && tag.equals(getTag())) return (T) this;
+        for (View child : mKids) {
+            T found = child.findViewWithTag(tag);
+            if (found != null) return found;
+        }
         return null;
     }
 
@@ -916,24 +928,29 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
     }
 
     public void addView(View child) {
-        
+        addView(child, -1, null);
     }
 
     public void addView(View child, int index) {
-        
+        addView(child, index, null);
     }
 
     public void addView(View child, int width, int height) {
-        
+        addView(child, -1, new LayoutParams(width, height));
     }
 
     @Override
     public void addView(View child, LayoutParams params) {
-        
+        addView(child, -1, params);
     }
 
     public void addView(View child, int index, LayoutParams params) {
-        
+        if (child.getParent() != null) throw new IllegalStateException("The specified child already has a parent. You must call removeView() on the child's parent first.");
+        if (params != null) child.setLayoutParams(params);
+        if (index < 0 || index > mKids.size()) index = mKids.size();
+        mKids.add(index, child);
+        child.assignParent(this);
+        onViewAdded(child);
     }
 
     @Override
@@ -1005,11 +1022,14 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
 
     @Override
     public void removeView(View view) {
-        
+        if (mKids.remove(view)) {
+            view.assignParent(null);
+            onViewRemoved(view);
+        }
     }
 
     public void removeViewInLayout(View view) {
-        
+        removeView(view);
     }
 
     public void removeViewsInLayout(int start, int count) {
@@ -1017,7 +1037,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
     }
 
     public void removeViewAt(int index) {
-        
+        removeView(mKids.get(index));
     }
 
     public void removeViews(int start, int count) {
@@ -1033,11 +1053,11 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
     }
 
     public void removeAllViews() {
-        
+        for (View child : new java.util.ArrayList<>(mKids)) removeView(child);
     }
 
     public void removeAllViewsInLayout() {
-        
+        removeAllViews();
     }
 
     protected void removeDetachedView(View child, boolean animate) {
@@ -1225,15 +1245,15 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
     }
 
     public int indexOfChild(View child) {
-        return 0;
+        return mKids.indexOf(child);
     }
 
     public int getChildCount() {
-        return 0;
+        return mKids.size();
     }
 
     public View getChildAt(int index) {
-        return null;
+        return index >= 0 && index < mKids.size() ? mKids.get(index) : null;
     }
 
     protected void measureChildren(int widthMeasureSpec, int heightMeasureSpec) {

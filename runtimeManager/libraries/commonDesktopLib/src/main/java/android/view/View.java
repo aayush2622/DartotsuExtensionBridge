@@ -1262,6 +1262,25 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     public static final float REQUESTED_FRAME_RATE_CATEGORY_NORMAL = -3;
     public static final float REQUESTED_FRAME_RATE_CATEGORY_HIGH = -4;
 
+    private OnClickListener mOnClickListener;
+    private OnLongClickListener mOnLongClickListener;
+    private CharSequence mContentDescription;
+    private int mVisibility = VISIBLE;
+    private boolean mEnabled = true;
+    private boolean mClickable;
+    private int mId = NO_ID;
+
+    /** Layout attributes this view was inflated with, kept for inspecting the screen. */
+    public java.util.Map<String, String> bridgeAttrs = new java.util.HashMap<>();
+
+    public void setLayoutParams(ViewGroup.LayoutParams params) {
+        mLayoutParams = params;
+    }
+
+    public OnClickListener getOnClickListener() {
+        return mOnClickListener;
+    }
+
     public View(Context context) {
         mContext = context;
         mRenderNode = null;
@@ -1462,15 +1481,16 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public void setOnClickListener(@Nullable OnClickListener l) {
-        
+        mOnClickListener = l;
+        if (l != null) mClickable = true;
     }
 
     public boolean hasOnClickListeners() {
-        return false;
+        return mOnClickListener != null;
     }
 
     public void setOnLongClickListener(@Nullable OnLongClickListener l) {
-        
+        mOnLongClickListener = l;
     }
 
     public boolean hasOnLongClickListeners() {
@@ -1510,11 +1530,13 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     // instead, to guarantee that the autofill manager is notified when necessary (as subclasses
     // could extend this method without calling super.performClick()).
     public boolean performClick() {
-        return false;
+        if (mOnClickListener == null) return false;
+        mOnClickListener.onClick(this);
+        return true;
     }
 
     public boolean callOnClick() {
-        return false;
+        return performClick();
     }
 
     public boolean performLongClick() {
@@ -2001,23 +2023,11 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @ViewDebug.ExportedProperty(category = "accessibility")
     public CharSequence getContentDescription() {
-        
-            return null;
-}
-
-    @ViewDebug.ExportedProperty(category = "accessibility")
-    @Nullable
-    public CharSequence getSupplementalDescription() {
-        
-            return null;
-}
-
-    public void setStateDescription(@Nullable CharSequence stateDescription) {
-        
+        return mContentDescription;
     }
 
     public void setContentDescription(CharSequence contentDescription) {
-        
+        mContentDescription = contentDescription;
     }
 
     public void setSupplementalDescription(@Nullable CharSequence supplementalDescription) {
@@ -2414,20 +2424,20 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     })
     @Visibility
     public int getVisibility() {
-        return 0;
+        return mVisibility;
     }
 
     public void setVisibility(@Visibility int visibility) {
-        
+        mVisibility = visibility;
     }
 
     @ViewDebug.ExportedProperty
     public boolean isEnabled() {
-        return false;
+        return mEnabled;
     }
 
     public void setEnabled(boolean enabled) {
-        
+        mEnabled = enabled;
     }
 
     public void setFocusable(boolean focusable) {
@@ -2557,11 +2567,11 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @ViewDebug.ExportedProperty
     public boolean isClickable() {
-        return false;
+        return mClickable;
     }
 
     public void setClickable(boolean clickable) {
-        
+        mClickable = clickable;
     }
 
     public void setAllowClickWhenDisabled(boolean clickableWhenDisabled) {
@@ -3257,7 +3267,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public final ViewParent getParent() {
-        return null;
+        return mParent;
     }
 
     public void setScrollX(int value) {
@@ -3680,12 +3690,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @ViewDebug.ExportedProperty(deepExport = true, prefix = "layout_")
     public ViewGroup.LayoutParams getLayoutParams() {
-        
-            return null;
-}
-
-    public void setLayoutParams(ViewGroup.LayoutParams params) {
-        
+        return mLayoutParams;
     }
 
     public void resolveLayoutParams() {
@@ -3782,11 +3787,13 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     // }
 
     public boolean post(Runnable action) {
-        return false;
+        action.run();
+        return true;
     }
 
     public boolean postDelayed(Runnable action, long delayMillis) {
-        return false;
+        action.run();
+        return true;
     }
 
     public void postOnAnimation(Runnable action) {
@@ -3992,7 +3999,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * (This allows addViewInLayout to not request a new layout.)
      */
     void assignParent(ViewParent parent) {
-        
+        mParent = parent;
     }
 
     @CallSuper
@@ -4710,11 +4717,11 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     protected <T extends View> T findViewTraversal(@IdRes int id) {
-        return null;
+        return id == mId ? (T) this : null;
     }
 
     protected <T extends View> T findViewWithTagTraversal(Object tag) {
-        return null;
+        return tag != null && tag.equals(mTag) ? (T) this : null;
     }
 
     protected <T extends View> T findViewByPredicateTraversal(Predicate<View> predicate,
@@ -4726,12 +4733,15 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     // is deliberately left unspecified as idiomatically correct code can make assumptions either
     // way based on local context, e.g. layout specification.
     public final <T extends View> T findViewById(@IdRes int id) {
-        return null;
+        if (id == NO_ID) return null;
+        return findViewTraversal(id);
     }
 
     @NonNull
     public final <T extends View> T requireViewById(@IdRes int id) {
-        return null;
+        T view = findViewById(id);
+        if (view == null) throw new IllegalArgumentException("ID does not reference a View inside this View");
+        return view;
     }
 
     public <T extends View> T findViewByAccessibilityIdTraversal(int accessibilityId) {
@@ -4748,7 +4758,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public final <T extends View> T findViewWithTag(Object tag) {
-        return null;
+        return findViewWithTagTraversal(tag);
     }
 
     public final <T extends View> T findViewByPredicate(Predicate<View> predicate) {
@@ -4761,7 +4771,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     }
 
     public void setId(@IdRes int id) {
-        
+        mId = id;
     }
 
     @TestApi
@@ -4776,7 +4786,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
     @IdRes
     @ViewDebug.CapturedViewProperty
     public int getId() {
-        return 0;
+        return mId;
     }
 
     public long getUniqueDrawingId() {
@@ -4785,11 +4795,11 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
     @ViewDebug.ExportedProperty
     public Object getTag() {
-        return null;
+        return mTag;
     }
 
     public void setTag(final Object tag) {
-        
+        mTag = tag;
     }
 
     public Object getTag(int key) {

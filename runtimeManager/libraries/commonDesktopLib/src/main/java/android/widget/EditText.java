@@ -1,52 +1,38 @@
 package android.widget;
 
+import android.content.Context;
+import android.text.Editable;
+import android.text.SpannableStringBuilder;
+import android.util.AttributeSet;
+
 /*
- * Copyright (C) Contributors to the Suwayomi project
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-
+ * Desktop stand-in: text that can be read back and set, like the real one.
+ */
 public class EditText extends TextView {
-    public EditText(android.content.Context context) {
-        super(context);
-        throw new RuntimeException("Stub!");
+    public EditText(Context context) { super(context); }
+
+    public EditText(Context context, AttributeSet attrs) { super(context, attrs); }
+
+    public EditText(Context context, AttributeSet attrs, int defStyleAttr) { super(context, attrs, defStyleAttr); }
+
+    public EditText(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
     }
 
-    public EditText(android.content.Context context, android.util.AttributeSet attrs) {
-        super(context);
-        throw new RuntimeException("Stub!");
+    @Override
+    protected CharSequence storeText(CharSequence value) {
+        return new SpannableStringBuilder(value == null ? "" : value);
     }
 
-    public EditText(android.content.Context context, android.util.AttributeSet attrs, int defStyleAttr) {
-        super(context);
-        throw new RuntimeException("Stub!");
+    @Override
+    public Editable getText() {
+        CharSequence current = super.getText();
+        return current instanceof Editable ? (Editable) current : new SpannableStringBuilder(current);
     }
 
-    public EditText(android.content.Context context, android.util.AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context);
-        throw new RuntimeException("Stub!");
-    }
+    public void setSelection(int index) {}
 
-    public boolean getFreezesText() { throw new RuntimeException("Stub!"); }
+    public void setSelection(int start, int stop) {}
 
-    protected boolean getDefaultEditable() { throw new RuntimeException("Stub!"); }
-
-    protected android.text.method.MovementMethod getDefaultMovementMethod() { throw new RuntimeException("Stub!"); }
-
-    public android.text.Editable getText() { throw new RuntimeException("Stub!"); }
-
-    public void setText(java.lang.CharSequence text, android.widget.TextView.BufferType type) { throw new RuntimeException("Stub!"); }
-
-    public void setSelection(int start, int stop) { throw new RuntimeException("Stub!"); }
-
-    public void setSelection(int index) { throw new RuntimeException("Stub!"); }
-
-    public void selectAll() { throw new RuntimeException("Stub!"); }
-
-    public void extendSelection(int index) { throw new RuntimeException("Stub!"); }
-
-    public void setEllipsize(android.text.TextUtils.TruncateAt ellipsis) { throw new RuntimeException("Stub!"); }
-
-    public java.lang.CharSequence getAccessibilityClassName() { throw new RuntimeException("Stub!"); }
+    public void selectAll() {}
 }
