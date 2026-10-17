@@ -7,6 +7,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
 
 object FlutterBridge {
 
@@ -20,9 +21,19 @@ object FlutterBridge {
         .build()
     private val gson = Gson()
 
+    // WebView tasks wait on page loads and, for a challenge the background
+    // WebView can't clear, on the user.
+    private val slowClient by lazy {
+        client.newBuilder()
+            .readTimeout(6, TimeUnit.MINUTES)
+            .callTimeout(6, TimeUnit.MINUTES)
+            .build()
+    }
+
     fun call(
         method: String,
         args: Map<String, Any?> = emptyMap(),
+        slow: Boolean = false,
     ): JsonObject {
 
         return runCatching {
@@ -45,7 +56,7 @@ object FlutterBridge {
                     )
                     .build()
 
-            client.newCall(request)
+            (if (slow) slowClient else client).newCall(request)
                 .execute()
                 .use { response ->
 

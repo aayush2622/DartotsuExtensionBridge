@@ -1,90 +1,55 @@
 package com.aayush262.dartotsu_extension_bridge.network
 
-import okhttp3.Cookie
-import okhttp3.CookieJar
-import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.io.IOException
-import kotlin.collections.List
-import kotlin.collections.isNotEmpty
-import kotlin.text.isNullOrEmpty
-import com.aayush262.dartotsu_extension_bridge.customMethods
-import com.google.gson.Gson
 
-class CookieInterceptor : Interceptor {
-
-    private val gson = Gson()
+/**
+ * Network interceptor that keeps every request on the app's cookie jar.
+ *
+ * With [merge], the app's cookies for the URL are added to the request
+ * (cookies the request already carries win), and `Set-Cookie` responses are
+ * saved back to the app. Without it the client's own cookie jar does that.
+ *
+ * Either way, a request carrying `cf_clearance` is sent with the app's
+ * User-Agent: Cloudflare rejects a clearance cookie sent with any other.
+ */
+class CookieInterceptor(private val merge: Boolean = true) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val url = request.url.toString()
 
-        val json = getCookiesBlocking(url)
-
-        val newRequest = if (!json.isNullOrBlank()) {
-            val cookies = gson.fromJson(
-                json,
-                Array<StoredCookieDto>::class.java,
-            )
-
-            val cookieHeader = cookies.joinToString("; ") {
-                "${it.name}=${it.value}"
+        var cookieHeader = request.header("Cookie").orEmpty()
+        if (merge) {
+            val present = cookieHeader.split(';').map { it.substringBefore('=').trim() }.toSet()
+            val extra = FlutterCookies.load(url)
+                .filter { it.name !in present }
+                .joinToString("; ") { "${it.name}=${it.value}" }
+            if (extra.isNotEmpty()) {
+                cookieHeader = if (cookieHeader.isBlank()) extra else "$cookieHeader; $extra"
             }
-
-            val existing = request.header("Cookie")
-
-            val merged = buildString {
-                if (!existing.isNullOrBlank()) {
-                    append(existing)
-                }
-
-                if (cookieHeader.isNotBlank()) {
-                    if (isNotEmpty()) append("; ")
-                    append(cookieHeader)
-                }
-            }
-
-            request.newBuilder()
-                .header("Cookie", merged)
-                .build()
-        } else {
-            request
         }
 
+        val builder = request.newBuilder()
+        if (cookieHeader.isNotBlank()) builder.header("Cookie", cookieHeader)
+        if (hasClearance(cookieHeader)) builder.header("User-Agent", Network.userAgent)
+
         val response = try {
-            chain.proceed(newRequest)
+            chain.proceed(builder.build())
         } catch (e: IOException) {
             throw e
         } catch (e: Throwable) {
             throw IOException(e.message, e)
         }
 
-        val setCookies = response.headers("Set-Cookie")
-        if (setCookies.isNotEmpty()) {
-            setCookies(url, setCookies)
+        if (merge) {
+            val setCookies = response.headers("Set-Cookie")
+            if (setCookies.isNotEmpty()) FlutterCookies.save(url, setCookies)
         }
-
         return response
     }
 
-    private fun getCookiesBlocking(url: String): String? =
-        customMethods?.getCookies(url)
-
-    private fun setCookies(
-        url: String,
-        cookies: List<String>,
-    ) {
-        customMethods?.setCookies(url, cookies)
-    }
+    private fun hasClearance(header: String) =
+        header.split(';').any { it.trim().startsWith("cf_clearance=") }
 }
-data class StoredCookieDto(
-    val name: String,
-    val value: String,
-    val domain: String,
-    val hostOnly: Boolean,
-    val path: String,
-    val expires: String?,
-    val secure: Boolean,
-    val httpOnly: Boolean,
-)

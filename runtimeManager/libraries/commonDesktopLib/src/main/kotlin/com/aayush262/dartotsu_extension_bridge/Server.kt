@@ -185,7 +185,7 @@ object Server {
                         System.out.flush()
 
                     }
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     synchronized(outputLock) {
                         println(
                             gson.toJson(
