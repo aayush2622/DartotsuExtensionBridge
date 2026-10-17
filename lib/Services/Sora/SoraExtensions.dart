@@ -1,19 +1,62 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import '../../Extensions/Extensions.dart';
+import '../../Extensions/RepoGuard.dart';
 import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
+import '../Shared/JsonRepoBackend.dart';
 import '../Shared/SimpleInstalledSourceStore.dart';
 import 'Models/Source.dart';
 import 'SoraSourceMethods.dart';
 
 class SoraExtensions extends Extension
-    with SimpleInstalledSourceStore<SSource> {
+    with SimpleInstalledSourceStore<SSource>, JsonRepoBackend {
   static final _client = MClient.init();
+
+  @override
+  http.Client get repoClient => _client;
+
+  @override
+  List<Source> Function((String body, String repoUrl, ItemType type))
+  get parseRepoIsolate => _parseExtensions;
+
+  @override
+  Set<RepoFormat> get repoFormats => const {RepoFormat.sora};
+
+  /// Names the repo after the module author, as Sora does.
+  @override
+  Repo repoFor(String url, String body, List<Source> sources) {
+    final repo = super.repoFor(url, body, sources);
+    final author = switch (_firstModule(body)) {
+      {'author': final Map<String, dynamic> author} => author,
+      _ => null,
+    };
+    if (author == null) return repo;
+    return Repo(
+      url: repo.url,
+      name: author['name']?.toString() ?? repo.name,
+      iconUrl: author['icon']?.toString(),
+      extensions: repo.extensions,
+    );
+  }
+
+  static Map<String, dynamic>? _firstModule(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is List) {
+        return decoded.whereType<Map<String, dynamic>>().firstOrNull;
+      }
+      if (decoded is Map<String, dynamic>) {
+        if (decoded.containsKey('sourceName')) return decoded;
+        return decoded.values.whereType<Map<String, dynamic>>().firstOrNull;
+      }
+    } catch (_) {}
+    return null;
+  }
 
   @override
   String get id => 'sora';
@@ -56,99 +99,6 @@ class SoraExtensions extends Extension
   Future<void> fetchInstalledMangaExtensions() async {
     await super.fetchInstalledMangaExtensions();
     manga.installed.value = loadInstalled(ItemType.manga);
-  }
-
-  @override
-  Stream<double> addRepo(String repoUrl, ItemType type) {
-    return progressStream((_) async {
-      try {
-        final uri = Uri.tryParse(repoUrl);
-        if (uri == null || !uri.hasScheme) {
-          throw Exception("Invalid repo URL");
-        }
-
-        final repos = loadRepos(type);
-
-        if (repos.any((r) => r.url == repoUrl)) {
-          return;
-        }
-
-        final res = await _client.get(uri);
-        if (res.statusCode != 200) {
-          throw Exception("Failed to fetch repo");
-        }
-
-        final decoded = jsonDecode(res.body);
-
-        final parsed = await compute(_parseExtensions, (
-          res.body,
-          repoUrl,
-          type,
-        ));
-
-        String? repoName;
-        String? repoIcon;
-        Map<String, dynamic>? firstExtension;
-
-        if (decoded is List && decoded.isNotEmpty && decoded.first is Map) {
-          firstExtension = Map<String, dynamic>.from(decoded.first);
-        } else if (decoded is Map<String, dynamic>) {
-          if (decoded.containsKey('sourceName')) {
-            firstExtension = decoded;
-          } else {
-            final values = decoded.values.whereType<Map>().toList();
-            if (values.isNotEmpty) {
-              firstExtension = Map<String, dynamic>.from(values.first);
-            }
-          }
-        }
-
-        if (firstExtension != null) {
-          final author = firstExtension['author'];
-          if (author is Map<String, dynamic>) {
-            repoName = author['name']?.toString();
-            repoIcon = author['icon']?.toString();
-          }
-        }
-
-        final repo = Repo(
-          url: repoUrl,
-          name: repoName ?? repoNameFromUrl(repoUrl),
-          iconUrl: repoIcon,
-          extensions: parsed.length.toString(),
-        );
-
-        final updatedRepos = List<Repo>.from(repos)..add(repo);
-
-        saveRepos(updatedRepos, type);
-        state(type).repos.value = updatedRepos;
-        await selectRepo(repo, type);
-      } catch (e) {
-        Logger.log("Failed to add repo $repoUrl: $e");
-        rethrow;
-      }
-    });
-  }
-
-  @override
-  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
-    try {
-      final res = await _client.get(Uri.parse(repo.url));
-      if (res.statusCode == 200) {
-        var extensions = await compute(_parseExtensions, (
-          res.body,
-          repo.url,
-          type,
-        ));
-        await updateRepoExtensionCount(repo, type, extensions.length);
-
-        return extensions;
-      }
-      return [];
-    } catch (e) {
-      Logger.log("Repo failed ${repo.url}: $e");
-      return const [];
-    }
   }
 
   static List<Source> _parseExtensions(

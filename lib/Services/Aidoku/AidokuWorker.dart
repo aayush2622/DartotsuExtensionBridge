@@ -10,7 +10,7 @@ import '../../Models/DEpisode.dart';
 import '../../Models/DMedia.dart';
 import '../../Models/Page.dart';
 import '../../Models/Pages.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
 import '../../Settings/KvStore.dart';
 import 'AidokuIo.dart';
 import 'AidokuRuntime.dart';

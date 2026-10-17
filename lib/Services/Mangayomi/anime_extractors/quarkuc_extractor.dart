@@ -4,7 +4,7 @@ import 'dart:math';
 
 import 'package:http_interceptor/http_interceptor.dart';
 
-import '../../../NetworkClient.dart';
+import '../../../Network/MClient.dart';
 import '../Eval/dart/model/video.dart';
 
 enum CloudDriveType { quark, uc }

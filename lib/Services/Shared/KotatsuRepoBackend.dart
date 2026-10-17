@@ -6,9 +6,10 @@ import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
 import '../../Extensions/Extensions.dart';
+import '../../Extensions/RepoGuard.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
 import '../../Settings/KvStore.dart';
 import 'ZipValidation.dart';
 
@@ -26,65 +27,31 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
       md5.convert(utf8.encode(repoUrl)).toString();
 
   @override
-  Stream<double> addRepo(String repoUrl, ItemType type) {
-    if (type != ItemType.manga) return const Stream<double>.empty();
+  Set<RepoFormat> get repoFormats => const {RepoFormat.kotatsu};
 
-    return progressStream((report) async {
-      state(type).loadingRepo.value = true;
-      state(type).repoLoadProgress.value = null;
-
-      try {
-        final uri = Uri.tryParse(repoUrl);
-        if (uri == null || !uri.hasScheme) {
-          throw Exception('Invalid repo URL');
-        }
-
-        final repos = loadRepos(type);
-        if (repos.any((r) => r.url == repoUrl)) return;
-
+  /// A Kotatsu repo is a parsers jar; adding one downloads it.
+  @override
+  Stream<double> addRepo(String repoUrl, ItemType type) =>
+      addRepoTask(repoUrl, type, (url, report) async {
         final dir = await sourcesDir;
         if (dir == null) {
           throw Exception('Could not get Kotatsu plugin directory');
         }
         if (!await dir.exists()) await dir.create(recursive: true);
 
-        final client = MClient.init();
-        final response = await client.send(http.Request('GET', uri));
-
-        if (response.statusCode != 200) {
-          await response.stream.drain<void>();
-          throw Exception(
-            'Failed to download parsers jar (${response.statusCode})',
-          );
-        }
-
-        final jarFile = _jarFile(dir, repoUrl);
+        final jarFile = _jarFile(dir, url);
         final temp = File('${jarFile.path}.tmp');
-        final sink = temp.openWrite();
-        final total = response.contentLength;
-        var received = 0;
-
-        try {
-          await for (final chunk in response.stream) {
-            sink.add(chunk);
-            received += chunk.length;
-            if (total != null && total > 0) {
-              final fraction = received / total;
-              state(type).repoLoadProgress.value = fraction;
-              report(fraction);
-            }
-          }
-          await sink.flush();
-        } finally {
-          await sink.close();
-        }
+        await _download(url, temp, (fraction) {
+          state(type).repoLoadProgress.value = fraction;
+          report(fraction);
+        });
 
         if (!await hasZipSignature(temp)) {
+          final head = await temp
+              .openRead(0, 65536)
+              .fold<List<int>>([], (all, chunk) => all..addAll(chunk));
           await temp.delete();
-          throw Exception(
-            'This URL did not return a valid parsers jar (got something '
-            'else - check the repo URL)',
-          );
+          throw invalidRepo(type, body: head, url: url);
         }
 
         try {
@@ -94,22 +61,56 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
           await temp.delete();
         }
 
-        final repo = Repo(url: repoUrl, name: repoNameFromUrl(repoUrl));
-        final updatedRepos = List<Repo>.from(repos)..add(repo);
-        saveRepos(updatedRepos, type);
-        state(type).repos.value = updatedRepos;
+        final repos = [
+          ...loadRepos(type),
+          Repo(url: url, name: repoNameFromUrl(url)),
+        ];
+        saveRepos(repos, type);
+        state(type).repos.value = List.unmodifiable(repos);
         _invalidateSourcesCache();
 
         await fetchMangaExtensions();
         await fetchInstalledMangaExtensions();
-      } catch (e) {
-        Logger.log('Failed to add Kotatsu repo $repoUrl: $e');
-        rethrow;
-      } finally {
-        state(type).loadingRepo.value = false;
-        state(type).repoLoadProgress.value = null;
+      });
+
+  Future<void> _download(
+    String url,
+    File target,
+    void Function(double fraction) onProgress,
+  ) async {
+    final http.StreamedResponse response;
+    try {
+      response = await MClient.download().send(
+        http.Request('GET', Uri.parse(url)),
+      );
+    } catch (e) {
+      throw RepoException(
+        'Could not reach the repository: ${Extension.describeError(e)}',
+      );
+    }
+
+    if (response.statusCode != 200) {
+      await response.stream.drain<void>();
+      throw RepoException(
+        response.statusCode == 404
+            ? 'Nothing was found at this link (HTTP 404). Check the repository URL.'
+            : 'The repository returned an error (HTTP ${response.statusCode}).',
+      );
+    }
+
+    final sink = target.openWrite();
+    final total = response.contentLength;
+    var received = 0;
+    try {
+      await for (final chunk in response.stream) {
+        sink.add(chunk);
+        received += chunk.length;
+        if (total != null && total > 0) onProgress(received / total);
       }
-    });
+      await sink.flush();
+    } finally {
+      await sink.close();
+    }
   }
 
   @override

@@ -13,7 +13,7 @@ import 'package:path/path.dart' as p;
 import '../../ExtensionBridge.dart';
 import '../../Extensions/Addon.dart';
 import '../../Logger.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
 import '../../Settings/KvStore.dart';
 
 class FfmpegCancel {

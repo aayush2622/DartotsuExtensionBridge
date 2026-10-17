@@ -11,7 +11,7 @@ import '../../Models/Page.dart';
 import '../../Models/Pages.dart';
 import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
 import 'Js/Cheerio.dart';
 import 'Js/HtmlParser.dart';
 import 'Js/HttpClient.dart';

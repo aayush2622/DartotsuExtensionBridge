@@ -8,16 +8,15 @@ import 'package:http/http.dart' as http;
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Logger.dart';
-import '../../../NetworkClient.dart';
+import '../../../Network/MClient.dart';
 import '../../../dartotsu_extension_bridge.dart';
-import '../../Network.dart';
+import '../../Shared/JvmBackend.dart';
 import '../../Shared/CloudStreamRepoBackend.dart';
 import '../CloudStreamSourceMethods.dart';
 import 'Models/CloudStreamSource.dart';
-import '../../../Network/NetworkSettingsSync.dart';
 
 class CloudStreamExtensions extends Extension
-    with CloudStreamRepoBackend<CSource> {
+    with JvmBackend, AndroidJvmBackend, CloudStreamRepoBackend<CSource> {
   @override
   String get id => 'cloudstream';
 
@@ -46,7 +45,8 @@ class CloudStreamExtensions extends Extension
   @override
   DownloadablePlugin plugin = CloudStreamPlugin();
 
-  static const platform = MethodChannel('cloudStreamExtensionBridge');
+  @override
+  final platform = const MethodChannel('cloudStreamExtensionBridge');
   final _client = MClient.init();
 
   @override
@@ -65,23 +65,6 @@ class CloudStreamExtensions extends Extension
   get parseExtensionsIsolate => _parseExtensions;
 
   final _context = DartotsuExtensionBridge.context;
-  @override
-  Future<bool> onInitialize() async {
-    plugin.installed.value = await plugin.isInstalled();
-    if (!plugin.installed.value) return false;
-
-    unawaited(plugin.autoUpdate());
-
-    final filePath = await plugin.getPath();
-
-    await platform.invokeMethod('loadPlugin', {"path": filePath});
-    await BridgeChannels.init();
-    await NetworkSettingsSync.register(
-      this,
-      (data) => platform.invokeMethod('initClient', data),
-    );
-    return true;
-  }
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {

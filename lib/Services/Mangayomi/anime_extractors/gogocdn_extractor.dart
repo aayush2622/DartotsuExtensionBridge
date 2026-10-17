@@ -4,7 +4,7 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http_interceptor/http_interceptor.dart';
 
-import '../../../NetworkClient.dart';
+import '../../../Network/MClient.dart';
 import '../Eval/dart/model/m_bridge.dart';
 import '../Eval/dart/model/video.dart';
 import '../Util/string_extensions.dart';

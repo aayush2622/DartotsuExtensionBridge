@@ -7,6 +7,7 @@ export './ExtensionBridge.dart';
 export './ExtensionManager.dart';
 export './Extensions/Addon.dart';
 export './Extensions/Extensions.dart';
+export './Extensions/RepoGuard.dart' show RepoException, RepoFormat;
 export './Extensions/SourceMethods.dart';
 export './Models/DEpisode.dart';
 export './Models/DMedia.dart';

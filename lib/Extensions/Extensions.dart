@@ -4,12 +4,14 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:http/http.dart' as http;
 
 import '../Logger.dart';
 import '../Models/Source.dart';
 import '../Settings/KvStore.dart';
 import 'DownloadablePlugin.dart';
 import 'ExtensionSettings.dart';
+import 'RepoGuard.dart';
 import 'SourceMethods.dart';
 
 enum InitState { idle, success, failed }
@@ -340,7 +342,9 @@ abstract class Extension {
     s.activeRepo.value = active;
     saveActiveRepo(type, active);
 
-    final all = await fetchRepo(active, type);
+    final all =
+        _primedRepos.remove(_primeKey(type, active.url)) ??
+        await fetchRepo(active, type);
 
     final installed = s.installed.value;
     final installedIds = installed.map((e) => e.id).toSet();
@@ -448,8 +452,122 @@ abstract class Extension {
     );
   }
 
-  /// Progress in `[0.0, 1.0]`. See [progressStream].
+  /// Progress in `[0.0, 1.0]`. See [progressStream]. Fails with a
+  /// [RepoException] (a message for the user) when the link isn't a usable
+  /// repository for this backend; adding a repo that's already there does
+  /// nothing.
   Stream<double> addRepo(String repoUrl, ItemType type);
+
+  /// The repository formats this backend reads.
+  Set<RepoFormat> get repoFormats => const {};
+
+  final _primedRepos = <String, List<Source>>{};
+
+  String _primeKey(ItemType type, String url) => '${type.name}|$url';
+
+  /// Runs an [addRepo]: checks the link (normalised with
+  /// [normalizeRepoUrl]) and skips one already added, then calls [add] with
+  /// the normalised URL while [ExtensionState.loadingRepo] is set.
+  @protected
+  Stream<double> addRepoTask(
+    String repoUrl,
+    ItemType type,
+    Future<void> Function(String url, void Function(double) report) add,
+  ) {
+    return progressStream((report) async {
+      final s = state(type);
+      s.loadingRepo.value = true;
+      try {
+        if (!supports(type)) {
+          throw RepoException('$name has no ${type.name} extensions.');
+        }
+        final url = normalizeRepoUrl(repoUrl);
+        if (hasRepo(url, type)) return;
+        await add(url, report);
+      } catch (e) {
+        Logger.log('Failed to add $name repo $repoUrl: $e');
+        rethrow;
+      } finally {
+        s.loadingRepo.value = false;
+        s.repoLoadProgress.value = null;
+      }
+    });
+  }
+
+  bool hasRepo(String url, ItemType type) =>
+      loadRepos(type).any((r) => r.url == url);
+
+  /// Downloads a repository index, failing with a [RepoException] that says
+  /// why when it can't.
+  @protected
+  Future<List<int>> downloadRepoIndex(
+    http.Client client,
+    String url, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    final http.Response res;
+    try {
+      res = await client.get(Uri.parse(url)).timeout(timeout);
+    } on TimeoutException {
+      throw const RepoException(
+        'The repository took too long to respond. Try again later.',
+      );
+    } catch (e) {
+      throw RepoException(
+        'Could not reach the repository: ${describeError(e)}',
+      );
+    }
+    if (res.statusCode == 404) {
+      throw const RepoException(
+        'Nothing was found at this link (HTTP 404). Check the repository URL.',
+      );
+    }
+    if (res.statusCode != 200) {
+      throw RepoException(
+        'The repository returned an error (HTTP ${res.statusCode}).',
+      );
+    }
+    return res.bodyBytes;
+  }
+
+  /// The error for a downloaded [body] that has no usable sources: a web
+  /// page, another manager's repository, or one of this backend's
+  /// repositories without [type] sources.
+  @protected
+  RepoException invalidRepo(ItemType type, {List<int>? body, String? url}) {
+    if (body != null && looksLikeWebPage(body)) {
+      return RepoException(
+        'This link opens a web page, not a $name repository. Use the direct '
+        'link to the repository file (on GitHub, the "Raw" link).',
+      );
+    }
+    final format = body == null ? null : detectRepoFormat(body, url: url);
+    if (format != null && repoFormats.contains(format)) {
+      return RepoException('This repository has no ${type.name} extensions.');
+    }
+    if (format != null) {
+      return RepoException(
+        'This is a ${format.label} repository, not a $name one. '
+        'Add it under ${format.label}.',
+      );
+    }
+    return RepoException('This is not a valid $name repository.');
+  }
+
+  /// Saves a newly added [repo] and makes it the active one. [sources], the
+  /// list already parsed while adding it, is shown without fetching again.
+  @protected
+  Future<void> commitRepo(
+    Repo repo,
+    ItemType type, {
+    List<Source>? sources,
+  }) async {
+    if (sources != null) _primedRepos[_primeKey(type, repo.url)] = sources;
+    final repos = [...loadRepos(type), repo];
+    saveRepos(repos, type);
+    state(type).repos.value = List.unmodifiable(repos);
+    await selectRepo(repo, type);
+  }
 
   Future<void> removeRepo(String repoUrl, ItemType type) async {
     try {

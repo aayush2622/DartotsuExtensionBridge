@@ -7,18 +7,20 @@ import 'package:http/http.dart' as http;
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Extensions/ExtensionSettings.dart';
-import '../../../NetworkClient.dart';
+import '../../../Network/MClient.dart';
 import '../../../Settings/KvStore.dart';
 import '../../../dartotsu_extension_bridge.dart';
-import '../../Network.dart';
+import '../../Shared/JvmBackend.dart';
 import '../../Shared/AndroidApkInstallMixin.dart';
 import '../../Shared/TachiyomiRepo.dart';
 import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
-import '../../../Network/NetworkSettingsSync.dart';
 
 class IReaderExtensions extends Extension
-    with TachiyomiRepoBackend, AndroidApkInstallMixin {
+    with JvmBackend, AndroidJvmBackend, TachiyomiRepoBackend, AndroidApkInstallMixin {
+  @override
+  Set<RepoFormat> get repoFormats => const {RepoFormat.iReader};
+
   @override
   String get id => 'ireader';
 
@@ -53,6 +55,7 @@ class IReaderExtensions extends Extension
   DownloadablePlugin plugin = IReaderPlugin();
 
   @override
+  @override
   final platform = const MethodChannel('ireaderExtensionBridge');
 
   @override
@@ -61,23 +64,6 @@ class IReaderExtensions extends Extension
   @override
   String get androidExtensionsDirName => 'ireader-extensions';
 
-  @override
-  Future<bool> onInitialize() async {
-    plugin.installed.value = await plugin.isInstalled();
-    if (!plugin.installed.value) return false;
-
-    unawaited(plugin.autoUpdate());
-
-    final filePath = await plugin.getPath();
-
-    await platform.invokeMethod('loadPlugin', {"path": filePath});
-    await BridgeChannels.init();
-    await NetworkSettingsSync.register(
-      this,
-      (data) => platform.invokeMethod('initClient', data),
-    );
-    return true;
-  }
 
   @override
   Future<void> fetchInstalledNovelExtensions() async {

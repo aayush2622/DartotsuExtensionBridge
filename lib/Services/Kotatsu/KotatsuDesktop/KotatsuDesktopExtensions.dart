@@ -6,13 +6,12 @@ import '../../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../dartotsu_extension_bridge.dart';
-import '../../Network.dart';
+import '../../Shared/JvmBackend.dart';
 import '../../Shared/KotatsuRepoBackend.dart';
 import '../KotatsuSourceMethods.dart';
-import '../../../Network/NetworkSettingsSync.dart';
 
 class KotatsuDesktopExtensions extends Extension
-    with KotatsuRepoBackend<KotatsuDesktopSource> {
+    with JvmBackend, DesktopJvmBackend, KotatsuRepoBackend<KotatsuDesktopSource> {
   @override
   String get activeSourcesKey => 'kotatsu_desktop_active_sources';
 
@@ -44,41 +43,20 @@ class KotatsuDesktopExtensions extends Extension
   @override
   DownloadablePlugin plugin = KotatsuDesktopPlugin();
 
+  @override
   final JavaBridge java = createJavaBridge();
 
-  final _context = DartotsuExtensionBridge.context;
+
+
 
   @override
-  Future<bool> onInitialize() async {
-    plugin.installed.value = await plugin.isInstalled();
-    if (!plugin.installed.value) return false;
-
-    unawaited(plugin.autoUpdate());
-
-    final filePath = await plugin.getPath();
-
-    await BridgeChannels.init();
-    await java.init(pluginJarPath: filePath);
-
-    final dir = await sourcesDir;
-    await java.call<void>("initializeDesktop", {"path": dir!.path});
-
-    await NetworkSettingsSync.register(
-      this,
-      (data) => java.call<void>('initClient', {'data': data}),
-    );
-    return true;
-  }
+  String get javaDataDir => 'kotatsu';
 
   @override
-  void dispose() async {
-    super.dispose();
-    NetworkSettingsSync.unregister(this);
-    java.dispose();
-  }
+  Future<Directory?> get javaDataDirectory => sourcesDir;
 
   @override
-  Future<Directory?> get sourcesDir => _context.getDirectory(
+  Future<Directory?> get sourcesDir => DartotsuExtensionBridge.context.getDirectory(
     subPath: 'bridge/kotatsu',
     useSystemPath: false,
     useCustomPath: true,

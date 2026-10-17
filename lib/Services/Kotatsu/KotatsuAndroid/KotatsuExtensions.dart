@@ -7,16 +7,16 @@ import 'package:flutter/services.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../dartotsu_extension_bridge.dart';
-import '../../Network.dart';
+import '../../Shared/JvmBackend.dart';
 import '../../Shared/KotatsuRepoBackend.dart';
 import '../KotatsuSourceMethods.dart';
-import '../../../Network/NetworkSettingsSync.dart';
 
 class KotatsuExtensions extends Extension
-    with KotatsuRepoBackend<KotatsuSource> {
+    with JvmBackend, AndroidJvmBackend, KotatsuRepoBackend<KotatsuSource> {
   @override
   String get activeSourcesKey => 'kotatsu_active_sources';
 
+  @override
   final platform = const MethodChannel('kotatsuExtensionBridge');
 
   @override
@@ -47,23 +47,6 @@ class KotatsuExtensions extends Extension
   @override
   DownloadablePlugin plugin = KotatsuPlugin();
 
-  @override
-  Future<bool> onInitialize() async {
-    plugin.installed.value = await plugin.isInstalled();
-    if (!plugin.installed.value) return false;
-
-    unawaited(plugin.autoUpdate());
-
-    final filePath = await plugin.getPath();
-    await platform.invokeMethod('loadPlugin', {"path": filePath});
-    await BridgeChannels.init();
-
-    await NetworkSettingsSync.register(
-      this,
-      (data) => platform.invokeMethod('initClient', data),
-    );
-    return true;
-  }
 
   @override
   Future<Directory?> get sourcesDir =>

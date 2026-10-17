@@ -6,9 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 
-import 'ExtensionBridge.dart';
-import 'Network/CloudflareSolver.dart';
-import 'Logger.dart';
+import '../ExtensionBridge.dart';
+import 'CloudflareSolver.dart';
+import '../Logger.dart';
 
 class MClient {
   static IOClient? _fallbackClient;
@@ -64,24 +64,34 @@ class MClient {
     return Socket.startConnect(host, port);
   }
 
+  /// Client for large downloads: the app's [BridgeNetwork.downloadClient].
   static InterceptedClient download() {
-    final context = DartotsuExtensionBridge.context;
-    final client = context.downloadHttp ?? context.http;
-    if (client == null) return init();
+    if (DartotsuExtensionBridge.context.network == null) return init();
     return InterceptedClient.build(
-      client: _SharedClient(client),
+      client: _SharedClient(
+        () => DartotsuExtensionBridge.context.network!.downloadClient,
+      ),
       interceptors: const [],
     );
   }
 
+  /// Client for normal requests: the app's [BridgeNetwork.httpClient], or a
+  /// `dart:io` client honouring its DNS, proxy, cookies and User-Agent when
+  /// the app has none or [reqcopyWith] asks for `useDartHttpClient`.
+  ///
+  /// The app's client is looked up on every request, so a client it rebuilds
+  /// after a settings change is picked up by clients created before it.
   static InterceptedClient init({Map<String, dynamic>? reqcopyWith}) {
-    var appHttpClient = DartotsuExtensionBridge.context.http;
-    var useFallback =
-        reqcopyWith?["useDartHttpClient"] == true || appHttpClient == null;
-    var client = useFallback ? _sharedFallbackClient() : appHttpClient;
+    final useFallback =
+        reqcopyWith?['useDartHttpClient'] == true ||
+        DartotsuExtensionBridge.context.network == null;
 
     return InterceptedClient.build(
-      client: _SharedClient(client),
+      client: _SharedClient(
+        useFallback
+            ? _sharedFallbackClient
+            : () => DartotsuExtensionBridge.context.network!.httpClient,
+      ),
       interceptors: useFallback
           ? const [_NetworkContextInterceptor()]
           : const [],
@@ -98,14 +108,15 @@ class MClient {
 /// User-Agent (the pair Cloudflare checks). Streamed and multipart requests
 /// can't be replayed and come back as they are.
 class _SharedClient extends http.BaseClient {
-  _SharedClient(this._inner);
+  _SharedClient(this._resolve);
 
-  final http.Client _inner;
+  final http.Client Function() _resolve;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final inner = _resolve();
     final replay = request is http.Request ? _copy(request) : null;
-    final response = await _inner.send(request);
+    final response = await inner.send(request);
     if (replay == null || !_mayBeChallenge(response)) return response;
 
     final bytes = await response.stream.toBytes();
@@ -116,7 +127,7 @@ class _SharedClient extends http.BaseClient {
     if (!await CloudflareSolver.solve(request.url)) return buffered;
 
     await _withAppSession(replay, mergeCookies: true);
-    return _inner.send(replay);
+    return inner.send(replay);
   }
 
   @override

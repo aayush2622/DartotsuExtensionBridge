@@ -13,7 +13,7 @@ import '../../Models/Pages.dart';
 import '../../Models/Source.dart';
 import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
 import 'JsEngine/JsEngine.dart';
 import 'Models/Source.dart';
 

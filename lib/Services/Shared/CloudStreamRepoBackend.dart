@@ -7,7 +7,9 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
 import '../../Extensions/Extensions.dart';
+import '../../Extensions/RepoGuard.dart';
 import '../../Logger.dart';
+import '../../Network/MClient.dart';
 import '../../Models/Source.dart';
 import 'CloudStreamSource.dart';
 import 'TachiyomiRepo.dart' show downloadPackageFile;
@@ -81,68 +83,66 @@ mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
   Future<void> onSourceFileDeleted(File file) async {}
 
   @override
-  Stream<double> addRepo(String repoUrl, ItemType type) {
-    return progressStream((_) => _addRepoImpl(repoUrl, type));
-  }
+  Set<RepoFormat> get repoFormats => const {RepoFormat.cloudStream};
 
-  Future<void> _addRepoImpl(String repoUrl, ItemType type) async {
-    final uri = Uri.tryParse(repoUrl);
-    if (uri == null || !uri.hasScheme) {
-      throw Exception("Invalid repo URL");
+  @override
+  Stream<double> addRepo(String repoUrl, ItemType type) =>
+      addRepoTask(repoUrl, type, (url, _) => _addRepoImpl(url, type));
+
+  /// Adds the plugin list at [url], or every list a repository manifest
+  /// (`{"pluginLists": [...]}`) points to.
+  Future<void> _addRepoImpl(String url, ItemType type) async {
+    final bytes = await downloadRepoIndex(
+      repoClient,
+      url,
+      timeout: const Duration(seconds: 10),
+    );
+    final body = utf8.decode(bytes, allowMalformed: true);
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(body);
+    } catch (_) {
+      throw invalidRepo(type, body: bytes, url: url);
     }
 
-    final repos = loadRepos(type);
-
-    if (repos.any((r) => r.url == repoUrl)) {
+    if (decoded is Map && decoded['pluginLists'] is List) {
+      Object? firstError;
+      var usable = 0;
+      for (final list in (decoded['pluginLists'] as List).whereType<String>()) {
+        try {
+          final listUrl = normalizeRepoUrl(list);
+          if (!hasRepo(listUrl, type)) await _addRepoImpl(listUrl, type);
+          usable++;
+        } catch (e) {
+          Logger.log('Failed to add CloudStream plugin list $list: $e');
+          firstError ??= e;
+        }
+      }
+      if (usable == 0) {
+        throw firstError ?? invalidRepo(type, body: bytes, url: url);
+      }
       return;
     }
 
-    final res = await repoClient
-        .get(Uri.parse(repoUrl))
-        .timeout(const Duration(seconds: 10));
-
-    if (res.statusCode != 200) {
-      throw Exception("Repo returned ${res.statusCode}");
-    }
-
-    final decoded = jsonDecode(res.body);
-
-    if (decoded is Map<String, dynamic>) {
-      final pluginLists = decoded["pluginLists"];
-
-      if (pluginLists is List) {
-        for (final subRepo in pluginLists.cast<String>()) {
-          try {
-            await _addRepoImpl(subRepo, type);
-          } catch (e) {
-            Logger.log("Failed to add $subRepo: $e");
-          }
-        }
-        return;
+    List<Source> parsed = const [];
+    if (decoded is List) {
+      try {
+        parsed = await compute(parseExtensionsIsolate, (body, url, type));
+      } catch (e) {
+        Logger.log('Could not parse CloudStream repo $url: $e');
       }
-
-      throw Exception("Invalid CloudStream repository");
     }
+    if (parsed.isEmpty) throw invalidRepo(type, body: bytes, url: url);
 
-    if (decoded is! List) {
-      throw Exception("Invalid CloudStream repository");
-    }
-
-    final parsed = await compute(parseExtensionsIsolate, (
-      res.body,
-      repoUrl,
+    await commitRepo(
+      Repo(
+        name: repoNameFromUrl(url),
+        url: url,
+        extensions: parsed.length.toString(),
+      ),
       type,
-    ));
-    final repo = Repo(
-      name: repoNameFromUrl(repoUrl),
-      url: repoUrl,
-      extensions: parsed.length.toString(),
+      sources: parsed,
     );
-
-    final updatedRepos = [...repos, repo];
-    saveRepos(updatedRepos, type);
-    state(type).repos.value = updatedRepos;
-    await selectRepo(repo, type);
   }
 
   String _safeFileBaseName(String name) {
@@ -206,7 +206,7 @@ mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
 
     try {
       await downloadPackageFile(
-        repoClient,
+        MClient.download(),
         pluginUrl,
         file.path,
         onProgress: (received, total) {
@@ -314,22 +314,23 @@ mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
 
   @override
   Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
-    final indexUrl = repo.url;
-    final res = await repoClient
-        .get(Uri.parse(indexUrl))
-        .timeout(const Duration(seconds: 10));
-
-    if (res.statusCode == 200) {
-      var extensions = await compute(parseExtensionsIsolate, (
-        res.body,
-        indexUrl,
+    try {
+      final bytes = await downloadRepoIndex(
+        repoClient,
+        repo.url,
+        timeout: const Duration(seconds: 10),
+      );
+      final extensions = await compute(parseExtensionsIsolate, (
+        utf8.decode(bytes, allowMalformed: true),
+        repo.url,
         type,
       ));
       await updateRepoExtensionCount(repo, type, extensions.length);
-
       return extensions;
+    } catch (e) {
+      Logger.log('Failed to fetch CloudStream repo ${repo.url}: $e');
+      return const [];
     }
-    return [];
   }
 
   @override

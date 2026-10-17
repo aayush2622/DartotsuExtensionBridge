@@ -13,15 +13,14 @@ import '../../../Extensions/Extensions.dart';
 import '../../../Extensions/SourceMethods.dart';
 import '../../../Logger.dart';
 import '../../../Models/Source.dart';
-import '../../../NetworkClient.dart';
-import '../../Network.dart';
+import '../../../Network/MClient.dart';
+import '../../Shared/JvmBackend.dart';
 import '../../Shared/CloudStreamRepoBackend.dart';
 import '../CloudStreamSourceMethods.dart';
 import 'Models/Source.dart';
-import '../../../Network/NetworkSettingsSync.dart';
 
 class CloudStreamDesktopExtensions extends Extension
-    with CloudStreamRepoBackend<CdSource> {
+    with JvmBackend, DesktopJvmBackend, CloudStreamRepoBackend<CdSource> {
   @override
   String get name => Platform.isIOS ? 'CloudStream' : 'CloudStream (Desktop)';
 
@@ -48,7 +47,11 @@ class CloudStreamDesktopExtensions extends Extension
   @override
   DownloadablePlugin plugin = CloudStreamDesktopPlugin();
 
+  @override
   final JavaBridge java = createJavaBridge();
+
+  @override
+  String get javaDataDir => 'cloudStream';
 
   final _client = MClient.init();
 
@@ -67,32 +70,7 @@ class CloudStreamDesktopExtensions extends Extension
   List<Source> Function((String body, String repoUrl, ItemType type))
   get parseExtensionsIsolate => _parseExtensions;
 
-  final _context = DartotsuExtensionBridge.context;
 
-  @override
-  Future<bool> onInitialize() async {
-    plugin.installed.value = await plugin.isInstalled();
-    if (!plugin.installed.value) return false;
-
-    unawaited(plugin.autoUpdate());
-
-    final filePath = await plugin.getPath();
-
-    await BridgeChannels.init();
-
-    await java.init(pluginJarPath: filePath);
-
-    var file = await _context.getDirectory(subPath: 'bridge/cloudStream');
-
-    await java.call<void>("initializeDesktop", {"path": file!.path});
-
-    await NetworkSettingsSync.register(
-      this,
-      (data) => java.call<void>('initClient', {'data': data}),
-    );
-
-    return true;
-  }
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
@@ -145,12 +123,6 @@ class CloudStreamDesktopExtensions extends Extension
   @override
   Future<void> onSourceFileDeleted(File file) => _deleteCachedJar(file);
 
-  @override
-  void dispose() async {
-    super.dispose();
-    NetworkSettingsSync.unregister(this);
-    java.dispose();
-  }
 
   static List<CdSource> _parseExtensions(
     (String body, String repoUrl, ItemType itemType) args,

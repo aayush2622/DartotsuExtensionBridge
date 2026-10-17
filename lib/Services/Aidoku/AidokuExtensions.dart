@@ -3,11 +3,15 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 
+import 'package:http/http.dart' as http;
+
 import '../../Extensions/Extensions.dart';
+import '../../Extensions/RepoGuard.dart';
 import '../../Extensions/SourceMethods.dart';
 import '../../Logger.dart';
 import '../../Models/Source.dart';
-import '../../NetworkClient.dart';
+import '../../Network/MClient.dart';
+import '../Shared/JsonRepoBackend.dart';
 import '../Shared/SimpleInstalledSourceStore.dart';
 import 'AidokuDefaults.dart';
 import 'AidokuSourceMethods.dart';
@@ -15,8 +19,18 @@ import 'Manifest.dart';
 import 'Models/Source.dart';
 
 class AidokuExtensions extends Extension
-    with SimpleInstalledSourceStore<AidokuSource> {
+    with SimpleInstalledSourceStore<AidokuSource>, JsonRepoBackend {
   static final _client = MClient.init();
+
+  @override
+  http.Client get repoClient => _client;
+
+  @override
+  List<Source> Function((String body, String repoUrl, ItemType type))
+  get parseRepoIsolate => _parseExtensions;
+
+  @override
+  Set<RepoFormat> get repoFormats => const {RepoFormat.aidoku};
 
   @override
   String get id => 'aidoku';
@@ -58,72 +72,6 @@ class AidokuExtensions extends Extension
   Future<void> fetchInstalledMangaExtensions() async {
     await super.fetchInstalledMangaExtensions();
     manga.installed.value = loadInstalled(ItemType.manga);
-  }
-
-  @override
-  Stream<double> addRepo(String repoUrl, ItemType type) {
-    return progressStream((_) async {
-      if (type != ItemType.manga) {
-        throw Exception("Aidoku only supports manga sources");
-      }
-
-      final uri = Uri.tryParse(repoUrl);
-      if (uri == null || !uri.hasScheme) {
-        throw Exception("Invalid repo URL");
-      }
-
-      final repos = loadRepos(type);
-      if (repos.any((r) => r.url == repoUrl)) return;
-
-      final res = await _client.get(uri).timeout(const Duration(seconds: 15));
-      if (res.statusCode != 200) {
-        throw Exception("Failed to fetch repo (${res.statusCode})");
-      }
-
-      final parsed = await compute(_parseExtensions, (res.body, repoUrl, type));
-
-      final repo = Repo(
-        url: repoUrl,
-        name: repoNameFromUrl(repoUrl),
-        extensions: parsed.length.toString(),
-      );
-
-      final updatedRepos = List<Repo>.from(repos)..add(repo);
-      saveRepos(updatedRepos, type);
-      state(type).repos.value = updatedRepos;
-
-      saveActiveRepo(type, repo);
-      state(type).activeRepo.value = repo;
-
-      final installedIds = loadInstalled(type).map((e) => e.id).toSet();
-      detectUpdates(parsed, type);
-      state(type).rawAvailable.value = List.unmodifiable(parsed);
-      state(type).available.value = List.unmodifiable(
-        parsed.where((s) => !installedIds.contains(s.id)),
-      );
-    });
-  }
-
-  @override
-  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async {
-    if (type != ItemType.manga) return const [];
-    try {
-      final res = await _client
-          .get(Uri.parse(repo.url))
-          .timeout(const Duration(seconds: 15));
-      if (res.statusCode != 200) return const [];
-
-      final extensions = await compute(_parseExtensions, (
-        res.body,
-        repo.url,
-        type,
-      ));
-      await updateRepoExtensionCount(repo, type, extensions.length);
-      return extensions;
-    } catch (e) {
-      Logger.log("Repo failed ${repo.url}: $e");
-      return const [];
-    }
   }
 
   static List<Source> _parseExtensions(

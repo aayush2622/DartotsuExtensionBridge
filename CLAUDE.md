@@ -24,11 +24,11 @@ is a *different* file from `lib/Extensions/ExtensionBridge.dart` (the `abstract 
 ExtensionBridge` transport) — same base name, different directory.
 
 `DartotsuExtensionBridge` (`lib/ExtensionBridge.dart`)
-- `init({getDirectory, http?, isarInstance?, network?, onLog})` — idempotent. Builds the
+- `init({getDirectory, isarInstance?, network?, onLog})` — idempotent. Builds the
   global `BridgeContext`, opens Isar if not supplied, registers `ExtensionManager` and
   `AddonManager` in GetX.
-- `BridgeContext` — global service locator: `isar`, `http` client, `getDirectory`
-  callback, optional `BridgeNetwork` (dns / proxy / cookies), `onLog`.
+- `BridgeContext` — global service locator: `isar`, `getDirectory` callback,
+  optional `BridgeNetwork` (the host's whole network stack, see Network layer), `onLog`.
 - `GetDirectory` typedef — host app must supply persistent dir resolution
   (`subPath`, `useCustomPath`, `useSystemPath`).
 - `dispose()` — tears down `ExtensionManager` (which disposes every backend,
@@ -80,7 +80,28 @@ Platform gating is in `ExtensionManager._extensionManagers` via `Platform.isAndr
 `_jvmBackends` (`isWindows||isLinux||isMacOS||isIOS` — the desktop backends also run on
 iOS through an embedded JVM, see `JavaEngine/` below).
 
+### Repositories (`lib/Extensions/RepoGuard.dart`)
+
+Every `addRepo` goes through `Extension.addRepoTask`: the link is cleaned up
+(`normalizeRepoUrl`: trims, adds `https://`, GitHub `blob` page -> raw file),
+one already added is skipped, and a repo is only saved when it parses to
+sources of the requested type. Otherwise it fails with a `RepoException`
+(exported; `toString()` is the user-facing message): unreachable / HTTP error,
+a web page instead of an index, another manager's repo (`detectRepoFormat`
+names it, matched against each backend's `repoFormats`), or one with no
+sources of that type. `commitRepo` saves + selects a new repo and hands the
+already-parsed list to `fetchExtensions`, so adding doesn't fetch twice.
+`downloadRepoIndex`/`invalidRepo` are the shared building blocks.
+
 ### `Services/Shared/` — cross-backend helpers
+
+- `JvmBackend.dart` - `JvmBackend` + `AndroidJvmBackend` / `DesktopJvmBackend`:
+  the startup every JVM-plugin backend shares (plugin installed check,
+  auto-update, `NativeNetwork.start`, boot the runtime, `NativeNetwork.attach`)
+  and its dispose. Desktop data lives under `bridge/<javaDataDir>`.
+- `JsonRepoBackend.dart` - `addRepo`/`fetchRepo` for the single-JSON-index
+  backends (Mangayomi, Sora, LnReader, Legado, Aidoku) given their
+  `parseRepoIsolate`; `repoFor` names the saved repo (Sora: module author).
 
 - `PackagedSource.dart` — `abstract PackagedSource extends Source` holding the
   `pkgName` / `apkName` pair common to every APK/JAR-delivered source. `ASource`,
@@ -91,6 +112,10 @@ iOS through an embedded JVM, see `JavaEngine/` below).
   `parseTachiyomiRepoIndex<T>({prefixes, factory, …})` (compute-safe), and
   `detectTachiyomiUpdates(ext, available, type)`. Each backend's
   `_parseExtensions` / `detectUpdates` is now a thin delegate.
+  `fetchTachiyomiRepoIndex` tries a base URL's `index.pb` before its
+  `index.min.json` (current Mihon repos keep only an "update your app"
+  placeholder in the JSON), each from its host then the jsDelivr mirror, and
+  saves the index URL that worked.
   CloudStream and IReader-desktop use their own repo formats and don't go
   through this.
 
@@ -115,12 +140,15 @@ iOS through an embedded JVM, see `JavaEngine/` below).
 | `TorrentEngine/` | libtorrent via `dart:ffi` (`ffi_bindings.dart`, `LibtorrentFlutter.dart` session + HTTP streaming server + tracker fetch, `LibTorrentAddon.dart` = the `Addon`, `Models.dart`). |
 | `WasmEngine/WasmEngine.dart` | `WasmEngine` - thin wrapper around `package:wasd` (pure-Dart WebAssembly runtime, no native binaries). One instance per wasm module (own linear memory/state), unlike `JsEngineEnv`'s shared singleton. Used by Aidoku; `instantiate(bytes, imports)` requires every host import the module declares to be supplied by the caller. `call(name, args)` is async - host imports (e.g. Aidoku's `net`) may do real I/O, and wasd's interpreter transparently switches an export to its async invocation path if any host import it calls is async. |
 
-## Network layer (`lib/Network/`, `lib/NetworkClient.dart`, `runtimeManager/libraries/commonLib/.../network/`)
+## Network layer (`lib/Network/`, `runtimeManager/libraries/commonLib/.../network/`)
 
-One session for every backend, owned by the host app through `BridgeNetwork`:
-its cookie jar, its User-Agent (`bridgeUserAgent()` - also what every WebView
-uses, so a Cloudflare challenge cleared in the app's own WebView works for
-every extension), DoH resolver and proxy.
+One session for every backend, owned by the host app through its single
+`BridgeNetwork` (`lib/ExtensionBridge.dart`): `httpClient`/`downloadClient`
+(read on every request, so a client the host rebuilds is picked up at once),
+cookie jar, User-Agent (`bridgeUserAgent()` - also what every WebView uses,
+so a Cloudflare challenge cleared in the app's own WebView works for every
+extension), DoH resolver, proxy and `presentChallenge`. Members other than
+`httpClient` have defaults.
 
 - `CloudflareSolver.dart` - clears a challenge for a URL: an offscreen
   `webview_all` session loads it with the app UA + jar cookies and waits for a
@@ -131,15 +159,17 @@ every extension), DoH resolver and proxy.
 - `BridgeWebView.dart` - background WebView tasks for JVM sources (request
   interception via fetch/XHR/resource hooks, script results): CloudStream's
   desktop `WebViewResolver`, Kotatsu's `evaluateJs`.
-- `NetworkSettingsSync.dart` - sends `{dns, proxy, userAgent}` to every
-  running JVM backend (`initClient`) and re-sends on
+- `NativeNetwork.dart` - the JVM backends' side: `start()` answers their
+  callbacks (`getCookies`/`setCookies`/`getUserAgent`/`solveCloudflare`/
+  `webView`, logs; desktop + iOS over `JavaBridgeServer`, Android over
+  `flutterKotlinBridge.network`/`.logger`), `attach(owner, send)` sends
+  `{dns, proxy, userAgent}` (`initClient`) now and again on
   `DartotsuExtensionBridge.networkChanged()` (host calls it when settings change).
-- `MClient` (`NetworkClient.dart`) - Dart backends: merges jar cookies, forces
-  the app UA with `cf_clearance`, retries a plain `Request` once after the
-  solver clears a challenge.
-- `Services/Network.dart` (`BridgeChannels`) answers the JVM callbacks:
-  `getCookies`/`setCookies`/`getUserAgent`/`solveCloudflare`/`webView`
-  (desktop + iOS over `JavaBridgeServer`, Android over `flutterKotlinBridge.network`).
+- `MClient.dart` - Dart backends: `MClient.init()` (normal requests) and
+  `MClient.download()` (large downloads, no total timeout; extension packages,
+  plugins, Kotatsu jars). Merges jar cookies, forces the app UA with
+  `cf_clearance`, retries a plain `Request` once after the solver clears a
+  challenge.
 
 JVM side: `commonLib` `Network` (`applyTo(builder)`/`newClient()`), with
 `UserAgentInterceptor`, `CloudflareInterceptor` (asks the app's solver, then
@@ -167,8 +197,6 @@ the result as the same switch/text preferences (keys `store::key`).
 ## Support
 
 - `lib/Logger.dart` — `Logger.log(msg, show)` -> `BridgeContext.onLog`.
-- `lib/NetworkClient.dart` — `MClient.init()` builds an `InterceptedClient` (`http_interceptor`), reusing the host `http` client unless `useDartHttpClient`.
-- `lib/Services/Network.dart` — `BridgeChannels`: method channels `flutterKotlinBridge.network` / `.logger`, wiring native network + logging back into Dart (Android via `MethodChannel`, desktop via `JavaBridgeServer`).
 - `lib/Settings/KvStore.dart` — `KvEntry` Isar collection + `KvStore` with debounced write queue; top-level `getVal<T>` / `setVal` helpers used everywhere for persistence. `KvStore.g.dart` is generated (`build_runner`).
 
 ## Conventions

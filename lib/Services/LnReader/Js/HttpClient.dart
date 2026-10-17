@@ -6,7 +6,7 @@ import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_interceptor/http_interceptor.dart';
 
-import '../../../NetworkClient.dart';
+import '../../../Network/MClient.dart';
 
 class JsHttpClient {
   late JavascriptRuntime runtime;
