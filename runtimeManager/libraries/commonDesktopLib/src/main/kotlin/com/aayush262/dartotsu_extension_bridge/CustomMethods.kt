@@ -11,7 +11,7 @@ class CustomMethods : BridgeCallbacks {
                 "getCookies",
                 mapOf("url" to url),
             )
-            response["result"]?.asString
+            response["result"]?.takeUnless { it.isJsonNull }?.asString
         } catch (_: Exception) {
             null
         }
@@ -28,6 +28,26 @@ class CustomMethods : BridgeCallbacks {
                 "cookies" to cookies,
             ),
         )
+    }
+
+    override fun getUserAgent(): String? = try {
+        FlutterBridge.call("getUserAgent")["result"]?.takeUnless { it.isJsonNull }?.asString
+    } catch (_: Exception) {
+        null
+    }
+
+    override fun solveCloudflare(url: String): Boolean = try {
+        FlutterBridge.call("solveCloudflare", mapOf("url" to url), slow = true)["result"]
+            ?.takeUnless { it.isJsonNull }?.asBoolean == true
+    } catch (_: Exception) {
+        false
+    }
+
+    override fun webView(request: String): String? = try {
+        FlutterBridge.call("webView", mapOf("request" to request), slow = true)["result"]
+            ?.takeUnless { it.isJsonNull }?.asString
+    } catch (_: Exception) {
+        null
     }
 
     override fun log(level: String, message: String) {
