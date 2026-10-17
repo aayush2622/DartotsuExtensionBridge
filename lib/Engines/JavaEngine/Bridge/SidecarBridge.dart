@@ -57,7 +57,7 @@ class SidecarBridge implements JavaBridge {
       '-Dsun.stdout.encoding=UTF-8',
       '-Dsun.stderr.encoding=UTF-8',
       '-Xms128m',
-      '-Xmx512m',
+      '-Xmx1536m',
       '-jar',
       pluginJarPath,
     ]);
