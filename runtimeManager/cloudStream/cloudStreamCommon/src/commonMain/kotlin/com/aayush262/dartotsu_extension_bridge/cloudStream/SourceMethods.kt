@@ -108,7 +108,7 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
             "author" to null,
             "artist" to null,
             "genre" to (res.tags ?: emptyList()),
-            "episodes" to episodes
+            "episodes" to episodes.asReversed()
         )
         val usedKeys = setOf("name", "url", "posterUrl", "plot", "tags")
         return res.withExtraData(topLevel, usedKeys)
