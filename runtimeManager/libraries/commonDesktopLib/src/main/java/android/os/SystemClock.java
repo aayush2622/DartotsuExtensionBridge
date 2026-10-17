@@ -17,7 +17,6 @@ package android.os;
 
 import android.annotation.NonNull;
 
-import java.lang.management.ManagementFactory;
 import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.ZoneOffset;
@@ -143,13 +142,19 @@ public final class SystemClock {
         return false;
     }
 
+    // java.lang.management isn't in the trimmed-down iOS JDK image this also
+    // runs against (NoClassDefFoundError: java/lang/management/ManagementFactory),
+    // so this measures from process start with System.nanoTime() instead of
+    // asking the platform for the real boot-relative uptime.
+    private static final long BOOT_NANO_TIME = System.nanoTime();
+
     /**
      * Returns milliseconds since boot, not counting time spent in deep sleep.
      *
      * @return milliseconds of non-sleep uptime since boot.
      */
     public static long uptimeMillis() {
-        return ManagementFactory.getRuntimeMXBean().getUptime();
+        return (System.nanoTime() - BOOT_NANO_TIME) / 1_000_000L;
     }
 
     /**

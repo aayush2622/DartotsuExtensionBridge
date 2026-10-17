@@ -11,9 +11,6 @@ import com.googlecode.dex2jar.tools.BaksmaliBaseDexExceptionHandler
 import net.dongliu.apk.parser.ApkFile
 import net.dongliu.apk.parser.ApkParsers
 import net.dongliu.apk.parser.bean.IconFace
-import org.w3c.dom.Element
-import org.w3c.dom.Node
-import xyz.nulldev.androidcompat.pm.InstalledPackage.Companion.toList
 import xyz.nulldev.androidcompat.pm.toPackageInfo
 import java.io.File
 import java.io.FileOutputStream
@@ -24,9 +21,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
-import javax.xml.parsers.DocumentBuilderFactory
-import kotlin.collections.asSequence
-import kotlin.collections.orEmpty
 import kotlin.io.path.Path
 
 object PackageTools {
@@ -94,31 +88,9 @@ object PackageTools {
         val parsed = ApkFile(apk)
 
         val packageInfo = ApkParsers.getMetaInfo(apk).toPackageInfo(apk).apply {
-            val dbFactory = DocumentBuilderFactory.newInstance()
-            val dBuilder = dbFactory.newDocumentBuilder()
-            val doc =
-                parsed.manifestXml.byteInputStream().use {
-                    dBuilder.parse(it)
-                }
-
             applicationInfo.metaData =
                 Bundle().apply {
-                    val appTag = doc.getElementsByTagName("application").item(0)
-
-                    appTag
-                        ?.childNodes
-                        ?.toList()
-                        .orEmpty()
-                        .asSequence()
-                        .filter { it.nodeType == Node.ELEMENT_NODE }
-                        .map { it as Element }
-                        .filter { it.tagName == "meta-data" }
-                        .forEach {
-                            putString(
-                                it.attributes.getNamedItem("android:name").nodeValue,
-                                it.attributes.getNamedItem("android:value").nodeValue,
-                            )
-                        }
+                    metaDataOf(parsed.manifestXml).forEach { (key, value) -> putString(key, value) }
                 }
 
             signatures =
@@ -130,6 +102,40 @@ object PackageTools {
 
         return ApkInfo(packageInfo, parsed)
     }
+
+    private val metaDataTag = Regex("""<meta-data\b[^>]*/>""")
+    private val attribute = Regex("""([\w:.-]+)\s*=\s*"([^"]*)"""")
+
+    /**
+     * The `<meta-data name="…" value="…"/>` rows under `<application>` in
+     * [manifestXml] (apk-parser's pretty-printed manifest). A hand-rolled scan
+     * instead of [javax.xml.parsers.DocumentBuilderFactory]: the trimmed-down
+     * JDK image this runs against on iOS has no `java.xml` module, and this is
+     * the only thing in the loader that needs a DOM. apk-parser always emits
+     * `meta-data` as a self-closing tag, so this doesn't need to track nesting.
+     */
+    private fun metaDataOf(manifestXml: String): Map<String, String> {
+        val start = manifestXml.indexOf("<application")
+        if (start < 0) return emptyMap()
+        val end = manifestXml.indexOf("</application>", start).let { if (it < 0) manifestXml.length else it }
+        val out = LinkedHashMap<String, String>()
+        for (tag in metaDataTag.findAll(manifestXml, start).takeWhile { it.range.first < end }) {
+            var name: String? = null
+            var value: String? = null
+            for (attr in attribute.findAll(tag.value)) {
+                when (attr.groupValues[1].substringAfterLast(':')) {
+                    "name" -> name = unescapeXml(attr.groupValues[2])
+                    "value" -> value = unescapeXml(attr.groupValues[2])
+                }
+            }
+            if (name != null && value != null) out[name] = value
+        }
+        return out
+    }
+
+    private fun unescapeXml(s: String) = s
+        .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"")
+        .replace("&apos;", "'").replace("&amp;", "&")
 
 
     // Concurrent: the desktop loaders call in from several request coroutines
