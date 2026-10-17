@@ -68,7 +68,7 @@ used as the factory key.
 | **Mangayomi** | `MangayomiExtensions` | all (incl. iOS) | Repo of JS/Dart source scripts. Heavy sub-tree — see below. |
 | **Sora** | `SoraExtensions` | all (incl. iOS) | JS "modules"; no novel support. `Services/Sora/JsEngine/`. |
 | **Aniyomi** | `AniyomiExtensions` (Android) / `AniyomiDesktopExtensions` (desktop) | Android + desktop | Android: APK extensions via platform channel + `install_plugin`. Desktop/iOS: sidecar (desktop) or embedded VM (iOS) bridge into `runtimeManager`. |
-| **CloudStream** | `CloudStreamExtensions` / `CloudStreamDesktopExtensions` | Android + desktop | `CloudStreamSourceMethods` extends `BridgeSourceMethods`; video-only (no page list). Desktop preferences come from `PreferenceRecorder` (see Network layer). |
+| **CloudStream** | `CloudStreamExtensions` / `CloudStreamDesktopExtensions` | Android + desktop | `CloudStreamSourceMethods` extends `BridgeSourceMethods`; video-only (no page list). Neither platform opens an extension's native settings screen - both record the preferences it reads/writes as it runs and show them as generic switch/text fields (desktop: `PreferenceRecorder`; Android: the same shape via `AndroidPreferenceRecorder`, attributed by walking the call stack since Android has no `StackWalker`; see Network layer). |
 | **iReader** | `IReaderExtensions` / `IReaderDesktopExtensions` | Android + desktop | Novels. |
 | **Tsundoku** | `TsundokuExtensions` / `TsundokuDesktopExtensions` | Android + desktop | |
 | **LnReader** | `LnReaderExtensions` | all (incl. iOS) | Independent backend for LNReader novel plugins. Reads the LNReader `plugins.min.json` manifest (`Manifest.dart`); each plugin is a JS module run in its own QuickJS runtime via `LnReaderSourceMethods`. Self-contained polyfills under `Services/LnReader/Js/` (`Polyfills`, `Libs`, `HttpClient` = `@libs/fetch`, `Cheerio` + `DomSelector`, `HtmlParser`, `Storage` = `@libs/storage`). Novel-only. No Mangayomi coupling. |
@@ -149,10 +149,20 @@ and `BridgeWebView`. Aniyomi/Tsundoku (`NetworkHelper`), CloudStream
 (`bridgeClient()`, `CloudflareKiller`), Kotatsu and iReader
 (`BridgeHttpClients`) all build on it. No FlareSolverr.
 
-CloudStream settings on desktop: `PreferenceRecorder` (commonDesktopLib)
-records every `SharedPreferences` read/write per extension class loader;
-`SourcePreferences.desktop.kt` serves them as switch/text preferences
-(keys `store::key`) after probing the extension's settings screen off-screen.
+CloudStream settings: neither platform opens an extension's native settings
+screen. Desktop's `PreferenceRecorder` (commonDesktopLib) records every
+`SharedPreferences` read/write per extension class loader, found by
+attributing each read/write to the call stack's first frame outside the
+bridge's own classes (desktop has a real JVM `StackWalker`); it also probes
+the extension's settings screen off-screen once, so keys it reads before
+hitting a missing stub view show up immediately. Android's
+`AndroidPreferenceRecorder` (`cloudStreamCommon` androidMain) does the same
+attribution without `StackWalker` (unavailable on Android): it matches each
+stack frame's class against the `PathClassLoader` registered for each loaded
+plugin, and never probes (that would show a real native screen - the thing
+being avoided), so a key only appears once the extension actually reads or
+writes it while running. Both `SourcePreferences.{desktop,android}.kt` serve
+the result as the same switch/text preferences (keys `store::key`).
 
 ## Support
 

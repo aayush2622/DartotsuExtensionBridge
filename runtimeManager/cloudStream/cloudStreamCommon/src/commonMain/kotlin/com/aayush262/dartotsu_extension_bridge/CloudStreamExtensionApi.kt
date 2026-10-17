@@ -11,10 +11,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import com.lagradost.cloudstream3.APIHolder.allProviders
 import com.lagradost.cloudstream3.APIHolder.mapper
-import com.lagradost.cloudstream3.CommonActivity
 import com.lagradost.cloudstream3.MainAPI
-import com.lagradost.cloudstream3.MainActivity
-import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.app
 import kotlin.collections.get
 
@@ -37,6 +34,7 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
     override fun initClient(data: String) {
         Network.configure(data)
         app.baseClient = bridgeClient()
+        PluginRequests.refresh()
     }
 
     private val gson = Gson()
@@ -132,25 +130,4 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
 
     override suspend fun saveSourcePreference(sourceId: String, key: String, value: String?): Boolean =
         withContext(Dispatchers.IO) { SourcePreferences.save(provider(sourceId), key, value) }
-
-    private fun settingsOf(sourceId: String): ((android.content.Context) -> Unit)? {
-        val loader = provider(sourceId).javaClass.classLoader
-        val plugin = ExtensionLoader.plugins.values
-            .map { it.plugin }
-            .firstOrNull { it.javaClass.classLoader === loader } as? Plugin
-        return plugin?.openSettings
-    }
-
-    override fun hasSettings(sourceId: String): Boolean =
-        runCatching { settingsOf(sourceId) != null }.getOrDefault(false)
-
-    override fun openSettings(sourceId: String, host: Any): Boolean {
-        val open = runCatching { settingsOf(sourceId) }.getOrNull() ?: return false
-        (host as? android.app.Activity)?.let {
-            CommonActivity.setActivityInstance(it)
-            MainActivity.activity = it
-        }
-        open(host as android.content.Context)
-        return true
-    }
 }
