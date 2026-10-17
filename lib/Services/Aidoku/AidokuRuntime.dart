@@ -22,6 +22,11 @@ class AidokuRuntime {
   final AidokuHost host;
   final Map<String, AManga> mangaCache = {};
 
+  /// Chapters from the last details, by key, with the manga they belong to;
+  /// the page list needs both exactly as the source returned them.
+  final Map<String, ({String manga, AChapter chapter})> _chapters = {};
+  String? _lastDetailKey;
+
   Future<void> _tail = Future.value();
 
   static Future<AidokuRuntime> load(
@@ -300,8 +305,12 @@ class AidokuRuntime {
       1,
     ], AManga.decode);
     mangaCache[updated.key] = updated;
+    _lastDetailKey = updated.key;
 
     final chapters = updated.chapters ?? const <AChapter>[];
+    for (final chapter in chapters) {
+      _chapters[chapter.key] = (manga: updated.key, chapter: chapter);
+    }
     _log(
       'getDetail chapters sample: '
       '${chapters.take(3).map((c) => '(key=${c.key}, title=${c.title}, num=${c.chapterNumber})').join(', ')}'
@@ -370,7 +379,11 @@ class AidokuRuntime {
 
   Future<List<PageUrl>> _getPageList(DEpisode episode) async {
     _lastContexts.clear();
-    final manga = mangaCache[episode.url] ?? _lastManga();
+    final known = _chapters[episode.url];
+    final manga =
+        mangaCache[known?.manga] ??
+        mangaCache[_lastDetailKey] ??
+        _lastManga();
     if (manga == null) {
       throw Exception('No manga context available for this chapter');
     }
@@ -379,7 +392,7 @@ class AidokuRuntime {
     manga.encode(mangaWriter);
     final mangaRid = host.bufferResource(mangaWriter.takeBytes());
 
-    final chapter = _chapterFromEpisode(episode);
+    final chapter = known?.chapter ?? _chapterFromEpisode(episode);
     final chapterWriter = PostcardWriter();
     chapter.encode(chapterWriter);
     final chapterRid = host.bufferResource(chapterWriter.takeBytes());
