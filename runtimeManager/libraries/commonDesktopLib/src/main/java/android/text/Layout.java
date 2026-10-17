@@ -129,7 +129,7 @@ public abstract class Layout {
     public static float getDesiredWidthWithLimit(CharSequence source, int start, int end,
             TextPaint paint, TextDirectionHeuristic textDir, float upperLimit,
             boolean useBoundsForWidth) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     protected Layout(CharSequence text, TextPaint paint,
@@ -644,11 +644,11 @@ public abstract class Layout {
 
     @NonNull
     public RectF computeDrawingBoundingBox() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public int getLineBounds(int line, Rect bounds) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public abstract int getLineTop(int line);
@@ -828,24 +828,24 @@ public abstract class Layout {
     }
 
     public float getPrimaryHorizontal(int offset) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public float getPrimaryHorizontal(int offset, boolean clamped) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public float getSecondaryHorizontal(int offset) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public float getSecondaryHorizontal(int offset, boolean clamped) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void fillCharacterBounds(@IntRange(from = 0) int start, @IntRange(from = 0) int end,
             @NonNull float[] bounds, @IntRange(from = 0) int boundsStart) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public float getLineLeft(int line) {
@@ -1062,7 +1062,7 @@ public abstract class Layout {
     }
 
     public int getOffsetForHorizontal(int line, float horiz, boolean primary) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public final int getLineEnd(int line) {
@@ -1130,11 +1130,11 @@ public abstract class Layout {
     }
 
     public int getOffsetToLeftOf(int offset) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getOffsetToRightOf(int offset) {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public boolean shouldClampCursor(int line) {
@@ -1219,7 +1219,7 @@ public abstract class Layout {
     }
 
     public final void getSelection(int start, int end, final SelectionRectangleConsumer consumer) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public final Alignment getParagraphAlignment(int line) {

@@ -119,16 +119,16 @@ public final class Canvas {
     }
 
     public void drawRoundRect(@NonNull RectF rect, float rx, float ry, @NonNull Paint paint) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void drawRoundRect(float left, float top, float right, float bottom, float rx, float ry,
             @NonNull Paint paint) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void drawPath(@NonNull Path path, @NonNull Paint paint) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void translate(float dx, float dy) {

@@ -45,7 +45,7 @@ public class AbsoluteLayout extends ViewGroup {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     @Override
@@ -56,7 +56,7 @@ public class AbsoluteLayout extends ViewGroup {
     @Override
     protected void onLayout(boolean changed, int l, int t,
             int r, int b) {
-       throw new RuntimeException("Stub!");
+       
     }
 
     @Override
@@ -92,7 +92,7 @@ public class AbsoluteLayout extends ViewGroup {
 
         public LayoutParams(Context c, AttributeSet attrs) {
             super(c, attrs);
-            throw new RuntimeException("Stub!");
+            
         }
 
         public LayoutParams(ViewGroup.LayoutParams source) {

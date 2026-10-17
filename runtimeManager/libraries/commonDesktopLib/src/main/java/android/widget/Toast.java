@@ -18,7 +18,7 @@ public class Toast {
     }
 
     public Toast(android.content.Context context) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void show() {
@@ -26,51 +26,51 @@ public class Toast {
     }
 
     public void cancel() {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setView(android.view.View view) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public android.view.View getView() {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setDuration(int duration) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getDuration() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setMargin(float horizontalMargin, float verticalMargin) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public float getHorizontalMargin() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public float getVerticalMargin() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public void setGravity(int gravity, int xOffset, int yOffset) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public int getGravity() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getXOffset() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public int getYOffset() {
-        throw new RuntimeException("Stub!");
+        return 0;
     }
 
     public static Toast makeText(android.content.Context context, CharSequence text, int duration) {
@@ -78,14 +78,14 @@ public class Toast {
     }
 
     public static Toast makeText(android.content.Context context, int resId, int duration) throws android.content.res.Resources.NotFoundException {
-        throw new RuntimeException("Stub!");
+        return null;
     }
 
     public void setText(int resId) {
-        throw new RuntimeException("Stub!");
+        
     }
 
     public void setText(CharSequence s) {
-        throw new RuntimeException("Stub!");
+        
     }
 }
