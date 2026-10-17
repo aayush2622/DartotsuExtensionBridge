@@ -4,7 +4,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
-import com.aayush262.dartotsu_extension_bridge.prefs.PreferenceRecorder;
+import com.aayush262.dartotsu_extension_bridge.ui.UiCapture;
 
 /*
  * Desktop stand-in for the AndroidX class of the same name. Extensions build
@@ -21,23 +21,17 @@ public class DialogFragment extends Fragment implements DialogInterface.OnCancel
 
     public DialogFragment() {}
 
-    public void show(FragmentManager manager, String tag) { setTag(tag); build(); }
+    public void show(FragmentManager manager, String tag) { open(manager, tag); }
 
-    public void showNow(FragmentManager manager, String tag) { setTag(tag); build(); }
+    public void showNow(FragmentManager manager, String tag) { open(manager, tag); }
 
-    public int show(FragmentTransaction transaction, String tag) { setTag(tag); build(); return -1; }
+    public int show(FragmentTransaction transaction, String tag) { open(null, tag); return -1; }
 
-    /**
-     * While the bridge probes an extension's settings screen
-     * ({@link PreferenceRecorder}), runs the creation callbacks so the
-     * preferences they read are recorded. Views aren't available, so they
-     * usually stop partway; that is expected.
-     */
-    private void build() {
-        if (!PreferenceRecorder.isBuildingSettings()) return;
-        try { onCreate(null); } catch (Throwable ignored) {}
-        try { onCreateDialog(null); } catch (Throwable ignored) {}
-        try { onViewCreated(null, null); } catch (Throwable ignored) {}
+    /** While the bridge captures a settings screen, hands this fragment over to be built. */
+    private void open(FragmentManager manager, String tag) {
+        setTag(tag);
+        parentManager = manager;
+        UiCapture.shown(this);
     }
 
     public void dismiss() {}

@@ -40,7 +40,11 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.List;
 
-public class AppCompatActivity extends android.content.Context {
+public class AppCompatActivity extends android.content.ContextWrapper {
+    public AppCompatActivity() {
+        super(null);
+    }
+
     public androidx.fragment.app.FragmentManager getSupportFragmentManager() {
         return new androidx.fragment.app.FragmentManager();
     }

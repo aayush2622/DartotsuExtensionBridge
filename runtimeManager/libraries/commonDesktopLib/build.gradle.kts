@@ -35,7 +35,7 @@ dependencies {
     */
 
     compileOnly(commonDesktopLib.android.annotations)
-    compileOnly(commonDesktopLib.xmlpull)
+    api(commonDesktopLib.xmlpull)
 }
 
 /*
