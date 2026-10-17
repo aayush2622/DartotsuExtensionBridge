@@ -1,6 +1,8 @@
 package com.aayush262.dartotsu_extension_bridge.kotatsu
 
+import com.aayush262.dartotsu_extension_bridge.CustomMethods
 import com.aayush262.dartotsu_extension_bridge.ExtensionApi
+import com.aayush262.dartotsu_extension_bridge.network.Network
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
 import com.google.gson.Gson
 expect object PlatformInit {
@@ -16,10 +18,11 @@ class KotatsuExtensionApi : ExtensionApi, ExtensionBridgeApi {
 
     override fun initializeDesktop(basePath: String) {
         PlatformInit.initializeDesktop(basePath)
+        initialize(CustomMethods())
     }
 
     override fun initClient(data: String) {
-        // reuse your networking bridge if desired
+        Network.configure(data)
     }
 
     private val gson = Gson()

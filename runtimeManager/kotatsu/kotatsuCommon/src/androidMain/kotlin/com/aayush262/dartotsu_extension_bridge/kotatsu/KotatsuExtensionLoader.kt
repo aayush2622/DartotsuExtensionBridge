@@ -3,6 +3,12 @@
 
 package com.aayush262.dartotsu_extension_bridge.kotatsu
 
+import com.aayush262.dartotsu_extension_bridge.network.BridgeWebView
+import com.aayush262.dartotsu_extension_bridge.network.FlutterCookieJar
+import com.aayush262.dartotsu_extension_bridge.network.Network
+import com.aayush262.dartotsu_extension_bridge.network.NetworkBound
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -140,65 +146,14 @@ actual object KotatsuExtensionLoader {
     }
 
     object AndroidMangaLoaderContext : MangaLoaderContext() {
-        override val httpClient: OkHttpClient by lazy {
-            OkHttpClient.Builder()
-                .cookieJar(cookieJar)
-                .addInterceptor { chain ->
-                    val request = chain.request()
-                    val host = request.url.host
-                    var customUa = System.getProperty("anymex.ua.$host")
-                    if (customUa.isNullOrEmpty()) {
-                        val parts = host.split(".")
-                        if (parts.size >= 2) {
-                            val parentDomain = parts.takeLast(2).joinToString(".")
-                            customUa = System.getProperty("anymex.ua.$parentDomain")
-                        }
-                    }
-                    if (!customUa.isNullOrEmpty()) {
-                        val newRequest = request.newBuilder()
-                            .header("User-Agent", customUa)
-                            .build()
-                        chain.proceed(newRequest)
-                    } else {
-                        chain.proceed(request)
-                    }
-                }
-                .build()
+        override val cookieJar: CookieJar = FlutterCookieJar
+
+        private val client = NetworkBound {
+            Network.applyTo(OkHttpClient.Builder().cookieJar(cookieJar), mergeCookies = false).build()
         }
 
-        override val cookieJar: CookieJar = object : CookieJar {
-            private val cookieStore = ConcurrentHashMap<String, List<Cookie>>()
-            override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-                cookieStore[url.host] = cookies
-            }
-            override fun loadForRequest(url: HttpUrl): List<Cookie> {
-                val list = mutableListOf<Cookie>()
-                val memoryCookies = cookieStore[url.host]
-                if (memoryCookies != null) {
-                    list.addAll(memoryCookies)
-                }
-                try {
-                    val cookieManager = CookieManager.getInstance()
-                    val cookieString = cookieManager.getCookie(url.toString())
-                    if (!cookieString.isNullOrEmpty()) {
-                        cookieString.split(";").forEach { pair ->
-                            val cleanPair = pair.trim()
-                            if (cleanPair.isNotEmpty()) {
-                                val cookie = Cookie.parse(url, cleanPair)
-                                if (cookie != null) {
-                                    if (list.none { it.name == cookie.name }) {
-                                        list.add(cookie)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    System.err.println("[Kotatsu-Android] Failed to load cookies from CookieManager: ${e.message}")
-                }
-                return list
-            }
-        }
+        override val httpClient: OkHttpClient
+            get() = client.get()
 
         override fun newParserInstance(source: MangaSource): MangaParser {
             throw UnsupportedOperationException("Context doesn't instantiate parsers directly")
@@ -209,8 +164,9 @@ actual object KotatsuExtensionLoader {
         }
 
         @Deprecated("Provide a base url")
-        override suspend fun evaluateJs(script: String): String? = null
-        override suspend fun evaluateJs(baseUrl: String, script: String): String? = null
+        override suspend fun evaluateJs(script: String): String? = evaluateJs("about:blank", script)
+        override suspend fun evaluateJs(baseUrl: String, script: String): String? =
+            withContext(Dispatchers.IO) { BridgeWebView.evaluate(baseUrl, script) }
 
         override fun getConfig(source: MangaSource): MangaSourceConfig {
             return object : MangaSourceConfig {
@@ -220,8 +176,7 @@ actual object KotatsuExtensionLoader {
             }
         }
 
-        override fun getDefaultUserAgent(): String =
-            "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+        override fun getDefaultUserAgent(): String = Network.userAgent
 
         override fun redrawImageResponse(response: Response, redraw: (image: Bitmap) -> Bitmap): Response {
             val body = response.body

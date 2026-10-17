@@ -1,6 +1,10 @@
 package com.aayush262.dartotsu_extension_bridge.kotatsu
 
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
+import com.aayush262.dartotsu_extension_bridge.network.BridgeWebView
+import com.aayush262.dartotsu_extension_bridge.network.FlutterCookieJar
+import com.aayush262.dartotsu_extension_bridge.network.Network
+import com.aayush262.dartotsu_extension_bridge.network.NetworkBound
 import com.aayush262.dartotsu_extension_bridge.util.PackageTools
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -64,17 +68,14 @@ actual object KotatsuExtensionLoader {
     }
 
     private object DesktopMangaLoaderContext : MangaLoaderContext() {
-        override val cookieJar: CookieJar = object : CookieJar {
-            private val store = ConcurrentHashMap<String, List<Cookie>>()
-            override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-                store[url.host] = cookies
-            }
-            override fun loadForRequest(url: HttpUrl): List<Cookie> = store[url.host].orEmpty()
+        override val cookieJar: CookieJar = FlutterCookieJar
+
+        private val client = NetworkBound {
+            Network.applyTo(OkHttpClient.Builder().cookieJar(cookieJar), mergeCookies = false).build()
         }
 
-        override val httpClient: OkHttpClient by lazy {
-            OkHttpClient.Builder().cookieJar(cookieJar).build()
-        }
+        override val httpClient: OkHttpClient
+            get() = client.get()
 
         override fun newParserInstance(source: MangaSource): MangaParser =
             throw UnsupportedOperationException("Context doesn't instantiate parsers directly")
@@ -82,15 +83,15 @@ actual object KotatsuExtensionLoader {
         override fun getParserSources(): List<MangaSource> = loadedParsers.values.map { it.source }
 
         @Deprecated("Provide a base url")
-        override suspend fun evaluateJs(script: String): String? = null
-        override suspend fun evaluateJs(baseUrl: String, script: String): String? = null
+        override suspend fun evaluateJs(script: String): String? = evaluateJs("about:blank", script)
+        override suspend fun evaluateJs(baseUrl: String, script: String): String? =
+            withContext(Dispatchers.IO) { BridgeWebView.evaluate(baseUrl, script) }
 
         override fun getConfig(source: MangaSource): MangaSourceConfig = object : MangaSourceConfig {
             override fun <T> get(key: ConfigKey<T>): T = key.defaultValue
         }
 
-        override fun getDefaultUserAgent(): String =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        override fun getDefaultUserAgent(): String = Network.userAgent
 
         override fun redrawImageResponse(response: Response, redraw: (image: Bitmap) -> Bitmap): Response {
             val body = response.body
