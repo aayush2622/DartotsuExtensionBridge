@@ -9,6 +9,7 @@ package xyz.nulldev.androidcompat.io.sharedprefs
 
 import android.content.SharedPreferences
 import com.aayush262.dartotsu_extension_bridge.CommonDesktopApi
+import com.aayush262.dartotsu_extension_bridge.prefs.PreferenceRecorder
 import com.russhwolf.settings.ExperimentalSettingsApi
 import com.russhwolf.settings.PropertiesSettings
 import com.russhwolf.settings.serialization.decodeValue
@@ -74,6 +75,10 @@ class JavaSharedPreferences(
         }
     private val preferences = PropertiesSettings(properties)
 
+    init {
+        PreferenceRecorder.store(key, this)
+    }
+
     private val listeners = mutableMapOf<SharedPreferences.OnSharedPreferenceChangeListener, (String) -> Unit>()
 
     // TODO: 2021-05-29 Need to find a way to get this working with all pref types
@@ -82,17 +87,20 @@ class JavaSharedPreferences(
     override fun getString(
         key: String,
         defValue: String?,
-    ): String? =
-        if (defValue != null) {
+    ): String? {
+        PreferenceRecorder.read(this.key, key, PreferenceRecorder.Type.STRING, defValue)
+        return if (defValue != null) {
             preferences.getString(key, defValue)
         } else {
             preferences.getStringOrNull(key)
         }
+    }
 
     override fun getStringSet(
         key: String,
         defValues: Set<String>?,
     ): Set<String>? {
+        PreferenceRecorder.read(this.key, key, PreferenceRecorder.Type.STRING_SET, defValues)
         try {
             return if (defValues != null) {
                 preferences.decodeValue(SetSerializer(String.serializer()), key, defValues)
@@ -107,22 +115,34 @@ class JavaSharedPreferences(
     override fun getInt(
         key: String,
         defValue: Int,
-    ): Int = preferences.getInt(key, defValue)
+    ): Int {
+        PreferenceRecorder.read(this.key, key, PreferenceRecorder.Type.INT, defValue)
+        return preferences.getInt(key, defValue)
+    }
 
     override fun getLong(
         key: String,
         defValue: Long,
-    ): Long = preferences.getLong(key, defValue)
+    ): Long {
+        PreferenceRecorder.read(this.key, key, PreferenceRecorder.Type.LONG, defValue)
+        return preferences.getLong(key, defValue)
+    }
 
     override fun getFloat(
         key: String,
         defValue: Float,
-    ): Float = preferences.getFloat(key, defValue)
+    ): Float {
+        PreferenceRecorder.read(this.key, key, PreferenceRecorder.Type.FLOAT, defValue)
+        return preferences.getFloat(key, defValue)
+    }
 
     override fun getBoolean(
         key: String,
         defValue: Boolean,
-    ): Boolean = preferences.getBoolean(key, defValue)
+    ): Boolean {
+        PreferenceRecorder.read(this.key, key, PreferenceRecorder.Type.BOOLEAN, defValue)
+        return preferences.getBoolean(key, defValue)
+    }
 
     override fun contains(key: String): Boolean = key in preferences.keys
 
@@ -138,6 +158,7 @@ class JavaSharedPreferences(
                 @Suppress("UNCHECKED_CAST")
                 when (it) {
                     is Action.Add -> {
+                        PreferenceRecorder.write(key, it.key, it.value)
                         when (val value = it.value) {
                             is Set<*> -> preferences.encodeValue(SetSerializer(String.serializer()), it.key, value as Set<String>)
                             is String -> preferences.putString(it.key, value)
