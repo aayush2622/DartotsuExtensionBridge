@@ -20,7 +20,7 @@ import 'Util/ChapterRecognition.dart';
 import 'Util/extension_preferences_providers.dart';
 import 'Util/lib.dart';
 
-class MangayomiSourceMethods implements SourceMethods {
+class MangayomiSourceMethods extends SourceMethods {
   @override
   final MSource source;
 

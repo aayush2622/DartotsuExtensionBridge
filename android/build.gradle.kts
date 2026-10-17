@@ -65,6 +65,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.2.0")
     implementation("com.squareup.okio:okio:3.18.2")
     implementation(files(commonJar))
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.google.android.material:material:1.12.0")
 
     compileOnly("io.flutter:flutter_embedding_debug:1.0.0-ef0cd000916d64fa0c5d09cc809fa7ad244a5767")
 }

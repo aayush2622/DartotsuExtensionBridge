@@ -26,6 +26,8 @@ abstract class SourceMethods {
   Future<List<SourcePreference>> getPreference();
 
   Future<bool> setPreference(SourcePreference pref, dynamic value);
+
+  Future<bool> openNativeSettings() async => false;
 }
 
 List<PageUrl> pagesWithHeaders(
