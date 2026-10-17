@@ -169,3 +169,18 @@ Fixed by turning `KotatsuExtensionLoader` into a proper `expect object` in
   `Platform.isIOS`); whether dex2jar + the embedded interpreter-only OpenJDK
   Zero VM actually handles a real Kotatsu jar is unverified, same as it is
   for the other four there.
+
+## Desktop loads child-first (supersedes the parent-first note above)
+
+`KotatsuDesktopPluginClassLoader` gives each jar its own copy of the parsers
+API (core, model, ...); only `bitmap`, `config`, `webview`, `MangaLoaderContext`,
+`MangaSource`, `ContentType` and non-kotatsu libraries come from the bridge.
+Parsers are wrapped in `KotatsuMangaParserWrapper` (now in commonMain, shared
+with Android). Reason: parent-first made the vendored (older) API shadow the
+jar's, so a newer jar (Kotatsu-Redo: `AbstractMangaParser(context,
+MangaParserSource)`) failed every constructor with `NoSuchMethodError`. The
+vendored `ConfigKey`/`MangaLoaderContext` gained the newer members
+(`InterceptCloudflare`, `DisableUpdateChecking`, 3-arg `evaluateJs`,
+`interceptWebViewRequests`, ...) so jars calling them link. The wrapper reads
+the jar's own `YEAR_UNKNOWN`. Verified against `Kotatsu-Redo.jar` (1278 sources;
+MangaDex popular/details/pages work).

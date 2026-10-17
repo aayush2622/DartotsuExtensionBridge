@@ -41,6 +41,42 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipFile
 import javax.imageio.ImageIO
 
+/**
+ * Loads a parsers jar with its own copy of the parsers API (core, model, ...), so a jar built
+ * against a newer API than the one vendored here still links. Only the types the bridge hands
+ * in (context, config, bitmaps, MangaSource) and the shared libraries come from the bridge.
+ */
+class KotatsuDesktopPluginClassLoader(url: java.net.URL, parent: ClassLoader) : URLClassLoader(arrayOf(url), parent) {
+    private fun shared(name: String) =
+        name.startsWith("org.koitharu.kotatsu.parsers.bitmap.") ||
+            name.startsWith("org.koitharu.kotatsu.parsers.config.") ||
+            name.startsWith("org.koitharu.kotatsu.parsers.webview.") ||
+            name == "org.koitharu.kotatsu.parsers.MangaLoaderContext" ||
+            name == "org.koitharu.kotatsu.parsers.model.MangaSource" ||
+            name == "org.koitharu.kotatsu.parsers.model.ContentType" ||
+            !name.startsWith("org.koitharu.kotatsu.")
+
+    override fun loadClass(name: String, resolve: Boolean): Class<*> {
+        if (shared(name)) {
+            return try {
+                super.loadClass(name, resolve)
+            } catch (e: ClassNotFoundException) {
+                if (name.startsWith("org.koitharu.kotatsu.")) throw e
+                findClass(name)
+            }
+        }
+        synchronized(getClassLoadingLock(name)) {
+            val c = findLoadedClass(name) ?: try {
+                findClass(name)
+            } catch (_: ClassNotFoundException) {
+                return super.loadClass(name, resolve)
+            }
+            if (resolve) resolveClass(c)
+            return c
+        }
+    }
+}
+
 @OptIn(InternalParsersApi::class)
 actual object KotatsuExtensionLoader {
     private val loadedParsers = ConcurrentHashMap<String, MangaParser>()
@@ -130,8 +166,7 @@ actual object KotatsuExtensionLoader {
         for (classLoader in classLoaders.values) {
             try {
                 val clazz = classLoader.loadClass(className)
-                if (!MangaParser::class.java.isAssignableFrom(clazz)) continue
-                val parser = instantiateParser(clazz) ?: continue
+                val parser = instantiateParser(clazz, classLoader) ?: continue
                 loadedParsers[sourceId] = parser
                 return parser
             } catch (_: Exception) {
@@ -140,24 +175,36 @@ actual object KotatsuExtensionLoader {
         return null
     }
 
-    private fun instantiateParser(clazz: Class<*>): MangaParser? {
+    private var instantiateFailures = 0
+
+    private fun instantiateParser(clazz: Class<*>, loader: ClassLoader): MangaParser? {
+        if (!loader.loadClass("org.koitharu.kotatsu.parsers.MangaParser").isAssignableFrom(clazz)) return null
         if (clazz.isInterface || Modifier.isAbstract(clazz.modifiers)) return null
+        // The wrapper takes a delegate, it is not a source.
+        if (clazz.name == "org.koitharu.kotatsu.parsers.core.MangaParserWrapper") return null
         val raw = try {
             clazz.getDeclaredConstructor(MangaLoaderContext::class.java).newInstance(DesktopMangaLoaderContext)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             try {
                 clazz.getDeclaredConstructor().newInstance()
-            } catch (e2: Exception) {
-                Logger.log("[Kotatsu-Desktop] Failed to instantiate ${clazz.name}: ${e2.message}")
+            } catch (_: Throwable) {
+                // Report why the real constructor failed; the no-arg fallback's
+                // NoSuchMethodException says nothing. Only the first few, a broken jar
+                // fails for every class.
+                if (instantiateFailures++ < 5) {
+                    val cause = (e as? java.lang.reflect.InvocationTargetException)?.targetException ?: e
+                    Logger.log("[Kotatsu-Desktop] Failed to instantiate ${clazz.name}: ${cause.javaClass.simpleName}: ${cause.message}")
+                }
                 return null
             }
         }
-        return raw as? MangaParser
+        return KotatsuMangaParserWrapper(raw, loader)
     }
 
     actual suspend fun loadExtensions(folderPath: String?): List<Map<String, Any?>> = scanMutex.withLock {
         withContext(Dispatchers.IO) {
             val path = folderPath ?: return@withContext emptyList()
+            instantiateFailures = 0
             val folder = File(path)
             if (!folder.exists() || !folder.isDirectory) return@withContext emptyList()
 
@@ -192,7 +239,10 @@ actual object KotatsuExtensionLoader {
                         jar
                     }
 
-                    val classLoader = PackageTools.getClassLoader(jarToLoad.absolutePath)
+                    val classLoader = KotatsuDesktopPluginClassLoader(
+                        jarToLoad.toURI().toURL(),
+                        KotatsuExtensionLoader::class.java.classLoader,
+                    )
                     classLoaders[jarToLoad.absolutePath] = classLoader
 
                     val classNames = ZipFile(jarToLoad).use { zf ->
@@ -205,9 +255,7 @@ actual object KotatsuExtensionLoader {
                     for (className in classNames) {
                         try {
                             val clazz = classLoader.loadClass(className)
-                            if (!MangaParser::class.java.isAssignableFrom(clazz)) continue
-
-                            val parser = instantiateParser(clazz) ?: continue
+                            val parser = instantiateParser(clazz, classLoader) ?: continue
                             val source = parser.source
                             // Distinct sources can differ only by punctuation (LUNAR_SCAN vs
                             // LUNARSCAN); stripping it collapsed them onto one id and caused
