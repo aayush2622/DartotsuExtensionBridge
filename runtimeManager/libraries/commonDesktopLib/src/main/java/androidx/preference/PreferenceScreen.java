@@ -21,6 +21,10 @@ public class PreferenceScreen  extends PreferenceGroup {
     }
 
     public boolean addPreference(Preference preference) {
+        if (preference instanceof PreferenceCategory) {
+            ((PreferenceCategory) preference).attachTo(this);
+            return true;
+        }
         // propagate own shared preferences
         preference.setSharedPreferences(getSharedPreferences());
 

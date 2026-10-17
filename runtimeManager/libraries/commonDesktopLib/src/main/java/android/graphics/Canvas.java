@@ -37,6 +37,39 @@ public final class Canvas {
         canvas.drawImage(sourceImageCropped, dst.left, dst.top, dst.getWidth(), dst.getHeight(), null);
     }
 
+    public void drawBitmap(Bitmap sourceBitmap, Rect src, RectF dst, Paint paint) {
+        BufferedImage sourceImage = sourceBitmap.getImage();
+        if (src != null) sourceImage = sourceImage.getSubimage(src.left, src.top, src.width(), src.height());
+        canvas.drawImage(sourceImage, Math.round(dst.left), Math.round(dst.top),
+                Math.round(dst.right - dst.left), Math.round(dst.bottom - dst.top), null);
+    }
+
+    public void drawLine(float startX, float startY, float stopX, float stopY, Paint paint) {
+        applyPaint(paint);
+        canvas.draw(new java.awt.geom.Line2D.Float(startX, startY, stopX, stopY));
+    }
+
+    public void drawCircle(float cx, float cy, float radius, Paint paint) {
+        applyPaint(paint);
+        Shape shape = new Ellipse2D.Float(cx - radius, cy - radius, radius * 2, radius * 2);
+        if (paint.getStyle() == Paint.Style.STROKE) canvas.draw(shape);
+        else canvas.fill(shape);
+    }
+
+    public boolean clipRect(float left, float top, float right, float bottom) {
+        canvas.clip(new java.awt.geom.Rectangle2D.Float(left, top, right - left, bottom - top));
+        Rectangle r = canvas.getClipBounds();
+        return r == null || (r.width != 0 && r.height != 0);
+    }
+
+    public boolean clipRect(int left, int top, int right, int bottom) {
+        return clipRect((float) left, (float) top, (float) right, (float) bottom);
+    }
+
+    public boolean clipRect(@NonNull Rect rect) {
+        return clipRect(rect.left, rect.top, rect.right, rect.bottom);
+    }
+
     public void drawBitmap(Bitmap sourceBitmap, float left, float top, Paint paint) {
         BufferedImage sourceImage = sourceBitmap.getImage();
         canvas.drawImage(sourceImage, null, (int) left, (int) top);

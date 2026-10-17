@@ -251,6 +251,10 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      */
     protected abstract fun animeDetailsParse(response: Response): SAnime
 
+    protected open fun relatedAnimeListRequest(anime: SAnime): Request = animeDetailsRequest(anime)
+
+    protected open fun relatedAnimeListParse(response: Response): List<SAnime> = popularAnimeParse(response).animes
+
     /**
      * Get all the available episodes for an anime.
      * Normally it's not needed to override this method.

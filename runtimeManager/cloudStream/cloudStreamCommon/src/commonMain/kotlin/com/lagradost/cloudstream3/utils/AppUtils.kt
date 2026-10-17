@@ -4,6 +4,7 @@ package com.lagradost.cloudstream3.utils
 import com.lagradost.cloudstream3.mapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.Reader
+import kotlin.reflect.KClass
 
 object AppUtils {
     /** Any object as json string */
@@ -14,6 +15,10 @@ object AppUtils {
 
     inline fun <reified T> parseJson(value: String): T {
         return mapper.readValue(value)
+    }
+
+    fun <T : Any> parseJson(value: String, kClass: KClass<T>): T {
+        return mapper.readValue(value, kClass.java)
     }
 
     inline fun <reified T> parseJson(reader: Reader, valueType: Class<T>): T {

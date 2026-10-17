@@ -404,6 +404,51 @@ public final class Bitmap {
         graphics.dispose();
     }
 
+    public static Bitmap createBitmap(@NonNull @ColorInt int[] colors, int width, int height, Config config) {
+        checkWidthHeight(width, height);
+        Bitmap bitmap = createBitmap(width, height, config);
+        bitmap.image.setRGB(0, 0, width, height, colors, 0, width);
+        return bitmap;
+    }
+
+    public static Bitmap createBitmap(@NonNull @ColorInt int[] colors, int offset, int stride, int width, int height, Config config) {
+        checkWidthHeight(width, height);
+        Bitmap bitmap = createBitmap(width, height, config);
+        bitmap.image.setRGB(0, 0, width, height, colors, offset, stride);
+        return bitmap;
+    }
+
+    public static Bitmap createScaledBitmap(@NonNull Bitmap src, int dstWidth, int dstHeight, boolean filter) {
+        checkWidthHeight(dstWidth, dstHeight);
+        int type = src.image.getType() == BufferedImage.TYPE_CUSTOM ? BufferedImage.TYPE_INT_ARGB : src.image.getType();
+        BufferedImage scaled = new BufferedImage(dstWidth, dstHeight, type);
+        Graphics2D graphics = scaled.createGraphics();
+        graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, filter
+                ? java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR
+                : java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        graphics.drawImage(src.image, 0, 0, dstWidth, dstHeight, null);
+        graphics.dispose();
+        return new Bitmap(scaled);
+    }
+
+    public boolean hasAlpha() {
+        return image.getColorModel().hasAlpha();
+    }
+
+    public boolean isMutable() {
+        return true;
+    }
+
+    public void copyPixelsFromBuffer(java.nio.Buffer src) {
+        java.nio.ByteBuffer bytes = (java.nio.ByteBuffer) src;
+        int[] pixels = new int[width * height];
+        for (int i = 0; i < pixels.length && bytes.remaining() >= 4; i++) {
+            int r = bytes.get() & 0xff, g = bytes.get() & 0xff, b = bytes.get() & 0xff, a = bytes.get() & 0xff;
+            pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
+        }
+        image.setRGB(0, 0, width, height, pixels, 0, width);
+    }
+
     public void recycle() {
         // do nothing
     }

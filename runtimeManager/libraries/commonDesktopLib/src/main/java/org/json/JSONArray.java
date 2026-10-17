@@ -370,6 +370,15 @@ public class JSONArray {
      * Returns the value at {@code index} if it exists and is a double or can
      * be coerced to a double. Returns {@code NaN} otherwise.
      */
+    public float optFloat(int index) {
+        return optFloat(index, Float.NaN);
+    }
+
+    public float optFloat(int index, float fallback) {
+        double result = optDouble(index, Double.NaN);
+        return Double.isNaN(result) ? fallback : (float) result;
+    }
+
     public double optDouble(int index) {
         return optDouble(index, Double.NaN);
     }
