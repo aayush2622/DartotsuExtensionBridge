@@ -140,6 +140,13 @@ class Handler(
                     )
                 }
 
+                "openSettings" -> {
+                    val sourceId = (call.arguments as Map<*, *>)["sourceId"] as String
+                    if (!api.hasSettings(sourceId)) return result.success(false)
+                    ExtensionSettingsActivity.open(context, api, sourceId)
+                    result.success(true)
+                }
+
                 "initClient" -> launch(call, result) {
                     val args = call.arguments as? String ?: return@launch result.error(
                         "INVALID_ARGUMENTS", "Expected a map", null

@@ -45,4 +45,8 @@ interface ExtensionApi {
     suspend fun saveSourcePreference(
         sourceId: String, key: String, value: String?
     ): Boolean = false
+
+    fun hasSettings(sourceId: String): Boolean = false
+
+    fun openSettings(sourceId: String, host: Any): Boolean = false
 }
