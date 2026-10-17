@@ -1,9 +1,8 @@
 package eu.kanade.tachiyomi.network
 
 import android.content.Context
-import eu.kanade.tachiyomi.network.interceptor.CloudflareInterceptor
+import com.aayush262.dartotsu_extension_bridge.network.Network
 import eu.kanade.tachiyomi.network.interceptor.UncaughtExceptionInterceptor
-import eu.kanade.tachiyomi.network.interceptor.UserAgentInterceptor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import okhttp3.Cache
@@ -14,8 +13,13 @@ import java.net.CookieManager
 import java.net.CookiePolicy
 import java.util.concurrent.TimeUnit
 
+/**
+ * Tachiyomi's network entry point, on the bridge's shared network layer: the
+ * app's DNS, proxy, User-Agent and cookie jar, and Cloudflare challenges
+ * cleared by the app's WebView.
+ */
 class NetworkHelper(
-    context: Context
+    private val context: Context
 ) {
     val cookieStore = PersistentCookieStore(context)
 
@@ -25,19 +29,25 @@ class NetworkHelper(
         )
     }
 
-    private val userAgent = MutableStateFlow(
-        "Mozilla/5.0 (Linux; Android 10; K) " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36",
-    )
+    private val userAgent = MutableStateFlow(Network.userAgent)
     val userAgentFlow = userAgent.asStateFlow()
 
+    /** The app owns the User-Agent; this only updates what the flow reports. */
     fun setUserAgent(value: String) {
         userAgent.value = value
     }
 
-    fun defaultUserAgentProvider(): String = userAgent.value
+    /** The app's User-Agent. Sources build their default headers from it. */
+    fun defaultUserAgentProvider(): String = Network.userAgent.also { userAgent.value = it }
 
-    var client: OkHttpClient = run {
+    var client: OkHttpClient = buildClient()
+
+    /** Rebuilds [client] after the app sends new network settings. */
+    fun rebuildClient() {
+        client = buildClient()
+    }
+
+    private fun buildClient(): OkHttpClient {
         val builder = OkHttpClient.Builder()
             .cookieJar(PersistentCookieJar(cookieStore))
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -50,21 +60,14 @@ class NetworkHelper(
                 ),
             )
             .addInterceptor(UncaughtExceptionInterceptor())
-            .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
-            .addInterceptor(
-                CloudflareInterceptor(
-                    cookieManager = cookieStore,
-                    defaultUserAgentProvider = ::defaultUserAgentProvider
-                ),
-            )
-        builder.build()
+        return Network.applyTo(builder, mergeCookies = false).build()
     }
-
 
     /**
      * @deprecated Since extension-lib 1.5
      */
     @Deprecated("The regular client handles Cloudflare by default")
     @Suppress("UNUSED")
-    val cloudflareClient: OkHttpClient = client
+    val cloudflareClient: OkHttpClient
+        get() = client
 }

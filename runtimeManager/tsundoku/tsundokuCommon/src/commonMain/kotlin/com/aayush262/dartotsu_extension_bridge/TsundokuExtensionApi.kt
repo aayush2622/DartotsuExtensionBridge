@@ -3,7 +3,7 @@ package com.aayush262.dartotsu_extension_bridge
 
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
-import com.aayush262.dartotsu_extension_bridge.network.Network.enableNetworking
+import com.aayush262.dartotsu_extension_bridge.network.Network
 import com.aayush262.dartotsu_extension_bridge.tsundoku.NovelSourceMethods
 import com.aayush262.dartotsu_extension_bridge.tsundoku.TsundokuExtensionManager
 import com.google.gson.Gson
@@ -42,14 +42,8 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
     }
 
     override fun initClient(data: String) {
-        val helper = Injekt.get<NetworkHelper>()
-        val base = helper.client.newBuilder()
-        val custom = enableNetworking(data)
-
-        custom.interceptors.forEach {
-            base.addInterceptor(it)
-        }
-        helper.client = base.build()
+        Network.configure(data)
+        Injekt.get<NetworkHelper>().rebuildClient()
     }
 
 

@@ -5,7 +5,7 @@ import com.aayush262.dartotsu_extension_bridge.aniyomi.AnimeSourceMethods
 import com.aayush262.dartotsu_extension_bridge.aniyomi.AniyomiExtensionManager
 import com.aayush262.dartotsu_extension_bridge.aniyomi.MangaSourceMethods
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
-import com.aayush262.dartotsu_extension_bridge.network.Network.enableNetworking
+import com.aayush262.dartotsu_extension_bridge.network.Network
 import com.google.gson.Gson
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
@@ -44,14 +44,8 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
     }
 
     override fun initClient(data: String) {
-        val helper = Injekt.get<NetworkHelper>()
-        val base = helper.client.newBuilder()
-        val custom = enableNetworking(data)
-
-        custom.interceptors.forEach {
-            base.addInterceptor(it)
-        }
-        helper.client = base.build()
+        Network.configure(data)
+        Injekt.get<NetworkHelper>().rebuildClient()
     }
 
     private fun media(sourceId: String, isAnime: Boolean) = if (isAnime) AnimeSourceMethods(sourceId)
