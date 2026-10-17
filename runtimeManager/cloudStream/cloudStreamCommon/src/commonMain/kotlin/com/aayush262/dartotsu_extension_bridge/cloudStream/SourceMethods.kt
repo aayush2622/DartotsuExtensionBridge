@@ -100,6 +100,8 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
             else -> emptyList()
         }
 
+        logEpisodes(res, episodes)
+
         val topLevel = mapOf(
             "title" to res.name,
             "url" to res.url,
@@ -112,6 +114,23 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         )
         val usedKeys = setOf("name", "url", "posterUrl", "plot", "tags")
         return res.withExtraData(topLevel, usedKeys)
+    }
+
+    private fun logEpisodes(res: LoadResponse, sent: List<Map<String, Any?>>) {
+        val raw: List<Episode> = when (res) {
+            is TvSeriesLoadResponse -> res.episodes
+            is AnimeLoadResponse -> res.episodes.values.flatten()
+            else -> return
+        }
+        fun edge(items: List<String>) = (if (items.size <= 6) items else items.take(3) + "..." + items.takeLast(3)).joinToString(" | ")
+        Logger.log(
+            "'${provider.name}' details '${res.name}': ${raw.size} episodes from the extension (in its order): " +
+                edge(raw.map { "#${it.episode} s${it.season} '${it.name}' date=${it.date}" })
+        )
+        Logger.log(
+            "'${provider.name}' details '${res.name}': sent to the app (reversed): " +
+                edge(sent.reversed().map { "#${it["episodeNumber"]} '${it["name"]}'" })
+        )
     }
 
     suspend fun loadLinks(data: String): List<Map<String, Any?>> {
