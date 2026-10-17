@@ -8,6 +8,8 @@ import okhttp3.Response
 import org.koitharu.kotatsu.parsers.bitmap.Bitmap
 import org.koitharu.kotatsu.parsers.config.MangaSourceConfig
 import org.koitharu.kotatsu.parsers.model.MangaSource
+import org.koitharu.kotatsu.parsers.webview.InterceptedRequest
+import org.koitharu.kotatsu.parsers.webview.InterceptionConfig
 import org.koitharu.kotatsu.parsers.util.LinkResolver
 import java.util.*
 
@@ -46,6 +48,38 @@ abstract class MangaLoaderContext {
 	 * @return execution result as string, may be null
 	 */
 	abstract suspend fun evaluateJs(baseUrl: String, script: String): String?
+
+	/**
+	 * Same as [evaluateJs] with a [timeout] (ms); newer parsers call this form.
+	 */
+	open suspend fun evaluateJs(baseUrl: String, script: String, timeout: Long): String? =
+		evaluateJs(baseUrl, script)
+
+	open fun requestCloudflareVerification(parser: MangaParser, url: String): Nothing {
+		requestBrowserAction(parser, url)
+	}
+
+	open suspend fun interceptWebViewRequests(
+		url: String,
+		interceptorScript: String,
+		timeout: Long = 30000L,
+	): List<InterceptedRequest> {
+		throw UnsupportedOperationException("WebView request interception is not available")
+	}
+
+	open suspend fun interceptWebViewRequests(
+		url: String,
+		config: InterceptionConfig,
+	): List<InterceptedRequest> =
+		interceptWebViewRequests(url, config.filterScript ?: "return true;", config.timeoutMs)
+
+	open suspend fun captureWebViewUrls(
+		pageUrl: String,
+		urlPattern: Regex,
+		timeout: Long = 30000L,
+	): List<String> {
+		throw UnsupportedOperationException("WebView URL capture is not available")
+	}
 
 	/**
 	 * Open [url] in browser for some external action (e.g. captcha solving or non cookie-based authorization)

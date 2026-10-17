@@ -34,4 +34,12 @@ public sealed class ConfigKey<T>(
 		public val presetValues: Map<String?, String?>,
 		override val defaultValue: String?,
 	) : ConfigKey<String?>("img_server")
+
+	public class DisableUpdateChecking(
+		override val defaultValue: Boolean = false,
+	) : ConfigKey<Boolean>("disable_updates")
+
+	public class InterceptCloudflare(
+		override val defaultValue: Boolean = false,
+	) : ConfigKey<Boolean>("intercept_cloudflare")
 }
