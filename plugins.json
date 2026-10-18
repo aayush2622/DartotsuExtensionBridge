@@ -40,15 +40,15 @@
   },
   {
     "name": "cloudStreamDesktop",
-    "versionCode": 11,
-    "versionName": "2.0.9",
+    "versionCode": 12,
+    "versionName": "2.0.10",
     "description": "A plugin that allows you to run cloudstream extensions on desktop",
     "author": "aayush262/Ryan",
-    "createdAt": 1792272968566,
+    "createdAt": 1792305945071,
     "platform": "desktop",
     "type": "jar",
     "fileName": "cloudStreamDesktop-plugin.jar",
-    "fileSize": 77881941,
+    "fileSize": 77881957,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/cloudStreamDesktop-plugin.jar"
   },
   {
