@@ -49,19 +49,27 @@ actual object ExtensionLoader {
             return false
         }
 
+        val jarDir = File(file.parentFile, "jar")
+        if (!jarDir.exists()) jarDir.mkdirs()
+
+        val jarFile = File(
+            jarDir,
+            "${file.nameWithoutExtension}.jar"
+        )
+
         try {
-            val jarDir = File(file.parentFile, "jar")
-            if (!jarDir.exists()) jarDir.mkdirs()
-
-            val jarFile = File(
-                jarDir,
-                "${file.nameWithoutExtension}.jar"
-            )
-
             when (file.extension.lowercase()) {
                 "cs3" -> {
                     if (PackageTools.needsConversion(file, jarFile)) {
                         Logger.log("Building jar for ${file.name}")
+
+                        // Same path as the previous build: a cached loader keeps the old
+                        // jar's file handle open. On Windows that handle blocks both the
+                        // dex2jar move below and extractAssetsFromApk from writing over
+                        // it ("The process cannot access the file because it is being
+                        // used by another process") — the loader has to go first, not
+                        // after the jar is rebuilt.
+                        PackageTools.invalidateClassLoader(jarFile.absolutePath)
 
                         PackageTools.dex2jar(
                             file.absolutePath,
@@ -72,10 +80,6 @@ actual object ExtensionLoader {
                             file.absolutePath,
                             jarFile.absolutePath
                         )
-
-                        // Same path as the previous build: a cached loader would keep
-                        // serving the old jar (and manifest version) after an update.
-                        PackageTools.invalidateClassLoader(jarFile.absolutePath)
                     }
                 }
 
@@ -85,6 +89,8 @@ actual object ExtensionLoader {
                         file.lastModified() > jarFile.lastModified()
                     ) {
                         Logger.log("Copying jar ${file.name}")
+
+                        PackageTools.invalidateClassLoader(jarFile.absolutePath)
 
                         file.copyTo(
                             target = jarFile,
@@ -146,6 +152,11 @@ actual object ExtensionLoader {
             Logger.log(
                 "Failed loading ${file.name}: ${e.message}\n${e.stackTraceToString()}"
             )
+            // A loader cached by getClassLoader() before the failure (e.g. the
+            // class loaded but failed verification) would otherwise sit there
+            // holding the jar open — locking Windows out of both the next
+            // rebuild attempt and the app's own cache cleanup.
+            PackageTools.invalidateClassLoader(jarFile.absolutePath)
             return false
         }
     }
