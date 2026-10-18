@@ -923,6 +923,12 @@ object BytecodeEditor {
         }
         return result
     }
+    // 5150 instructions analyzed in ~2.4s; 18239 instructions (a real
+    // extension's giant generated dispatch method) didn't finish in 40s and
+    // was still climbing. This sits with a wide safety margin above the
+    // former and well below the latter.
+    private const val MAX_REPAIR_METHOD_SIZE = 8000
+
     private fun repairMalformedConstructions(
         cn: ClassNode,
         classNodes: Map<String, ClassNode>,
@@ -933,6 +939,24 @@ object BytecodeEditor {
     ) {
         for (method in cn.methods) {
             method.maxStack += method.instructions.size() + 16
+
+            // ProvenanceInterpreter's merge keeps a growing set of possible
+            // producer instructions per stack/local slot, unlike ASM's own
+            // COMPUTE_FRAMES (bounded common-supertype merges) used later to
+            // write the class - on a method this large that scales far worse
+            // than linearly and can run for minutes, hanging the whole
+            // conversion (and everything awaiting it) for one extension.
+            // Methods this size essentially never need this repair anyway,
+            // so skip it rather than risk the hang; COMPUTE_FRAMES still
+            // handles the method fine on its own.
+            if (method.instructions.size() > MAX_REPAIR_METHOD_SIZE) {
+                Logger.log(
+                    "[$jarLabel] ${cn.name}.${method.name}${method.desc} has ${method.instructions.size()} " +
+                            "instructions, skipping construction repair for this method to avoid a pathological analysis",
+                    LogLevel.WARNING,
+                )
+                continue
+            }
 
             val frames: Array<Frame<SourceValue>?> = try {
                 @Suppress("UNCHECKED_CAST")
