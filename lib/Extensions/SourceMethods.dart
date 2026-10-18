@@ -3,6 +3,7 @@ import '../Models/DMedia.dart';
 import '../Models/Page.dart';
 import '../Models/Pages.dart';
 import '../Models/Source.dart';
+import '../Models/SourceFilter.dart';
 import '../Models/SourcePreference.dart';
 import '../Models/Video.dart';
 
@@ -13,6 +14,12 @@ abstract class SourceMethods {
 
   Future<Pages> getLatestUpdates(int page);
 
+  /// The source's native filter/search-options list, with its default
+  /// state. Empty for a source with no native filters.
+  Future<List<SourceFilter>> getFilterList() async => [];
+
+  /// [filters] is `[]`, or a list of [SourceFilter.toJson] maps built from
+  /// what [getFilterList] returned, with the state fields the UI edited.
   Future<Pages> search(String query, int page, List<dynamic> filters);
 
   Future<DMedia> getDetail(DMedia media);
