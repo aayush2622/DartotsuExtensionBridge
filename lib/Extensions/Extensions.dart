@@ -151,13 +151,6 @@ abstract class Extension {
       _initState = ok ? InitState.success : InitState.failed;
       initError = ok ? null : initError;
 
-      // A failed init must not pin _initCompleter forever - ensureInitialized
-      // short-circuits on InitState.failed without ever calling initialize()
-      // again, so leaving the completer set here would permanently disable
-      // this backend after a single transient failure (a cold-start network
-      // blip, a sidecar/JVM handshake miss, ...) with no way to retry short
-      // of restarting the app. Clearing it lets the next ensureInitialized()
-      // call attempt onInitialize() again.
       if (!ok) _initCompleter = null;
 
       completer.complete();
@@ -190,11 +183,7 @@ abstract class Extension {
     try {
       await initialize();
     } catch (_) {
-      // initialize() already recorded the failure in _initState (and
-      // completed its own completer with the error for direct initialize()
-      // callers) - ensureInitialized()'s contract is a bool, never a thrown
-      // exception, and a failure here must still leave _initCompleter
-      // cleared so the *next* call can retry rather than getting stuck.
+
     }
 
     return _initState == InitState.success;
@@ -273,6 +262,19 @@ abstract class Extension {
       Logger.log(
         'Error initializing available extensions for $id ($type): $e\n$s',
       );
+    }
+  }
+
+  Future<void> refreshInstalled() async {
+    for (final type in ItemType.values) {
+      final supports = switch (type) {
+        ItemType.anime => supportsAnime,
+        ItemType.manga => supportsManga,
+        ItemType.novel => supportsNovel,
+      };
+      if (!supports) continue;
+      state(type).installedInitialized = false;
+      await initializeInstalled(type);
     }
   }
 

@@ -212,7 +212,6 @@ abstract class DownloadablePlugin {
   /// version can switch to the new one without an app restart.
   Future<void> Function()? onUpdated;
 
-
   Future<void> Function()? beforeSwap;
 
   Future<void> update() async {

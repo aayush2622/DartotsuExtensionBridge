@@ -7,6 +7,7 @@ import '../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../ExtensionBridge.dart';
 import '../../Extensions/DownloadablePlugin.dart';
 import '../../Extensions/Extensions.dart';
+import '../../Logger.dart';
 import '../../Network/NativeNetwork.dart';
 
 /// Startup and shutdown shared by every backend whose sources run on a JVM
@@ -20,7 +21,6 @@ mixin JvmBackend on Extension {
 
   void stopRuntime() {}
 
- 
   Future<void> releaseRuntimeFile() async {}
 
   @override
@@ -51,6 +51,12 @@ mixin JvmBackend on Extension {
     NativeNetwork.detach(this);
     stopRuntime();
     await _boot(plugin);
+
+    try {
+      await refreshInstalled();
+    } catch (e, s) {
+      Logger.log('Error refreshing installed extensions for $id after a runtime reload: $e\n$s');
+    }
   }
 
   @override
