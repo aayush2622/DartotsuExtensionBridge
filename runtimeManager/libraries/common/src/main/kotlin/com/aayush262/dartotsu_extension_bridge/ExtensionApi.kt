@@ -19,8 +19,12 @@ interface ExtensionApi {
     ): String = ""
 
     suspend fun search(
-        sourceId: String, isAnime: Boolean, query: String, page: Int
+        sourceId: String, isAnime: Boolean, query: String, page: Int, filters: String = "[]"
     ): String = ""
+
+    suspend fun getFilterList(
+        sourceId: String, isAnime: Boolean
+    ): String = "[]"
 
     suspend fun getDetail(
         sourceId: String, isAnime: Boolean, media: String

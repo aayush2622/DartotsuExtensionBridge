@@ -96,7 +96,8 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
         sourceId: String,
         isAnime: Boolean,
         query: String,
-        page: Int
+        page: Int,
+        filters: String
     ): String {
         return mapper.writeValueAsString(
             methods(sourceId).search(query, page)

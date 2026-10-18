@@ -65,6 +65,7 @@ class KotatsuExtensionApi : ExtensionApi, ExtensionBridgeApi {
         isAnime: Boolean,
         query: String,
         page: Int,
+        filters: String,
     ): String {
         return encode(
             KotatsuExtensionLoader.search(

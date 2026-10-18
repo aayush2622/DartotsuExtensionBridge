@@ -35,7 +35,10 @@ interface AniyomiSourceMethods {
      * @param page The page number to fetch.
      * @return An [AnimesPage] containing the search results and a flag indicating if there are more pages.
      */
-    suspend fun getSearchResults(query: String, page: Int): AnimesPage
+    suspend fun getSearchResults(query: String, page: Int, filters: String = "[]"): AnimesPage
+
+    /** The source's native filter list, as JSON ([toFilterJson]'s shape). */
+    fun getFilterListJson(): String = "[]"
 
     /**
      * Fetches the details of a specific anime.

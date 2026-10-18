@@ -88,7 +88,19 @@ class Handler(
                     val args = call.arguments as Map<*, *>
 
                     api.search(
-                        args["sourceId"] as String, args["isAnime"] as Boolean, args["query"] as String, args["page"] as Int
+                        args["sourceId"] as String,
+                        args["isAnime"] as Boolean,
+                        args["query"] as String,
+                        args["page"] as Int,
+                        args["filters"] as? String ?: "[]",
+                    )
+                }
+
+                "getFilterList" -> launch(call, result) {
+                    val args = call.arguments as Map<*, *>
+
+                    api.getFilterList(
+                        args["sourceId"] as String, args["isAnime"] as Boolean
                     )
                 }
 

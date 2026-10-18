@@ -161,9 +161,11 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
         )
     }
 
-    override suspend fun search(sourceId: String, isAnime: Boolean, query: String, page: Int): String {
+    override suspend fun search(
+        sourceId: String, isAnime: Boolean, query: String, page: Int, filters: String
+    ): String {
         val res = withContext(Dispatchers.IO) {
-            media(sourceId, isAnime).getSearchResults(query, page)
+            media(sourceId, isAnime).getSearchResults(query, page, filters)
         }
 
         return encode(
@@ -172,6 +174,9 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
             )
         )
     }
+
+    override suspend fun getFilterList(sourceId: String, isAnime: Boolean): String =
+        withContext(Dispatchers.IO) { media(sourceId, isAnime).getFilterListJson() }
 
 
     override suspend fun getDetail(

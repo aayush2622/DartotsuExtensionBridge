@@ -128,7 +128,7 @@ class IReaderExtensionApi : ExtensionApi, ExtensionBridgeApi {
     }
 
     override suspend fun search(
-        sourceId: String, isAnime: Boolean, query: String, page: Int
+        sourceId: String, isAnime: Boolean, query: String, page: Int, filters: String
     ): String {
 
         val src = source(sourceId)

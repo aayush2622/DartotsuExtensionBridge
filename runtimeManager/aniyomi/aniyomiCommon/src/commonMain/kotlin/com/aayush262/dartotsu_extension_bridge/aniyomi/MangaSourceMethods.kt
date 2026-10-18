@@ -1,7 +1,9 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import android.content.SharedPreferences
+import com.aayush262.dartotsu_extension_bridge.applyFilterJson
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
+import com.aayush262.dartotsu_extension_bridge.toFilterJson
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
@@ -58,15 +60,19 @@ class MangaSourceMethods(sourceID: String) : AniyomiSourceMethods {
         return mangaPageToAnimePage(source.getLatestUpdates(page))
     }
 
-    override suspend fun getSearchResults(query: String, page: Int): AnimesPage {
+    override suspend fun getSearchResults(query: String, page: Int, filters: String): AnimesPage {
+        val template = source.getFilterList()
+        template.applyFilterJson(filters)
         return mangaPageToAnimePage(
             source.getSearchManga(
                 page = page,
                 query = query,
-                filters = source.getFilterList()
+                filters = template
             )
         )
     }
+
+    override fun getFilterListJson(): String = source.getFilterList().toFilterJson()
 
     override suspend fun getDetails(media: SAnime): Pair<SAnime, List<SEpisode>> {
         val data = source.getMangaUpdate(

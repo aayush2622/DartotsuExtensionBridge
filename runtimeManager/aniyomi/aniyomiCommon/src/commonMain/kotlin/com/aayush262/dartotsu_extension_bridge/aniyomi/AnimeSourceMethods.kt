@@ -2,7 +2,9 @@ package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import kotlin.coroutines.cancellation.CancellationException
 import android.content.SharedPreferences
+import com.aayush262.dartotsu_extension_bridge.applyFilterJson
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
+import com.aayush262.dartotsu_extension_bridge.toFilterJson
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
@@ -57,9 +59,13 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
 
     override suspend fun getLatestUpdates(page: Int): AnimesPage = source.getLatestUpdates(page)
 
-    override suspend fun getSearchResults(query: String, page: Int): AnimesPage = source.getSearchAnime(
-        page = page, query = query, filters = source.getFilterList()
-    )
+    override suspend fun getSearchResults(query: String, page: Int, filters: String): AnimesPage {
+        val template = source.getFilterList()
+        template.applyFilterJson(filters)
+        return source.getSearchAnime(page = page, query = query, filters = template)
+    }
+
+    override fun getFilterListJson(): String = source.getFilterList().toFilterJson()
 
     override suspend fun getDetails(media: SAnime): Pair<SAnime, List<SEpisode>> = source.getAnimeDetails(media) to getEpisodeList(media)
 

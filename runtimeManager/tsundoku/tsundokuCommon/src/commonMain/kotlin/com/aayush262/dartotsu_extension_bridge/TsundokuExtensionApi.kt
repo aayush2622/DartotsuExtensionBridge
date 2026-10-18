@@ -118,9 +118,11 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
         )
     }
 
-    override suspend fun search(sourceId: String, isAnime: Boolean, query: String, page: Int): String {
+    override suspend fun search(
+        sourceId: String, isAnime: Boolean, query: String, page: Int, filters: String
+    ): String {
         val res = withContext(Dispatchers.IO) {
-            NovelSourceMethods(sourceId).getSearchResults(query, page)
+            NovelSourceMethods(sourceId).getSearchResults(query, page, filters)
         }
 
         return encode(
@@ -129,6 +131,9 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
             )
         )
     }
+
+    override suspend fun getFilterList(sourceId: String, isAnime: Boolean): String =
+        withContext(Dispatchers.IO) { NovelSourceMethods(sourceId).getFilterListJson() }
 
 
     override suspend fun getDetail(

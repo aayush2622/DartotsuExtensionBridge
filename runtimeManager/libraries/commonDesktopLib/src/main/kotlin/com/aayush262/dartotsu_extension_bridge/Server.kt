@@ -106,6 +106,12 @@ object Server {
             params["isAnime"].asBoolean,
             params["query"].asString,
             params["page"].asInt,
+            params["filters"]?.asString ?: "[]",
+        )
+
+        "getFilterList" -> api.getFilterList(
+            params["sourceId"].asString,
+            params["isAnime"].asBoolean,
         )
 
         "getDetail" -> api.getDetail(

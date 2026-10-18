@@ -8,6 +8,7 @@ import '../../Models/DMedia.dart';
 import '../../Models/Page.dart';
 import '../../Models/Pages.dart';
 import '../../Models/Source.dart';
+import '../../Models/SourceFilter.dart';
 import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
 import 'ExtensionBridge.dart';
@@ -75,12 +76,24 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
   }
 
   @override
+  Future<List<SourceFilter>> getFilterList() async {
+    final result = await bridge.call<List<dynamic>?>('getFilterList', {
+      'sourceId': source.id,
+      'isAnime': isAnime,
+    });
+    return (result ?? const [])
+        .map((e) => SourceFilter.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  @override
   Future<Pages> search(String query, int page, List filters) async {
     final result = await bridge.call<Map<String, dynamic>>('search', {
       'sourceId': source.id,
       'isAnime': isAnime,
       'query': query,
       'page': page,
+      'filters': jsonEncode(filters),
     });
 
     return compute(Pages.fromJson, result);
