@@ -243,6 +243,12 @@ class EmbeddedJvmBridge implements JavaBridge {
     );
   }
 
+  // The embedded VM attaches each backend's jar in its own class loader
+  // in-process, not as a separate OS process with its own exclusive file
+  // handle, so there's nothing extra to wait out here.
+  @override
+  Future<void> disposeAndAwaitExit() async => dispose();
+
   dynamic _toDart(dynamic value) {
     if (value is Map) {
       final result = <String, dynamic>{};

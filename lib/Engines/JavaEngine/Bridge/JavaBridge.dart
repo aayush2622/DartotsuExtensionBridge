@@ -8,6 +8,8 @@ abstract class JavaBridge {
   ]);
 
   void dispose();
+
+  Future<void> disposeAndAwaitExit() async => dispose();
 }
 
 /// Safe default for [JavaBridge.call] when a native-side error must not

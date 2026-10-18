@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
@@ -213,6 +212,9 @@ abstract class DownloadablePlugin {
   /// version can switch to the new one without an app restart.
   Future<void> Function()? onUpdated;
 
+
+  Future<void> Function()? beforeSwap;
+
   Future<void> update() async {
     if (!await isInstalled() || downloading.value) return;
 
@@ -329,6 +331,12 @@ abstract class DownloadablePlugin {
 
         if (total != null && received < total) {
           throw Exception("Incomplete download");
+        }
+
+        try {
+          await beforeSwap?.call();
+        } catch (e) {
+          Logger.log("$name beforeSwap failed, swapping in the update anyway: $e");
         }
 
         try {

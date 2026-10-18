@@ -259,6 +259,20 @@ class SidecarBridge implements JavaBridge {
     // Explicit disposal must not be undone by the auto-restart path.
     _pluginJarPath = null;
   }
+
+
+  static const _exitTimeout = Duration(seconds: 10);
+
+  @override
+  Future<void> disposeAndAwaitExit() async {
+    final process = _process;
+    dispose();
+    if (process == null) return;
+    try {
+      await process.exitCode.timeout(_exitTimeout);
+    } catch (_) {
+    }
+  }
 }
 
 class _SidecarExited implements Exception {

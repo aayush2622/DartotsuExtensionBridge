@@ -20,6 +20,9 @@ mixin JvmBackend on Extension {
 
   void stopRuntime() {}
 
+ 
+  Future<void> releaseRuntimeFile() async {}
+
   @override
   Future<bool> onInitialize() async {
     final plugin = this.plugin!;
@@ -27,6 +30,7 @@ mixin JvmBackend on Extension {
     if (!plugin.installed.value) return false;
 
     plugin.onUpdated = reloadRuntime;
+    plugin.beforeSwap = releaseRuntimeFile;
     unawaited(plugin.autoUpdate());
 
     await NativeNetwork.start();
@@ -52,6 +56,7 @@ mixin JvmBackend on Extension {
   @override
   void dispose() {
     plugin?.onUpdated = null;
+    plugin?.beforeSwap = null;
     NativeNetwork.detach(this);
     stopRuntime();
     super.dispose();
@@ -94,4 +99,7 @@ mixin DesktopJvmBackend on JvmBackend {
 
   @override
   void stopRuntime() => java.dispose();
+
+  @override
+  Future<void> releaseRuntimeFile() => java.disposeAndAwaitExit();
 }
