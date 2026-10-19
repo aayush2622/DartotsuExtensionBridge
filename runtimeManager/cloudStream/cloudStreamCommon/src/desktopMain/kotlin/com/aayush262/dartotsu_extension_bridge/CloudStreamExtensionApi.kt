@@ -14,7 +14,7 @@ import xyz.nulldev.androidcompat.androidimpl.CustomContext
 import xyz.nulldev.androidcompat.xyz.nulldev.androidcompat.androidCompatModule
 import java.io.File
 
-actual object PlatformInit {
+actual object CloudStreamPlatformInit {
     actual fun initializeAndroid(context: Any) {
     }
 

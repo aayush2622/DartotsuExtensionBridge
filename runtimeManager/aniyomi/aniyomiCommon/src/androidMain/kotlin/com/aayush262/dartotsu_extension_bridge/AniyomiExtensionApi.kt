@@ -16,7 +16,7 @@ import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
 import androidx.core.content.edit
 
-actual object PlatformInit {
+actual object AniyomiPlatformInit {
     actual fun initializeAndroid(context: Any) {
         val ctx = context as? Context ?: return
         Injekt.addSingletonFactory<Application> { ctx as Application }

@@ -17,7 +17,7 @@ import org.koin.core.context.startKoin
 import org.koin.dsl.module
 import xyz.nulldev.androidcompat.xyz.nulldev.androidcompat.androidCompatModule
 
-actual object PlatformInit {
+actual object IReaderPlatformInit {
     actual fun initializeAndroid(context: Any) {
         val ctx = context as? Context ?: return
         val preferences = PreferenceStoreFactory(ctx).create("catalogs_data", rootPath = "")

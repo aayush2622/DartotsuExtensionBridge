@@ -24,7 +24,7 @@ import kotlin.collections.plus
 import kotlin.collections.toMap
 
 
-expect object PlatformInit {
+expect object AniyomiPlatformInit {
     fun initializeAndroid(context: Any)
     fun initializeDesktop(basePath: String)
 
@@ -36,10 +36,10 @@ expect object PlatformInit {
 class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
 
 
-    override fun initializeAndroid(context: Any) = PlatformInit.initializeAndroid(context)
+    override fun initializeAndroid(context: Any) = AniyomiPlatformInit.initializeAndroid(context)
 
     override fun initializeDesktop(basePath: String) {
-        PlatformInit.initializeDesktop(basePath)
+        AniyomiPlatformInit.initializeDesktop(basePath)
         initialize(CustomMethods())
     }
 
@@ -279,11 +279,11 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
     }
 
     override suspend fun saveSourcePreference(sourceId: String, key: String, value: String?): Boolean {
-        return PlatformInit.saveSourcePreference(sourceId, key, value)
+        return AniyomiPlatformInit.saveSourcePreference(sourceId, key, value)
     }
 
     override suspend fun getPreference(sourceId: String, isAnime: Boolean): String {
-        return PlatformInit.getPreference(sourceId, isAnime)
+        return AniyomiPlatformInit.getPreference(sourceId, isAnime)
     }
 }
 

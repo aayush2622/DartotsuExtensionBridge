@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.AcraApplication
 import com.lagradost.cloudstream3.CloudStreamApp
 import com.lagradost.cloudstream3.utils.DataStore
 
-actual object PlatformInit {
+actual object CloudStreamPlatformInit {
     actual fun initializeAndroid(context: Any) {
         val app = (context as Context).applicationContext ?: context
         val recording = RecordingContext(app)

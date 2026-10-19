@@ -16,7 +16,7 @@ import com.lagradost.cloudstream3.app
 import kotlin.collections.get
 
 
-expect object PlatformInit {
+expect object CloudStreamPlatformInit {
     fun initializeAndroid(context: Any)
     fun initializeDesktop(basePath: String)
 }
@@ -24,10 +24,10 @@ expect object PlatformInit {
 class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
 
     override fun initializeAndroid(context: Any) =
-        PlatformInit.initializeAndroid(context)
+        CloudStreamPlatformInit.initializeAndroid(context)
 
     override fun initializeDesktop(basePath: String) {
-        PlatformInit.initializeDesktop(basePath)
+        CloudStreamPlatformInit.initializeDesktop(basePath)
         initialize(CustomMethods())
     }
 

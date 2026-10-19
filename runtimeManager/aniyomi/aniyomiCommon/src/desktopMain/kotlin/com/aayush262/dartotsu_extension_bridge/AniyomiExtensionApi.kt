@@ -25,7 +25,7 @@ import java.io.File
 import kotlin.collections.set
 import kotlin.getValue
 
-actual object PlatformInit {
+actual object AniyomiPlatformInit {
     actual fun initializeAndroid(context: Any) {}
 
     actual fun initializeDesktop(basePath: String) {

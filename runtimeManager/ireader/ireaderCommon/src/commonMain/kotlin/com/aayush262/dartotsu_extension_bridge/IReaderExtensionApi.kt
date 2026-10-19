@@ -19,17 +19,17 @@ import ireader.core.source.model.Text
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-expect object PlatformInit {
+expect object IReaderPlatformInit {
     fun initializeAndroid(context: Any)
     fun initializeDesktop(basePath: String)
 }
 
 class IReaderExtensionApi : ExtensionApi, ExtensionBridgeApi {
 
-    override fun initializeAndroid(context: Any) = PlatformInit.initializeAndroid(context)
+    override fun initializeAndroid(context: Any) = IReaderPlatformInit.initializeAndroid(context)
 
     override fun initializeDesktop(basePath: String) {
-        PlatformInit.initializeDesktop(basePath)
+        IReaderPlatformInit.initializeDesktop(basePath)
         initialize(CustomMethods())
     }
 
