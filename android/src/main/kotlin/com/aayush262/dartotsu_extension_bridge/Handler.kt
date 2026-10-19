@@ -228,6 +228,7 @@ class Handler(
             apiReady.complete(api!!)
 
         } catch (e: Throwable) {
+            api = null
             apiReady.completeExceptionally(e)
 
             Logger.log(
@@ -363,6 +364,7 @@ class Handler(
 
             apiReady.complete(api!!)
         } catch (e: Throwable) {
+            api = null
             apiReady.completeExceptionally(e)
             Logger.log(
                 "Failed to load Extension API: ${e.stackTraceToString()}", LogLevel.ERROR

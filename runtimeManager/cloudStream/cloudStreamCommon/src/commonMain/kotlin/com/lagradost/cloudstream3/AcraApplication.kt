@@ -4,20 +4,13 @@ import android.content.Context
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.removeKeys
 import com.lagradost.cloudstream3.utils.DataStore.setKey
-import java.lang.ref.WeakReference
 
 class AcraApplication {
     companion object {
-        private var _context: WeakReference<Context>? = null
-
-        var context: Context?
-            get() = _context?.get()
+        var context: Context? = null
             set(value) {
-                _context = if (value != null) WeakReference(value) else null
-                
-                if (value != null) {
-                    CloudStreamApp.context = value
-                }
+                field = value
+                if (value != null) CloudStreamApp.context = value
             }
 
         fun removeKeys(folder: String): Int? {

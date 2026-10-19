@@ -5,17 +5,10 @@ import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.removeKey
 import com.lagradost.cloudstream3.utils.DataStore.removeKeys
 import com.lagradost.cloudstream3.utils.DataStore.setKey
-import java.lang.ref.WeakReference
 
 class CloudStreamApp {
     companion object {
-        private var _context: WeakReference<Context>? = null
-
-        var context: Context?
-            get() = _context?.get()
-            set(value) {
-                _context = if (value != null) WeakReference(value) else null
-            }
+        var context: Context? = null
 
         fun removeKeys(folder: String): Int? {
             return context?.removeKeys(folder)
