@@ -363,13 +363,15 @@ object BytecodeEditor {
     }
 
     private val missingClass = Regex("(?:ClassNotFoundException: |NoClassDefFoundError: )([\\w./$]+)")
-    private val frameworkPrefixes = listOf("com.google.android.", "androidx.", "android.")
 
-    private fun blamesMissingFramework(problems: String): Boolean {
-        val names = missingClass.findAll(problems).map { it.groupValues[1].replace('/', '.') }.toList()
-        return names.isNotEmpty() && names.all { n -> frameworkPrefixes.any(n::startsWith) } &&
-            !problems.contains("VerifyError")
-    }
+    private val analyzerFailure = Regex("AnalyzerException")
+    private val analyzerMissingClass =
+        Regex("AnalyzerException: [^\\n]*(?:ClassNotFoundException|NoClassDefFoundError)")
+
+    private fun blamesMissingDependency(problems: String): Boolean =
+        missingClass.containsMatchIn(problems) &&
+            !problems.contains("VerifyError") &&
+            analyzerFailure.findAll(problems).count() == analyzerMissingClass.findAll(problems).count()
 
     private fun verify(bytes: ByteArray, loader: ClassLoader): String? {
         val sw = StringWriter()
@@ -380,10 +382,7 @@ object BytecodeEditor {
             "${e.javaClass.simpleName}: ${e.message}"
         }
         if (asmProblems != null) {
-            // The desktop runtime has no Material/AndroidX classes, so the verifier can't load
-            // them to merge frames. That's not a defect in the class, only code that touches
-            // those views (never run here), so don't throw the repaired bytes away over it.
-            if (blamesMissingFramework(asmProblems)) return null
+            if (blamesMissingDependency(asmProblems)) return null
             return asmProblems
         }
 

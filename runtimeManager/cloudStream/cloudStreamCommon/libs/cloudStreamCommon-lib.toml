@@ -11,6 +11,7 @@ retrofit = "2.11.0"
 jackson = "2.13.1"
 ktor = "3.3.2"
 serialization = "1.11.0"
+ksoup = "0.2.6"
 [libraries]
 injekt-core = { module = "uy.kohesive.injekt:injekt-core", version.ref = "injekt" }
 
@@ -28,6 +29,8 @@ coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", ve
 newpipe-extractor = { module = "com.github.TeamNewPipe:NewPipeExtractor", version.ref = "newpipe" }
 
 rhino = { module = "org.mozilla:rhino", version.ref = "rhino" }
+
+ksoup-jvm = { module = "com.fleeksoft.ksoup:ksoup-jvm", version.ref = "ksoup" }
 
 
 tmdb-java = { module = "com.uwetrottmann.tmdb2:tmdb-java", version.ref = "tmdb" }

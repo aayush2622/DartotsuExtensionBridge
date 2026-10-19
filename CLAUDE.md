@@ -226,6 +226,15 @@ flutter test                                                # test/ — pure-Dar
 dart analyze lib test
 ```
 
+CloudStream desktop jar from a terminal (loads every `.cs3` in a folder, prints how many loaded and which failed):
+
+```
+./runtimeManager/gradlew -p runtimeManager :cloudStream:cloudStreamDesktop:buildPlugin
+python3 runtimeManager/scripts/cloudstream_test.py \
+  runtimeManager/builds/cloudStreamDesktop/cloudStreamDesktop-plugin.jar plugins/ \
+  --repo https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/builds/repo.json
+```
+
 `runtimeManager/` (the JVM backend JARs, out of scope above) builds via
 `./gradlew buildEverything` (desktop + android + the `embedded-bridge.jar`
 shim). iOS uses the desktop JARs; after changing `EmbeddedBridge.kt`, copy the

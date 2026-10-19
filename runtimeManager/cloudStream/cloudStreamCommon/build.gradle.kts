@@ -39,6 +39,7 @@ kotlin {
         getByName("desktopMain") {
             dependencies{
                 api(projects.libraries.commonDesktopLib)
+                api(cloudStreamCommon.ksoup.jvm)
             }
         }
     }
