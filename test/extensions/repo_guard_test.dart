@@ -121,6 +121,34 @@ void main() {
     expect(looksLikeWebPage(json([])), isFalse);
   });
 
+  group('repo.json links', () {
+    test('a repo.json link points at the index in the same folder', () {
+      expect(
+        tachiyomiIndexCandidates(
+          'https://raw.githubusercontent.com/yuzono/manga-repo/repo/repo.json',
+        ),
+        [
+          'https://raw.githubusercontent.com/yuzono/manga-repo/repo/index.pb',
+          'https://raw.githubusercontent.com/yuzono/manga-repo/repo/index.min.json',
+        ],
+      );
+    });
+
+    test('a github blob link to repo.json becomes the same folder', () {
+      final raw = normalizeRepoUrl(
+        'https://github.com/keiyoushi/extensions/blob/repo/repo.json',
+      );
+      expect(
+        tachiyomiIndexCandidates(raw).last,
+        'https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json',
+      );
+      expect(
+        tachiyomiIndexUrl(raw),
+        'https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json',
+      );
+    });
+  });
+
   group('tachiyomiIndexCandidates', () {
     test('tries index.pb before index.min.json for a base URL', () {
       expect(tachiyomiIndexCandidates('https://h/repo/'), [
