@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Build
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
-import dalvik.system.BaseDexClassLoader
+import dalvik.system.DexClassLoader
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.CompletableDeferred
@@ -189,30 +189,7 @@ class Handler(
                 0
             )
 
-            val apkPath = appInfo.sourceDir
-
-            val classLoader = context.classLoader
-
-            val pathListField = BaseDexClassLoader::class.java
-                .getDeclaredField("pathList")
-                .apply { isAccessible = true }
-
-            val pathList = pathListField.get(classLoader)
-
-            val addDexPath = pathList.javaClass
-                .getDeclaredMethod(
-                    "addDexPath",
-                    String::class.java,
-                    File::class.java
-                )
-                .apply { isAccessible = true }
-
-            val optimizedDir = File(context.codeCacheDir, "plugin_opt")
-            optimizedDir.mkdirs()
-
-            preloadNativeLibraries(context, File(appInfo.sourceDir))
-
-            addDexPath.invoke(pathList, apkPath, optimizedDir)
+            val classLoader = createPluginLoader(File(appInfo.sourceDir))
 
             val clazz = classLoader.loadClass(apiClassName)
 
@@ -237,13 +214,21 @@ class Handler(
             )
         }
     }
-    @SuppressLint("UnsafeDynamicallyLoadedCode")
-    private fun preloadNativeLibraries(
-        context: Context,
-        apkFile: File,
-    ) {
+    private fun createPluginLoader(apk: File): ClassLoader {
+        val libDir = extractNativeLibraries(apk)
+        val optimizedDir = File(context.codeCacheDir, "plugin_opt")
+        optimizedDir.mkdirs()
+        return DexClassLoader(
+            apk.absolutePath,
+            optimizedDir.absolutePath,
+            libDir.absolutePath,
+            context.classLoader,
+        )
+    }
+
+    private fun extractNativeLibraries(apkFile: File): File {
         val abi = Build.SUPPORTED_ABIS.first()
-        val outDir = File(context.codeCacheDir, "plugin_libs").apply {
+        val outDir = File(context.codeCacheDir, "plugin_libs/${apkFile.nameWithoutExtension}").apply {
             mkdirs()
         }
 
@@ -256,22 +241,16 @@ class Handler(
                 .forEach { entry ->
                     val out = File(outDir, entry.name.substringAfterLast('/'))
 
-                    if (!out.exists()) {
+                    if (!out.exists() || out.length() != entry.size) {
                         zip.getInputStream(entry).use { input ->
                             out.outputStream().use(input::copyTo)
                         }
                         out.setReadable(true)
                         out.setExecutable(true)
                     }
-
-                    try {
-                        System.load(out.absolutePath)
-                        Logger.log("Loaded ${out.name}", LogLevel.INFO)
-                    } catch (_: UnsatisfiedLinkError) {
-                        // Already loaded
-                    }
                 }
         }
+        return outDir
     }
     @SuppressLint("SetWorldReadable")
     private fun loadApiFromPath(path: String) {
@@ -326,27 +305,11 @@ class Handler(
             dst.setExecutable(false)
 
             Logger.log("Internal plugin ready: ${dst.absolutePath}", LogLevel.INFO)
-            val optimizedDir = File(context.codeCacheDir, "plugin_opt")
-            if (!optimizedDir.exists()) optimizedDir.mkdirs()
+            Logger.log("Creating plugin class loader...", LogLevel.INFO)
 
-            preloadNativeLibraries(context, dst)
+            val classLoader = createPluginLoader(dst)
 
-            val classLoader = context.classLoader
-            val pathListField = BaseDexClassLoader::class.java.getDeclaredField("pathList").apply { isAccessible = true }
-
-            val pathList = pathListField[classLoader]
-
-            val addDexPath = pathList.javaClass.getDeclaredMethod(
-                "addDexPath", String::class.java, File::class.java
-            ).apply { isAccessible = true }
-
-            Logger.log("Injecting dex...", LogLevel.INFO)
-
-            addDexPath.invoke(
-                pathList, dst.absolutePath, optimizedDir
-            )
-
-            Logger.log("Dex injected successfully", LogLevel.INFO)
+            Logger.log("Plugin class loader ready", LogLevel.INFO)
 
             val clazz = classLoader.loadClass(apiClassName)
 

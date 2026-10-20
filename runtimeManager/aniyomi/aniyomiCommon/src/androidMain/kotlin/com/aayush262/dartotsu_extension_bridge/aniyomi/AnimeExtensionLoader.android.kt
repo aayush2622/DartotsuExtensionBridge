@@ -163,7 +163,7 @@ actual object AnimeExtensionLoader {
         val isTorrent = appInfo.metaData.getBoolean(METADATA_IS_TORRENT) ||
             appInfo.metaData.getInt(METADATA_TORRENT) == 1
 
-        val parent = context.classLoader!!
+        val parent = AnimeExtensionLoader::class.java.classLoader!!
 
         val classLoader = try {
             ChildFirstPathClassLoader(appInfo.sourceDir, null, parent)
