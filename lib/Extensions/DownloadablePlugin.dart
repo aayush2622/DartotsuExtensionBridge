@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive_io.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
@@ -272,9 +273,24 @@ abstract class DownloadablePlugin {
     return "$bytes B";
   }
 
+  static bool _isArchive(String path) {
+    final ext = p.extension(path).toLowerCase();
+    return ext == '.jar' || ext == '.apk' || ext == '.zip';
+  }
+
   Future<void> _download(String url, int version) async {
     final file = await _file;
     final temp = File("${file.path}.tmp");
+
+    final marker = File("${file.path}.tmp.version");
+    if (await temp.exists()) {
+      final started = await marker.exists() ? await marker.readAsString() : "";
+      if (started.trim() != "$version") {
+        Logger.log("Dropping a partial $name download from another version");
+        await temp.delete();
+      }
+    }
+    await marker.writeAsString("$version");
 
     int retries = 0;
     const maxRetries = 10;
@@ -332,6 +348,20 @@ abstract class DownloadablePlugin {
           throw Exception("Incomplete download");
         }
 
+        if (_isArchive(file.path)) {
+          try {
+            final input = InputFileStream(temp.path);
+            try {
+              ZipDecoder().decodeStream(input);
+            } finally {
+              await input.close();
+            }
+          } catch (e) {
+            await temp.delete();
+            throw Exception("Downloaded $name file is corrupt: $e");
+          }
+        }
+
         try {
           await beforeSwap?.call();
         } catch (e) {
@@ -352,6 +382,7 @@ abstract class DownloadablePlugin {
           await temp.delete();
         }
 
+        if (await marker.exists()) await marker.delete();
         setVal(_versionKey, version);
         progress.value = 1.0;
 
