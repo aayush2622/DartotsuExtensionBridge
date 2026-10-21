@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:archive/archive_io.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
 import '../Logger.dart';
+import 'ArchiveCheck.dart';
 import '../Network/MClient.dart';
 import '../Settings/KvStore.dart';
 import '../dartotsu_extension_bridge.dart';
@@ -30,8 +30,26 @@ abstract class DownloadablePlugin {
     if (remoteVersion > localVersion) return true;
 
     final remoteSize = remote["fileSize"];
-    if (remoteSize is! int) return false;
-    return (await (await _file).length()) != remoteSize;
+    if (remoteSize is int && (await (await _file).length()) != remoteSize) {
+      return true;
+    }
+    return !await _intact();
+  }
+
+  String? _checkedStamp;
+
+  Future<bool> _intact() async {
+    final file = await _file;
+    if (!_isArchive(file.path) || !await file.exists()) return true;
+    final stat = await file.stat();
+    final stamp = "${stat.size}:${stat.modified.millisecondsSinceEpoch}";
+    if (_checkedStamp == stamp) return true;
+    if (await zipIsIntact(file.path)) {
+      _checkedStamp = stamp;
+      return true;
+    }
+    Logger.log("$name file is corrupt, it will be downloaded again");
+    return false;
   }
 
   final RxDouble progress = 0.0.obs;
@@ -348,18 +366,9 @@ abstract class DownloadablePlugin {
           throw Exception("Incomplete download");
         }
 
-        if (_isArchive(file.path)) {
-          try {
-            final input = InputFileStream(temp.path);
-            try {
-              ZipDecoder().decodeStream(input);
-            } finally {
-              await input.close();
-            }
-          } catch (e) {
-            await temp.delete();
-            throw Exception("Downloaded $name file is corrupt: $e");
-          }
+        if (_isArchive(file.path) && !await zipIsIntact(temp.path)) {
+          await temp.delete();
+          throw Exception("Downloaded $name file is corrupt");
         }
 
         try {
