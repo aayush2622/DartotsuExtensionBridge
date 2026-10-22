@@ -74,12 +74,17 @@ actual object ExtensionLoader {
         privateDir.listFiles()
             ?.filter { it.isFile && (it.extension == "apk" || it.extension == "cs3") }
             ?.forEach { file ->
-                try {
+                val loaded = try {
                     loadPlugin(file)
                 } catch (e: Throwable) {
                     Logger.log(
                         "Failed loading ${file.name}: ${e.stackTraceToString()}",
                     )
+                    false
+                }
+                if (!loaded) {
+                    file.delete()
+                    File(externalDir, file.name).delete()
                 }
             }
 
