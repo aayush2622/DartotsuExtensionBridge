@@ -181,7 +181,9 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
         val chapter = SChapter.create().apply {
             name = epMap["name"] as String
             url = epMap["url"] as String
-            chapter_number = (epMap["episode_number"]?.toString()?.toFloat()) ?: 0f
+            chapter_number = epMap["episode_number"]?.toString()?.toFloatOrNull() ?: 0f
+            scanlator = epMap["scanlator"] as? String
+            date_upload = (epMap["date_upload"] as? String)?.toLongOrNull() ?: 0L
         }
 
         val methods = NovelSourceMethods(sourceId)
