@@ -254,6 +254,9 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
         val chapter = SChapter.create().apply {
             name = epMap["name"] as String
             url = epMap["url"] as String
+            scanlator = epMap["scanlator"] as? String
+            date_upload = (epMap["date_upload"] as? String)?.toLongOrNull() ?: 0L
+            chapter_number = (epMap["episode_number"] as? String)?.toFloatOrNull() ?: -1f
         }
         val source = media(sourceId, isAnime)
 
