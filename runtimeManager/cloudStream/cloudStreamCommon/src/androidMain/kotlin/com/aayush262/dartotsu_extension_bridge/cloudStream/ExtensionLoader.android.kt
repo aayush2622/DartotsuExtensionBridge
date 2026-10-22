@@ -94,7 +94,7 @@ actual object ExtensionLoader {
             Logger.log("Plugin file does not exist: ${file.absolutePath}")
             return false
         }
-        val parent = context.classLoader!!
+        val parent = ExtensionLoader::class.java.classLoader!!
         return try {
             val loader = PathClassLoader(
                 file.absolutePath,

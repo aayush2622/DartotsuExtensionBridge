@@ -40,6 +40,7 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
     'description': episode.description,
     'episode_number': episode.episodeNumber,
     'scanlator': episode.scanlator,
+    'thumbnail': episode.thumbnail,
   };
 
   @override

@@ -12,10 +12,13 @@ import net.dongliu.apk.parser.ApkFile
 import net.dongliu.apk.parser.ApkParsers
 import net.dongliu.apk.parser.bean.IconFace
 import xyz.nulldev.androidcompat.pm.toPackageInfo
+import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URLClassLoader
 import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.spi.FileSystemProvider
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipEntry
@@ -60,7 +63,7 @@ object PackageTools {
         try {
             val reader = MultiDexFileReader.open(Files.readAllBytes(File(dexFile).toPath()))
             val handler = BaksmaliBaseDexExceptionHandler()
-            Dex2jar
+            val converter = Dex2jar
                 .from(reader)
                 .withExceptionHandler(handler)
                 .reUseReg(false)
@@ -71,7 +74,7 @@ object PackageTools {
                 .noCode(false)
                 .skipExceptions(false)
                 .dontSanitizeNames(true)
-                .to(tmp)
+            writeJar(converter, tmp)
             if (handler.hasException()) {
                 Logger.log("dex2jar reported exceptions while converting $dexFile; running bytecode fixups anyway", LogLevel.ERROR)
             }
@@ -79,6 +82,32 @@ object PackageTools {
             Files.move(tmp, finalPath, StandardCopyOption.REPLACE_EXISTING)
         } finally {
             Files.deleteIfExists(tmp)
+        }
+    }
+
+    private val zipFsAvailable: Boolean by lazy {
+        FileSystemProvider.installedProviders().any { it.scheme.equals("jar", ignoreCase = true) }
+    }
+
+    private fun writeJar(converter: Dex2jar, target: Path) {
+        if (zipFsAvailable) {
+            converter.to(target)
+            return
+        }
+        val dir = Files.createTempDirectory(target.parent ?: Path(""), "dartotsu-d2j-")
+        try {
+            converter.to(dir)
+            ZipOutputStream(BufferedOutputStream(Files.newOutputStream(target))).use { zip ->
+                Files.walk(dir).use { paths ->
+                    paths.filter { Files.isRegularFile(it) }.sorted().forEach { file ->
+                        zip.putNextEntry(ZipEntry(dir.relativize(file).joinToString("/")))
+                        Files.copy(file, zip)
+                        zip.closeEntry()
+                    }
+                }
+            }
+        } finally {
+            dir.toFile().deleteRecursively()
         }
     }
 

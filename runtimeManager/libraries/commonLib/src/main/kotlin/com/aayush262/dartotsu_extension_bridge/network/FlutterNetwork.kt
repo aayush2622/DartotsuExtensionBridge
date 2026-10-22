@@ -100,6 +100,7 @@ object Network {
      */
     fun applyTo(builder: OkHttpClient.Builder, mergeCookies: Boolean = true): OkHttpClient.Builder {
         val current = config
+        var resolver: Dns? = null
 
         if (current.dns.isNotBlank()) {
             try {
@@ -111,11 +112,15 @@ object Network {
                     .client(dnsClient)
                     .url(current.dns.toHttpUrl())
                     .build()
-                builder.dns(FallbackDns(doh))
+                resolver = FallbackDns(doh)
             } catch (e: Exception) {
                 Logger.log("Failed to initialize DoH, using system DNS", e, LogLevel.WARNING)
             }
         }
+        if (IPv4OnlyDns.required) {
+            resolver = IPv4OnlyDns(resolver ?: Dns.SYSTEM)
+        }
+        resolver?.let { builder.dns(it) }
 
         current.proxy?.let { proxy ->
             try {
@@ -190,6 +195,24 @@ class FallbackDns(
                 LogLevel.WARNING
             )
             Dns.SYSTEM.lookup(hostname)
+        }
+    }
+}
+
+class IPv4OnlyDns(
+    private val delegate: Dns,
+) : Dns {
+
+    override fun lookup(hostname: String): List<InetAddress> {
+        val all = delegate.lookup(hostname)
+        val v4 = all.filter { it is java.net.Inet4Address }
+        return v4.ifEmpty { all }
+    }
+
+    companion object {
+        val required: Boolean by lazy {
+            System.getProperty("java.net.preferIPv4Stack").toBoolean() ||
+                System.getProperty("dartotsu.runtime") == "ios"
         }
     }
 }

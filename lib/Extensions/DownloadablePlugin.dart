@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
 import '../Logger.dart';
+import 'ArchiveCheck.dart';
 import '../Network/MClient.dart';
 import '../Settings/KvStore.dart';
 import '../dartotsu_extension_bridge.dart';
@@ -29,8 +30,26 @@ abstract class DownloadablePlugin {
     if (remoteVersion > localVersion) return true;
 
     final remoteSize = remote["fileSize"];
-    if (remoteSize is! int) return false;
-    return (await (await _file).length()) != remoteSize;
+    if (remoteSize is int && (await (await _file).length()) != remoteSize) {
+      return true;
+    }
+    return !await _intact();
+  }
+
+  String? _checkedStamp;
+
+  Future<bool> _intact() async {
+    final file = await _file;
+    if (!_isArchive(file.path) || !await file.exists()) return true;
+    final stat = await file.stat();
+    final stamp = "${stat.size}:${stat.modified.millisecondsSinceEpoch}";
+    if (_checkedStamp == stamp) return true;
+    if (await zipIsIntact(file.path)) {
+      _checkedStamp = stamp;
+      return true;
+    }
+    Logger.log("$name file is corrupt, it will be downloaded again");
+    return false;
   }
 
   final RxDouble progress = 0.0.obs;
@@ -272,9 +291,24 @@ abstract class DownloadablePlugin {
     return "$bytes B";
   }
 
+  static bool _isArchive(String path) {
+    final ext = p.extension(path).toLowerCase();
+    return ext == '.jar' || ext == '.apk' || ext == '.zip';
+  }
+
   Future<void> _download(String url, int version) async {
     final file = await _file;
     final temp = File("${file.path}.tmp");
+
+    final marker = File("${file.path}.tmp.version");
+    if (await temp.exists()) {
+      final started = await marker.exists() ? await marker.readAsString() : "";
+      if (started.trim() != "$version") {
+        Logger.log("Dropping a partial $name download from another version");
+        await temp.delete();
+      }
+    }
+    await marker.writeAsString("$version");
 
     int retries = 0;
     const maxRetries = 10;
@@ -332,6 +366,11 @@ abstract class DownloadablePlugin {
           throw Exception("Incomplete download");
         }
 
+        if (_isArchive(file.path) && !await zipIsIntact(temp.path)) {
+          await temp.delete();
+          throw Exception("Downloaded $name file is corrupt");
+        }
+
         try {
           await beforeSwap?.call();
         } catch (e) {
@@ -352,6 +391,7 @@ abstract class DownloadablePlugin {
           await temp.delete();
         }
 
+        if (await marker.exists()) await marker.delete();
         setVal(_versionKey, version);
         progress.value = 1.0;
 

@@ -157,7 +157,7 @@ actual object NovelExtensionLoader {
         val hasReadme = appInfo.metaData.getInt(METADATA_HAS_README, 0) == 1
         val hasChangelog = appInfo.metaData.getInt(METADATA_HAS_CHANGELOG, 0) == 1
 
-        val parent = context.classLoader!!
+        val parent = NovelExtensionLoader::class.java.classLoader!!
 
         val classLoader = try {
             ChildFirstPathClassLoader(appInfo.sourceDir, null, parent)

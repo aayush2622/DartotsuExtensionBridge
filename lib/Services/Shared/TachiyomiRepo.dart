@@ -21,6 +21,11 @@ import 'ProtoReader.dart';
 /// real differences were the concrete `Source` subtype and the display-name
 /// prefix. Those live here now.
 
+/// A repo's `repo.json` only describes it (name, website, signing key); the
+/// extension list sits next to it, so the link means the folder it is in.
+String _withoutRepoMeta(String repoUrl) =>
+    repoUrl.replaceFirst(RegExp(r'/repo\.json$'), '');
+
 /// Normalises `repoUrl` to its `index.min.json` endpoint, tolerating a trailing
 /// slash or an URL that already points at the index.
 String tachiyomiIndexUrl(String repoUrl) {
@@ -28,7 +33,7 @@ String tachiyomiIndexUrl(String repoUrl) {
   if (repoUrl.endsWith('index.min.json') || repoUrl.endsWith('.pb')) {
     return repoUrl;
   }
-  final trimmed = repoUrl.replaceAll(RegExp(r'/+$'), '');
+  final trimmed = _withoutRepoMeta(repoUrl).replaceAll(RegExp(r'/+$'), '');
   return '$trimmed/index.min.json';
 }
 
@@ -485,8 +490,9 @@ typedef RepoIndexResponse = ({Uint8List body, String url, String indexUrl});
 /// `index.min.json` is often only an "update your app" placeholder) and then
 /// `index.min.json`.
 List<String> tachiyomiIndexCandidates(String repoUrl) {
-  if (repoUrl.endsWith('.json') || repoUrl.endsWith('.pb')) return [repoUrl];
-  final base = repoUrl.replaceAll(RegExp(r'/+$'), '');
+  final url = _withoutRepoMeta(repoUrl);
+  if (url.endsWith('.json') || url.endsWith('.pb')) return [url];
+  final base = url.replaceAll(RegExp(r'/+$'), '');
   return ['$base/index.pb', '$base/index.min.json'];
 }
 

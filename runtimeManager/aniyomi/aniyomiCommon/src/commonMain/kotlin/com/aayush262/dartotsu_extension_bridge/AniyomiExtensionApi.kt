@@ -210,7 +210,7 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
             "status" to details.status,
             "episodes" to episodes.map {
                 mapOf(
-                    "name" to it.name, "url" to it.url, "date_upload" to it.date_upload, "episode_number" to it.episode_number, "scanlator" to it.scanlator
+                    "name" to it.name, "url" to it.url, "date_upload" to it.date_upload, "episode_number" to it.episode_number, "scanlator" to it.scanlator, "thumbnail" to it.preview_url
                 )
             })
 
@@ -229,6 +229,7 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
             url = epMap["url"] as String
             episode_number = (epMap["episode_number"] as? String)?.toFloatOrNull() ?: 0f
             scanlator = epMap["scanlator"] as? String
+            preview_url = epMap["thumbnail"] as? String
             date_upload = (epMap["date_upload"] as? String)?.toLongOrNull() ?: 0L
         }
 
@@ -253,9 +254,6 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
         val chapter = SChapter.create().apply {
             name = epMap["name"] as String
             url = epMap["url"] as String
-            scanlator = epMap["scanlator"] as? String
-            date_upload = (epMap["date_upload"] as? String)?.toLongOrNull() ?: 0L
-            number = (epMap["episode_number"] as? String)?.takeIf { it.isNotBlank() }
         }
         val source = media(sourceId, isAnime)
 
