@@ -27,6 +27,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.flatten
 
@@ -67,7 +68,11 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
 
     override fun getFilterListJson(): String = source.getFilterList().toFilterJson()
 
-    override suspend fun getDetails(media: SAnime): Pair<SAnime, List<SEpisode>> = source.getAnimeDetails(media) to getEpisodeList(media)
+    override suspend fun getDetails(media: SAnime): Pair<SAnime, List<SEpisode>> {
+        val episodes = getEpisodeList(media)
+        episodes.forEach { episodeCache["$sourceId|${it.url}"] = it }
+        return source.getAnimeDetails(media) to episodes
+    }
 
 
     suspend fun getEpisodeList(media: SAnime): List<SEpisode> {
@@ -104,7 +109,13 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
         return episodes.distinctBy { it.url }.sortedByDescending { it.episode_number }
     }
 
-    override suspend fun getVideoList(episode: SEpisode): List<Video> {
+    // Some sources key their own internal staleness checks off the exact
+    // SEpisode instance returned by getDetails rather than its field values
+    // (Mihon always hands the same instance back); the bridge otherwise
+    // rebuilds a fresh SEpisode from the JSON sent to Dart and back, which
+    // such a source sees as "this episode was never fetched" and rejects.
+    override suspend fun getVideoList(episodeArg: SEpisode): List<Video> {
+        val episode = episodeCache["$sourceId|${episodeArg.url}"] ?: episodeArg
         if (source !is AnimeHttpSource) return emptyList()
         val hasHosters = checkHasHosters(source)
 
@@ -226,6 +237,14 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
     }
 
     companion object {
+        private const val EPISODE_CACHE_LIMIT = 2000
+        private val episodeCache = Collections.synchronizedMap(
+            object : LinkedHashMap<String, SEpisode>(16, 0.75f, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, SEpisode>) =
+                    size > EPISODE_CACHE_LIMIT
+            }
+        )
+
         // Keyed by source id so the next getVideoList() call for the same
         // source can stop whatever servers a previous call started.
         private val activeHttpServers = ConcurrentHashMap<String, List<HttpServer>>()
