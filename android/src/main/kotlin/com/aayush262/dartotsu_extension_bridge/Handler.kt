@@ -190,6 +190,7 @@ class Handler(
             )
 
             val classLoader = createPluginLoader(File(appInfo.sourceDir))
+            initializeOkHttpPlatform(classLoader, context)
 
             val clazz = classLoader.loadClass(apiClassName)
 
@@ -214,6 +215,27 @@ class Handler(
             )
         }
     }
+    // A plugin APK is loaded by hand via DexClassLoader rather than installed
+    // as a real package, so the OS never instantiates its merged
+    // androidx.startup ContentProvider - any androidx.startup Initializer the
+    // plugin bundles (e.g. okhttp-android's PlatformInitializer, which sets
+    // the Context AndroidPlatform.applicationContext needs) never runs,
+    // leaving its networking failing with "Platform applicationContext not
+    // initialized". Run it ourselves against the plugin's own classloader.
+    private fun initializeOkHttpPlatform(classLoader: ClassLoader, context: Context) {
+        try {
+            val initializerClass =
+                classLoader.loadClass("okhttp3.internal.platform.PlatformInitializer")
+            val instance = initializerClass.getDeclaredConstructor().newInstance()
+            val create = initializerClass.getMethod("create", Context::class.java)
+            create.invoke(instance, context)
+        } catch (_: ClassNotFoundException) {
+            // Plugin doesn't bundle okhttp-android - nothing to do.
+        } catch (e: Throwable) {
+            Logger.log("OkHttp platform init failed: ${e.message}", LogLevel.INFO)
+        }
+    }
+
     private fun createPluginLoader(apk: File): ClassLoader {
         val libDir = extractNativeLibraries(apk)
         val optimizedDir = File(context.codeCacheDir, "plugin_opt")
@@ -308,6 +330,7 @@ class Handler(
             Logger.log("Creating plugin class loader...", LogLevel.INFO)
 
             val classLoader = createPluginLoader(dst)
+            initializeOkHttpPlatform(classLoader, context)
 
             Logger.log("Plugin class loader ready", LogLevel.INFO)
 
