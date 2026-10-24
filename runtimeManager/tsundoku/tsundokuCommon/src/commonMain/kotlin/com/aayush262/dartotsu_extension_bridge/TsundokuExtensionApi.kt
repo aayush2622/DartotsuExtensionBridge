@@ -167,7 +167,7 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
             "status" to details.status,
             "episodes" to episodes.map {
                 mapOf(
-                    "name" to it.name, "url" to it.url, "date_upload" to it.date_upload, "episode_number" to it.episode_number, "scanlator" to it.scanlator
+                    "name" to it.name, "url" to it.url, "date_upload" to it.date_upload, "episode_number" to it.episode_number, "scanlator" to it.scanlator, "memo" to it.memo.toGsonValue()
                 )
             })
 
@@ -184,6 +184,7 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
             chapter_number = epMap["episode_number"]?.toString()?.toFloatOrNull() ?: 0f
             scanlator = epMap["scanlator"] as? String
             date_upload = (epMap["date_upload"] as? String)?.toLongOrNull() ?: 0L
+            memo = epMap["memo"].toJsonObjectOrEmpty()
         }
 
         val methods = NovelSourceMethods(sourceId)

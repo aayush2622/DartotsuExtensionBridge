@@ -16,6 +16,14 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.longOrNull
+import kotlinx.serialization.json.doubleOrNull
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.collections.component1
@@ -210,7 +218,7 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
             "status" to details.status,
             "episodes" to episodes.map {
                 mapOf(
-                    "name" to it.name, "url" to it.url, "date_upload" to it.date_upload, "episode_number" to it.episode_number, "scanlator" to it.scanlator, "thumbnail" to it.preview_url
+                    "name" to it.name, "url" to it.url, "date_upload" to it.date_upload, "episode_number" to it.episode_number, "scanlator" to it.scanlator, "thumbnail" to it.preview_url, "memo" to it.memo.toGsonValue()
                 )
             })
 
@@ -231,6 +239,7 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
             scanlator = epMap["scanlator"] as? String
             preview_url = epMap["thumbnail"] as? String
             date_upload = (epMap["date_upload"] as? String)?.toLongOrNull() ?: 0L
+            memo = epMap["memo"].toJsonObjectOrEmpty()
         }
 
         val result = media(sourceId, isAnime).getVideoList(ep).map {
@@ -257,6 +266,7 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
             scanlator = epMap["scanlator"] as? String
             date_upload = (epMap["date_upload"] as? String)?.toLongOrNull() ?: 0L
             chapter_number = (epMap["episode_number"] as? String)?.toFloatOrNull() ?: -1f
+            memo = epMap["memo"].toJsonObjectOrEmpty()
         }
         val source = media(sourceId, isAnime)
 
@@ -295,3 +305,23 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
 private fun SAnime.toMap() = mapOf(
     "title" to title, "url" to url, "cover" to thumbnail_url, "artist" to artist, "author" to author, "description" to description, "genre" to getGenres(), "status" to status
 )
+
+fun JsonElement.toGsonValue(): Any? = when (this) {
+    is JsonNull -> null
+    is JsonPrimitive -> if (isString) content else (booleanOrNull ?: longOrNull ?: doubleOrNull ?: content)
+    is JsonArray -> map { it.toGsonValue() }
+    is JsonObject -> entries.associate { it.key to it.value.toGsonValue() }
+}
+
+fun Any?.toJsonElement(): JsonElement = when (this) {
+    null -> JsonNull
+    is JsonElement -> this
+    is String -> JsonPrimitive(this)
+    is Boolean -> JsonPrimitive(this)
+    is Number -> JsonPrimitive(this)
+    is Map<*, *> -> JsonObject(entries.associate { (k, v) -> k.toString() to v.toJsonElement() })
+    is List<*> -> JsonArray(map { it.toJsonElement() })
+    else -> JsonPrimitive(toString())
+}
+
+fun Any?.toJsonObjectOrEmpty(): JsonObject = toJsonElement() as? JsonObject ?: JsonObject(emptyMap())
