@@ -52,6 +52,19 @@ abstract class DownloadablePlugin {
     return false;
   }
 
+  final RxBool updateAvailable = false.obs;
+
+  static const _autoUpdateKey = "plugin_auto_update";
+
+  static final RxBool autoUpdateEnabled = _autoUpdate();
+
+  static RxBool _autoUpdate() {
+    final flag =
+        (getVal<bool>(_autoUpdateKey, defaultValue: false) ?? false).obs;
+    flag.listen((v) => setVal(_autoUpdateKey, v));
+    return flag;
+  }
+
   final RxDouble progress = 0.0.obs;
   final RxBool downloading = false.obs;
 
@@ -218,13 +231,13 @@ abstract class DownloadablePlugin {
     installed.value = false;
   }
 
-  Future<bool> checkForUpdate() async {
-    if (!await isInstalled()) return false;
+  Future<bool> checkForUpdate({bool forceRefresh = false}) async {
+    if (!await isInstalled()) return updateAvailable.value = false;
 
-    final remote = await fetchRemote();
-    if (remote == null) return false;
+    final remote = await fetchRemote(forceRefresh: forceRefresh);
+    if (remote == null) return updateAvailable.value = false;
 
-    return _needsUpdate(remote);
+    return updateAvailable.value = await _needsUpdate(remote);
   }
 
   /// Called after [update] has replaced the file, so whatever runs the old
@@ -254,6 +267,7 @@ abstract class DownloadablePlugin {
 
     try {
       await _download(remote["downloadUrl"], remoteVersion);
+      updateAvailable.value = false;
     } catch (e) {
       Logger.log("$name update failed: $e");
       progress.value = 0;
@@ -274,7 +288,7 @@ abstract class DownloadablePlugin {
 
     try {
       final hasUpdate = await checkForUpdate();
-      if (hasUpdate) {
+      if (hasUpdate && autoUpdateEnabled.value) {
         await update();
       }
     } catch (e) {
