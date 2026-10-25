@@ -71,7 +71,7 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         )
 
         val episodes: List<Map<String, Any?>> = when (res) {
-            is TvSeriesLoadResponse -> res.episodes.let { list ->
+            is TvSeriesLoadResponse -> res.episodes.dedupeEpisodeListings { it }.let { list ->
                 list.mapIndexed { i, ep -> episodeToMap(ep, fallbackNumber(list, i)) }
             }
             is AnimeLoadResponse -> {
@@ -79,6 +79,7 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
                     epList.map { it to key }
                 }
                     .distinctBy { it.first.data }
+                    .dedupeEpisodeListings { it.first }
                     .let { list ->
                         list.mapIndexed { i, (ep, key) ->
                             episodeToMap(ep, fallbackNumber(list.map { it.first }, i), mapOf("episodeGroup" to key))
@@ -345,6 +346,30 @@ private fun fallbackNumber(list: List<Episode>, index: Int): Int {
     val dates = list.mapNotNull { it.date }
     val newestFirst = dates.size > 1 && dates.first() > dates.last()
     return if (newestFirst) list.size - index else index + 1
+}
+
+private fun <T> List<T>.dedupeEpisodeListings(episodeOf: (T) -> Episode): List<T> {
+    val seen = LinkedHashMap<String, T>()
+    val result = mutableListOf<T>()
+    for (item in this) {
+        val ep = episodeOf(item)
+        val name = ep.name?.trim()
+        if (name.isNullOrEmpty()) {
+            result += item
+            continue
+        }
+        val key = "$name|${ep.date}"
+        val existing = seen[key]
+        if (existing == null) {
+            seen[key] = item
+            result += item
+        } else if (ep.episode != null && episodeOf(existing).episode == null) {
+            val idx = result.indexOf(existing)
+            if (idx >= 0) result[idx] = item
+            seen[key] = item
+        }
+    }
+    return result
 }
 
 fun episodeToMap(
