@@ -77,7 +77,7 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
 
     suspend fun getEpisodeList(media: SAnime): List<SEpisode> {
         val episodeError = try {
-            return (source as? AnimeHttpSource? ?: source).getEpisodeList(media)
+            return (source as? AnimeHttpSource? ?: source).getEpisodeList(media).dedupeListings()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -106,7 +106,24 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
             episodes += seasonEpisodes
         }
 
-        return episodes.distinctBy { it.url }.sortedByDescending { it.episode_number }
+        return episodes.distinctBy { it.url }.sortedByDescending { it.episode_number }.dedupeListings()
+    }
+
+    private fun List<SEpisode>.dedupeListings(): List<SEpisode> {
+        val seen = LinkedHashMap<String, SEpisode>()
+
+        for (ep in this) {
+            val key = "${ep.name.trim()}|${ep.date_upload}"
+            val existing = seen[key]
+
+            if (existing == null) {
+                seen[key] = ep
+            } else if (ep.episode_number % 1f == 0f && existing.episode_number % 1f != 0f) {
+                seen[key] = ep
+            }
+        }
+
+        return seen.values.toList()
     }
 
     // Some sources key their own internal staleness checks off the exact
