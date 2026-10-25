@@ -1,11 +1,11 @@
 [
   {
     "name": "aniyomiAndroid",
-    "versionCode": 18,
-    "versionName": "2.0.16",
+    "versionCode": 19,
+    "versionName": "2.0.17",
     "description": "A plugin that allows you to run Aniyomi extensions on android",
     "author": "aayush262",
-    "createdAt": 1792860778730,
+    "createdAt": 1792906133098,
     "platform": "android",
     "type": "apk",
     "fileName": "aniyomiAndroid-plugin.apk",
@@ -14,15 +14,15 @@
   },
   {
     "name": "aniyomiDesktop",
-    "versionCode": 23,
-    "versionName": "2.0.21",
+    "versionCode": 24,
+    "versionName": "2.0.22",
     "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1792860763049,
+    "createdAt": 1792906122839,
     "platform": "desktop",
     "type": "jar",
     "fileName": "aniyomiDesktop-plugin.jar",
-    "fileSize": 65362263,
+    "fileSize": 65366006,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiDesktop-plugin.jar"
   },
   {
@@ -105,11 +105,11 @@
   },
   {
     "name": "tsundokuAndroid",
-    "versionCode": 18,
-    "versionName": "2.0.16",
+    "versionCode": 19,
+    "versionName": "2.0.17",
     "description": "A plugin that allows you to run Tsundoku extensions on android",
     "author": "aayush262",
-    "createdAt": 1792860811012,
+    "createdAt": 1792906190329,
     "platform": "android",
     "type": "apk",
     "fileName": "tsundokuAndroid-plugin.apk",
@@ -118,15 +118,15 @@
   },
   {
     "name": "tsundokuDesktop",
-    "versionCode": 23,
-    "versionName": "2.0.21",
+    "versionCode": 24,
+    "versionName": "2.0.22",
     "description": "A plugin that allows you to run Tsundoku extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1792860809908,
+    "createdAt": 1792906189496,
     "platform": "desktop",
     "type": "jar",
     "fileName": "tsundokuDesktop-plugin.jar",
-    "fileSize": 65494095,
+    "fileSize": 65501266,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/tsundokuDesktop-plugin.jar"
   }
 ]
