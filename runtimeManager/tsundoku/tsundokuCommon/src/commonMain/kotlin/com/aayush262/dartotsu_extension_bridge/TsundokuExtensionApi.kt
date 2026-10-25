@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -18,6 +19,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.plus
@@ -136,12 +138,27 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
         withContext(Dispatchers.IO) { NovelSourceMethods(sourceId).getFilterListJson() }
 
 
+    private val inFlightDetails = ConcurrentHashMap<String, Deferred<String>>()
+
+    // See AniyomiExtensionApi.getDetail - dedupes concurrent getDetail calls
+    // for the same novel so sources that guard against re-entrant
+    // getMangaUpdate don't throw.
     override suspend fun getDetail(
         sourceId: String, isAnime: Boolean, media: String
-    ): String = withContext(Dispatchers.IO) {
-
+    ): String {
         val mediaMap: Map<String, Any?> = decode(media)
+        val key = "$sourceId|${mediaMap["url"]}"
 
+        return coroutineScope {
+            val deferred = inFlightDetails.computeIfAbsent(key) {
+                async(Dispatchers.IO) { doGetDetail(sourceId, mediaMap) }
+            }
+            deferred.invokeOnCompletion { inFlightDetails.remove(key, deferred) }
+            deferred.await()
+        }
+    }
+
+    private suspend fun doGetDetail(sourceId: String, mediaMap: Map<String, Any?>): String {
         val anime = SAnime.create().apply {
             title = mediaMap["title"] as String
             url = mediaMap["url"] as String
@@ -171,7 +188,7 @@ class TsundokuExtensionApi : ExtensionApi, ExtensionBridgeApi {
                 )
             })
 
-        return@withContext encode(result)
+        return encode(result)
     }
 
 

@@ -14,7 +14,10 @@ import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -26,6 +29,7 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.doubleOrNull
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.plus
@@ -187,12 +191,31 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
         withContext(Dispatchers.IO) { media(sourceId, isAnime).getFilterListJson() }
 
 
+    private val inFlightDetails = ConcurrentHashMap<String, Deferred<String>>()
+
+    // Two near-simultaneous getDetail calls for the same manga/anime (e.g. a
+    // progress-sync call racing the detail screen) used to fire two concurrent
+    // native getMangaUpdate/getAnimeDetails calls - some multisrc sources
+    // (MangaThemesia, Madara) guard against exactly that and throw. Share one
+    // in-flight call across duplicate requests instead.
     override suspend fun getDetail(
         sourceId: String, isAnime: Boolean, media: String
-    ): String = withContext(Dispatchers.IO) {
-
+    ): String {
         val mediaMap: Map<String, Any?> = decode(media)
+        val key = "$sourceId|$isAnime|${mediaMap["url"]}"
 
+        return coroutineScope {
+            val deferred = inFlightDetails.computeIfAbsent(key) {
+                async(Dispatchers.IO) { doGetDetail(sourceId, isAnime, mediaMap) }
+            }
+            deferred.invokeOnCompletion { inFlightDetails.remove(key, deferred) }
+            deferred.await()
+        }
+    }
+
+    private suspend fun doGetDetail(
+        sourceId: String, isAnime: Boolean, mediaMap: Map<String, Any?>
+    ): String {
         val anime = SAnime.create().apply {
             title = mediaMap["title"] as String
             url = mediaMap["url"] as String
@@ -222,7 +245,7 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
                 )
             })
 
-        return@withContext encode(result)
+        return encode(result)
     }
 
 
