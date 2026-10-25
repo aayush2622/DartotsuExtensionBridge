@@ -6,6 +6,7 @@ expect object ExtensionLoader{
     var plugins : MutableMap<String, LoadedPlugin>
     fun loadExtensions(path: String)
     fun unloadExtensions()
+    fun releaseCachedJar(jarPath: String)
 }
 
 data class LoadedPlugin(

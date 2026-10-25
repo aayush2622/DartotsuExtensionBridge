@@ -49,4 +49,6 @@ interface ExtensionApi {
     suspend fun saveSourcePreference(
         sourceId: String, key: String, value: String?
     ): Boolean = false
+
+    suspend fun releaseCachedJar(jarPath: String): Boolean = false
 }

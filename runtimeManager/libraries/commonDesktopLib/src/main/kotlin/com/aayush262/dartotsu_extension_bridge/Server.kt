@@ -148,6 +148,10 @@ object Server {
             params["value"].asString,
         ).toString()
 
+        "releaseCachedJar" -> api.releaseCachedJar(
+            params["jarPath"].asString,
+        ).toString()
+
         "ping" -> "\"pong\""
 
         else -> throw IllegalArgumentException("Unknown method: $method")

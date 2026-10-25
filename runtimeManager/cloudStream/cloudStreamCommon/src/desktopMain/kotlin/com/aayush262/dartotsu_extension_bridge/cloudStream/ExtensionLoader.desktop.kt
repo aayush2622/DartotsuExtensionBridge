@@ -162,6 +162,10 @@ actual object ExtensionLoader {
     }
 
 
+    actual fun releaseCachedJar(jarPath: String) {
+        PackageTools.invalidateClassLoader(jarPath)
+    }
+
     actual fun unloadExtensions() {
         APIHolder.allProviders.clear()
         APIHolder.apis.clear()

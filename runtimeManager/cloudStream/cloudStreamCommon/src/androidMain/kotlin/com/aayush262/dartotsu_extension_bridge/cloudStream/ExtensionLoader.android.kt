@@ -164,6 +164,8 @@ actual object ExtensionLoader {
         return Resources(assets, base.displayMetrics, base.configuration)
     }
 
+    actual fun releaseCachedJar(jarPath: String) {}
+
     actual fun unloadExtensions() {
         APIHolder.allProviders.clear()
         APIHolder.apis.clear()

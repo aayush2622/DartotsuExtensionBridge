@@ -110,6 +110,12 @@ class CloudStreamDesktopExtensions extends Extension
     );
     if (await cached.exists()) {
       try {
+        await java.call<bool>('releaseCachedJar', {'jarPath': cached.path});
+      } catch (e) {
+        Logger.log("Failed to release cached plugin jar on sidecar: $e");
+      }
+
+      try {
         await cached.delete();
       } catch (e) {
         Logger.log("Failed to delete cached plugin jar: $e");

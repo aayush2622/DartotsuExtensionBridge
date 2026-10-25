@@ -131,4 +131,9 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
 
     override suspend fun saveSourcePreference(sourceId: String, key: String, value: String?): Boolean =
         withContext(Dispatchers.IO) { SourcePreferences.save(provider(sourceId), key, value) }
+
+    override suspend fun releaseCachedJar(jarPath: String): Boolean {
+        ExtensionLoader.releaseCachedJar(jarPath)
+        return true
+    }
 }
