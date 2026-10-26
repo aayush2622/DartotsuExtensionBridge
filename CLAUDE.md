@@ -31,9 +31,10 @@ ExtensionBridge` transport) — same base name, different directory.
   optional `BridgeNetwork` (the host's whole network stack, see Network layer), `onLog`.
 - `GetDirectory` typedef — host app must supply persistent dir resolution
   (`subPath`, `useCustomPath`, `useSystemPath`).
-- Backends start lazily: `ExtensionManager.onInit` only resolves the saved default per type
-  (`<type>Manager` in `KvStore`, written by `switchManager`, which logs the change); a backend
-  (and its JVM sidecar) boots on the first `initializeInstalled(type)` for a type it is the default of.
+- Startup: `ExtensionManager.onInit` resolves the saved default per type (`<type>Manager` in `KvStore`, written
+  by `switchManager`, which logs the change) and starts `initializeInstalled(type)` on each default, so its
+  backend (and JVM sidecar) boots and its installed list loads at launch. A backend that is not a default
+  boots only when asked (`initializeInstalled` / `ensureInitialized`, e.g. the app's source subscriptions).
   `Extension._trackInstalled` keeps `ExtensionState.loadingInstalled` true while the installed list loads.
 - `dispose()` — tears down `ExtensionManager` (which disposes every backend,
   including the LnReader per-source JS runtimes).

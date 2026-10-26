@@ -83,6 +83,10 @@ class ExtensionManager extends GetxController {
     for (final type in ItemType.values) {
       current[type] = _resolveManager(type, getVal("${type.name}Manager"));
     }
+
+    _forEachCurrent((extension, type) {
+      return extension.initializeInstalled(type);
+    });
   }
 
   Future<void> _forEachCurrent(
