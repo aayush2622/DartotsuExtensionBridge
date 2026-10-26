@@ -152,6 +152,10 @@ object Server {
             params["jarPath"].asString,
         ).toString()
 
+        "pendingExtensions" ->
+            ((api as? com.aayush262.dartotsu_extension_bridge.common.ExtensionLoadStatus)
+                ?.pendingExtensions() ?: 0).toString()
+
         "ping" -> "\"pong\""
 
         else -> throw IllegalArgumentException("Unknown method: $method")

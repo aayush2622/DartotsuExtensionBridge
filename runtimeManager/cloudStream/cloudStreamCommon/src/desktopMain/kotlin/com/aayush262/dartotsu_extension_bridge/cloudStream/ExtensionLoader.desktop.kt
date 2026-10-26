@@ -5,9 +5,13 @@ import com.lagradost.cloudstream3.plugins.PluginManager
 import android.app.Application
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.aayush262.dartotsu_extension_bridge.ui.PluginResources
-import com.aayush262.dartotsu_extension_bridge.util.ExtensionConvert
 import com.aayush262.dartotsu_extension_bridge.util.PackageTools
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import com.lagradost.cloudstream3.APIHolder
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.Plugin
@@ -20,28 +24,99 @@ import kotlin.getValue
 
 actual object ExtensionLoader {
 
-
-    // ConcurrentHashMap: loadExtension writes plugins[...] and the conversion
-    // now runs a few files at a time.
     actual var plugins: MutableMap<String, LoadedPlugin> = ConcurrentHashMap()
 
-    @Synchronized  // two concurrent getInstalled* polls raced APK->jar conversion
+    private val inFlight = ConcurrentHashMap<String, Future<*>>()
+    private val failed = ConcurrentHashMap<String, Long>()
+
+    // Converting a plugin (dex2jar + bytecode fixups) is the slow part and may take minutes for a
+    // big one, so it runs off the caller's thread, two at a time. Registering the plugin's
+    // providers touches shared, non-thread-safe lists, so that part takes [registryLock].
+    private val workers: ExecutorService = Executors.newFixedThreadPool(2) { task ->
+        Thread(task, "cloudstream-plugin-loader").apply { isDaemon = true }
+    }
+    private val registryLock = Any()
+    private val scanLock = Any()
+
+    actual fun pendingExtensions(): Int = inFlight.size
+
+    actual fun preloadExtensions(path: String) {
+        loadExtensions(File(path), 0)
+    }
+
+    actual fun refreshExtensions(path: String, waitMs: Long) {
+        loadExtensions(File(path), waitMs)
+    }
+
     actual fun loadExtensions(path: String) {
+        loadExtensions(File(path), Long.MAX_VALUE)
+    }
 
-        val dir = File(path)
-
+    private fun loadExtensions(dir: File, waitMs: Long) {
         if (!dir.exists() || !dir.isDirectory) return
 
-        val pluginFiles = dir.listFiles()
+        val files = dir.listFiles()
             ?.filter { it.isFile && (it.extension == "cs3" || it.extension == "jar") }
             ?: emptyList()
 
-        ExtensionConvert.parallel(pluginFiles, { it.name }) { file -> loadExtension(file) }
+        val waiting = synchronized(scanLock) {
+            val present = files.associateBy { it.absolutePath }
 
-        Logger.log("Loaded ${plugins.size} plugins")
+            // A plugin that was removed or replaced on disk is dropped; every other one stays
+            // loaded, so providers never disappear while a refresh is running.
+            for ((path, loaded) in plugins.entries.toList()) {
+                val file = present[path]
+                if (file == null || file.lastModified() != loaded.stamp) unloadPlugin(path)
+            }
+            failed.keys.removeAll { !present.containsKey(it) }
 
+            for (file in files) {
+                val path = file.absolutePath
+                if (plugins.containsKey(path) || inFlight.containsKey(path)) continue
+                if (failed[path] == file.lastModified()) continue
+                inFlight[path] = workers.submit {
+                    try {
+                        if (!loadExtension(file)) failed[path] = file.lastModified()
+                    } finally {
+                        inFlight.remove(path)
+                    }
+                }
+            }
+            files.mapNotNull { inFlight[it.absolutePath] }
+        }
+
+        val deadline = if (waitMs == Long.MAX_VALUE) Long.MAX_VALUE else System.currentTimeMillis() + waitMs
+        for (job in waiting) {
+            val left = if (deadline == Long.MAX_VALUE) Long.MAX_VALUE else deadline - System.currentTimeMillis()
+            if (left <= 0) break
+            try {
+                if (left == Long.MAX_VALUE) job.get() else job.get(left, TimeUnit.MILLISECONDS)
+            } catch (_: TimeoutException) {
+                break
+            } catch (_: Exception) {
+            }
+        }
+
+        val pending = inFlight.size
+        Logger.log(
+            "Loaded ${plugins.size} plugins" + if (pending > 0) ", $pending still loading" else ""
+        )
     }
 
+    private fun unloadPlugin(path: String) {
+        synchronized(registryLock) {
+            plugins.remove(path)?.let {
+                try {
+                    it.plugin.beforeUnload()
+                } catch (_: Exception) {
+                }
+            }
+            APIHolder.allProviders.removeAll { it.sourcePlugin == path }
+            APIHolder.apis.removeAll { it.sourcePlugin == path }
+            extractorApis.removeAll { it.sourcePlugin == path }
+            PluginManager.unloadPlugin(path)
+        }
+    }
 
     fun loadExtension(file: File): Boolean {
         if (!file.exists()) {
@@ -80,6 +155,8 @@ actual object ExtensionLoader {
                             file.absolutePath,
                             jarFile.absolutePath
                         )
+
+                        PackageTools.markConverted(jarFile)
                     }
                 }
 
@@ -128,19 +205,27 @@ actual object ExtensionLoader {
 
             plugin.filename = file.absolutePath
 
-            plugins[file.absolutePath] = LoadedPlugin(
-                plugin = plugin,
-                manifest = manifest
-            )
-            PluginManager.register(
-                PluginData(manifest.name, null, true, file.absolutePath, manifest.version)
-            )
             val app: Application by KoinPlatformTools.defaultContext().get().inject()
-            if (plugin is Plugin) {
-                plugin.resources = PluginResources(loader)
-                plugin.load(app.applicationContext)
-            } else {
-                plugin.load()
+            synchronized(registryLock) {
+                plugins[file.absolutePath] = LoadedPlugin(
+                    plugin = plugin,
+                    manifest = manifest,
+                    stamp = file.lastModified()
+                )
+                PluginManager.register(
+                    PluginData(manifest.name, null, true, file.absolutePath, manifest.version)
+                )
+                try {
+                    if (plugin is Plugin) {
+                        plugin.resources = PluginResources(loader)
+                        plugin.load(app.applicationContext)
+                    } else {
+                        plugin.load()
+                    }
+                } catch (e: Throwable) {
+                    unloadPlugin(file.absolutePath)
+                    throw e
+                }
             }
             Logger.log(
                 "Loaded plugin ${manifest.name} v${manifest.version}"
@@ -167,18 +252,21 @@ actual object ExtensionLoader {
     }
 
     actual fun unloadExtensions() {
-        APIHolder.allProviders.clear()
-        APIHolder.apis.clear()
+        synchronized(registryLock) {
+            APIHolder.allProviders.clear()
+            APIHolder.apis.clear()
 
-        plugins.values.forEach {
-            try {
-                it.plugin.beforeUnload()
-            } catch (_: Exception) {
+            plugins.values.forEach {
+                try {
+                    it.plugin.beforeUnload()
+                } catch (_: Exception) {
+                }
             }
+            extractorApis.clear()
+            plugins.clear()
+            PluginManager.clear()
         }
-        extractorApis.clear()
-        plugins.clear()
-        PluginManager.clear()
+        failed.clear()
 
         Logger.log("Unloaded all plugins")
     }

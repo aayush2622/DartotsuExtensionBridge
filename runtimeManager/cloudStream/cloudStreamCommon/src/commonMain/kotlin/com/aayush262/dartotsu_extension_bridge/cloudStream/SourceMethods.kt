@@ -71,21 +71,17 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         )
 
         val episodes: List<Map<String, Any?>> = when (res) {
-            is TvSeriesLoadResponse -> res.episodes.dedupeEpisodeListings { it }.let { list ->
-                list.mapIndexed { i, ep -> episodeToMap(ep, fallbackNumber(list, i)) }
-            }
-            is AnimeLoadResponse -> {
+            is TvSeriesLoadResponse -> episodeMaps(
+                res.episodes.dedupeEpisodeListings { it }.map { it to emptyMap<String, Any?>() }
+            )
+            is AnimeLoadResponse -> episodeMaps(
                 res.episodes.flatMap { (key, epList) ->
                     epList.map { it to key }
                 }
                     .distinctBy { it.first.data }
                     .dedupeEpisodeListings { it.first }
-                    .let { list ->
-                        list.mapIndexed { i, (ep, key) ->
-                            episodeToMap(ep, fallbackNumber(list.map { it.first }, i), mapOf("episodeGroup" to key))
-                        }
-                    }
-            }
+                    .map { (ep, key) -> ep to mapOf<String, Any?>("episodeGroup" to key) }
+            )
             is MovieLoadResponse -> listOf(
                 mapOf(
                     "name" to res.name,
@@ -130,7 +126,7 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         )
         Logger.log(
             "'${provider.name}' details '${res.name}': sent to the app (reversed): " +
-                edge(sent.reversed().map { "#${it["episodeNumber"]} '${it["name"]}'" })
+                edge(sent.reversed().map { "#${it["episodeNumber"]}${it["scanlator"]?.let { s -> " [$s]" } ?: ""} '${it["name"]}'" })
         )
     }
 
@@ -372,10 +368,49 @@ private fun <T> List<T>.dedupeEpisodeListings(episodeOf: (T) -> Episode): List<T
     return result
 }
 
+private fun seasonLabel(season: Int?): String = when (season) {
+    null -> "Other"
+    0 -> "Specials"
+    else -> "Season $season"
+}
+
+/**
+ * Episodes of a show with several seasons restart their number every season. They are handed to
+ * the app grouped by season (the season name in `scanlator`, the way a manga's scanlators work) so
+ * "episode 1" of season 1 and 2 stay two episodes instead of becoming 1.1 and 1.2. Shows whose
+ * numbers already run on across seasons are left alone.
+ */
+private fun episodeMaps(items: List<Pair<Episode, Map<String, Any?>>>): List<Map<String, Any?>> {
+    val seasons = items.mapNotNull { it.first.season }.toSet()
+    val bySeason = items.groupBy { it.first.season }
+    val restarts = seasons.size > 1 && (
+        items.any { it.first.episode == null } ||
+            bySeason.values
+                .flatMap { group -> group.mapNotNull { it.first.episode }.toSet() }
+                .let { numbers -> numbers.size != numbers.toSet().size }
+        )
+    val groups = if (restarts) items.indices.groupBy { items[it].first.season } else mapOf(null to items.indices.toList())
+    val out = arrayOfNulls<Map<String, Any?>>(items.size)
+    for ((season, indices) in groups) {
+        val episodes = indices.map { items[it].first }
+        indices.forEachIndexed { position, index ->
+            val (ep, extra) = items[index]
+            out[index] = episodeToMap(
+                ep,
+                fallbackNumber(episodes, position),
+                extra,
+                scanlator = if (restarts) seasonLabel(season) else null,
+            )
+        }
+    }
+    return out.map { it!! }
+}
+
 fun episodeToMap(
     ep: Episode,
     fallbackNumber: Int,
-    additionalExtra: Map<String, Any?> = emptyMap()
+    additionalExtra: Map<String, Any?> = emptyMap(),
+    scanlator: String? = null,
 ): Map<String, Any?> {
     val rawNum = ep.episode?.toDouble() ?: fallbackNumber.toDouble()
     val topLevel = mapOf(
@@ -385,7 +420,7 @@ fun episodeToMap(
         "thumbnail" to ep.posterUrl,
         "description" to ep.description,
         "dateUpload" to ep.date?.toString(),
-        "scanlator" to null,
+        "scanlator" to scanlator,
         "filler" to false,
     )
     val usedKeys = setOf("name", "data", "episode", "posterUrl", "description", "date")

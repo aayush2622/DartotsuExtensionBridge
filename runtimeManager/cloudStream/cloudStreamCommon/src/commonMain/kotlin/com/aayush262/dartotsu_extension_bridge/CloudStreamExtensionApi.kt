@@ -3,10 +3,12 @@ package com.aayush262.dartotsu_extension_bridge
 import com.aayush262.dartotsu_extension_bridge.cloudStream.CloudStreamSourceMethods
 import com.aayush262.dartotsu_extension_bridge.cloudStream.ExtensionLoader
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
+import com.aayush262.dartotsu_extension_bridge.common.ExtensionLoadStatus
 import com.aayush262.dartotsu_extension_bridge.network.Network
 import com.lagradost.cloudstream3.bridgeClient
 import com.google.gson.Gson
 import com.aayush262.dartotsu_extension_bridge.cloudStream.SourcePreferences
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import com.lagradost.cloudstream3.APIHolder.allProviders
@@ -21,7 +23,7 @@ expect object CloudStreamPlatformInit {
     fun initializeDesktop(basePath: String)
 }
 
-class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
+class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi, ExtensionLoadStatus {
 
     override fun initializeAndroid(context: Any) =
         CloudStreamPlatformInit.initializeAndroid(context)
@@ -29,12 +31,22 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
     override fun initializeDesktop(basePath: String) {
         CloudStreamPlatformInit.initializeDesktop(basePath)
         initialize(CustomMethods())
+        preloadPath = java.io.File(basePath, "extensions/Anime").path
     }
+
+    // Plugins are prepared once the app's network settings are in (the first initClient), so a
+    // call made before the app has asked for the list finds its provider, or waits for it.
+    @Volatile
+    private var preloadPath: String? = null
 
     override fun initClient(data: String) {
         Network.configure(data)
         app.baseClient = bridgeClient()
         PluginRequests.refresh()
+        preloadPath?.let {
+            preloadPath = null
+            ExtensionLoader.preloadExtensions(it)
+        }
     }
 
     private val gson = Gson()
@@ -42,21 +54,34 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
     @Suppress("UNCHECKED_CAST")
     private fun decode(json: String): Map<String, Any?> =
         gson.fromJson(json, Map::class.java) as Map<String, Any?>
-    private fun provider(sourceId: String): MainAPI {
-        return allProviders.firstOrNull {
+    private fun findProvider(sourceId: String): MainAPI? =
+        allProviders.toList().firstOrNull {
             it.name.equals(sourceId, ignoreCase = true) ||
                     it.javaClass.simpleName.equals(sourceId, ignoreCase = true) ||
                     it.javaClass.name.equals(sourceId, ignoreCase = true)
-        } ?: error("Provider not found: $sourceId")
+        }
+
+    /** A provider whose plugin is still being prepared shows up shortly: wait for it instead of failing. */
+    private suspend fun provider(sourceId: String): MainAPI {
+        findProvider(sourceId)?.let { return it }
+        val deadline = System.currentTimeMillis() + PROVIDER_WAIT_MS
+        while (ExtensionLoader.pendingExtensions() > 0 && System.currentTimeMillis() < deadline) {
+            delay(250)
+            findProvider(sourceId)?.let { return it }
+        }
+        error("Provider not found: $sourceId")
     }
-    private fun methods(sourceId: String) =
+
+    private suspend fun methods(sourceId: String) =
         CloudStreamSourceMethods(provider(sourceId))
 
+    override fun pendingExtensions(): Int = ExtensionLoader.pendingExtensions()
+
     override suspend fun getInstalledAnimeExtensions(path: String?): String {
-        ExtensionLoader.unloadExtensions()
-        ExtensionLoader.loadExtensions(path ?: return "[]")
+        val dir = path ?: return "[]"
+        withContext(Dispatchers.IO) { ExtensionLoader.refreshExtensions(dir, LIST_WAIT_MS) }
         return mapper.writeValueAsString(
-            allProviders.map {
+            allProviders.toList().map {
                 mapOf(
                     "id" to it.name,
                     "name" to it.name,
@@ -70,6 +95,11 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi{
                 )
             }
         )
+    }
+
+    private companion object {
+        const val LIST_WAIT_MS = 12_000L
+        const val PROVIDER_WAIT_MS = 180_000L
     }
 
     override suspend fun getPopular(

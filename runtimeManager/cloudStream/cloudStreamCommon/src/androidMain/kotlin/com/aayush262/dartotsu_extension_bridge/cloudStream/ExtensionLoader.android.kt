@@ -25,6 +25,16 @@ actual object ExtensionLoader {
             ?: AcraApplication.context
             ?: error("Context is null")
     actual var plugins = mutableMapOf<String, LoadedPlugin>()
+
+    actual fun pendingExtensions(): Int = 0
+
+    actual fun preloadExtensions(path: String) {}
+
+    actual fun refreshExtensions(path: String, waitMs: Long) {
+        unloadExtensions()
+        loadExtensions(path)
+    }
+
     actual fun loadExtensions(path: String) {
         val privateDir = File(context.filesDir, "cloudstream-plugins")
         val externalDir = File(path)

@@ -28,17 +28,44 @@ import kotlin.io.path.Path
 
 object PackageTools {
 
-    private val converterStamp: Long by lazy {
+    private val legacyConverterStamp: Long by lazy {
         runCatching {
             File(BytecodeEditor::class.java.protectionDomain.codeSource.location.toURI()).lastModified()
         }.getOrDefault(0L)
     }
 
-    /** Whether [converted] must be rebuilt from [source]: missing, older than it, or than this converter. */
-    fun needsConversion(source: File, converted: File): Boolean =
-        !converted.exists() ||
-            source.lastModified() > converted.lastModified() ||
-            converterStamp > converted.lastModified()
+    /**
+     * Identifies the converter itself: a hash of the compiled [BytecodeEditor]. A cached jar is only
+     * stale when this changes, not on every plugin update — rebuilding a big extension takes minutes.
+     */
+    private val converterVersion: String by lazy {
+        runCatching {
+            val bytes = BytecodeEditor::class.java
+                .getResourceAsStream("BytecodeEditor.class")!!
+                .use { it.readBytes() }
+            java.security.MessageDigest.getInstance("SHA-1")
+                .digest(bytes)
+                .joinToString("") { "%02x".format(it) }
+                .take(16)
+        }.getOrDefault("unknown")
+    }
+
+    private fun stampFile(converted: File) = File(converted.path + ".cv")
+
+    /** Whether [converted] must be rebuilt from [source]: missing, older than it, or built by another converter. */
+    fun needsConversion(source: File, converted: File): Boolean {
+        if (!converted.exists() || source.lastModified() > converted.lastModified()) return true
+        val stamp = stampFile(converted)
+        val recorded = if (stamp.exists()) runCatching { stamp.readText().trim() }.getOrNull() else null
+        if (recorded != null) return recorded != converterVersion
+        if (legacyConverterStamp > converted.lastModified()) return true
+        markConverted(converted)
+        return false
+    }
+
+    fun markConverted(converted: File) {
+        runCatching { stampFile(converted).writeText(converterVersion) }
+    }
 
     /**
      * Convert dex to jar, a wrapper for the dex2jar library.
