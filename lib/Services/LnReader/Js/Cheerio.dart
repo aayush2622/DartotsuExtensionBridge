@@ -34,6 +34,13 @@ class JsCheerio {
             return jsonEncode(<int>[]);
           case 'hasClass':
             return false;
+          case 'text':
+          case 'html':
+          case 'innerHtml':
+          case 'outerHtml':
+          case 'val':
+          case 'attr':
+            return '';
           default:
             return null;
         }
