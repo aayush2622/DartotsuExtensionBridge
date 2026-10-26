@@ -31,6 +31,11 @@ ExtensionBridge` transport) — same base name, different directory.
   optional `BridgeNetwork` (the host's whole network stack, see Network layer), `onLog`.
 - `GetDirectory` typedef — host app must supply persistent dir resolution
   (`subPath`, `useCustomPath`, `useSystemPath`).
+- Backends start lazily: `ExtensionManager.onInit` only resolves the saved default per type
+  (`<type>Manager` in `KvStore`, written by `switchManager`, which logs the change); a backend
+  (and its JVM sidecar) boots on the first `initializeInstalled(type)` for a type it is the default of.
+  `Extension._trackInstalled` keeps `ExtensionState.loadingInstalled` true while the installed list loads.
+- `Logger.log` runs every message through `stripEmoji`, so extension logs stay plain text.
 - `dispose()` — tears down `ExtensionManager` (which disposes every backend,
   including the LnReader per-source JS runtimes).
 
@@ -225,6 +230,21 @@ dart run build_runner build --delete-conflicting-outputs   # KvStore.g.dart
 flutter test                                                # test/ — pure-Dart model + helper unit tests
 dart analyze lib test
 ```
+
+CloudStream desktop sidecar, end to end (`test/cloudstream_sidecar_test.dart`): starts the built jar with the bundled
+JRE 21, copies the installed `.cs3` plugins into `$TMPDIR/dartotsu-cs-harness`, and checks that the list grows while
+big plugins convert, that a refresh never unloads loaded plugins, that converted jars are reused on the next start,
+that a call made mid-load waits for its provider, and that a multi-season show comes back grouped by season. It skips
+itself when the jar, JRE or plugins are missing (`CS_JAR`, `CS_JAVA`, `CS_PLUGINS`, `CS_OFFLINE=1` override). If
+Dartotsu is running (port 4567 is taken) the log based checks are skipped.
+
+CloudStream desktop loader (`ExtensionLoader.desktop.kt`): plugins are prepared by two background workers, the list call waits
+at most 12 s and returns what is ready (the Dart side polls `pendingExtensions` and republishes the list), a refresh
+only loads new/changed files and unloads removed ones (providers never disappear during one), `provider()` waits up to
+3 minutes for a plugin that is still preparing, and the initial scan starts at `initializeDesktop` (`<data>/extensions/Anime`).
+Converted jars carry a `<name>.jar.cv` stamp (hash of `BytecodeEditor`), so a plugin update of the sidecar no longer
+rebuilds every cached jar. A show whose seasons restart their numbering is sent with the season in `scanlator`
+(`Season N`, `Specials`) so the app's season chips apply.
 
 CloudStream desktop jar from a terminal (loads every `.cs3` in a folder, prints how many loaded and which failed):
 

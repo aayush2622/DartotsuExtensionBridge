@@ -182,9 +182,7 @@ abstract class Extension {
 
     try {
       await initialize();
-    } catch (_) {
-
-    }
+    } catch (_) {}
 
     return _initState == InitState.success;
   }
@@ -207,19 +205,19 @@ abstract class Extension {
       switch (type) {
         case ItemType.anime:
           if (supportsAnime) {
-            unawaited(fetchInstalledAnimeExtensions());
+            _trackInstalled(s, fetchInstalledAnimeExtensions());
           }
           break;
 
         case ItemType.manga:
           if (supportsManga) {
-            unawaited(fetchInstalledMangaExtensions());
+            _trackInstalled(s, fetchInstalledMangaExtensions());
           }
           break;
 
         case ItemType.novel:
           if (supportsNovel) {
-            unawaited(fetchInstalledNovelExtensions());
+            _trackInstalled(s, fetchInstalledNovelExtensions());
           }
           break;
       }
@@ -227,6 +225,17 @@ abstract class Extension {
     } catch (e, s) {
       Logger.log('Error initializing extension $id: $e\n$s');
     }
+  }
+
+  void _trackInstalled(ExtensionState state, Future<void> fetch) {
+    state.loadingInstalled.value = true;
+    unawaited(
+      fetch
+          .catchError((Object e, StackTrace st) {
+            Logger.log('Error fetching installed extensions for $id: $e\n$st');
+          })
+          .whenComplete(() => state.loadingInstalled.value = false),
+    );
   }
 
   @mustCallSuper

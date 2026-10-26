@@ -70,8 +70,6 @@ class CloudStreamDesktopExtensions extends Extension
   List<Source> Function((String body, String repoUrl, ItemType type))
   get parseExtensionsIsolate => _parseExtensions;
 
-
-
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
     await super.fetchInstalledAnimeExtensions();
@@ -81,16 +79,36 @@ class CloudStreamDesktopExtensions extends Extension
         useSystemPath: false,
         useCustomPath: true,
       );
-      final result = await java.call<List<Map<String, dynamic>>>(
-        "getInstalledAnimeExtensions",
-        {"path": dir!.path},
-      );
 
-      anime.installed.value = result
-          .map((e) => CdSource.fromJson(e))
-          .toList(growable: false);
+      // The runtime prepares big plugins in the background (converting one can take minutes), so
+      // the list is published as it grows instead of once everything is ready.
+      for (var round = 0; round < _maxLoadRounds; round++) {
+        final result = await java.call<List<Map<String, dynamic>>>(
+          "getInstalledAnimeExtensions",
+          {"path": dir!.path},
+        );
+
+        anime.installed.value = result
+            .map((e) => CdSource.fromJson(e))
+            .toList(growable: false);
+
+        if (await _pendingPlugins() <= 0) break;
+        await Future<void>.delayed(_loadPollInterval);
+      }
     } catch (e) {
       Logger.log("Error fetching installed CloudStream Desktop extensions: $e");
+    }
+  }
+
+  static const _maxLoadRounds = 300;
+  static const _loadPollInterval = Duration(seconds: 2);
+
+  Future<int> _pendingPlugins() async {
+    try {
+      final pending = await java.call<dynamic>("pendingExtensions");
+      return pending is num ? pending.toInt() : 0;
+    } catch (_) {
+      return 0;
     }
   }
 
@@ -128,7 +146,6 @@ class CloudStreamDesktopExtensions extends Extension
 
   @override
   Future<void> onSourceFileDeleted(File file) => _deleteCachedJar(file);
-
 
   static List<CdSource> _parseExtensions(
     (String body, String repoUrl, ItemType itemType) args,

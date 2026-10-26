@@ -83,10 +83,6 @@ class ExtensionManager extends GetxController {
     for (final type in ItemType.values) {
       current[type] = _resolveManager(type, getVal("${type.name}Manager"));
     }
-
-    _forEachCurrent((extension, type) {
-      return extension.initializeInstalled(type);
-    });
   }
 
   Future<void> _forEachCurrent(
@@ -113,6 +109,7 @@ class ExtensionManager extends GetxController {
     current[type] = next;
 
     setVal("${type.name}Manager", id);
+    Logger.log('Default ${type.name} extension service is now ${next.name}');
 
     final ready = await next.ensureInitialized();
     if (!ready && next.isFailed) return next.initError ?? 'Failed to start';
