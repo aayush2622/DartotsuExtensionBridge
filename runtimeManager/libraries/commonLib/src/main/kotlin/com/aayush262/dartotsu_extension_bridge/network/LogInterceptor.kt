@@ -33,7 +33,7 @@ class LogInterceptor : Interceptor {
             val cloudflare = response.code in listOf(403, 503) && server in listOf("cloudflare", "cloudflare-nginx")
 
             if (cloudflare) {
-                Logger.log("⚠️ Detected Cloudflare protection", LogLevel.DEBUG)
+                Logger.log("Detected Cloudflare protection", LogLevel.DEBUG)
             }
 
             return response

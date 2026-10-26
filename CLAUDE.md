@@ -35,7 +35,6 @@ ExtensionBridge` transport) — same base name, different directory.
   (`<type>Manager` in `KvStore`, written by `switchManager`, which logs the change); a backend
   (and its JVM sidecar) boots on the first `initializeInstalled(type)` for a type it is the default of.
   `Extension._trackInstalled` keeps `ExtensionState.loadingInstalled` true while the installed list loads.
-- `Logger.log` runs every message through `stripEmoji`, so extension logs stay plain text.
 - `dispose()` — tears down `ExtensionManager` (which disposes every backend,
   including the LnReader per-source JS runtimes).
 
