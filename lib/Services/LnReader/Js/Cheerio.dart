@@ -24,10 +24,20 @@ class JsCheerio {
 
     runtime.onMessage('element_call', (dynamic args) {
       final method = args[0] as String;
-      final key = args[1] as int;
-      final element = _elements[key];
+      final key = args[1] as int?;
+      final element = key == null ? null : _elements[key];
 
-      if (element == null) return null;
+      if (element == null) {
+        switch (method) {
+          case 'find':
+          case 'children':
+            return jsonEncode(<int>[]);
+          case 'hasClass':
+            return false;
+          default:
+            return null;
+        }
+      }
 
       final methodArgs = args.length > 2 ? args[2] : [];
 
@@ -346,10 +356,11 @@ class ElementCollection {
   }
 
   get(index) {
-    return this.elements[index] || new Stub();
+    const el = this.elements[index];
+    return el !== undefined ? el : new Element(null);
   }
 
-  length() {
+  get length() {
     return this.elements.length;
   }
 
@@ -359,27 +370,6 @@ class ElementCollection {
 
   [Symbol.iterator]() {
     return this.elements[Symbol.iterator]();
-  }
-}
-
-class Stub {
-  text() {
-    return null;
-  }
-  html() {
-    return null;
-  }
-  outerHtml() {
-    return null;
-  }
-  val() {
-    return null;
-  }
-  attr(name) {
-    return null;
-  }
-  hasClass(cls) {
-    return false;
   }
 }
 
