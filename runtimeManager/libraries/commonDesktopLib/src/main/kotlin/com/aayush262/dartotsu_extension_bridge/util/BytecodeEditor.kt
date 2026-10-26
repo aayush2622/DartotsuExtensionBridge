@@ -27,6 +27,7 @@ import java.io.StringWriter
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -140,6 +141,10 @@ object BytecodeEditor {
         }
         Logger.log("[$jarLabel] Parsed ${classNodes.size} classes", LogLevel.INFO)
 
+        val started = System.nanoTime()
+        fun lap(phase: String) =
+            Logger.log("[$jarLabel] $phase done at ${(System.nanoTime() - started) / 1_000_000_000}s", LogLevel.INFO)
+
         for (cn in classNodes.values) {
             rewriteReplacedReferences(cn)
         }
@@ -162,6 +167,8 @@ object BytecodeEditor {
         for (cn in classNodes.values) {
             repairMalformedConstructions(cn, classNodes, loader, constructorsNeeded, jarLabel, dexNewInstances)
         }
+
+        lap("Construction repair")
 
         clearErroneousAbstractFlags(classNodes, jarLabel)
 
@@ -236,6 +243,7 @@ object BytecodeEditor {
                 ?.let { rewritten[entryName] = it }
         }
 
+        lap("Frames and verification")
         writeJarAtomically(jarFile, entries, rewritten, jarLabel)
 
         Logger.log("[$jarLabel] BytecodeEditor finished", LogLevel.INFO)
@@ -311,6 +319,18 @@ object BytecodeEditor {
         private val classes: Map<String, ByteArray>,
         parent: ClassLoader,
     ) : ClassLoader(parent) {
+        private val failed = ConcurrentHashMap<String, Throwable>()
+
+        override fun loadClass(name: String, resolve: Boolean): Class<*> {
+            failed[name]?.let { throw it }
+            try {
+                return super.loadClass(name, resolve)
+            } catch (e: Throwable) {
+                failed.putIfAbsent(name, e)
+                throw e
+            }
+        }
+
         override fun findClass(name: String): Class<*> {
             val bytes = classes[name] ?: throw ClassNotFoundException(name)
             return defineClass(name, bytes, 0, bytes.size)
@@ -922,11 +942,11 @@ object BytecodeEditor {
         }
         return result
     }
-    // 5150 instructions analyzed in ~2.4s; 18239 instructions (a real
-    // extension's giant generated dispatch method) didn't finish in 40s and
-    // was still climbing. This sits with a wide safety margin above the
-    // former and well below the latter.
-    private const val MAX_REPAIR_METHOD_SIZE = 8000
+    // The analysis grows much faster than the method does: ~4000 instructions
+    // take under a second, 6000 take ~2.5s, 7500 take ~8s, 8000 take ~14s and
+    // 18239 (a generated dispatch method) didn't finish in 40s. StreamPlay has
+    // a handful of methods between 6000 and 8000 that cost ~35s of a ~60s repair.
+    private const val MAX_REPAIR_METHOD_SIZE = 5000
 
     private fun repairMalformedConstructions(
         cn: ClassNode,
@@ -938,6 +958,7 @@ object BytecodeEditor {
     ) {
         for (method in cn.methods) {
             method.maxStack += method.instructions.size() + 16
+            if (!callsConstructor(method)) continue
 
             // ProvenanceInterpreter's merge keeps a growing set of possible
             // producer instructions per stack/local slot, unlike ASM's own
@@ -1138,6 +1159,15 @@ object BytecodeEditor {
                 }
             }
         }
+    }
+
+    private fun callsConstructor(method: MethodNode): Boolean {
+        var node = method.instructions.first
+        while (node != null) {
+            if (node is MethodInsnNode && node.opcode == Opcodes.INVOKESPECIAL && node.name == "<init>") return true
+            node = node.next
+        }
+        return false
     }
 
     /**
