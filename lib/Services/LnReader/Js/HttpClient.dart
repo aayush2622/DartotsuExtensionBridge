@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:d4rt/d4rt.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_interceptor/http_interceptor.dart';
@@ -138,12 +137,12 @@ Future<String> _toHttpResponse(Client client, String method, List args) async {
     return jsonEncode(resMap);
   }
   String? formData;
-  if (body is Map && body.containsKey("_data")) {
-    formData = (body.get("_data") as List<dynamic>)
+  if (body is Map) {
+    formData = body.entries
         .map(
           (e) =>
-              "${Uri.encodeQueryComponent(e[0])}"
-              "=${Uri.encodeQueryComponent(e[1])}",
+              "${Uri.encodeQueryComponent(e.key)}"
+              "=${Uri.encodeQueryComponent(e.value?.toString() ?? '')}",
         )
         .join("&");
     headers["content-type"] =
