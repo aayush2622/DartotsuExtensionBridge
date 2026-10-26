@@ -48,6 +48,19 @@ Stream<double> progressStream(
   return controller.stream;
 }
 
+/// The installer finished but the existing copy is still the one installed,
+/// usually because it was signed with another key. [Extension.reinstallSource]
+/// removes it and installs the new version.
+class ExtensionUpdateConflict implements Exception {
+  final Source source;
+
+  const ExtensionUpdateConflict(this.source);
+
+  @override
+  String toString() =>
+      'The new version of ${source.name} was not installed over the existing one';
+}
+
 class ExtensionState {
   final installed = Rx<List<Source>>([]);
   final available = Rx<List<Source>>([]);
@@ -295,6 +308,13 @@ abstract class Extension {
 
   /// Progress in `[0.0, 1.0]`. See [progressStream].
   Stream<double> updateSource(Source source);
+
+  /// Removes [source] and installs it again, for an update that could not be
+  /// applied over the installed copy ([ExtensionUpdateConflict]).
+  Stream<double> reinstallSource(Source source) => progressStream((_) async {
+    await uninstallSource(source);
+    await installSource(source).drain<void>();
+  });
 
   @mustCallSuper
   Future<void> fetchAnimeExtensions() async {

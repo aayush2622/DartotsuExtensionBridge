@@ -55,6 +55,7 @@ ExtensionBridge` transport) — same base name, different directory.
 ### Data models (`lib/Models/`) — all plain JSON classes
 
 - `Source.dart` — `Source` (id, name, baseUrl, lang, version, `itemType`, `repo`, `hasUpdate`) + `enum ItemType`.
+- `Extension.reinstallSource` / `ExtensionUpdateConflict` (`Extensions/Extensions.dart`) — on Android (`AndroidApkInstallMixin`) a shared install of an already installed package waits for the system installer to close (app lifecycle leaves and returns) and compares `versionCode` before and after; unchanged means the installer refused the update (usually another signing key), so `installSource` throws `ExtensionUpdateConflict` and the app offers uninstall + reinstall. Fresh installs and private (app-folder) installs are not checked. Not verified on a device.
 - `DMedia.dart` — media/series (title, cover, genres, `List<DEpisode> episodes`).
 - `DEpisode.dart` — one episode/chapter; parses fuzzy `episodeNumber`.
 - `Pages.dart` / `Page.dart` — `Pages { List<DMedia> list; hasNextPage }`, `PageUrl { url, headers }`.

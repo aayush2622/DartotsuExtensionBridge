@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:install_plugin/install_plugin.dart';
 import 'package:installed_apps/installed_apps.dart';
@@ -14,6 +15,36 @@ import '../../Network/MClient.dart';
 import '../../Settings/KvStore.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'PackagedSource.dart';
+
+class _InstallerReturn with WidgetsBindingObserver {
+  final _back = Completer<bool>();
+  var _left = false;
+
+  void attach() => WidgetsBinding.instance.addObserver(this);
+
+  void detach() => WidgetsBinding.instance.removeObserver(this);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      _left = true;
+    } else if (_left && !_back.isCompleted) {
+      _back.complete(true);
+    }
+  }
+
+  Future<bool> returned({
+    Duration grace = const Duration(seconds: 8),
+    Duration limit = const Duration(minutes: 10),
+  }) async {
+    final until = DateTime.now().add(grace);
+    while (!_left && !_back.isCompleted && DateTime.now().isBefore(until)) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+    if (!_left && !_back.isCompleted) return false;
+    return _back.future.timeout(limit, onTimeout: () => false);
+  }
+}
 
 mixin AndroidApkInstallMixin on Extension {
   http.Client get repoClient;
@@ -55,6 +86,23 @@ mixin AndroidApkInstallMixin on Extension {
     }
 
     return stream;
+  }
+
+  Future<int?> _versionOf(String packageName) async {
+    try {
+      return (await InstalledApps.getAppInfo(packageName))?.versionCode;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<int?> _versionAfter(String packageName, int before) async {
+    var version = await _versionOf(packageName);
+    for (var i = 0; i < 16 && version == before; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      version = await _versionOf(packageName);
+    }
+    return version;
   }
 
   Future<void> _writeWithProgress(
@@ -138,20 +186,35 @@ mixin AndroidApkInstallMixin on Extension {
 
         await _writeWithProgress(response, apkFile, progressId, type, report);
 
-        final result = await InstallPlugin.installApk(
-          apkFile.path,
-          appId: packageName,
-        );
-
-        if (await apkFile.exists()) {
-          await apkFile.delete();
-        }
-
-        if (result['isSuccess'] != true) {
-          throw Exception(
-            'Installation failed: '
-            '${result['errorMessage'] ?? 'Unknown error'}',
+        final before = await _versionOf(packageName);
+        final installer = _InstallerReturn()..attach();
+        try {
+          final result = await InstallPlugin.installApk(
+            apkFile.path,
+            appId: packageName,
           );
+
+          if (result['isSuccess'] != true) {
+            throw Exception(
+              'Installation failed: '
+              '${result['errorMessage'] ?? 'Unknown error'}',
+            );
+          }
+
+          if (before != null && await installer.returned()) {
+            final after = await _versionAfter(packageName, before);
+            if (after == before) {
+              Logger.log(
+                'Update of $packageName was not applied, version $before',
+              );
+              throw ExtensionUpdateConflict(source);
+            }
+          }
+        } finally {
+          installer.detach();
+          if (await apkFile.exists()) {
+            await apkFile.delete();
+          }
         }
 
         Logger.log('Installed SHARED extension: $packageName');
