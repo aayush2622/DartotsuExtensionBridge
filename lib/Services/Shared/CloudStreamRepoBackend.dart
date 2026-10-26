@@ -335,7 +335,7 @@ mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
 
   @override
   void detectUpdates(List<Source> available, ItemType type) {
-    final installed = state(type).installed.value.cast<CloudStreamSource>();
+    final installed = state(type).installed.value.cast<CloudStreamSource>().toList();
 
     final repoMap = {
       for (var s in available.cast<CloudStreamSource>()) s.id?.toLowerCase(): s,
