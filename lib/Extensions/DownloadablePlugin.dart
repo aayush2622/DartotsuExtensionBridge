@@ -60,7 +60,7 @@ abstract class DownloadablePlugin {
 
   static RxBool _autoUpdate() {
     final flag =
-        (getVal<bool>(_autoUpdateKey, defaultValue: false) ?? false).obs;
+        (getVal<bool>(_autoUpdateKey, defaultValue: true) ?? true).obs;
     flag.listen((v) => setVal(_autoUpdateKey, v));
     return flag;
   }
