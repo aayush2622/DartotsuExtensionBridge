@@ -217,9 +217,14 @@ List<T> parseTachiyomiRepoIndex<T extends Source>({
       if (detectedType != targetType) continue;
 
       final sourcesList = map['sources'];
-      final id = (sourcesList is List && sourcesList.isNotEmpty)
+      final listed = (sourcesList is List && sourcesList.isNotEmpty)
           ? (sourcesList.first['id']?.toString() ?? '')
           : (map['id']?.toString() ?? '');
+      final id = listed.isNotEmpty
+          ? listed
+          : (map['pkg']?.toString() ?? '').isNotEmpty
+          ? map['pkg'].toString()
+          : name;
 
       final apkName = map['apk'] as String?;
       final jarName = unprefixed && apkName != null && apkName.endsWith('.apk')
