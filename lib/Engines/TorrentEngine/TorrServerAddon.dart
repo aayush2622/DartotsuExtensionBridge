@@ -322,13 +322,58 @@ class TorrServerAddon extends Addon {
   /// `customBinaryPath` to [TorrServerControllerSubprocess.start].
   Future<String?> get binaryPath async {
     final file = await _binaryFile;
+    if (!await file.exists()) return null;
+    if (!await _matchesCpu(file)) {
+      Logger.log(
+        "TorrServer binary was built for another CPU, downloading the right one",
+      );
+      await file.delete();
+      await install();
+    }
     return await file.exists() ? file.path : null;
+  }
+
+  (int, int)? get _expectedElf {
+    if (!Platform.isAndroid && !Platform.isLinux) return null;
+    return switch (Abi.current()) {
+      Abi.androidArm64 || Abi.linuxArm64 => (2, 0xB7),
+      Abi.androidArm || Abi.linuxArm => (1, 0x28),
+      Abi.androidX64 || Abi.linuxX64 => (2, 0x3E),
+      Abi.androidIA32 || Abi.linuxIA32 => (1, 0x03),
+      _ => null,
+    };
+  }
+
+  Future<bool> _matchesCpu(File file) async {
+    final expected = _expectedElf;
+    if (expected == null) return true;
+    try {
+      final head = <int>[];
+      await for (final chunk in file.openRead(0, 20)) {
+        head.addAll(chunk);
+      }
+      if (head.length < 20) return false;
+      final isElf =
+          head[0] == 0x7F &&
+          head[1] == 0x45 &&
+          head[2] == 0x4C &&
+          head[3] == 0x46;
+      if (!isElf) return false;
+      final littleEndian = head[5] == 1;
+      final machine = littleEndian
+          ? head[18] | (head[19] << 8)
+          : (head[18] << 8) | head[19];
+      return head[4] == expected.$1 && machine == expected.$2;
+    } catch (_) {
+      return true;
+    }
   }
 
   @override
   Future<bool> isInstalled() async {
     if (Platform.isIOS) return true;
-    return (await _binaryFile).exists();
+    final file = await _binaryFile;
+    return await file.exists() && await _matchesCpu(file);
   }
 
   /// YouROK/TorrServer release assets are plain binaries named
