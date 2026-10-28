@@ -14,6 +14,7 @@ import '../../../dartotsu_extension_bridge.dart';
 import '../../Shared/JvmBackend.dart';
 import '../../Shared/TachiyomiJavaDesktopExtension.dart';
 import '../../Shared/TachiyomiRepo.dart';
+import '../IReaderIcons.dart';
 import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
 
@@ -65,6 +66,10 @@ class IReaderDesktopExtensions extends Extension
   @override
   bool get refreshExtensionCountOnFetch => true;
 
+  @override
+  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async =>
+      withIreaderIcons(await super.fetchRepo(repo, type), repo.url, repoClient);
+
 
 
   @override
@@ -102,6 +107,7 @@ class IReaderDesktopExtensions extends Extension
     args.$2,
     args.$3,
     prefixes: const {'ireader: ': ItemType.novel},
+    unprefixedType: ItemType.novel,
     factory: _sourceFromEntry,
   );
 
