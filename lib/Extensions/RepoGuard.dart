@@ -21,7 +21,8 @@ enum RepoFormat {
   lnReader('LNReader'),
   legado('Legado'),
   aidoku('Aidoku'),
-  kotatsu('Kotatsu');
+  kotatsu('Kotatsu'),
+  shosetsu('Shosetsu');
 
   const RepoFormat(this.label);
 
@@ -96,6 +97,9 @@ RepoFormat? detectRepoFormat(List<int> bytes, {String? url}) {
   if (decoded is Map) {
     if (decoded['pluginLists'] is List) return RepoFormat.cloudStream;
     if (decoded.containsKey('sourceName')) return RepoFormat.sora;
+    if (decoded.containsKey('scripts') && decoded.containsKey('libraries')) {
+      return RepoFormat.shosetsu;
+    }
     for (final key in const ['sources', 'data', 'bookSourceList']) {
       final list = decoded[key];
       if (list is List) return _formatOfEntries(list);

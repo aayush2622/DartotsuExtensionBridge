@@ -19,6 +19,8 @@ import 'Services/Kotatsu/KotatsuDesktop/KotatsuDesktopExtensions.dart';
 import 'Services/Legado/LegadoExtensions.dart';
 import 'Services/LnReader/LnReaderExtensions.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
+import 'Services/Shosetsu/ShosetsuDesktopExtensions.dart';
+import 'Services/Shosetsu/ShosetsuExtensions.dart';
 import 'Services/Sora/SoraExtensions.dart';
 import 'Services/Tsundoku/TsundokuAndroid/TsundokuExtensions.dart';
 import 'Services/Tsundoku/TsundokuDesktop/TsundokuDesktopExtensions.dart';
@@ -50,11 +52,13 @@ class ExtensionManager extends GetxController {
     if (Platform.isAndroid) IReaderExtensions.new,
     if (Platform.isAndroid) TsundokuExtensions.new,
     if (Platform.isAndroid) KotatsuExtensions.new,
+    if (Platform.isAndroid) ShosetsuExtensions.new,
     if (_jvmBackends) AniyomiDesktopExtensions.new,
     if (_jvmBackends) CloudStreamDesktopExtensions.new,
     if (_jvmBackends) IReaderDesktopExtensions.new,
     if (_jvmBackends) TsundokuDesktopExtensions.new,
     if (_jvmBackends) KotatsuDesktopExtensions.new,
+    if (_jvmBackends) ShosetsuDesktopExtensions.new,
   ];
 
   List<Extension> get _extensionManagers => [
