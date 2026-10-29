@@ -1,0 +1,38 @@
+import com.android.build.gradle.internal.tasks.factory.dependsOn
+
+extra.apply {
+    set("pluginAuthor", "aayush262")
+    set("pluginDescription", "A plugin that allows you to run Shosetsu extensions on desktop using a custom runtime manager.")
+}
+
+plugins {
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.shadow)
+}
+
+dependencies {
+    implementation(projects.shosetsu.shosetsuCommon)
+}
+
+tasks.shadowJar {
+    archiveClassifier.set("all")
+    exclude(
+        "META-INF/**",
+        "**/*.pom",
+        "**/*.pom.*"
+    )
+    manifest {
+        attributes(
+            "Main-Class" to
+                    "com.aayush262.dartotsu_extension_bridge.Main"
+        )
+    }
+    mergeServiceFiles()
+    isZip64 = true
+}
+
+apply(from = "$rootDir/plugin-build.gradle.kts")
+
+tasks.jar { enabled = false }
+
+tasks.build.dependsOn(tasks.shadowJar)

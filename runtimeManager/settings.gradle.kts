@@ -82,4 +82,7 @@ include(
     ":tsundoku:tsundokuCommon",
     ":tsundoku:tsundokuAndroid",
     ":tsundoku:tsundokuDesktop",
+    ":shosetsu:shosetsuCommon",
+    ":shosetsu:shosetsuAndroid",
+    ":shosetsu:shosetsuDesktop",
 )
