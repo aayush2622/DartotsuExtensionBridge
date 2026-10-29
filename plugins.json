@@ -104,6 +104,32 @@
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/kotatsuDesktop-plugin.jar"
   },
   {
+    "name": "shosetsuAndroid",
+    "versionCode": 1,
+    "versionName": "1.0.1",
+    "description": "A plugin that allows you to run Shosetsu extensions on android",
+    "author": "aayush262",
+    "createdAt": 1793288458123,
+    "platform": "android",
+    "type": "apk",
+    "fileName": "shosetsuAndroid-plugin.apk",
+    "fileSize": 6211496,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/shosetsuAndroid-plugin.apk"
+  },
+  {
+    "name": "shosetsuDesktop",
+    "versionCode": 1,
+    "versionName": "1.0.1",
+    "description": "A plugin that allows you to run Shosetsu extensions on desktop using a custom runtime manager.",
+    "author": "aayush262",
+    "createdAt": 1793288457476,
+    "platform": "desktop",
+    "type": "jar",
+    "fileName": "shosetsuDesktop-plugin.jar",
+    "fileSize": 68260720,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/shosetsuDesktop-plugin.jar"
+  },
+  {
     "name": "tsundokuAndroid",
     "versionCode": 23,
     "versionName": "2.0.21",
