@@ -7,9 +7,15 @@ import 'package:http_interceptor/http_interceptor.dart';
 
 import '../../../Network/MClient.dart';
 
+typedef LnFetcher = Future<String> Function(String method, List args);
+
+Future<String> lnHttpFetch(Client client, String method, List args) =>
+    _toHttpResponse(client, method, args);
+
 class JsHttpClient {
   late JavascriptRuntime runtime;
-  JsHttpClient(this.runtime);
+  final LnFetcher? fetcher;
+  JsHttpClient(this.runtime, {this.fetcher});
 
   // Reused for every request this instance makes, rather than calling
   // MClient.init() fresh per call - when the host app hasn't supplied its
@@ -20,24 +26,30 @@ class JsHttpClient {
 
   void init() {
     InterceptedClient client() => _client ??= MClient.init();
+    Future<String> fetch(String method, dynamic args) {
+      final send = fetcher;
+      return send != null
+          ? send(method, args as List)
+          : _toHttpResponse(client(), method, args as List);
+    }
 
     runtime.onMessage('http_head', (dynamic args) async {
-      return await _toHttpResponse(client(), "HEAD", args);
+      return await fetch("HEAD", args);
     });
     runtime.onMessage('http_get', (dynamic args) async {
-      return await _toHttpResponse(client(), "GET", args);
+      return await fetch("GET", args);
     });
     runtime.onMessage('http_post', (dynamic args) async {
-      return await _toHttpResponse(client(), "POST", args);
+      return await fetch("POST", args);
     });
     runtime.onMessage('http_put', (dynamic args) async {
-      return await _toHttpResponse(client(), "PUT", args);
+      return await fetch("PUT", args);
     });
     runtime.onMessage('http_delete', (dynamic args) async {
-      return await _toHttpResponse(client(), "DELETE", args);
+      return await fetch("DELETE", args);
     });
     runtime.onMessage('http_patch', (dynamic args) async {
-      return await _toHttpResponse(client(), "PATCH", args);
+      return await fetch("PATCH", args);
     });
     runtime.evaluate('''
 class Response {
