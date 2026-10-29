@@ -90,7 +90,7 @@ class ShosetsuExtensionApi : ExtensionApi, ExtensionBridgeApi {
             encode(
                 mapOf(
                     "list" to novels.map { it.toListMap(ext) },
-                    "hasNextPage" to listing.isIncrementing,
+                    "hasNextPage" to (listing.isIncrementing && novels.isNotEmpty()),
                 ),
             )
         }
@@ -107,7 +107,7 @@ class ShosetsuExtensionApi : ExtensionApi, ExtensionBridgeApi {
             encode(
                 mapOf(
                     "list" to novels.map { it.toListMap(ext) },
-                    "hasNextPage" to listing.isIncrementing,
+                    "hasNextPage" to (listing.isIncrementing && novels.isNotEmpty()),
                 ),
             )
         }
@@ -135,7 +135,7 @@ class ShosetsuExtensionApi : ExtensionApi, ExtensionBridgeApi {
         encode(
             mapOf(
                 "list" to novels.map { it.toListMap(ext) },
-                "hasNextPage" to ext.isSearchIncrementing,
+                "hasNextPage" to (ext.isSearchIncrementing && novels.isNotEmpty()),
             ),
         )
     }
