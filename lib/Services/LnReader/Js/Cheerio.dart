@@ -19,7 +19,7 @@ class JsCheerio {
       final doc = parse(html);
       _elementKey++;
       _elements[_elementKey] = doc.body;
-      return _elementKey;
+      return jsonEncode(_elementKey);
     });
 
     runtime.onMessage('element_call', (dynamic args) {
@@ -381,7 +381,7 @@ class ElementCollection {
 }
 
 function load(html) {
-  const rootKey = sendMessage("load", JSON.stringify([html]));
+  const rootKey = JSON.parse(sendMessage("load", JSON.stringify([html])));
   const root = new Element(rootKey);
 
   const \$ = function(input) {
