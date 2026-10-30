@@ -94,7 +94,7 @@ class AniyomiExtensions extends Extension
   }
 
   @override
-  Set<String> get schemes => {"aniyomi", "tachiyomi"};
+  Set<String> get schemes => {"aniyomi", "tachiyomi", "mihon"};
 
   @override
   void handleSchemes(Uri uri) {

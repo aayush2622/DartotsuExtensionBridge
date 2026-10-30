@@ -95,7 +95,7 @@ class AniyomiDesktopExtensions extends Extension
       loadInstalledJavaSources(method, type, AdSource.fromJson);
 
   @override
-  Set<String> get schemes => {"aniyomi", "tachiyomi"};
+  Set<String> get schemes => {"aniyomi", "tachiyomi", "mihon"};
 
   @override
   void handleSchemes(Uri uri) {}

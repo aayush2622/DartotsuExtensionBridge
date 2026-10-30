@@ -262,8 +262,8 @@ mixin AndroidApkInstallMixin on Extension {
           Logger.log('Private extension file not found: ${s.pkgName}');
         }
 
-        _refreshAvailable(type);
         await fetchInstalledExtensions(type);
+        _refreshAvailable(type);
         detectUpdates(state(type).rawAvailable.value, type);
         return;
       }
@@ -281,8 +281,8 @@ mixin AndroidApkInstallMixin on Extension {
           type,
         ).installed.value.where((e) => e.id != s.id).toList();
 
-        _refreshAvailable(type);
         await fetchInstalledExtensions(type);
+        _refreshAvailable(type);
         detectUpdates(state(type).rawAvailable.value, type);
         return;
       }
@@ -310,8 +310,8 @@ mixin AndroidApkInstallMixin on Extension {
 
       Logger.log('Uninstalled shared extension: $packageName');
 
-      _refreshAvailable(type);
       await fetchInstalledExtensions(type);
+      _refreshAvailable(type);
       detectUpdates(state(type).rawAvailable.value, type);
     } catch (e) {
       Logger.log('Error uninstalling source: $e');
