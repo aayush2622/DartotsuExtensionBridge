@@ -597,7 +597,8 @@ class ElementCollection {
   }
 
   eq(index) {
-    return new ElementCollection([this.get(index)], this);
+    const el = this.elements[index < 0 ? this.elements.length + index : index];
+    return new ElementCollection(el !== undefined ? [el] : [], this);
   }
 
   index() {
@@ -606,7 +607,8 @@ class ElementCollection {
   }
 
   closest(selector) {
-    return new ElementCollection(this.elements.map(el => el.closest(selector)), this);
+    const found = this.elements.map(el => el.closest(selector)).filter(el => el._key != null);
+    return new ElementCollection(found, this);
   }
 
   parents(selector) {
@@ -640,18 +642,18 @@ class ElementCollection {
   }
 
   parent() {
-    const parents = this.elements.map(el => el.parent());
-    return new ElementCollection(parents);
+    const parents = this.elements.map(el => el.parent()).filter(el => el._key != null);
+    return new ElementCollection(parents, this);
   }
 
   next() {
-    const nextEls = this.elements.map(el => el.next());
-    return new ElementCollection(nextEls);
+    const nextEls = this.elements.map(el => el.next()).filter(el => el._key != null);
+    return new ElementCollection(nextEls, this);
   }
 
   prev() {
-    const prevEls = this.elements.map(el => el.prev());
-    return new ElementCollection(prevEls);
+    const prevEls = this.elements.map(el => el.prev()).filter(el => el._key != null);
+    return new ElementCollection(prevEls, this);
   }
 
   clone() {
