@@ -8,10 +8,16 @@ import 'DomSelector.dart';
 
 class JsCheerio {
   late JavascriptRuntime runtime;
-  final Map<int, Element?> _elements = {};
+  final Map<int, Node?> _elements = {};
   int _elementKey = 0;
 
   JsCheerio(this.runtime);
+
+  int _register(Node node) {
+    _elementKey++;
+    _elements[_elementKey] = node;
+    return _elementKey;
+  }
 
   void init() {
     runtime.onMessage('load', (dynamic args) {
@@ -31,6 +37,13 @@ class JsCheerio {
         switch (method) {
           case 'find':
           case 'children':
+          case 'contents':
+          case 'parents':
+          case 'siblings':
+          case 'nextAll':
+          case 'prevAll':
+          case 'nextUntil':
+          case 'prevUntil':
             return jsonEncode(<int>[]);
           case 'hasClass':
           case 'is':
@@ -42,12 +55,16 @@ class JsCheerio {
           case 'val':
           case 'attr':
             return '';
+          case 'index':
+            return jsonEncode(-1);
           case 'parent':
           case 'next':
           case 'prev':
           case 'first':
           case 'last':
           case 'clone':
+          case 'closest':
+          case 'nodeType':
             return jsonEncode(null);
           default:
             return null;
@@ -64,19 +81,19 @@ class JsCheerio {
           break;
         case 'html':
         case 'innerHtml':
-          result = element.innerHtml;
+          result = element is Element ? element.innerHtml : '';
           break;
         case 'outerHtml':
-          result = element.outerHtml;
+          result = element is Element ? element.outerHtml : (element.text ?? '');
           break;
         case 'addClass':
-          element.classes.add(methodArgs[0]);
+          if (element is Element) element.classes.add(methodArgs[0]);
           break;
         case 'removeClass':
-          element.classes.remove(methodArgs[0]);
+          if (element is Element) element.classes.remove(methodArgs[0]);
           break;
         case 'hasClass':
-          result = element.classes.contains(methodArgs[0]);
+          result = element is Element && element.classes.contains(methodArgs[0]);
           break;
         case 'attr':
           result = element.attributes[methodArgs[0]] ?? '';
@@ -112,13 +129,15 @@ class JsCheerio {
           }
           return jsonEncode(null);
         case 'find':
+          if (element is! Element) {
+            result = jsonEncode(<int>[]);
+            break;
+          }
           final selector = methodArgs[0];
           final elements = element.select(selector);
           List<int> keys = [];
           for (var el in elements ?? []) {
-            _elementKey++;
-            _elements[_elementKey] = el;
-            keys.add(_elementKey);
+            keys.add(_register(el));
           }
           result = jsonEncode(keys);
           break;
@@ -139,29 +158,22 @@ class JsCheerio {
           }
           return jsonEncode(null);
         case 'next':
-          final next = element.nextElementSibling;
+          final next = element is Element ? element.nextElementSibling : null;
           if (next != null) {
-            _elementKey++;
-            _elements[_elementKey] = next;
-            return jsonEncode(_elementKey);
+            return jsonEncode(_register(next));
           }
           return jsonEncode(null);
         case 'prev':
-          final prev = element.previousElementSibling;
+          final prev = element is Element ? element.previousElementSibling : null;
           if (prev != null) {
-            _elementKey++;
-            _elements[_elementKey] = prev;
-            return jsonEncode(_elementKey);
+            return jsonEncode(_register(prev));
           }
           return jsonEncode(null);
         case 'clone':
           final cloned = element.clone(true);
-          _elementKey++;
-          _elements[_elementKey] = cloned;
-          return jsonEncode(_elementKey);
+          return jsonEncode(_register(cloned));
         case 'is':
-          final selector = methodArgs[0] as String;
-          result = elementMatches(element, selector);
+          result = element is Element && elementMatches(element, methodArgs[0] as String);
           break;
         case 'append':
           final htmlToAppend = methodArgs[0];
@@ -183,6 +195,137 @@ class JsCheerio {
         case 'remove':
           element.remove();
           break;
+        case 'nodeType':
+          return jsonEncode(element.nodeType);
+        case 'contents':
+          if (element is! Element) {
+            return jsonEncode(<int>[]);
+          }
+          result = jsonEncode([for (final n in element.nodes) _register(n)]);
+          break;
+        case 'replaceWith':
+        case 'before':
+        case 'after':
+          final parent = element.parentNode;
+          if (parent != null) {
+            final idx = parent.nodes.indexOf(element);
+            if (idx != -1) {
+              final fragment = parseFragment(methodArgs[0]?.toString() ?? '');
+              final newNodes = fragment.nodes.toList();
+              if (method == 'replaceWith') {
+                parent.nodes.removeAt(idx);
+                parent.nodes.insertAll(idx, newNodes);
+              } else if (method == 'before') {
+                parent.nodes.insertAll(idx, newNodes);
+              } else {
+                parent.nodes.insertAll(idx + 1, newNodes);
+              }
+            }
+          }
+          break;
+        case 'index':
+          if (element is Element) {
+            final parent = element.parent;
+            if (parent != null) {
+              return jsonEncode(parent.children.indexOf(element));
+            }
+          }
+          return jsonEncode(-1);
+        case 'siblings':
+          if (element is! Element || element.parent == null) {
+            return jsonEncode(<int>[]);
+          }
+          result = jsonEncode([
+            for (final sib in element.parent!.children)
+              if (sib != element) _register(sib),
+          ]);
+          break;
+        case 'nextAll':
+          if (element is! Element) {
+            return jsonEncode(<int>[]);
+          }
+          {
+            final keys = <int>[];
+            var cur = element.nextElementSibling;
+            while (cur != null) {
+              keys.add(_register(cur));
+              cur = cur.nextElementSibling;
+            }
+            result = jsonEncode(keys);
+          }
+          break;
+        case 'prevAll':
+          if (element is! Element) {
+            return jsonEncode(<int>[]);
+          }
+          {
+            final keys = <int>[];
+            var cur = element.previousElementSibling;
+            while (cur != null) {
+              keys.add(_register(cur));
+              cur = cur.previousElementSibling;
+            }
+            result = jsonEncode(keys.reversed.toList());
+          }
+          break;
+        case 'nextUntil':
+          if (element is! Element) {
+            return jsonEncode(<int>[]);
+          }
+          {
+            final selector = methodArgs.isNotEmpty ? methodArgs[0] as String? : null;
+            final keys = <int>[];
+            var cur = element.nextElementSibling;
+            while (cur != null) {
+              if (selector != null && elementMatches(cur, selector)) break;
+              keys.add(_register(cur));
+              cur = cur.nextElementSibling;
+            }
+            result = jsonEncode(keys);
+          }
+          break;
+        case 'prevUntil':
+          if (element is! Element) {
+            return jsonEncode(<int>[]);
+          }
+          {
+            final selector = methodArgs.isNotEmpty ? methodArgs[0] as String? : null;
+            final keys = <int>[];
+            var cur = element.previousElementSibling;
+            while (cur != null) {
+              if (selector != null && elementMatches(cur, selector)) break;
+              keys.add(_register(cur));
+              cur = cur.previousElementSibling;
+            }
+            result = jsonEncode(keys.reversed.toList());
+          }
+          break;
+        case 'parents':
+          {
+            final selector = methodArgs.isNotEmpty ? methodArgs[0] as String? : null;
+            final keys = <int>[];
+            var cur = element.parent;
+            while (cur != null) {
+              if (selector == null || elementMatches(cur, selector)) {
+                keys.add(_register(cur));
+              }
+              cur = cur.parent;
+            }
+            result = jsonEncode(keys);
+          }
+          break;
+        case 'closest':
+          {
+            final selector = methodArgs[0] as String;
+            Element? cur = element is Element ? element : element.parent;
+            while (cur != null) {
+              if (elementMatches(cur, selector)) {
+                return jsonEncode(_register(cur));
+              }
+              cur = cur.parent;
+            }
+            return jsonEncode(null);
+          }
         default:
           result = 'Unsupported method: $method';
       }
@@ -255,11 +398,71 @@ class Element {
   is(selector) {
     return this._call("is", [selector]);
   }
+
+  get nodeType() {
+    return JSON.parse(this._call("nodeType"));
+  }
+
+  contents() {
+    const keys = JSON.parse(this._call("contents"));
+    return new ElementCollection(keys.map(k => new Element(k)), new ElementCollection([this]));
+  }
+
+  replaceWith(html) { this._call("replaceWith", [html]); return this; }
+  before(html) { this._call("before", [html]); return this; }
+  after(html) { this._call("after", [html]); return this; }
+
+  index() { return JSON.parse(this._call("index")); }
+
+  siblings(selector) {
+    const keys = JSON.parse(this._call("siblings"));
+    let els = keys.map(k => new Element(k));
+    if (selector) els = els.filter(el => el.is(selector));
+    return new ElementCollection(els, new ElementCollection([this]));
+  }
+
+  nextAll(selector) {
+    const keys = JSON.parse(this._call("nextAll"));
+    let els = keys.map(k => new Element(k));
+    if (selector) els = els.filter(el => el.is(selector));
+    return new ElementCollection(els, new ElementCollection([this]));
+  }
+
+  prevAll(selector) {
+    const keys = JSON.parse(this._call("prevAll"));
+    let els = keys.map(k => new Element(k));
+    if (selector) els = els.filter(el => el.is(selector));
+    return new ElementCollection(els, new ElementCollection([this]));
+  }
+
+  nextUntil(selector) {
+    const keys = JSON.parse(this._call("nextUntil", [selector]));
+    return new ElementCollection(keys.map(k => new Element(k)), new ElementCollection([this]));
+  }
+
+  prevUntil(selector) {
+    const keys = JSON.parse(this._call("prevUntil", [selector]));
+    return new ElementCollection(keys.map(k => new Element(k)), new ElementCollection([this]));
+  }
+
+  parents(selector) {
+    const keys = JSON.parse(this._call("parents", [selector || null]));
+    return new ElementCollection(keys.map(k => new Element(k)), new ElementCollection([this]));
+  }
+
+  closest(selector) {
+    return new Element(JSON.parse(this._call("closest", [selector])));
+  }
+
+  prop(name) { return this._call("attr", [name]); }
+
+  css(name, value) { return value === undefined ? "" : this; }
 }
 
 class ElementCollection {
-  constructor(elements) {
+  constructor(elements, prevObject = null) {
     this.elements = elements;
+    this.prevObject = prevObject;
   }
 
   text() {
@@ -353,7 +556,7 @@ class ElementCollection {
       const keys = JSON.parse(el._call("find", [selector]));
       return keys.map(k => new Element(k));
     });
-    return new ElementCollection(found);
+    return new ElementCollection(found, this);
   }
 
   children() {
@@ -361,7 +564,79 @@ class ElementCollection {
       const keys = JSON.parse(el._call("children"));
       return keys.map(k => new Element(k));
     });
-    return new ElementCollection(children);
+    return new ElementCollection(children, this);
+  }
+
+  contents() {
+    const all = this.elements.flatMap(el => el.contents().toArray());
+    return new ElementCollection(all, this);
+  }
+
+  addBack(selector) {
+    const prev = this.prevObject;
+    if (!prev) return this;
+    let merged = [...prev.elements, ...this.elements];
+    if (selector) merged = merged.filter(el => el.is(selector));
+    return new ElementCollection(merged, this);
+  }
+
+  replaceWith(html) { this.elements.forEach(el => el.replaceWith(html)); return this; }
+  before(html) { this.elements.forEach(el => el.before(html)); return this; }
+  after(html) { this.elements.forEach(el => el.after(html)); return this; }
+
+  not(selector) {
+    return new ElementCollection(this.elements.filter(el => !el.is(selector)), this);
+  }
+
+  add(other) {
+    let extra = [];
+    if (other instanceof ElementCollection) extra = other.elements;
+    else if (other instanceof Element) extra = [other];
+    else if (Array.isArray(other)) extra = other;
+    return new ElementCollection([...this.elements, ...extra]);
+  }
+
+  eq(index) {
+    return new ElementCollection([this.get(index)], this);
+  }
+
+  index() {
+    const first = this.first();
+    return first ? first.index() : -1;
+  }
+
+  closest(selector) {
+    return new ElementCollection(this.elements.map(el => el.closest(selector)), this);
+  }
+
+  parents(selector) {
+    const all = this.elements.flatMap(el => el.parents(selector).toArray());
+    return new ElementCollection(all, this);
+  }
+
+  siblings(selector) {
+    const all = this.elements.flatMap(el => el.siblings(selector).toArray());
+    return new ElementCollection(all, this);
+  }
+
+  nextAll(selector) {
+    const all = this.elements.flatMap(el => el.nextAll(selector).toArray());
+    return new ElementCollection(all, this);
+  }
+
+  prevAll(selector) {
+    const all = this.elements.flatMap(el => el.prevAll(selector).toArray());
+    return new ElementCollection(all, this);
+  }
+
+  prop(name) {
+    return this.first()?.prop(name);
+  }
+
+  css(name, value) {
+    if (value === undefined) return "";
+    this.elements.forEach(el => el.css(name, value));
+    return this;
   }
 
   parent() {
