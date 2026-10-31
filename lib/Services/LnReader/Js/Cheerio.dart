@@ -356,7 +356,10 @@ class Element {
   html() { return this._call("html"); }
   outerHtml() { return this._call("outerHtml"); }
   val() { return this._call("val"); }
-  attr(name) { return this._call("attr", [name]); }
+  attr(name, value) {
+    if (value !== undefined) return this.setAttr(name, value);
+    return this._call("attr", [name]);
+  }
   hasClass(cls) { return this._call("hasClass", [cls]); }
 
   addClass(cls) { this._call("addClass", [cls]); return this; }
@@ -492,7 +495,11 @@ class ElementCollection {
     return this.get(0).outerHtml();
   }
 
-  attr(name) {
+  attr(name, value) {
+    if (value !== undefined) {
+      this.elements.forEach(el => el.attr(name, value));
+      return this;
+    }
     return this.get(0).attr(name);
   }
 
@@ -591,6 +598,10 @@ class ElementCollection {
     let merged = [...prev.elements, ...this.elements];
     if (selector) merged = merged.filter(el => el.is(selector));
     return new ElementCollection(merged, this);
+  }
+
+  end() {
+    return this.prevObject || this;
   }
 
   replaceWith(html) { this.elements.forEach(el => el.replaceWith(html)); return this; }
@@ -726,13 +737,20 @@ function load(html) {
     }
   };
 
-  \$.html = function() {
-    return root.html();
+  \$.html = function(selector) {
+    if (selector === undefined) return root.html();
+    const sel = selector instanceof Element || selector instanceof ElementCollection
+      ? selector
+      : \$(selector);
+    if (sel instanceof Element) return sel.outerHtml();
+    return sel.elements.map(el => el.outerHtml()).join("");
   };
   \$.text = function() {
     return root.text();
   };
-  \$.root = root;
+  \$.root = function() {
+    return root;
+  };
   \$.Element = Element;
   \$.Collection = ElementCollection;
 
