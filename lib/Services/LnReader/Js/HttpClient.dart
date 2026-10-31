@@ -70,12 +70,29 @@ class Headers {
   has(name) {
     return Object.prototype.hasOwnProperty.call(this._map, String(name).toLowerCase());
   }
+  set(name, value) {
+    this._map[String(name).toLowerCase()] = String(value);
+  }
+  append(name, value) {
+    const key = String(name).toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(this._map, key)) {
+      this._map[key] += ", " + value;
+    } else {
+      this._map[key] = String(value);
+    }
+  }
+  delete(name) {
+    delete this._map[String(name).toLowerCase()];
+  }
   forEach(fn) {
     for (const k in this._map) fn(this._map[k], k, this);
   }
   entries() {
     const map = this._map;
     return Object.keys(map).map(function(k) { return [k, map[k]]; });
+  }
+  toJSON() {
+    return this._map;
   }
 }
 
@@ -125,6 +142,10 @@ async function fetchApi(url, init) {
   return new Response(url, result);
 }
 
+// Some plugins call the bare global `fetch` instead of @libs/fetch's
+// `fetchApi` - same Fetch API shape, so alias it.
+var fetch = fetchApi;
+
 // @libs/fetch also exports fetchText: a `.text()` shortcut that never throws.
 async function fetchText(url, init, _encoding) {
   try {
@@ -159,7 +180,7 @@ Future<String> _toHttpResponse(Client client, String method, List args) async {
         "application/json",
       )) ??
       false) {
-    request.body = json.encode(body);
+    request.body = body is String ? body : json.encode(body);
     request.headers.addAll(headers);
     http.StreamedResponse response = await client.send(request);
     final res = Response(
