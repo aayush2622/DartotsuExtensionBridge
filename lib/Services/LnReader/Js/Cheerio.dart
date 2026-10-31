@@ -673,7 +673,11 @@ class ElementCollection {
   }
 
   get(index) {
-    const el = this.elements[index];
+    if (index === undefined) {
+      return this.elements;
+    }
+    const i = index < 0 ? this.elements.length + index : index;
+    const el = this.elements[i];
     return el !== undefined ? el : new Element(null);
   }
 
