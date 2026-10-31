@@ -67,6 +67,19 @@ abstract class DownloadablePlugin {
 
   final RxDouble progress = 0.0.obs;
   final RxBool downloading = false.obs;
+  final RxnString error = RxnString();
+  final RxInt receivedBytes = 0.obs;
+  final RxInt totalBytes = 0.obs;
+  final RxDouble speed = 0.0.obs;
+
+  bool _cancelled = false;
+  http.Client? _transfer;
+
+  void cancel() {
+    if (!downloading.value) return;
+    _cancelled = true;
+    _transfer?.close();
+  }
 
   static const _indexUrlKey = "plugin_index_url";
 
@@ -192,31 +205,57 @@ abstract class DownloadablePlugin {
     return remote != null;
   }
 
-  Future<void> download() async {
-    if (await isInstalled() || downloading.value) return;
+  Future<bool> download() async {
+    if (await isInstalled() || downloading.value) return false;
 
     final remote = await fetchRemote();
     if (remote == null) {
       Logger.log("$name not found in plugin index", show: true);
-      return;
+      error.value = "$name is not in the plugin index";
+      return false;
     }
 
-    downloading.value = true;
-    progress.value = 0;
-
+    _begin();
     Logger.log("Downloading $name plugin", show: true);
 
     try {
       await _download(remote["downloadUrl"], remote["versionCode"] ?? 0);
       installed.value = true;
+      return true;
     } catch (e) {
-      Logger.log("$name download failed: $e");
-      // Otherwise progress is left stuck at whatever partial fraction the
-      // failed attempt reached until the next successful download.
-      progress.value = 0;
+      _fail(e);
+      return false;
     } finally {
-      downloading.value = false;
+      _end();
     }
+  }
+
+  void _begin() {
+    _cancelled = false;
+    error.value = null;
+    downloading.value = true;
+    progress.value = 0;
+    receivedBytes.value = 0;
+    totalBytes.value = 0;
+    speed.value = 0;
+  }
+
+  void _end() {
+    _transfer?.close();
+    _transfer = null;
+    speed.value = 0;
+    downloading.value = false;
+  }
+
+  void _fail(Object e) {
+    Logger.log("$name download failed: $e");
+    progress.value = 0;
+    error.value = _cancelled ? null : _describe(e);
+  }
+
+  static String _describe(Object e) {
+    final text = e.toString().replaceFirst("Exception: ", "");
+    return text.isEmpty ? "Download failed" : text;
   }
 
   Future<void> delete() async {
@@ -262,18 +301,16 @@ abstract class DownloadablePlugin {
     // the exact same underlying transfer silently, so a UI observing those
     // two Rx values (e.g. a progress bar) never lit up for a background
     // update even though bytes were moving.
-    downloading.value = true;
-    progress.value = 0;
+    _begin();
 
     try {
       await _download(remote["downloadUrl"], remoteVersion);
       updateAvailable.value = false;
     } catch (e) {
-      Logger.log("$name update failed: $e");
-      progress.value = 0;
+      _fail(e);
       rethrow;
     } finally {
-      downloading.value = false;
+      _end();
     }
 
     try {
@@ -331,6 +368,8 @@ abstract class DownloadablePlugin {
       var resumeFrom = await temp.exists() ? await temp.length() : 0;
 
       final request = http.Request("GET", Uri.parse(url));
+      _transfer?.close();
+      final client = _transfer = MClient.init();
 
       if (resumeFrom > 0) {
         request.headers["Range"] = "bytes=$resumeFrom-";
@@ -338,7 +377,7 @@ abstract class DownloadablePlugin {
       }
 
       try {
-        final response = await _client.send(request);
+        final response = await client.send(request);
 
         if (response.statusCode != 200 && response.statusCode != 206) {
           throw Exception("Download failed (${response.statusCode})");
@@ -355,17 +394,33 @@ abstract class DownloadablePlugin {
         );
 
         int received = resumeFrom;
+        var windowStart = DateTime.now();
+        var windowBytes = 0;
 
         final int? total = resuming
             ? (response.contentLength == null
                   ? null
                   : resumeFrom + response.contentLength!)
             : response.contentLength;
+        totalBytes.value = total ?? 0;
+        receivedBytes.value = received;
 
         try {
           await for (final chunk in response.stream) {
             sink.add(chunk);
             received += chunk.length;
+            windowBytes += chunk.length;
+            receivedBytes.value = received;
+
+            final elapsed = DateTime.now().difference(windowStart);
+            if (elapsed >= const Duration(milliseconds: 600)) {
+              final rate = windowBytes / (elapsed.inMilliseconds / 1000);
+              speed.value = speed.value == 0
+                  ? rate
+                  : speed.value * 0.6 + rate * 0.4;
+              windowStart = DateTime.now();
+              windowBytes = 0;
+            }
 
             if (total != null && total > 0) {
               progress.value = received / total;
@@ -412,6 +467,7 @@ abstract class DownloadablePlugin {
         Logger.log("$name:v$version installed", show: true);
         return;
       } catch (e) {
+        if (_cancelled) throw Exception("Cancelled");
         retries++;
 
         Logger.log("$name download interrupted ($retries/$maxRetries): $e");
