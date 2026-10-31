@@ -26,11 +26,19 @@ class SidecarBridge implements JavaBridge {
   // Remembered so `call()` can restart a sidecar that died or never started.
   String? _pluginJarPath;
 
+  List<String> _libraryJarPaths = const [];
+
+  static const _mainClass = 'com.aayush262.dartotsu_extension_bridge.Main';
+
   Future<void>? _starting;
 
   @override
-  Future<void> init({required String pluginJarPath}) async {
+  Future<void> init({
+    required String pluginJarPath,
+    List<String> libraryJarPaths = const [],
+  }) async {
     _pluginJarPath = pluginJarPath;
+    _libraryJarPaths = libraryJarPaths;
     if (_initialized) return;
 
     // Concurrent callers share a single start instead of spawning several JVMs.
@@ -47,10 +55,19 @@ class SidecarBridge implements JavaBridge {
   }
 
   Future<void> _start(String pluginJarPath) async {
-    Logger.log('Starting sidecar: $pluginJarPath');
+    Logger.log(
+      'Starting sidecar: $pluginJarPath'
+      '${_libraryJarPaths.isEmpty ? '' : ' on ${_libraryJarPaths.join(', ')}'}',
+    );
     final javaPath = await JavaRuntimeManager.ensureInstalled();
 
     if (javaPath == null) throw Exception('Java runtime not found');
+
+    // -jar ignores -cp
+    final classpath = [
+      ..._libraryJarPaths,
+      pluginJarPath,
+    ].join(Platform.isWindows ? ';' : ':');
 
     final process = _process = await Process.start(javaPath, [
       '-Dfile.encoding=UTF-8',
@@ -58,8 +75,14 @@ class SidecarBridge implements JavaBridge {
       '-Dsun.stderr.encoding=UTF-8',
       '-Xms128m',
       '-Xmx3072m',
-      '-jar',
-      pluginJarPath,
+      if (_libraryJarPaths.isEmpty) ...[
+        '-jar',
+        pluginJarPath,
+      ] else ...[
+        '-cp',
+        classpath,
+        _mainClass,
+      ],
     ]);
 
     // The stdin sink can report write failures (e.g. broken pipe once the
@@ -141,7 +164,7 @@ class SidecarBridge implements JavaBridge {
       final jar = _pluginJarPath;
       if (jar == null) throw Exception('Sidecar bridge not initialized');
       Logger.log('Sidecar not running, restarting');
-      await init(pluginJarPath: jar);
+      await init(pluginJarPath: jar, libraryJarPaths: _libraryJarPaths);
     }
 
     try {
@@ -155,7 +178,7 @@ class SidecarBridge implements JavaBridge {
       }
       Logger.log('Sidecar died during "$method" ($e), restarting', show: true);
       try {
-        await init(pluginJarPath: jar);
+        await init(pluginJarPath: jar, libraryJarPaths: _libraryJarPaths);
         return await _callOnce<T>(method, args, throwError);
       } catch (e2) {
         if (throwError) rethrow;
@@ -260,7 +283,6 @@ class SidecarBridge implements JavaBridge {
     _pluginJarPath = null;
   }
 
-
   static const _exitTimeout = Duration(seconds: 10);
 
   @override
@@ -270,8 +292,7 @@ class SidecarBridge implements JavaBridge {
     if (process == null) return;
     try {
       await process.exitCode.timeout(_exitTimeout);
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 }
 

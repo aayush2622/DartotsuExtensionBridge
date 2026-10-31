@@ -17,6 +17,9 @@ class JavaRuntimeManager {
   static const _minJavaMajorVersion = 21;
 
   static String? _cachedJavaPath;
+  static bool _cancelled = false;
+
+  static void cancel() => _cancelled = true;
   static Future<String?>? _installFuture;
   static Future<Directory> get _runtimeDir async {
     final dir = await DartotsuExtensionBridge.context.getDirectory(
@@ -80,13 +83,20 @@ class JavaRuntimeManager {
     return null;
   }
 
-  static Future<String?> ensureInstalled() {
-    return _installFuture ??= _ensureInstalledImpl().whenComplete(() {
-      _installFuture = null;
-    });
+  static Future<String?> ensureInstalled({
+    void Function(int received, int total)? onProgress,
+    void Function()? onExtract,
+  }) {
+    return _installFuture ??= _ensureInstalledImpl(onProgress, onExtract)
+        .whenComplete(() {
+          _installFuture = null;
+        });
   }
 
-  static Future<String?> _ensureInstalledImpl() async {
+  static Future<String?> _ensureInstalledImpl(
+    void Function(int received, int total)? onProgress,
+    void Function()? onExtract,
+  ) async {
     final systemJava = await getSystemJavaPath();
 
     if (systemJava != null) {
@@ -99,11 +109,13 @@ class JavaRuntimeManager {
       return bundledJava;
     }
 
+    _cancelled = false;
     Logger.log('Installing Java Runtime...', show: true);
 
-    final archive = await _download();
+    final archive = await _download(onProgress);
 
     try {
+      onExtract?.call();
       await _extract(archive);
     } finally {
       if (await archive.exists()) {
@@ -146,7 +158,9 @@ class JavaRuntimeManager {
     return null;
   }
 
-  static Future<File> _download() async {
+  static Future<File> _download(
+    void Function(int received, int total)? onProgress,
+  ) async {
     final root = await _runtimeDir;
 
     final extension = _jreUrl.endsWith('.zip') ? 'zip' : 'tar.gz';
@@ -173,8 +187,14 @@ class JavaRuntimeManager {
     await for (final chunk in response.stream.timeout(
       const Duration(seconds: 60),
     )) {
+      if (_cancelled) {
+        await sink.close();
+        client.close();
+        throw Exception('Cancelled');
+      }
       downloaded += chunk.length;
       sink.add(chunk);
+      onProgress?.call(downloaded, total);
 
       final now = DateTime.now().millisecondsSinceEpoch;
 

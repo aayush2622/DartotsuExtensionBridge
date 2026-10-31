@@ -8,6 +8,7 @@ import '../../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../ExtensionBridge.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
+import '../../Shared/DesktopCorePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Extensions/Extensions.dart';
 import '../../../Extensions/SourceMethods.dart';
@@ -167,7 +168,7 @@ class CloudStreamDesktopExtensions extends Extension
   );
 }
 
-class CloudStreamDesktopPlugin extends DownloadablePlugin {
+class CloudStreamDesktopPlugin extends DesktopPlugin {
   @override
   String get name => "cloudStreamDesktop";
 

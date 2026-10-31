@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
+import '../../Shared/DesktopCorePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Extensions/ExtensionSettings.dart';
 import '../../../Network/MClient.dart';
@@ -18,7 +19,11 @@ import '../AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
 
 class AniyomiDesktopExtensions extends Extension
-    with JvmBackend, DesktopJvmBackend, TachiyomiRepoBackend, TachiyomiJavaDesktopExtension {
+    with
+        JvmBackend,
+        DesktopJvmBackend,
+        TachiyomiRepoBackend,
+        TachiyomiJavaDesktopExtension {
   @override
   String get id => 'aniyomi_desktop';
 
@@ -58,8 +63,6 @@ class AniyomiDesktopExtensions extends Extension
 
   @override
   bool get refreshExtensionCountOnFetch => true;
-
-
 
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
@@ -131,7 +134,7 @@ class AniyomiDesktopExtensions extends Extension
   );
 }
 
-class AniyomiDesktopPlugin extends DownloadablePlugin {
+class AniyomiDesktopPlugin extends DesktopPlugin {
   @override
   String get name => "aniyomiDesktop";
 

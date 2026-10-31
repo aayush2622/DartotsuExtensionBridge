@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../Extensions/DownloadablePlugin.dart';
+import '../Shared/DesktopCorePlugin.dart';
 import '../../Extensions/ExtensionBridge.dart';
 import '../../Logger.dart';
 import '../../Network/MClient.dart';
@@ -107,7 +108,7 @@ class ShosetsuDesktopExtensions extends Extension
   }
 }
 
-class ShosetsuDesktopPlugin extends DownloadablePlugin {
+class ShosetsuDesktopPlugin extends DesktopPlugin {
   @override
   String get name => "shosetsuDesktop";
 

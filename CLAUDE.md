@@ -44,14 +44,15 @@ ExtensionBridge` transport) — same base name, different directory.
 | File | Role |
 |---|---|
 | `ExtensionManager.dart` | GetX controller. Holds all `Extension` managers, the `current` map (`ItemType -> Extension`), and a `Source.runtimeType -> SourceMethods` factory table. `switchManager`, `createSourceMethods`, `get<T>()`/`find<T>()`. Adds `Source.methods` extension getter. |
-| `AddonManager.dart` | GetX service for `Addon`s (currently only `LibtorrentAddon`). Update checks. |
+| `AddonManager.dart` | GetX service for `Addon`s (TorrServer, FFmpeg, and the `JvmAddon` off Android). Update checks. |
 | `Extensions/Extensions.dart` | `abstract class Extension` — the per-ecosystem manager. Per-`ItemType` `ExtensionState` (installed/available/repos/languages as Rx). Repo CRUD, language filtering, version compare, init state machine (`InitState`, `ensureInitialized`). Also defines `Repo`. `enum ItemType { manga, anime, novel }` (that order — `anime.index == 1`) lives in `Models/Source.dart`. |
 | `Extensions/SourceMethods.dart` | `abstract class SourceMethods` — the uniform per-source API: `getPopular`, `getLatestUpdates`, `search`, `getDetail`, `getPageList`, `getVideoList`, `getNovelContent`, `getPreference`, `setPreference`. |
 | `Extensions/BridgeSourceMethods.dart` | `SourceMethods` base for backends that call across an `ExtensionBridge` (JSON marshalling of `DMedia`/`DEpisode`). Used by CloudStream + Aniyomi. |
 | `Extensions/ExtensionBridge.dart` | `abstract ExtensionBridge` + `MethodChannelBridge` (Android platform channel) and `JavaExtensionBridge` (wraps a `JavaBridge`: desktop sidecar / iOS embedded VM). |
-| `Extensions/DownloadablePlugin.dart` | Base for downloadable helper plugins (JAR/APK) resolved from `plugins.json`; resumable download with retry, tracks `installed`, `availableInRepo`, download `progress`. Each desktop backend subclasses it. |
+| `Extensions/DownloadablePlugin.dart` | Base for downloadable helper plugins (JAR/APK) resolved from `plugins.json`; resumable download with retry (a 4xx other than 408/429 is not retried), tracks `installed`, `availableInRepo`, download `progress`. The index is fetched once per session; `fetchRemote(forceRefresh:)` refetches it when older than 20 s and keeps the old copy if that fails. Each backend subclasses it (desktop ones through `DesktopPlugin`, see *Desktop core jar*). It `implements PluginDependency`: `step` is its own `InstallStep` (shares its progress Rx), `steps` is everything an install takes, dependencies first, set by `plan({minimum, refresh})` (no download: each step becomes waiting / up to date with size, version, `replaces`) which also sets `updateAvailable` (the plugin itself **or** a dependency is outdated). `dependencies` are what it needs next to it: `download()` / `update()` run each dependency's `ensure(minimum: requires[key], latest: true)` first, so an install takes any newer core too; `update()` also runs when only a dependency is outdated (the plugin file is then left alone and `onUpdated` not called). `autoUpdate()` updates dependencies before itself, `ensure(minimum:, latest:)` installs/updates once however many callers ask, `installDependencies()` is what a starting backend calls (never throws; without network a self-contained jar still starts), `classpath()` the files to put in front of it. |
 | `Extensions/ExtensionSettings.dart` | `ExtensionSetting` UI-model (`normal`/`switchType`/`slider`/`inputBox`) returned by `Extension.settings(context)`. |
 | `Extensions/Addon.dart` | `abstract class Addon` (install/uninstall/update/checkForUpdate). |
+| `Extensions/InstallStep.dart` | `InstallStep` (id `jre` / `core` / `plugin`, `StepStatus` waiting · checking · downloading · installing · done · upToDate · skipped · failed, live progress/bytes/speed, `version`, `replaces`, `detail`, `error`) and `PluginDependency` (`key`, `steps`, `plan`, `ensure`, `classpath`, `autoUpdate`, `cancel`), implemented by `DownloadablePlugin` and `JvmAddon`. |
 
 ### Data models (`lib/Models/`) — all plain JSON classes
 
@@ -143,7 +144,7 @@ already-parsed list to `fetchExtensions`, so adding doesn't fetch twice.
 | Dir | Purpose |
 |---|---|
 | `JavaScriptEngine/JsEngine.dart` | `JsEngineEnv` singleton wrapping a shared `flutter_qjs` `QuickJsRuntime2`. |
-| `JavaEngine/` | Talk to a JVM that hosts Aniyomi/CloudStream desktop runtime. `JavaBridgeServer.dart` (localhost HTTP, port 4567 — Kotlin `Logger` and cookie callbacks post here; started on desktop *and* iOS), `JavaInstaller.dart`. Transports implement `Bridge/JavaBridge.dart`: `Bridge/SidecarBridge.dart` (one `java -jar` process per backend, desktop), `Bridge/EmbeddedJvmBridge.dart` (iOS — one embedded interpreter-only OpenJDK Zero VM via method channel `dartotsu_extension_bridge/embedded_jvm`; native side in `ios/`, Kotlin entrypoint `EmbeddedBridge` in `runtimeManager/libraries/commonDesktopLib`, and `runtimeManager/EMBEDDED_IOS_NOTES.md`). `Bridge/JavaBridgeFactory.dart` picks per platform. No jnigen/`package:jni`: an in-process JVM is one-per-process, so desktop uses sidecars. iOS runs the **same desktop plugin JARs** (no `-ios` variant; `DownloadablePlugin` picks the `desktop` row) — only Chromium/JCEF WebView is unavailable there (`CefHelper` refuses on `-Ddartotsu.runtime=ios`). iOS JVM logging: HotSpot output (`vfprintf`/`exit`/`abort` hooks), Java stdout/stderr (`EmbeddedBridge.installLogCapture` → `nativeLog`) and uncaught exceptions go to `Logger` as `[JVM] …` and to `bridge/logs/jvm.log` (rotated to `jvm.previous.log` each start); fatal reports land in `bridge/logs/hs_err.log` and are logged on the next start. |
+| `JavaEngine/` | Talk to a JVM that hosts Aniyomi/CloudStream desktop runtime. `JavaBridgeServer.dart` (localhost HTTP, port 4567 — Kotlin `Logger` and cookie callbacks post here; started on desktop *and* iOS), `JavaInstaller.dart`. Transports implement `Bridge/JavaBridge.dart` (`init(pluginJarPath:, libraryJarPaths:)`): `Bridge/SidecarBridge.dart` (one Java process per backend, desktop: `java -cp <desktopCore>:<plugin> Main`, or `-jar` for a self-contained plugin), `Bridge/EmbeddedJvmBridge.dart` (iOS — one embedded interpreter-only OpenJDK Zero VM via method channel `dartotsu_extension_bridge/embedded_jvm`; native side in `ios/`, Kotlin entrypoint `EmbeddedBridge` in `runtimeManager/libraries/commonDesktopLib`, and `runtimeManager/EMBEDDED_IOS_NOTES.md`). `Bridge/JavaBridgeFactory.dart` picks per platform. No jnigen/`package:jni`: an in-process JVM is one-per-process, so desktop uses sidecars. iOS runs the **same desktop plugin JARs** and core jar (no `-ios` variant; `DownloadablePlugin` picks the `desktopSplit` row; `EmbeddedJvmBridge` passes `core.jar:plugin.jar` as the one `jarPath` string and `EmbeddedBridge.load` splits it into one class loader per backend) — only Chromium/JCEF WebView is unavailable there (`CefHelper` refuses on `-Ddartotsu.runtime=ios`). iOS JVM logging: HotSpot output (`vfprintf`/`exit`/`abort` hooks), Java stdout/stderr (`EmbeddedBridge.installLogCapture` → `nativeLog`) and uncaught exceptions go to `Logger` as `[JVM] …` and to `bridge/logs/jvm.log` (rotated to `jvm.previous.log` each start); fatal reports land in `bridge/logs/hs_err.log` and are logged on the next start. |
 | `TorrentEngine/` | libtorrent via `dart:ffi` (`ffi_bindings.dart`, `LibtorrentFlutter.dart` session + HTTP streaming server + tracker fetch, `LibTorrentAddon.dart` = the `Addon`, `Models.dart`). |
 | `WasmEngine/WasmEngine.dart` | `WasmEngine` - thin wrapper around `package:wasd` (pure-Dart WebAssembly runtime, no native binaries). One instance per wasm module (own linear memory/state), unlike `JsEngineEnv`'s shared singleton. Used by Aidoku; `instantiate(bytes, imports)` requires every host import the module declares to be supplied by the caller. `call(name, args)` is async - host imports (e.g. Aidoku's `net`) may do real I/O, and wasd's interpreter transparently switches an export to its async invocation path if any host import it calls is async. |
 
@@ -253,9 +254,64 @@ CloudStream desktop jar from a terminal (loads every `.cs3` in a folder, prints 
 ```
 ./runtimeManager/gradlew -p runtimeManager :cloudStream:cloudStreamDesktop:buildPlugin
 python3 runtimeManager/scripts/cloudstream_test.py \
-  runtimeManager/builds/cloudStreamDesktop/cloudStreamDesktop-plugin.jar plugins/ \
+  runtimeManager/builds/desktopCore/desktopCore-plugin.jar:runtimeManager/builds/cloudStreamDesktop/cloudStreamDesktop-split.jar plugins/ \
   --repo https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/builds/repo.json
 ```
+
+### Desktop core jar
+
+The six desktop backends are **thin plugin jars on top of one shared `desktopCore` jar**
+(`runtimeManager/libraries/desktopCore`, the shadow jar of `commonDesktopLib` and everything
+it pulls in: kotlin, okhttp, jsoup, ICU, dex2jar, the Android compat layer, `Server`,
+`ExtensionApi`). Before the split every plugin was a ~65 MB fat jar and 33,783 of ~34,000
+entries were identical across them; now the core is ~65 MB once and a plugin is 0.7-14 MB
+(aniyomi 0.7, tsundoku 0.9, kotatsu 1.4, shosetsu 3.6, ireader 7.5, cloudStream 14 - their
+own libraries such as graalvm/luaj/guava stay in them). Android is unchanged (separate APKs).
+
+- **Build.** Each `<backend>Desktop/build.gradle.kts` applies `desktop-plugin-build.gradle.kts`
+  (publishes the excludes through `extra`, because shadow's types are not visible to an applied
+  script) and configures its `shadowJar` to drop what the core already holds: a module the core
+  resolves at the same version (`desktopCoreShared`) and any file entry the core jar contains
+  (`desktopCoreEntry`, catches `files(...)` dependencies such as the Android jar; `META-INF` is
+  left alone so `mergeServiceFiles` keeps the plugin's own service files). The build fails when a
+  backend resolves a shared library at another version than the core (`desktopCoreCheck`), since
+  the core is first on the classpath and would silently win. All shadow jars are reproducible, so
+  an unchanged artifact keeps its hash, its version, and users don't re-download the core.
+- **Index and older app builds.** Every desktop backend is published **twice** so no app build
+  breaks: the self-contained jar older builds install (`<name>-plugin.jar`, `platform: desktop`,
+  built by each project's `fatJar` task with the original configuration, same name, layout and
+  version ledger as always, no `requires`) and the thin one (`<name>-split.jar`,
+  `platform: desktopSplit`, `requires: {"desktopCore": <minimum versionCode>}`). `desktopCore` has
+  no fat twin. A client picks its entry by `platform` (`desktop` before the split, `desktopSplit`
+  now) and by `name`; the remote `fileName` is never read, only the local file name matters, so a
+  new client keeps `<name>-plugin.jar` on disk: an old fat install counts as installed, and is
+  replaced by the thin file because the index version is higher or, failing that, the file size
+  differs from `fileSize`. With no `desktopSplit` entry (a custom index) a new client leaves what is
+  installed alone and starts it with `-jar`. `prepare_release.py` versions both sets by file name
+  (the split ledger starts at the fat one's), resolves `requires` and carries the unchanged ones
+  over. Dropping the fat set later is one change: delete the `fatJar` tasks. Tested against the
+  pre-split client code with the new index (it picks and installs the fat entries) and by
+  `test/extensions/plugin_dependency_test.dart` (old install → split).
+- **JVM addon.** `JvmAddon` (`Engines/JavaEngine/JvmAddon.dart`, id `jvm`, in `AddonManager`
+  and so in Settings › Addons) owns both halves of the Java side: the Java runtime (a system
+  Java 21+, else the bundled Temurin JRE `JavaRuntimeManager` downloads; desktop only, iOS runs an
+  embedded VM) and the `desktopCore` jar. Its steps are `[jre, core]`; the JRE download reports
+  bytes/speed and can be cancelled (`JavaRuntimeManager.cancel`). `uninstall()` stops every
+  attached sidecar, then deletes the core and the bundled JRE.
+- **Client.** `DesktopPlugin` (`Services/Shared/DesktopCorePlugin.dart`) lists `JvmAddon.instance`
+  as its only dependency, so installing a desktop backend is **three steps: Java runtime → core →
+  the backend**, and the core is updated first when the index has a newer one. Starting a backend
+  (`DesktopJvmBackend.startRuntime`) calls `plugin.installDependencies()` (repairs a missing JRE or
+  core, no update), `plugin.autoUpdate()` brings them current in the background, then it registers
+  with the core (`attach(release:, reload:)`) and starts the sidecar with
+  `libraryJarPaths: [core]`. A core update stops every attached sidecar first (the file is open in
+  each; Windows can't replace it) and restarts them on the new file.
+- **Tests.** `test/extensions/plugin_dependency_test.dart` and `test/engines/jvm_addon_test.dart`
+  (local fake release server and a fake bundled Java: plans, step order and states, reuse, a newer
+  core taken before the backend, a failing dependency, dependency-only updates, concurrent
+  callers, offline, uninstall), and
+  `test/engines/sidecar_split_classpath_test.dart` + `test/cloudstream_sidecar_test.dart` run the
+  real sidecar on `core:plugin` (they skip when the jars/JRE are not there).
 
 `runtimeManager/` (the JVM backend JARs, out of scope above) builds via
 `./gradlew buildEverything` (desktop + android + the `embedded-bridge.jar`

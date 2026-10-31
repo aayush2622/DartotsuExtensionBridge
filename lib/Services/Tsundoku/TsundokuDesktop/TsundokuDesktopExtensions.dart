@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
+import '../../Shared/DesktopCorePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Extensions/ExtensionSettings.dart';
 import '../../../Network/MClient.dart';
@@ -18,7 +19,11 @@ import '../TsundokuSourceMethods.dart';
 import 'Models/Source.dart';
 
 class TsundokuDesktopExtensions extends Extension
-    with JvmBackend, DesktopJvmBackend, TachiyomiRepoBackend, TachiyomiJavaDesktopExtension {
+    with
+        JvmBackend,
+        DesktopJvmBackend,
+        TachiyomiRepoBackend,
+        TachiyomiJavaDesktopExtension {
   @override
   String get id => 'tsundoku_desktop';
 
@@ -61,8 +66,6 @@ class TsundokuDesktopExtensions extends Extension
 
   @override
   bool get refreshExtensionCountOnFetch => true;
-
-
 
   @override
   Future<void> fetchInstalledNovelExtensions() async {
@@ -117,7 +120,7 @@ class TsundokuDesktopExtensions extends Extension
   );
 }
 
-class TsundokuDesktopPlugin extends DownloadablePlugin {
+class TsundokuDesktopPlugin extends DesktopPlugin {
   @override
   String get name => "tsundokuDesktop";
 

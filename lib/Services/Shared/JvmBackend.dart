@@ -9,6 +9,7 @@ import '../../Extensions/DownloadablePlugin.dart';
 import '../../Extensions/Extensions.dart';
 import '../../Logger.dart';
 import '../../Network/NativeNetwork.dart';
+import 'DesktopCorePlugin.dart';
 
 /// Startup and shutdown shared by every backend whose sources run on a JVM
 /// runtime plugin: the plugin must be installed, it auto-updates, the
@@ -55,7 +56,9 @@ mixin JvmBackend on Extension {
     try {
       await refreshInstalled();
     } catch (e, s) {
-      Logger.log('Error refreshing installed extensions for $id after a runtime reload: $e\n$s');
+      Logger.log(
+        'Error refreshing installed extensions for $id after a runtime reload: $e\n$s',
+      );
     }
   }
 
@@ -94,7 +97,15 @@ mixin DesktopJvmBackend on JvmBackend {
 
   @override
   Future<void> startRuntime(String pluginPath) async {
-    await java.init(pluginJarPath: pluginPath);
+    final libraries = await plugin!.installDependencies();
+    if (libraries.isNotEmpty) {
+      DesktopCorePlugin.instance.attach(
+        this,
+        release: releaseRuntimeFile,
+        reload: reloadRuntime,
+      );
+    }
+    await java.init(pluginJarPath: pluginPath, libraryJarPaths: libraries);
     final dir = await javaDataDirectory;
     await java.call<void>('initializeDesktop', {'path': dir!.path});
   }
@@ -104,7 +115,10 @@ mixin DesktopJvmBackend on JvmBackend {
       java.call<void>('initClient', {'data': data});
 
   @override
-  void stopRuntime() => java.dispose();
+  void stopRuntime() {
+    DesktopCorePlugin.instance.detach(this);
+    java.dispose();
+  }
 
   @override
   Future<void> releaseRuntimeFile() => java.disposeAndAwaitExit();
