@@ -6,6 +6,59 @@ class JsPolyfills {
 
   void init() {
     runtime.evaluate('''
+class TextEncoder {
+  encode(str) {
+    str = String(str === undefined ? "" : str);
+    const bytes = [];
+    for (let i = 0; i < str.length; i++) {
+      let code = str.codePointAt(i);
+      if (code > 0xFFFF) i++;
+      if (code < 0x80) {
+        bytes.push(code);
+      } else if (code < 0x800) {
+        bytes.push(0xC0 | (code >> 6), 0x80 | (code & 0x3F));
+      } else if (code < 0x10000) {
+        bytes.push(0xE0 | (code >> 12), 0x80 | ((code >> 6) & 0x3F), 0x80 | (code & 0x3F));
+      } else {
+        bytes.push(
+          0xF0 | (code >> 18),
+          0x80 | ((code >> 12) & 0x3F),
+          0x80 | ((code >> 6) & 0x3F),
+          0x80 | (code & 0x3F)
+        );
+      }
+    }
+    return new Uint8Array(bytes);
+  }
+}
+
+class TextDecoder {
+  constructor(encoding) {
+    this.encoding = encoding || "utf-8";
+  }
+  decode(bytes) {
+    if (bytes == null) return "";
+    const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    let result = "";
+    let i = 0;
+    while (i < arr.length) {
+      const byte1 = arr[i++];
+      let code;
+      if (byte1 < 0x80) {
+        code = byte1;
+      } else if ((byte1 & 0xE0) === 0xC0) {
+        code = ((byte1 & 0x1F) << 6) | (arr[i++] & 0x3F);
+      } else if ((byte1 & 0xF0) === 0xE0) {
+        code = ((byte1 & 0x0F) << 12) | ((arr[i++] & 0x3F) << 6) | (arr[i++] & 0x3F);
+      } else {
+        code = ((byte1 & 0x07) << 18) | ((arr[i++] & 0x3F) << 12) | ((arr[i++] & 0x3F) << 6) | (arr[i++] & 0x3F);
+      }
+      result += String.fromCodePoint(code);
+    }
+    return result;
+  }
+}
+
 (function() {
   var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
   globalThis.btoa = function(input) {
