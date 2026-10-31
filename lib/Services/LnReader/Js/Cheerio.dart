@@ -488,22 +488,22 @@ class ElementCollection {
   }
 
   each(fn) {
-    this.elements.forEach((el, i) => fn(i, el));
+    this.elements.forEach((el, i) => fn.call(el, i, el));
     return this;
   }
 
   map(fn) {
-    return new ElementCollection(this.elements.map((el, i) => fn(i, el)));
+    return new ElementCollection(this.elements.map((el, i) => fn.call(el, i, el)));
   }
 
   filter(fn) {
-    return new ElementCollection(this.elements.filter(function (el, i) {
+    return new ElementCollection(this.elements.filter((el, i) => {
       try {
-        return fn(i, el);
+        return fn.call(el, i, el);
       } catch (_) {
         return false;
       }
-    }));
+    }), this);
   }
 
   addClass(cls) {
