@@ -222,7 +222,11 @@ class _Host {
       persist: (ns, json) => main.send(['persist', ns, json]),
     ).init();
     rt.evaluate(_require);
-    rt.evaluate('$code\nconst extension = exports.default;');
+    final result = rt.evaluate('$code\nconst extension = exports.default;');
+    if (result.isError) {
+      rt.dispose();
+      throw Exception(result.stringResult);
+    }
     runtime = rt;
   }
 
