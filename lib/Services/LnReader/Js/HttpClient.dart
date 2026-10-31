@@ -52,6 +52,33 @@ class JsHttpClient {
       return await fetch("PATCH", args);
     });
     runtime.evaluate('''
+class Headers {
+  constructor(obj) {
+    this._map = {};
+    if (obj) {
+      for (const k in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, k)) {
+          this._map[k.toLowerCase()] = obj[k];
+        }
+      }
+    }
+  }
+  get(name) {
+    const v = this._map[String(name).toLowerCase()];
+    return v === undefined ? null : v;
+  }
+  has(name) {
+    return Object.prototype.hasOwnProperty.call(this._map, String(name).toLowerCase());
+  }
+  forEach(fn) {
+    for (const k in this._map) fn(this._map[k], k, this);
+  }
+  entries() {
+    const map = this._map;
+    return Object.keys(map).map(function(k) { return [k, map[k]]; });
+  }
+}
+
 class Response {
   constructor(url, result) {
     this.url = url;
@@ -70,7 +97,7 @@ class Response {
     return this.response.isRedirect;
   }
   get headers() {
-    return this.response.headers;
+    return new Headers(this.response.headers);
   }
   get body() {
     return this.response.body;
