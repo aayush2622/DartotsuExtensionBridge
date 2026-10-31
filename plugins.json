@@ -14,16 +14,32 @@
   },
   {
     "name": "aniyomiDesktop",
-    "versionCode": 31,
-    "versionName": "2.0.29",
+    "versionCode": 32,
+    "versionName": "2.0.30",
     "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1793435681563,
+    "createdAt": 1793473792560,
     "platform": "desktop",
     "type": "jar",
     "fileName": "aniyomiDesktop-plugin.jar",
-    "fileSize": 65373329,
+    "fileSize": 65375071,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiDesktop-plugin.jar"
+  },
+  {
+    "name": "aniyomiDesktop",
+    "versionCode": 32,
+    "versionName": "2.0.30",
+    "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
+    "author": "aayush262",
+    "createdAt": 1793473793636,
+    "platform": "desktopSplit",
+    "type": "jar",
+    "fileName": "aniyomiDesktop-split.jar",
+    "fileSize": 741095,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiDesktop-split.jar",
+    "requires": {
+      "desktopCore": 1
+    }
   },
   {
     "name": "cloudStreamAndroid",
@@ -40,16 +56,45 @@
   },
   {
     "name": "cloudStreamDesktop",
-    "versionCode": 26,
-    "versionName": "2.0.24",
+    "versionCode": 27,
+    "versionName": "2.0.25",
     "description": "A plugin that allows you to run cloudstream extensions on desktop",
     "author": "aayush262/Ryan",
-    "createdAt": 1793435697684,
+    "createdAt": 1793473805473,
     "platform": "desktop",
     "type": "jar",
     "fileName": "cloudStreamDesktop-plugin.jar",
-    "fileSize": 78677711,
+    "fileSize": 78680670,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/cloudStreamDesktop-plugin.jar"
+  },
+  {
+    "name": "cloudStreamDesktop",
+    "versionCode": 27,
+    "versionName": "2.0.25",
+    "description": "A plugin that allows you to run cloudstream extensions on desktop",
+    "author": "aayush262/Ryan",
+    "createdAt": 1793473807995,
+    "platform": "desktopSplit",
+    "type": "jar",
+    "fileName": "cloudStreamDesktop-split.jar",
+    "fileSize": 13930952,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/cloudStreamDesktop-split.jar",
+    "requires": {
+      "desktopCore": 1
+    }
+  },
+  {
+    "name": "desktopCore",
+    "versionCode": 1,
+    "versionName": "1.0.1",
+    "description": "The libraries and runtime shared by every desktop plugin (kotlin, okhttp, jsoup, ICU, dex2jar, the Android compat layer). Installed once; the desktop plugins load it on their classpath.",
+    "author": "aayush262",
+    "createdAt": 1793473841921,
+    "platform": "desktopSplit",
+    "type": "jar",
+    "fileName": "desktopCore-plugin.jar",
+    "fileSize": 64760265,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/desktopCore-plugin.jar"
   },
   {
     "name": "ireaderAndroid",
@@ -66,16 +111,32 @@
   },
   {
     "name": "ireaderDesktop",
-    "versionCode": 22,
-    "versionName": "2.0.20",
+    "versionCode": 23,
+    "versionName": "2.0.21",
     "description": "A plugin that allows you to run ireader extensions on desktop",
     "author": "aayush262",
-    "createdAt": 1793435714984,
+    "createdAt": 1793473824298,
     "platform": "desktop",
     "type": "jar",
     "fileName": "ireaderDesktop-plugin.jar",
-    "fileSize": 72256795,
+    "fileSize": 72259732,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/ireaderDesktop-plugin.jar"
+  },
+  {
+    "name": "ireaderDesktop",
+    "versionCode": 23,
+    "versionName": "2.0.21",
+    "description": "A plugin that allows you to run ireader extensions on desktop",
+    "author": "aayush262",
+    "createdAt": 1793473825157,
+    "platform": "desktopSplit",
+    "type": "jar",
+    "fileName": "ireaderDesktop-split.jar",
+    "fileSize": 7501120,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/ireaderDesktop-split.jar",
+    "requires": {
+      "desktopCore": 1
+    }
   },
   {
     "name": "kotatsuAndroid",
@@ -92,16 +153,32 @@
   },
   {
     "name": "kotatsuDesktop",
-    "versionCode": 22,
-    "versionName": "2.0.20",
+    "versionCode": 23,
+    "versionName": "2.0.21",
     "description": "A plugin that allows you to run kotatsu extensions on desktop",
     "author": "aayush262/Ryan",
-    "createdAt": 1793435735975,
+    "createdAt": 1793473841480,
     "platform": "desktop",
     "type": "jar",
     "fileName": "kotatsuDesktop-plugin.jar",
-    "fileSize": 66135966,
+    "fileSize": 66139120,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/kotatsuDesktop-plugin.jar"
+  },
+  {
+    "name": "kotatsuDesktop",
+    "versionCode": 23,
+    "versionName": "2.0.21",
+    "description": "A plugin that allows you to run kotatsu extensions on desktop",
+    "author": "aayush262/Ryan",
+    "createdAt": 1793473841867,
+    "platform": "desktopSplit",
+    "type": "jar",
+    "fileName": "kotatsuDesktop-split.jar",
+    "fileSize": 1379087,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/kotatsuDesktop-split.jar",
+    "requires": {
+      "desktopCore": 1
+    }
   },
   {
     "name": "shosetsuAndroid",
@@ -118,16 +195,32 @@
   },
   {
     "name": "shosetsuDesktop",
-    "versionCode": 2,
-    "versionName": "1.0.2",
+    "versionCode": 3,
+    "versionName": "1.0.3",
     "description": "A plugin that allows you to run Shosetsu extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1793435742521,
+    "createdAt": 1793473858928,
     "platform": "desktop",
     "type": "jar",
     "fileName": "shosetsuDesktop-plugin.jar",
-    "fileSize": 68261213,
+    "fileSize": 68262955,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/shosetsuDesktop-plugin.jar"
+  },
+  {
+    "name": "shosetsuDesktop",
+    "versionCode": 3,
+    "versionName": "1.0.3",
+    "description": "A plugin that allows you to run Shosetsu extensions on desktop using a custom runtime manager.",
+    "author": "aayush262",
+    "createdAt": 1793473859458,
+    "platform": "desktopSplit",
+    "type": "jar",
+    "fileName": "shosetsuDesktop-split.jar",
+    "fileSize": 3628903,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/shosetsuDesktop-split.jar",
+    "requires": {
+      "desktopCore": 1
+    }
   },
   {
     "name": "tsundokuAndroid",
@@ -144,15 +237,31 @@
   },
   {
     "name": "tsundokuDesktop",
-    "versionCode": 31,
-    "versionName": "2.0.29",
+    "versionCode": 32,
+    "versionName": "2.0.30",
     "description": "A plugin that allows you to run Tsundoku extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1793435754473,
+    "createdAt": 1793473870669,
     "platform": "desktop",
     "type": "jar",
     "fileName": "tsundokuDesktop-plugin.jar",
-    "fileSize": 65508980,
+    "fileSize": 65510722,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/tsundokuDesktop-plugin.jar"
+  },
+  {
+    "name": "tsundokuDesktop",
+    "versionCode": 32,
+    "versionName": "2.0.30",
+    "description": "A plugin that allows you to run Tsundoku extensions on desktop using a custom runtime manager.",
+    "author": "aayush262",
+    "createdAt": 1793473870963,
+    "platform": "desktopSplit",
+    "type": "jar",
+    "fileName": "tsundokuDesktop-split.jar",
+    "fileSize": 876746,
+    "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/tsundokuDesktop-split.jar",
+    "requires": {
+      "desktopCore": 1
+    }
   }
 ]
