@@ -33,7 +33,10 @@ List<Source> parseShosetsuRepoIndex((String body, String repoRoot) args) {
 
       final fileName = e['fileName']?.toString();
       final lang = e['lang']?.toString();
-      if (fileName == null || fileName.isEmpty || lang == null || lang.isEmpty) {
+      if (fileName == null ||
+          fileName.isEmpty ||
+          lang == null ||
+          lang.isEmpty) {
         continue;
       }
 

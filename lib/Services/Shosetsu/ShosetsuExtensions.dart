@@ -74,7 +74,10 @@ class ShosetsuExtensions extends Extension
     await super.fetchInstalledNovelExtensions();
     try {
       final dir = await extensionsDir;
-      final result = await platform.invokeMethod('getInstalledNovelExtensions', dir!.path);
+      final result = await platform.invokeMethod(
+        'getInstalledNovelExtensions',
+        dir!.path,
+      );
       novel.installed.value = (result as List)
           .map((e) => SsSource.fromJson(Map<String, dynamic>.from(e)))
           .toList(growable: false);

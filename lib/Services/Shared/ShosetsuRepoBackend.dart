@@ -64,10 +64,10 @@ mixin ShosetsuRepoBackend on Extension, SimpleInstalledSourceStore<SsSource> {
         '${root}index.json',
         timeout: const Duration(seconds: 15),
       );
-      final sources = await compute(
-        parseShosetsuRepoIndex,
-        (utf8.decode(bytes, allowMalformed: true), root),
-      );
+      final sources = await compute(parseShosetsuRepoIndex, (
+        utf8.decode(bytes, allowMalformed: true),
+        root,
+      ));
       await updateRepoExtensionCount(repo, type, sources.length);
       return sources;
     } catch (e) {
@@ -76,7 +76,8 @@ mixin ShosetsuRepoBackend on Extension, SimpleInstalledSourceStore<SsSource> {
     }
   }
 
-  File _scriptFile(Directory dir, String id) => File(p.join(dir.path, '$id.lua'));
+  File _scriptFile(Directory dir, String id) =>
+      File(p.join(dir.path, '$id.lua'));
 
   File _metaFile(Directory dir, String id) =>
       File(p.join(dir.path, '$id.lua.meta.json'));

@@ -101,11 +101,8 @@ class CloudflareSolver {
     Uri url, {
     bool interactive = true,
     bool retried = false,
-  }) async => (await attempt(
-    url,
-    interactive: interactive,
-    retried: retried,
-  )).cleared;
+  }) async =>
+      (await attempt(url, interactive: interactive, retried: retried)).cleared;
 
   /// [solve] with the reason it failed. [force] asks the user even right
   /// after they dismissed the page, for an attempt the user started.
@@ -267,10 +264,7 @@ class CloudflareSolver {
       );
     } catch (e) {
       Logger.log('[Cloudflare] Background WebView failed for ${url.host}: $e');
-      return const _Background(
-        _Outcome.unsolved,
-        CloudflareFailure.webView,
-      );
+      return const _Background(_Outcome.unsolved, CloudflareFailure.webView);
     } finally {
       try {
         await session?.close();

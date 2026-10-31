@@ -125,7 +125,10 @@ class MangayomiSourceMethods extends SourceMethods {
   Future<List<s.SourceFilter>> getFilterList() async {
     try {
       final data = await _call<FilterList>('getFilterList', const []);
-      return data.filters.map(_toGenericFilter).whereType<s.SourceFilter>().toList();
+      return data.filters
+          .map(_toGenericFilter)
+          .whereType<s.SourceFilter>()
+          .toList();
     } catch (e) {
       return [];
     }
@@ -138,11 +141,7 @@ class MangayomiSourceMethods extends SourceMethods {
         .map((e) => s.SourceFilter.fromJson(Map<String, dynamic>.from(e)))
         .map(_toMangayomiFilterJson)
         .toList();
-    final data = await _call<MPages>('search', [
-      query,
-      page,
-      mangayomiFilters,
-    ]);
+    final data = await _call<MPages>('search', [query, page, mangayomiFilters]);
     return Pages(hasNextPage: data.hasNextPage, list: _mapMediaList(data.list));
   }
 

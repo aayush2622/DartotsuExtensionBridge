@@ -58,10 +58,9 @@ class FfmpegAddon extends Addon {
 
   static void _cancelEmbedded() {
     try {
-      DynamicLibrary.process()
-          .lookupFunction<Void Function(), void Function()>(
-            'dartotsu_ffmpeg_cancel',
-          )();
+      DynamicLibrary.process().lookupFunction<Void Function(), void Function()>(
+        'dartotsu_ffmpeg_cancel',
+      )();
     } catch (_) {}
   }
 

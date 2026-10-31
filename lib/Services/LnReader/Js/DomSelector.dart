@@ -265,6 +265,12 @@ void _initPseudoSelector() {
     return index == n;
   }
 
+  bool hasClassToken(Element element, String? args) {
+    if (args == null) return false;
+    return element.classes.contains(args);
+  }
+
+  pseudom.PseudoSelector.handlers['hasclasstoken'] = hasClassToken;
   pseudom.PseudoSelector.handlers['nth-child'] = nthChild;
   pseudom.PseudoSelector.handlers['nth-last-child'] = nthLastChild;
   pseudom.PseudoSelector.handlers['nth-of-type'] = nthOfType;
@@ -294,8 +300,45 @@ void _initPseudoSelector() {
   pseudom.PseudoSelector.handlers['eq'] = eq;
 }
 
+final _classIdent = RegExp(r'[A-Za-z_-][A-Za-z0-9_-]*');
+
+String _rewriteClassSelectors(String selector) {
+  final buffer = StringBuffer();
+  var i = 0;
+  var bracketDepth = 0;
+  String? quote;
+  while (i < selector.length) {
+    final ch = selector[i];
+    if (quote != null) {
+      buffer.write(ch);
+      if (ch == quote) quote = null;
+      i++;
+      continue;
+    }
+    if (ch == '"' || ch == "'") {
+      quote = ch;
+      buffer.write(ch);
+      i++;
+      continue;
+    }
+    if (ch == '[') bracketDepth++;
+    if (ch == ']' && bracketDepth > 0) bracketDepth--;
+    if (ch == '.' && bracketDepth == 0) {
+      final match = _classIdent.matchAsPrefix(selector, i + 1);
+      if (match != null) {
+        buffer.write(':hasclasstoken(${match.group(0)})');
+        i = match.end;
+        continue;
+      }
+    }
+    buffer.write(ch);
+    i++;
+  }
+  return buffer.toString();
+}
+
 String _fixSelector(String selector) {
-  return selector.replaceAll(':not', ':inot');
+  return _rewriteClassSelectors(selector.replaceAll(':not', ':inot'));
 }
 
 bool _pseudoReady = false;

@@ -30,7 +30,8 @@ class BridgeWebView {
 
   static Future<Map<String, dynamic>> run(Map<String, dynamic> request) async {
     final url = Uri.parse(request['url'] as String);
-    final headers = (request['headers'] as Map?)?.map(
+    final headers =
+        (request['headers'] as Map?)?.map(
           (k, v) => MapEntry(k.toString(), v.toString()),
         ) ??
         const <String, String>{};
@@ -57,7 +58,9 @@ class BridgeWebView {
     }
 
     void seen(String requestUrl) {
-      if (intercept != null && matched == null && intercept.hasMatch(requestUrl)) {
+      if (intercept != null &&
+          matched == null &&
+          intercept.hasMatch(requestUrl)) {
         matched = requestUrl;
       }
       for (final regex in additional) {
@@ -133,7 +136,8 @@ class BridgeWebView {
 
   /// Reports every URL the page (and its frames) requests: `fetch`, XHR,
   /// resource timing entries and media/iframe `src` attributes.
-  static const _requestHook = '''
+  static const _requestHook =
+      '''
 (function () {
   if (window.__dartotsuResolver) return;
   window.__dartotsuResolver = true;

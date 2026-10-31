@@ -86,7 +86,9 @@ class JsCheerio {
           result = element is Element ? element.innerHtml : '';
           break;
         case 'outerHtml':
-          result = element is Element ? element.outerHtml : (element.text ?? '');
+          result = element is Element
+              ? element.outerHtml
+              : (element.text ?? '');
           break;
         case 'addClass':
           if (element is Element) element.classes.add(methodArgs[0]);
@@ -95,7 +97,8 @@ class JsCheerio {
           if (element is Element) element.classes.remove(methodArgs[0]);
           break;
         case 'hasClass':
-          result = element is Element && element.classes.contains(methodArgs[0]);
+          result =
+              element is Element && element.classes.contains(methodArgs[0]);
           break;
         case 'attr':
           result = element.attributes[methodArgs[0]] ?? '';
@@ -166,7 +169,9 @@ class JsCheerio {
           }
           return jsonEncode(null);
         case 'prev':
-          final prev = element is Element ? element.previousElementSibling : null;
+          final prev = element is Element
+              ? element.previousElementSibling
+              : null;
           if (prev != null) {
             return jsonEncode(_register(prev));
           }
@@ -175,7 +180,9 @@ class JsCheerio {
           final cloned = element.clone(true);
           return jsonEncode(_register(cloned));
         case 'is':
-          result = element is Element && elementMatches(element, methodArgs[0] as String);
+          result =
+              element is Element &&
+              elementMatches(element, methodArgs[0] as String);
           break;
         case 'append':
           final htmlToAppend = methodArgs[0];
@@ -282,7 +289,9 @@ class JsCheerio {
             return jsonEncode(<int>[]);
           }
           {
-            final selector = methodArgs.isNotEmpty ? methodArgs[0] as String? : null;
+            final selector = methodArgs.isNotEmpty
+                ? methodArgs[0] as String?
+                : null;
             final keys = <int>[];
             var cur = element.nextElementSibling;
             while (cur != null) {
@@ -298,7 +307,9 @@ class JsCheerio {
             return jsonEncode(<int>[]);
           }
           {
-            final selector = methodArgs.isNotEmpty ? methodArgs[0] as String? : null;
+            final selector = methodArgs.isNotEmpty
+                ? methodArgs[0] as String?
+                : null;
             final keys = <int>[];
             var cur = element.previousElementSibling;
             while (cur != null) {
@@ -311,7 +322,9 @@ class JsCheerio {
           break;
         case 'parents':
           {
-            final selector = methodArgs.isNotEmpty ? methodArgs[0] as String? : null;
+            final selector = methodArgs.isNotEmpty
+                ? methodArgs[0] as String?
+                : null;
             final keys = <int>[];
             var cur = element.parent;
             while (cur != null) {

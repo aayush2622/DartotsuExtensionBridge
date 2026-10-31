@@ -18,7 +18,11 @@ import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
 
 class IReaderExtensions extends Extension
-    with JvmBackend, AndroidJvmBackend, TachiyomiRepoBackend, AndroidApkInstallMixin {
+    with
+        JvmBackend,
+        AndroidJvmBackend,
+        TachiyomiRepoBackend,
+        AndroidApkInstallMixin {
   @override
   Set<RepoFormat> get repoFormats => const {RepoFormat.iReader};
 
@@ -68,7 +72,6 @@ class IReaderExtensions extends Extension
 
   @override
   String get androidExtensionsDirName => 'ireader-extensions';
-
 
   @override
   Future<void> fetchInstalledNovelExtensions() async {

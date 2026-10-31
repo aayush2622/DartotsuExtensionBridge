@@ -47,7 +47,6 @@ class KotatsuExtensions extends Extension
   @override
   DownloadablePlugin plugin = KotatsuPlugin();
 
-
   @override
   Future<Directory?> get sourcesDir =>
       DartotsuExtensionBridge.context.getDirectory(
