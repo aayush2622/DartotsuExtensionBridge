@@ -305,6 +305,21 @@ void _ensurePseudo() {
   _pseudoReady = true;
 }
 
+bool elementMatches(Element element, String selector) {
+  try {
+    _ensurePseudo();
+    final groups = pseudom.parse(_fixSelector(selector));
+    for (final group in groups.groups) {
+      if (group.selectors.isNotEmpty && group.selectors.last.matches(element)) {
+        return true;
+      }
+    }
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
+
 extension LnDocumentSelector on Document? {
   List<Element>? select(String selector) {
     try {

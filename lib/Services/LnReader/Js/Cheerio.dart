@@ -33,6 +33,7 @@ class JsCheerio {
           case 'children':
             return jsonEncode(<int>[]);
           case 'hasClass':
+          case 'is':
             return false;
           case 'text':
           case 'html':
@@ -41,6 +42,13 @@ class JsCheerio {
           case 'val':
           case 'attr':
             return '';
+          case 'parent':
+          case 'next':
+          case 'prev':
+          case 'first':
+          case 'last':
+          case 'clone':
+            return jsonEncode(null);
           default:
             return null;
         }
@@ -100,9 +108,9 @@ class JsCheerio {
           if (parent != null) {
             _elementKey++;
             _elements[_elementKey] = parent;
-            result = _elementKey;
+            return jsonEncode(_elementKey);
           }
-          break;
+          return jsonEncode(null);
         case 'find':
           final selector = methodArgs[0];
           final elements = element.select(selector);
@@ -119,32 +127,41 @@ class JsCheerio {
           if (first != null) {
             _elementKey++;
             _elements[_elementKey] = first;
-            result = _elementKey;
+            return jsonEncode(_elementKey);
           }
-          break;
+          return jsonEncode(null);
         case 'last':
           final last = element.children.lastOrNull;
           if (last != null) {
             _elementKey++;
             _elements[_elementKey] = last;
-            result = _elementKey;
+            return jsonEncode(_elementKey);
           }
-          break;
+          return jsonEncode(null);
         case 'next':
           final next = element.nextElementSibling;
           if (next != null) {
             _elementKey++;
             _elements[_elementKey] = next;
-            result = _elementKey;
+            return jsonEncode(_elementKey);
           }
-          break;
+          return jsonEncode(null);
         case 'prev':
           final prev = element.previousElementSibling;
           if (prev != null) {
             _elementKey++;
             _elements[_elementKey] = prev;
-            result = _elementKey;
+            return jsonEncode(_elementKey);
           }
+          return jsonEncode(null);
+        case 'clone':
+          final cloned = element.clone(true);
+          _elementKey++;
+          _elements[_elementKey] = cloned;
+          return jsonEncode(_elementKey);
+        case 'is':
+          final selector = methodArgs[0] as String;
+          result = elementMatches(element, selector);
           break;
         case 'append':
           final htmlToAppend = methodArgs[0];
@@ -212,23 +229,31 @@ class Element {
   }
 
   parent() {
-    return new Element(this._call("parent"));
+    return new Element(JSON.parse(this._call("parent")));
   }
 
   next() {
-    return new Element(this._call("next"));
+    return new Element(JSON.parse(this._call("next")));
   }
 
   prev() {
-    return new Element(this._call("prev"));
+    return new Element(JSON.parse(this._call("prev")));
   }
 
   first() {
-    return new Element(this._call("first"));
+    return new Element(JSON.parse(this._call("first")));
   }
 
   last() {
-    return new Element(this._call("last"));
+    return new Element(JSON.parse(this._call("last")));
+  }
+
+  clone() {
+    return new Element(JSON.parse(this._call("clone")));
+  }
+
+  is(selector) {
+    return this._call("is", [selector]);
   }
 }
 
@@ -340,18 +365,26 @@ class ElementCollection {
   }
 
   parent() {
-    const parents = this.elements.map(el => new Element(el._call("parent")));
+    const parents = this.elements.map(el => el.parent());
     return new ElementCollection(parents);
   }
 
   next() {
-    const nextEls = this.elements.map(el => new Element(el._call("next")));
+    const nextEls = this.elements.map(el => el.next());
     return new ElementCollection(nextEls);
   }
 
   prev() {
-    const prevEls = this.elements.map(el => new Element(el._call("prev")));
+    const prevEls = this.elements.map(el => el.prev());
     return new ElementCollection(prevEls);
+  }
+
+  clone() {
+    return new ElementCollection(this.elements.map(el => el.clone()));
+  }
+
+  is(selector) {
+    return this.elements.some(el => el.is(selector));
   }
 
   first() {
