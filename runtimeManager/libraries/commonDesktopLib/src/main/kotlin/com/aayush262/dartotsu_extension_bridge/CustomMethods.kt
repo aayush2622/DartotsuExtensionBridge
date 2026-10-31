@@ -36,8 +36,10 @@ class CustomMethods : BridgeCallbacks {
         null
     }
 
-    override fun solveCloudflare(url: String): Boolean = try {
-        FlutterBridge.call("solveCloudflare", mapOf("url" to url), slow = true)["result"]
+    override fun solveCloudflare(url: String): Boolean = solveCloudflare(url, false)
+
+    override fun solveCloudflare(url: String, retried: Boolean): Boolean = try {
+        FlutterBridge.call("solveCloudflare", mapOf("url" to url, "retried" to retried), slow = true)["result"]
             ?.takeUnless { it.isJsonNull }?.asBoolean == true
     } catch (_: Exception) {
         false

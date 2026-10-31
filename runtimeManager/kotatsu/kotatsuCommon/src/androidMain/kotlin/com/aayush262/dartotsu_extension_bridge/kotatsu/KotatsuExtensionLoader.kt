@@ -12,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.webkit.CookieManager
 import dalvik.system.DexClassLoader
 import okhttp3.CookieJar
 import okhttp3.Cookie

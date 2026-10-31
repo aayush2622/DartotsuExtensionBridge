@@ -8,6 +8,7 @@ import 'package:isar_community/isar.dart';
 
 import 'AddonManager.dart';
 import 'ExtensionManager.dart';
+import 'Network/CloudflareSolver.dart';
 import 'Network/NativeNetwork.dart';
 import 'Settings/KvStore.dart';
 
@@ -35,7 +36,9 @@ class DartotsuExtensionBridge {
     );
 
     Get.put(ExtensionManager());
-    unawaited(Get.put(AddonManager()).checkForUpdates());
+    unawaited(
+      CloudflareSolver.quietly(() => Get.put(AddonManager()).checkForUpdates()),
+    );
 
     _initialized = true;
   }
@@ -71,7 +74,6 @@ class DartotsuExtensionBridge {
     debugPrint('DartotsuExtensionBridge: $log');
   }
 
-
   static Future<void> networkChanged() async {
     if (!_initialized) return;
     await NativeNetwork.broadcast();
@@ -86,7 +88,6 @@ class DartotsuExtensionBridge {
 }
 
 Isar isar = DartotsuExtensionBridge.isar;
-
 
 abstract class BridgeNetwork {
   /// Client for normal requests.
@@ -107,7 +108,6 @@ abstract class BridgeNetwork {
 
   Future<bool> presentChallenge(Widget page) async => false;
 }
-
 
 typedef GetDirectory =
     Future<Directory?> Function({

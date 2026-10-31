@@ -106,7 +106,7 @@ class NativeNetwork {
       case 'solveCloudflare':
         final url = Uri.tryParse(args['url'] as String? ?? '');
         if (url == null || !url.hasAuthority) return false;
-        return CloudflareSolver.solve(url);
+        return CloudflareSolver.solve(url, retried: args['retried'] == true);
 
       case 'webView':
         final request = jsonDecode(args['request'] as String) as Map;

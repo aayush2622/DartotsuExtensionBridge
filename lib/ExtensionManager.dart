@@ -1,3 +1,4 @@
+import 'Network/CloudflareSolver.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -122,8 +123,8 @@ class ExtensionManager extends GetxController {
     final ready = await next.ensureInitialized();
     if (!ready && next.isFailed) return next.initError ?? 'Failed to start';
 
-    unawaited(next.initializeInstalled(type));
-    unawaited(next.initializeAvailable(type));
+    unawaited(CloudflareSolver.quietly(() => next.initializeInstalled(type)));
+    unawaited(CloudflareSolver.quietly(() => next.initializeAvailable(type)));
     return null;
   }
 

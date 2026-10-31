@@ -126,8 +126,21 @@ class _SharedClient extends http.BaseClient {
     Logger.log('[Cloudflare] Challenge on ${request.url.host}, clearing it');
     if (!await CloudflareSolver.solve(request.url)) return buffered;
 
+    final lastTry = _copy(replay);
     await _withAppSession(replay, mergeCookies: true);
-    return inner.send(replay);
+    final again = await inner.send(replay);
+    if (!_mayBeChallenge(again)) return again;
+
+    final againBytes = await again.stream.toBytes();
+    final againBuffered = _rebuild(again, againBytes);
+    if (!_isChallenge(again, againBytes)) return againBuffered;
+
+    Logger.log('[Cloudflare] ${request.url.host} still blocks after clearing');
+    if (!await CloudflareSolver.solve(request.url, retried: true)) {
+      return againBuffered;
+    }
+    await _withAppSession(lastTry, mergeCookies: true);
+    return inner.send(lastTry);
   }
 
   @override

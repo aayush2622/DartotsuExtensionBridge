@@ -50,6 +50,10 @@ class CloudflareKiller : Interceptor {
 
         if (!Cloudflare.solve(request.url)) return response
         response.close()
+        val retried = chain.proceed(withCookies(request))
+        if (!Cloudflare.isChallenge(retried)) return retried
+        if (!Cloudflare.solve(request.url, retried = true)) return retried
+        retried.close()
         return chain.proceed(withCookies(request))
     }
 

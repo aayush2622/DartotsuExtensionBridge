@@ -26,9 +26,8 @@ internal fun buildWebViewRequest(
 }
 
 /**
- * Ported from CloudStream's `library` module (expect/actual split between
- * androidMain, which drives a real android.webkit.WebView, and desktopMain,
- * which has no WebView and degrades to a plain passthrough). Referenced by
+ * Ported from CloudStream's `library` module. Both actuals run the page in
+ * the Flutter app's background WebView through BridgeWebView. Referenced by
  * plugins (e.g. AllWish.cs3) that previously failed with
  * NoClassDefFoundError because this class didn't exist here at all.
  *

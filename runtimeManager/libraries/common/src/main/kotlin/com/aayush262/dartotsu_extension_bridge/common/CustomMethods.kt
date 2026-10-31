@@ -30,6 +30,13 @@ interface BridgeCallbacks {
     fun solveCloudflare(url: String): Boolean = false
 
     /**
+     * Same as above; [retried] is true when a request already went out again
+     * with the app's clearance and was challenged once more, so the app knows
+     * the clearance was rejected and the user has to pass it.
+     */
+    fun solveCloudflare(url: String, retried: Boolean): Boolean = solveCloudflare(url)
+
+    /**
      * Runs a WebView task in the app: load a page, collect the requests it
      * makes and run a script. [request] and the result are JSON; see
      * `lib/Network/BridgeWebView.dart` for the shape. Null when unavailable.
