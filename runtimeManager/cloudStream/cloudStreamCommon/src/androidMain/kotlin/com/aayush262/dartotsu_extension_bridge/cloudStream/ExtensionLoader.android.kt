@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.PREFERENCES_NAME
 import com.lagradost.cloudstream3.utils.extractorApis
 import java.io.File
 import java.io.IOException
@@ -103,6 +104,11 @@ actual object ExtensionLoader {
 
     fun loadPlugin(
         file: File,
+    ): Boolean = loadPlugin(file, 0)
+
+    private fun loadPlugin(
+        file: File,
+        attempt: Int,
     ): Boolean {
 
         if (!file.exists()) {
@@ -157,12 +163,35 @@ actual object ExtensionLoader {
 
             true
         } catch (e: Throwable) {
+            if (attempt < MAX_HEALS && healBadSetting(file.nameWithoutExtension, e)) {
+                AndroidPreferenceRecorder.unregister(file.nameWithoutExtension)
+                return loadPlugin(file, attempt + 1)
+            }
             AndroidPreferenceRecorder.unregister(file.nameWithoutExtension)
             Logger.log(
                 "Failed loading ${file.name}: ${e.message}\n${e.stackTraceToString()}"
             )
             false
         }
+    }
+
+    private const val MAX_HEALS = 6
+
+    private fun healBadSetting(owner: String, error: Throwable): Boolean {
+        if (!generateSequence(error) { it.cause }.any { it is kotlinx.serialization.SerializationException }) {
+            return false
+        }
+        val key = AndroidPreferenceRecorder.lastTouched(owner) ?: return false
+        if (key.store != PREFERENCES_NAME) return false
+        val prefs = AndroidPreferenceRecorder.storeNamed(key.store) ?: return false
+        val stored = prefs.getString(key.key, null) ?: return false
+        val isText = runCatching {
+            com.google.gson.JsonParser.parseString(stored).let { it.isJsonPrimitive && it.asJsonPrimitive.isString }
+        }.getOrDefault(true)
+        if (!isText) return false
+        prefs.edit().remove(key.key).commit()
+        Logger.log("Reset setting ${key.key} of $owner: its saved value could not be read")
+        return true
     }
 
     private fun pluginResources(file: File): Resources {

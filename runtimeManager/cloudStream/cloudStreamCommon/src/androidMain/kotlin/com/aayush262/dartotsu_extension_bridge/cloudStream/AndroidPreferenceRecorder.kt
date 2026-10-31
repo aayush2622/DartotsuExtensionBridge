@@ -38,6 +38,7 @@ object AndroidPreferenceRecorder {
     private val classOwner = ConcurrentHashMap<String, String>()
 
     private val keys = ConcurrentHashMap<String, ConcurrentHashMap<String, Key>>()
+    private val lastKey = ConcurrentHashMap<String, Key>()
     private val loadedOwners = ConcurrentHashMap.newKeySet<String>()
     private val stores = ConcurrentHashMap<String, SharedPreferences>()
 
@@ -55,10 +56,14 @@ object AndroidPreferenceRecorder {
         val loader = extensionLoaders.remove(owner)
         if (loader != null) loaderOwners.remove(loader)
         keys.remove(owner)
+        lastKey.remove(owner)
         classOwner.entries.removeAll { it.value == owner }
     }
 
     fun ownerFor(loader: ClassLoader): String? = loaderOwners[loader]
+
+    /** The preference [owner]'s code touched most recently. */
+    fun lastTouched(owner: String): Key? = lastKey[owner]
 
     /** Registers [prefs] as the store named [name], for writes made later. */
     fun store(name: String, prefs: SharedPreferences) {
@@ -94,6 +99,7 @@ object AndroidPreferenceRecorder {
         val id = "$store\u0000$key"
         val existing = map[id]
         val next = Key(store, key, type, default ?: existing?.default)
+        lastKey[owner] = next
         if (existing != next) {
             map[id] = next
             save(owner, map.values)

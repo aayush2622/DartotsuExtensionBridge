@@ -44,6 +44,7 @@ actual object SourcePreferences {
             prefs.edit().apply {
                 when {
                     raw == null || raw.isJsonNull -> remove(prefKey)
+                    storeName == PREFERENCES_NAME && raw.asString.isBlank() -> remove(prefKey)
                     storeName == PREFERENCES_NAME -> putString(prefKey, encodeDataStore(storeName, prefKey, raw.asString))
                     else -> when (recorded.type) {
                         Type.BOOLEAN -> putBoolean(prefKey, raw.asBoolean)
@@ -122,6 +123,8 @@ actual object SourcePreferences {
         return when {
             element != null && element.isJsonPrimitive && element.asJsonPrimitive.isBoolean -> text.trim().toBoolean().toString()
             element != null && element.isJsonPrimitive && element.asJsonPrimitive.isNumber && text.trim().toDoubleOrNull() != null -> text.trim()
+            element == null && text.trim().lowercase() in setOf("true", "false") -> text.trim().lowercase()
+            element == null && text.trim().toDoubleOrNull() != null -> text.trim()
             else -> gson.toJson(text)
         }
     }
