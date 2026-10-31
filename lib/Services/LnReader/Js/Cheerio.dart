@@ -55,6 +55,8 @@ class JsCheerio {
           case 'val':
           case 'attr':
             return '';
+          case 'attribs':
+            return jsonEncode(<String, String>{});
           case 'index':
             return jsonEncode(-1);
           case 'parent':
@@ -197,6 +199,13 @@ class JsCheerio {
           break;
         case 'nodeType':
           return jsonEncode(element.nodeType);
+        case 'attribs':
+          if (element is! Element) {
+            return jsonEncode(<String, String>{});
+          }
+          return jsonEncode(
+            element.attributes.map((k, v) => MapEntry(k.toString(), v)),
+          );
         case 'contents':
           if (element is! Element) {
             return jsonEncode(<int>[]);
@@ -403,6 +412,10 @@ class Element {
     return JSON.parse(this._call("nodeType"));
   }
 
+  get attribs() {
+    return JSON.parse(this._call("attribs"));
+  }
+
   contents() {
     const keys = JSON.parse(this._call("contents"));
     return new ElementCollection(keys.map(k => new Element(k)), new ElementCollection([this]));
@@ -472,19 +485,19 @@ class ElementCollection {
   }
 
   html() {
-    return this.first()?.html();
+    return this.get(0).html();
   }
 
   outerHtml() {
-    return this.first()?.outerHtml();
+    return this.get(0).outerHtml();
   }
 
   attr(name) {
-    return this.first()?.attr(name);
+    return this.get(0).attr(name);
   }
 
   hasClass(cls) {
-    return this.first()?.hasClass(cls);
+    return this.get(0).hasClass(cls);
   }
 
   each(fn) {
@@ -602,8 +615,7 @@ class ElementCollection {
   }
 
   index() {
-    const first = this.first();
-    return first ? first.index() : -1;
+    return this.get(0).index();
   }
 
   closest(selector) {
@@ -632,7 +644,7 @@ class ElementCollection {
   }
 
   prop(name) {
-    return this.first()?.prop(name);
+    return this.get(0).prop(name);
   }
 
   css(name, value) {
@@ -665,11 +677,13 @@ class ElementCollection {
   }
 
   first() {
-    return this.get(0);
+    const el = this.get(0);
+    return new ElementCollection(el._key != null ? [el] : [], this);
   }
 
   last() {
-    return this.get(this.elements.length - 1);
+    const el = this.get(this.elements.length - 1);
+    return new ElementCollection(el._key != null ? [el] : [], this);
   }
 
   get(index) {
@@ -714,6 +728,9 @@ function load(html) {
 
   \$.html = function() {
     return root.html();
+  };
+  \$.text = function() {
+    return root.text();
   };
   \$.root = root;
   \$.Element = Element;
