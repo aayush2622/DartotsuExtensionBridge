@@ -303,7 +303,8 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
 
     private fun Page.toPayload(baseUrl: String): Map<String, Any> {
 
-        val uri = imageUrl!!.toUri()
+        val image = imageUrl?.takeIf { it.isNotEmpty() } ?: error("Page $number has no image url")
+        val uri = image.toUri()
 
         val headers = uri.queryParameterNames.associateWith {
             uri.getQueryParameter(it).orEmpty()
@@ -312,7 +313,7 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
         )
 
         return mapOf(
-            "url" to imageUrl!!, "headers" to headers
+            "url" to image, "headers" to headers
         )
     }
 

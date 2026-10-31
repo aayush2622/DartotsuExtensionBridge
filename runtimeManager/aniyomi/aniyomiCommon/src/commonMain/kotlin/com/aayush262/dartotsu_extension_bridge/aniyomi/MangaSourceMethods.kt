@@ -21,6 +21,11 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.sourcePreferences
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.JsonObject
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -95,11 +100,23 @@ class MangaSourceMethods(private val sourceID: String) : AniyomiSourceMethods {
     // such a source sees as "this chapter was never fetched" and rejects.
     override suspend fun getPageList(chapter: SChapter): List<Page> {
         val cached = chapterCache["$sourceID|${chapter.url}"]
-        return source.getPageList(cached ?: chapter)
+        val pages = source.getPageList(cached ?: chapter)
+        val http = source as? HttpSource ?: return pages
+        if (pages.none { it.imageUrl.isNullOrEmpty() }) return pages
+        val gate = Semaphore(IMAGE_URL_PARALLELISM)
+        coroutineScope {
+            pages.filter { it.imageUrl.isNullOrEmpty() }.map { page ->
+                async {
+                    gate.withPermit { page.imageUrl = http.getImageUrl(page) }
+                }
+            }.awaitAll()
+        }
+        return pages
     }
 
     companion object {
         private const val CHAPTER_CACHE_LIMIT = 2000
+        private const val IMAGE_URL_PARALLELISM = 4
         private val chapterCache = Collections.synchronizedMap(
             object : LinkedHashMap<String, SChapter>(16, 0.75f, true) {
                 override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, SChapter>) =
