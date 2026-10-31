@@ -144,13 +144,14 @@ abstract class DownloadablePlugin implements PluginDependency {
     http.Client client, {
     bool forceRefresh = false,
   }) {
-    if (forceRefresh) _loadingIndex = null;
+    final pending = _loadingIndex;
+    if (pending != null) return pending;
 
     if (!forceRefresh && _cachedIndex != null) {
       return Future.value(_cachedIndex!);
     }
 
-    return _loadingIndex ??=
+    return _loadingIndex =
         () async {
               final url = indexUrl;
               if (url.isEmpty) {

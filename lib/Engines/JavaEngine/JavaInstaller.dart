@@ -59,7 +59,21 @@ class JavaRuntimeManager {
     return first;
   }
 
-  static Future<String?> getSystemJavaPath() async {
+  static Future<String?>? _systemProbe;
+  static DateTime? _systemProbedAt;
+
+  static Future<String?> getSystemJavaPath() {
+    final probedAt = _systemProbedAt;
+    if (_systemProbe != null &&
+        probedAt != null &&
+        DateTime.now().difference(probedAt) < const Duration(seconds: 30)) {
+      return _systemProbe!;
+    }
+    _systemProbedAt = DateTime.now();
+    return _systemProbe = _probeSystemJava();
+  }
+
+  static Future<String?> _probeSystemJava() async {
     try {
       final result = await Process.run('java', ['-version'], runInShell: true);
 
