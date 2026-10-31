@@ -20,11 +20,14 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * ## Isolation
  *
- * Each backend JAR is a self-contained shadow JAR (its own kotlin-stdlib,
- * coroutines, gson, koin, okhttp, AndroidCompat, tachiyomi framework, and a
- * full copy of `com.aayush262.dartotsu_extension_bridge.**`). It is loaded in
- * a [URLClassLoader] whose parent is the **platform** class loader — JDK
- * classes only, *not* this shim's loader. Consequences:
+ * A backend is a thin plugin JAR plus the shared `desktopCore` JAR (its
+ * kotlin-stdlib, coroutines, gson, koin, okhttp, AndroidCompat, tachiyomi
+ * framework and `com.aayush262.dartotsu_extension_bridge.**`). The caller
+ * passes both as one class path string (`core.jar:plugin.jar`, split on
+ * [File.pathSeparator]; a lone self-contained JAR works too). They are loaded
+ * in one [URLClassLoader] per backend whose parent is the **platform** class
+ * loader — JDK classes only, *not* this shim's loader, so the core's classes
+ * are loaded again for every backend. Consequences:
  *
  *  * every backend gets its own statics (Koin `GlobalContext`, Injekt, the
  *    `Looper`, metadata caches) — no cross-backend collision, exactly like the
@@ -94,17 +97,20 @@ object EmbeddedBridge {
         loaded.computeIfAbsent(jarPath) {
             val started = System.nanoTime()
             try {
-                val file = File(jarPath)
-                require(file.isFile) { "Backend JAR not found: $jarPath" }
+                val files = jarPath.split(File.pathSeparatorChar)
+                    .filter { it.isNotEmpty() }
+                    .map(::File)
+                require(files.isNotEmpty()) { "No backend JAR given" }
+                files.forEach { require(it.isFile) { "Backend JAR not found: ${it.path}" } }
 
                 val loader = URLClassLoader(
-                    arrayOf(file.toURI().toURL()),
+                    files.map { it.toURI().toURL() }.toTypedArray(),
                     ClassLoader.getPlatformClassLoader(),
                 )
                 val mainClass = Class.forName(MAIN_CLASS, true, loader)
                 val handle = mainClass.getMethod("handle", String::class.java)
                 System.out.println(
-                    "Loaded ${file.name} (${file.length() / 1024} KB) in ${(System.nanoTime() - started) / 1_000_000} ms",
+                    "Loaded ${files.last().name} (${files.sumOf { it.length() } / 1024} KB in ${files.size} JAR(s)) in ${(System.nanoTime() - started) / 1_000_000} ms",
                 )
                 Loaded(loader, handle)
             } catch (e: Throwable) {

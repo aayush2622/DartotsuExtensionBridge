@@ -67,6 +67,7 @@ include(
     ":libraries:common",
     ":libraries:commonLib",
     ":libraries:commonDesktopLib",
+    ":libraries:desktopCore",
     ":aniyomi:aniyomiCommon",
     ":aniyomi:aniyomiAndroid",
     ":aniyomi:aniyomiDesktop",

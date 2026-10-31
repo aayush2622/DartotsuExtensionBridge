@@ -10,7 +10,6 @@ import 'package:flutter_test/flutter_test.dart';
 /// Drives the real CloudStream desktop sidecar over its stdio protocol and
 /// reads what it answers and logs.
 ///
-/// Needs the jar built by `./gradlew :cloudStream:cloudStreamDesktop:buildPlugin`,
 /// a JRE 21 and some `.cs3` plugins (the ones Dartotsu installed are copied, never
 /// touched). Anything missing skips the suite. Overrides: `CS_JAR`, `CS_JAVA`,
 /// `CS_PLUGINS`; `CS_OFFLINE=1` skips the tests that need the network.
@@ -21,7 +20,11 @@ import 'package:flutter_test/flutter_test.dart';
 final _home = Platform.environment['HOME'] ?? '';
 final _jar = File(
   Platform.environment['CS_JAR'] ??
-      '${Directory.current.path}/runtimeManager/builds/cloudStreamDesktop/cloudStreamDesktop-plugin.jar',
+      '${Directory.current.path}/runtimeManager/builds/cloudStreamDesktop/cloudStreamDesktop-split.jar',
+);
+final _core = File(
+  Platform.environment['CS_CORE'] ??
+      '${Directory.current.path}/runtimeManager/builds/desktopCore/desktopCore-plugin.jar',
 );
 final _pluginSource = Directory(
   Platform.environment['CS_PLUGINS'] ??
@@ -89,8 +92,9 @@ class _Sidecar {
     final process = await Process.start(java, [
       '-Dfile.encoding=UTF-8',
       '-Xmx3072m',
-      '-jar',
-      _jar.path,
+      '-cp',
+      '${_core.path}${Platform.isWindows ? ';' : ':'}${_jar.path}',
+      'com.aayush262.dartotsu_extension_bridge.Main',
     ]);
     return _Sidecar._(process);
   }
@@ -185,10 +189,16 @@ void main() {
   final missing = [
     if (java == null) 'a JRE 21 under Documents/Dartotsu/bridge/jre-21',
     if (!_jar.existsSync()) 'the sidecar jar (${_jar.path})',
-    if (!_pluginSource.existsSync()) 'CloudStream plugins (${_pluginSource.path})',
+    if (!_core.existsSync()) 'the desktop core jar (${_core.path})',
+    if (!_pluginSource.existsSync())
+      'CloudStream plugins (${_pluginSource.path})',
   ];
   if (missing.isNotEmpty) {
-    test('CloudStream sidecar harness', () {}, skip: 'needs ${missing.join(', ')}');
+    test(
+      'CloudStream sidecar harness',
+      () {},
+      skip: 'needs ${missing.join(', ')}',
+    );
     return;
   }
 
@@ -226,8 +236,16 @@ void main() {
     stdout.writeln('  sources: $names');
     expect(names, isNotEmpty);
     expect(await _pending(sidecar), 0);
-    expect(counts, isNot(contains(0)), reason: 'the list was empty while loading');
-    expect(counts, orderedEquals([...counts]..sort()), reason: 'sources vanished');
+    expect(
+      counts,
+      isNot(contains(0)),
+      reason: 'the list was empty while loading',
+    );
+    expect(
+      counts,
+      orderedEquals([...counts]..sort()),
+      reason: 'sources vanished',
+    );
   });
 
   test('a refresh never unloads what is already loaded', () async {
@@ -279,7 +297,11 @@ void main() {
     await first;
     await _settle(sidecar);
 
-    expect(error, isNull, reason: 'search failed while the plugin was loading: $error');
+    expect(
+      error,
+      isNull,
+      reason: 'search failed while the plugin was loading: $error',
+    );
     if (!_offline) {
       expect(search, isA<Map>());
       expect((search as Map)['list'], isNotEmpty);
@@ -291,26 +313,32 @@ void main() {
     addTearDown(sidecar.stop);
     await _settle(sidecar);
 
-    final found = await sidecar.call('search', {
-      'sourceId': 'StreamPlay',
-      'isAnime': true,
-      'query': 'Adventure Time',
-      'page': 1,
-    }) as Map;
+    final found =
+        await sidecar.call('search', {
+              'sourceId': 'StreamPlay',
+              'isAnime': true,
+              'query': 'Adventure Time',
+              'page': 1,
+            })
+            as Map;
     final show = (found['list'] as List).cast<Map>().firstWhere(
       (m) => '${m['title']}'.toLowerCase() == 'adventure time',
       orElse: () => (found['list'] as List).first as Map,
     );
     stdout.writeln('  picked: ${show['title']} ${show['url']}');
 
-    final detail = await sidecar.call('getDetail', {
-      'sourceId': 'StreamPlay',
-      'isAnime': true,
-      'media': jsonEncode({'url': show['url']}),
-    }) as Map;
+    final detail =
+        await sidecar.call('getDetail', {
+              'sourceId': 'StreamPlay',
+              'isAnime': true,
+              'media': jsonEncode({'url': show['url']}),
+            })
+            as Map;
     final episodes = (detail['episodes'] as List).cast<Map>();
     final seasons = {for (final e in episodes) e['scanlator']};
-    stdout.writeln('  ${episodes.length} episodes in ${seasons.length} groups: $seasons');
+    stdout.writeln(
+      '  ${episodes.length} episodes in ${seasons.length} groups: $seasons',
+    );
 
     expect(seasons.length, greaterThan(1));
     expect(seasons, everyElement(isNotNull));
@@ -321,7 +349,9 @@ void main() {
       isTrue,
     );
     final firstSeason = episodes.where((e) => e['scanlator'] == 'Season 1');
-    final numbers = firstSeason.map((e) => (e['episodeNumber'] as num).toDouble());
+    final numbers = firstSeason.map(
+      (e) => (e['episodeNumber'] as num).toDouble(),
+    );
     expect(numbers, isNotEmpty);
     expect(
       numbers.every((n) => n == n.truncateToDouble()),

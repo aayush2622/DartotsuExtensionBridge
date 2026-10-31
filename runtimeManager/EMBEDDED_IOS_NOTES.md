@@ -115,8 +115,15 @@ The harness mimics the native side (reflect `EmbeddedBridge.load` / `.call`):
 
 ## Same JAR as desktop
 
-iOS downloads and runs the exact `*-plugin.jar` desktop uses (the
-`-PiosRuntime=true` trimmed variant is gone). The old variant stripped JCEF,
+iOS downloads and runs the exact `*-plugin.jar` desktop uses, together with the shared
+`desktopCore-plugin.jar` the thin plugins need. `EmbeddedBridge.load` takes them as one
+class path string (`core.jar:plugin.jar`, split on `File.pathSeparator`; the same string is
+the key for `call` / `unload`) and puts both in the backend's own `URLClassLoader`, so every
+backend still gets its own copy of the core's classes and statics. Rebuild and re-stage
+`embedded-bridge.jar` after this change: a shim from before it treats the whole string as one
+file name and fails to load.
+
+The `-PiosRuntime=true` trimmed variant is gone. The old variant stripped JCEF,
 the zstd/JNA natives *and* the Android `res/` + `resources.arsc` (~15 MB) that
 AndroidCompat resolves resources from, and it was built separately, so it
 drifted behind desktop. Native binaries for other OSes inside the JAR are just
@@ -250,3 +257,10 @@ fixes worth cherry-picking as individual compile-checked commits:
   `SChapter.memo` across the stateless RPCs (only relevant once the protocol /
   models carry `memo`).
 - `Extension.extractAssetsFromApk` shape (asset + `.properties` handling).
+
+## Older iOS builds
+
+Both jar sets stay published (`platform: desktop` self-contained, `platform: desktopSplit` thin
++ core). An iOS build from before the split downloads the self-contained jar and runs it with its
+own older shim; a build with the new shim accepts either, since a lone path is just a class path of
+one entry.

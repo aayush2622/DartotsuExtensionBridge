@@ -34,3 +34,6 @@ build/
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
+
+# downloaded by the tests that open Isar
+/libisar.so
