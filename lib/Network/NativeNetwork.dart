@@ -7,6 +7,7 @@ import '../Engines/JavaEngine/JavaBridgeServer.dart';
 import '../ExtensionBridge.dart';
 import '../Logger.dart';
 import 'BridgeWebView.dart';
+import 'BridgeWebViewSessions.dart';
 import 'CloudflareSolver.dart';
 import 'MClient.dart';
 
@@ -115,6 +116,9 @@ class NativeNetwork {
         );
 
       default:
+        if (method.startsWith('wv')) {
+          return BridgeWebViewSessions.handle(method, args);
+        }
         throw Exception('Unknown method: $method');
     }
   }

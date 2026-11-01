@@ -10,7 +10,7 @@ import xyz.nulldev.androidcompat.info.ApplicationInfoImpl
 import xyz.nulldev.androidcompat.io.AndroidFiles
 import xyz.nulldev.androidcompat.pm.PackageController
 import xyz.nulldev.androidcompat.service.ServiceSupport
-import xyz.nulldev.androidcompat.webkit.KcefWebViewProvider
+import xyz.nulldev.androidcompat.webkit.FlutterWebViewProvider
 import java.io.File
 
 /**
@@ -42,7 +42,7 @@ fun androidCompatModule(root: File): Module =
     }
 
 fun init() {
-    WebView.setProviderFactory { view: WebView -> KcefWebViewProvider(view) }
+    WebView.setProviderFactory { view: WebView -> FlutterWebViewProvider(view) }
 
     System.setProperty(
         "http.agent",
