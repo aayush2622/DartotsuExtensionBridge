@@ -85,46 +85,28 @@ import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 
 ### Initialize the bridge
 
-Call `init` early in app startup, before any other bridge calls. It needs a directory resolver so the bridge knows where to store extension data:
+Call `init` once at startup. It needs no arguments:
 
 ```dart
-import 'dart:io';
-
-import 'package:path_provider/path_provider.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 
-Future<Directory?> getBridgeDirectory({
-  String? subPath,
-  bool useCustomPath = false,
-  bool useSystemPath = false,
-}) async {
-  final base = await getApplicationSupportDirectory();
-  final dir = subPath == null ? base : Directory('${base.path}/$subPath');
-
-  if (!await dir.exists()) {
-    await dir.create(recursive: true);
-  }
-
-  return dir;
-}
-
-Future<void> setupBridge() async {
-  await DartotsuExtensionBridge.init(
-    getDirectory: getBridgeDirectory,
-  );
-}
+await DartotsuExtensionBridge.init();
 ```
+
+Without arguments the bridge keeps its files under `<app support>/dartotsu_bridge`, opens its own database there and uses a plain HTTP client. Pass any of these to take control:
+
+| Argument | Use it to |
+|---|---|
+| `getDirectory` | decide where extension data lives (custom path, scoped storage) |
+| `isarInstance` | share your app's Isar database instead of opening a second one (add `DartotsuExtensionBridge.isarSchema` to its schemas) |
+| `network` | route every request through your own HTTP stack, cookie jar, DNS, proxy and Cloudflare challenge UI (`BridgeNetwork`) |
+| `onLog` | receive the bridge's log lines |
 
 ### Access the extension manager
 
-Once initialized, grab the manager through `get`:
-
 ```dart
-import 'package:get/get.dart';
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
-
-final extensionManager = Get.find<ExtensionManager>();
-final currentManager = manager[type].state(type);
+final manager = DartotsuExtensionBridge.extensions;
+final state = manager.current[ItemType.anime]!.state(ItemType.anime);
 ```
 
 ### Call a source
@@ -303,3 +285,17 @@ Sora, iReader, and LnReader are original implementations of their respective pub
 See [LICENSE](LICENSE) for the full UPL text.
 
 See [LICENSE](LICENSE) for the full UPL text.
+
+
+## Toolkit
+
+`package:dartotsu_extension_bridge/toolkit.dart` holds the pure helpers an app built on sources usually ends up writing itself. No setup or state, usable without `init()`:
+
+| Helper | What it does |
+|---|---|
+| `titleRatio`, `bestTitleRatio` | fuzzy title match (0-100) for finding the same series on a source |
+| `normalizeEpisodes`, `normalizeAll`, `prepareChapters`, `seasonNames`, `seasonOffsets` | clean up the numbering sources return (absolute numbers, duplicates, restarting seasons, chapter numbers hidden in titles) |
+| `languageMatcher`, `languageList`, `pickTrack` | match `es` / `spa` / `Español` / `/regex/` against subtitle and audio tracks and choose by a priority list |
+| `episodeNumberOf` | read an episode number from a file name (`[Group] Show - 05 [1080p].mkv`) |
+| `parseMaster`, `parseMedia`, `buildLocalPlaylist` | parse and rewrite HLS playlists |
+| `SourceTester` | run search, details, episode list and stream or page links against a source and report which step fails |

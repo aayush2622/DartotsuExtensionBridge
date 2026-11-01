@@ -39,6 +39,14 @@ ExtensionBridge` transport) — same base name, different directory.
 - `dispose()` — tears down `ExtensionManager` (which disposes every backend,
   including the LnReader per-source JS runtimes).
 
+## Toolkit (`lib/Toolkit/`, barrel `lib/toolkit.dart`)
+
+Pure-Dart helpers with no state and no `init()` requirement, shared by any app on top of the bridge: `TitleMatch` (`titleRatio`), `Episodes` (`normalizeEpisodes` / `normalizeAll` / `prepareChapters` / seasons), `Languages` (`LanguageMatcher`, `languageMatcher`, generic `pickTrack<T>`), `FileNames` (`episodeNumberOf`), `Hls` (playlist parser and local playlist builders) and `SourceTester`. They were moved out of the Dartotsu app; keep new generic source logic here, not in the app. `test/toolkit_test.dart` covers them. `DartotsuExtensionBridge.init()` takes no required arguments (`defaultDirectory`, own Isar, plain client) and `DartotsuExtensionBridge.extensions` returns the manager.
+
+## Downloads (`lib/Downloads/`, barrel `lib/downloads.dart`)
+
+The file-level half of a download manager, moved out of the Dartotsu app: `fetchFile` (resumable `.part` file with `Range`, optional chunked parallel ranges, per-host pacing, 429 handling, `fetchWithRetry`), `downloadHls` (segments, keys, fMP4 init maps, local playlist, then `FfmpegAddon.remuxPlaylist` to mp4 or a playable folder; `probeHls`, `loadMaster`), `downloadPages` / `localizeNovelImages` (manga pages and novel images, type sniffed from the bytes), `Archives` (cbz unpack, epub to one HTML file, table of contents), `BookText`, `DownloadPaths` (root through `BridgeContext.getDirectory(subPath: 'downloads')`, per-service title folders, `.nomedia`), file-name helpers and `DownloadThrottle.limitKbps`. Requests go through `openStream` over `BridgeNetwork.downloadClient` (falls back to a plain `http.Client` when the host gave none) and abort through `DownloadCancel` (`AbortableRequest.abortTrigger`). The queue, task state, notifications and source lookup are still in the app. `test/downloads_test.dart` runs `fetchFile` against a loopback server (full file, resume, cancel).
+
 ## Core abstractions (`lib/Extensions/`, `lib/Models/`)
 
 | File | Role |
