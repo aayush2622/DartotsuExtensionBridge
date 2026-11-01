@@ -18,6 +18,7 @@ abstract class DownloadablePlugin implements PluginDependency {
 
   final RxBool installed = false.obs;
   final RxBool availableInRepo = false.obs;
+  final Rxn<String> indexError = Rxn<String>();
   final _client = MClient.init();
 
   String get _versionKey => "${name}_version";
@@ -158,7 +159,21 @@ abstract class DownloadablePlugin implements PluginDependency {
                 throw Exception("No plugin index URL set");
               }
 
-              final res = await client.get(Uri.parse(url));
+              http.Response? res;
+              Object? failure;
+              for (var attempt = 1; attempt <= 3; attempt++) {
+                try {
+                  res = await client
+                      .get(Uri.parse(url))
+                      .timeout(const Duration(seconds: 20));
+                  failure = null;
+                  break;
+                } catch (e) {
+                  failure = e;
+                  await Future.delayed(Duration(seconds: attempt));
+                }
+              }
+              if (res == null) throw failure!;
               if (res.statusCode != 200) {
                 throw Exception(
                   "Failed to fetch plugin index (${res.statusCode})",
@@ -230,15 +245,18 @@ abstract class DownloadablePlugin implements PluginDependency {
         ),
       );
 
+      indexError.value = null;
       if (entry.isEmpty) {
         availableInRepo.value = false;
         return _cachedMeta = null;
       }
 
       availableInRepo.value = true;
+      indexError.value = null;
       return _cachedMeta = entry;
     } catch (e) {
       Logger.log("$name index lookup failed: $e");
+      indexError.value = e.toString().replaceFirst("Exception: ", "");
       availableInRepo.value = false;
       return _cachedMeta = null;
     }
@@ -254,8 +272,16 @@ abstract class DownloadablePlugin implements PluginDependency {
 
     final remote = await fetchRemote();
     if (remote == null) {
-      Logger.log("$name not found in plugin index", show: true);
-      error.value = "$name is not in the plugin index";
+      final reason = indexError.value;
+      Logger.log(
+        reason == null
+            ? "$name not found in plugin index"
+            : "$name could not read the plugin index: $reason",
+        show: true,
+      );
+      error.value = reason == null
+          ? "$name is not in the plugin index"
+          : "Could not reach the plugin index ($reason)";
       return false;
     }
 
@@ -559,12 +585,12 @@ abstract class DownloadablePlugin implements PluginDependency {
     final marker = File("${file.path}.tmp.version");
     if (await temp.exists()) {
       final started = await marker.exists() ? await marker.readAsString() : "";
-      if (started.trim() != "$version") {
+      if (started.trim() != "$version $url") {
         Logger.log("Dropping a partial $name download from another version");
         await temp.delete();
       }
     }
-    await marker.writeAsString("$version");
+    await marker.writeAsString("$version $url");
 
     int retries = 0;
     const maxRetries = 10;
@@ -586,6 +612,12 @@ abstract class DownloadablePlugin implements PluginDependency {
 
       try {
         final response = await client.send(request);
+
+        if (response.statusCode == 416 && resumeFrom > 0) {
+          Logger.log("$name partial download no longer fits, starting over");
+          await temp.delete();
+          continue;
+        }
 
         if (response.statusCode != 200 && response.statusCode != 206) {
           final status = response.statusCode;
