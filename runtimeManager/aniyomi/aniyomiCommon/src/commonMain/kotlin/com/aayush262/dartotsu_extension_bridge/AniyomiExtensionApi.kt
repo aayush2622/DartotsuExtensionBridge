@@ -2,6 +2,7 @@ package com.aayush262.dartotsu_extension_bridge
 
 import androidx.core.net.toUri
 import com.aayush262.dartotsu_extension_bridge.aniyomi.AnimeSourceMethods
+import com.aayush262.dartotsu_extension_bridge.aniyomi.AniyomiSourceMethods
 import com.aayush262.dartotsu_extension_bridge.aniyomi.AniyomiExtensionManager
 import com.aayush262.dartotsu_extension_bridge.aniyomi.MangaSourceMethods
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
@@ -29,6 +30,7 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.doubleOrNull
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import okio.ByteString.Companion.toByteString
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -297,24 +299,37 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
             source.getPageList(chapter)
         }
 
-        return encode(
-            pages.map { it.toPayload(source.baseUrl ?: "") })
+        return encode(pages.map { source.pagePayload(it) })
     }
 
-    private fun Page.toPayload(baseUrl: String): Map<String, Any> {
-
-        val image = imageUrl?.takeIf { it.isNotEmpty() } ?: error("Page $number has no image url")
-        val uri = image.toUri()
-
-        val headers = uri.queryParameterNames.associateWith {
-            uri.getQueryParameter(it).orEmpty()
-        } + mapOf(
-            "Referer" to "$baseUrl/", "Origin" to baseUrl
+    override suspend fun getPageImage(sourceId: String, isAnime: Boolean, page: String): String {
+        val map = decode(page)
+        val image = Page(
+            index = (map["index"] as? Number)?.toInt() ?: 0,
+            url = map["url"] as? String ?: "",
+            imageUrl = map["imageUrl"] as? String,
         )
+        val bytes = media(sourceId, isAnime).fetchImage(image)
+        return encode(mapOf("data" to bytes.toByteString().base64()))
+    }
 
-        return mapOf(
-            "url" to image, "headers" to headers
+    private fun AniyomiSourceMethods.pagePayload(page: Page): Map<String, Any> {
+        val image = page.imageUrl?.takeIf { it.isNotEmpty() } ?: error("Page ${page.number} has no image url")
+        val request = runCatching { imageRequestOf(page) }.getOrNull()
+        val base = baseUrl.orEmpty()
+        val headers = LinkedHashMap<String, String>()
+        request?.headers?.forEach { (name, value) -> headers[name] = value }
+        if (headers.keys.none { it.equals("Referer", true) }) headers["Referer"] = "$base/"
+        if (headers.keys.none { it.equals("Origin", true) }) headers["Origin"] = base
+
+        val out = mutableMapOf<String, Any>(
+            "url" to (request?.url?.toString() ?: image),
+            "headers" to headers,
         )
+        if (fetchesImages()) {
+            out["fetch"] = mapOf("index" to page.index, "url" to page.url, "imageUrl" to image)
+        }
+        return out
     }
 
     override suspend fun saveSourcePreference(sourceId: String, key: String, value: String?): Boolean {

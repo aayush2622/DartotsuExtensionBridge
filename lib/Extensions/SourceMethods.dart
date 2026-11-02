@@ -50,6 +50,7 @@ List<PageUrl> pagesWithHeaders(
         page.url,
         headers: _merged(origin, headers, page.headers),
         process: page.process,
+        fetch: page.fetch,
       ),
   ];
 }

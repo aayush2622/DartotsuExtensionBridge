@@ -132,6 +132,12 @@ object Server {
             params["episode"].asString,
         )
 
+        "getPageImage" -> api.getPageImage(
+            params["sourceId"].asString,
+            params["isAnime"].asBoolean,
+            params["page"].asString,
+        )
+
         "getNovelContent" -> api.getNovelContent(
             params["sourceId"].asString,
             params["episode"].asString,
