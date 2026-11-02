@@ -67,6 +67,12 @@ interface AniyomiSourceMethods {
     suspend fun getPageList(chapter: SChapter): List<Page>
 
     suspend fun fetchPageText(page: Page): String = ""
+
+    fun imageRequestOf(page: Page): okhttp3.Request? = null
+
+    fun fetchesImages(): Boolean = false
+
+    suspend fun fetchImage(page: Page): ByteArray = throw UnsupportedOperationException("Images are not fetched by this source.")
     fun setupPreferenceScreen(screen: PreferenceScreen)
 
     fun getSourcePreferences(): SharedPreferences

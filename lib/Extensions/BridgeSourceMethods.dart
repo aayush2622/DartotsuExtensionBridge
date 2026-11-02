@@ -120,7 +120,28 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
     });
 
     final pages = await compute(parsePageUrls, result);
+    _attachFetchers(pages, result);
     return pagesWithHeaders(pages, baseUrl: source.baseUrl);
+  }
+
+  void _attachFetchers(List<PageUrl> pages, List<dynamic> raw) {
+    final wanted = [
+      for (final e in raw)
+        if (e is Map && e['url'] != null) e,
+    ];
+    if (wanted.length != pages.length) return;
+    for (final (i, entry) in wanted.indexed) {
+      final fetch = entry['fetch'];
+      if (fetch == null) continue;
+      final payload = jsonEncode(fetch);
+      pages[i].fetch = () async {
+        final result = await bridge.call<Map<dynamic, dynamic>>(
+          'getPageImage',
+          {'sourceId': source.id, 'isAnime': isAnime, 'page': payload},
+        );
+        return base64Decode(result['data'] as String);
+      };
+    }
   }
 
   @override

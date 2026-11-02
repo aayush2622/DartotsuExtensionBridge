@@ -5,6 +5,7 @@ import com.aayush262.dartotsu_extension_bridge.applyFilterJson
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.aayush262.dartotsu_extension_bridge.toFilterJson
 import eu.kanade.tachiyomi.PreferenceScreen
+import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.FetchType
@@ -21,10 +22,12 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.sourcePreferences
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.JsonObject
 import uy.kohesive.injekt.Injekt
@@ -76,6 +79,20 @@ class MangaSourceMethods(private val sourceID: String) : AniyomiSourceMethods {
                 filters = template
             )
         )
+    }
+
+    override fun imageRequestOf(page: Page) = (source as? HttpSource)?.requestForImage(page)
+
+    override fun fetchesImages(): Boolean {
+        val http = source as? HttpSource ?: return false
+        return http.client.interceptors.size > Injekt.get<NetworkHelper>().client.interceptors.size
+    }
+
+    override suspend fun fetchImage(page: Page): ByteArray {
+        val http = source as? HttpSource ?: throw UnsupportedOperationException("Source has no HTTP client.")
+        return withContext(Dispatchers.IO) {
+            http.getImage(page).use { it.body.bytes() }
+        }
     }
 
     override fun getFilterListJson(): String = source.getFilterList().toFilterJson()

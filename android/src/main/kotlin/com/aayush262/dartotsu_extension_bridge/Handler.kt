@@ -130,6 +130,14 @@ class Handler(
                     )
                 }
 
+                "getPageImage" -> launch(call, result) {
+                    val args = call.arguments as Map<*, *>
+
+                    api.getPageImage(
+                        args["sourceId"] as String, args["isAnime"] as Boolean, args["page"] as String
+                    )
+                }
+
                 "getNovelContent" -> launch (call, result) {
                     val args = call.arguments as Map<*, *>
 
