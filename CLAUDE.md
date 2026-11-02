@@ -249,13 +249,21 @@ that a call made mid-load waits for its provider, and that a multi-season show c
 itself when the jar, JRE or plugins are missing (`CS_JAR`, `CS_JAVA`, `CS_PLUGINS`, `CS_OFFLINE=1` override). If
 Dartotsu is running (port 4567 is taken) the log based checks are skipped.
 
-CloudStream desktop loader (`ExtensionLoader.desktop.kt`): plugins are prepared by two background workers, the list call waits
+CloudStream desktop loader (`ExtensionLoader.desktop.kt`): plugins are prepared by a pool of background workers (half the cores, 2-8), the list call waits
 at most 12 s and returns what is ready (the Dart side polls `pendingExtensions` and republishes the list), a refresh
 only loads new/changed files and unloads removed ones (providers never disappear during one), `provider()` waits up to
 3 minutes for a plugin that is still preparing, and the initial scan starts at `initializeDesktop` (`<data>/extensions/Anime`).
 Converted jars carry a `<name>.jar.cv` stamp (hash of `BytecodeEditor`), so a plugin update of the sidecar no longer
 rebuilds every cached jar. A show whose seasons restart their numbering is sent with the season in `scanlator`
 (`Season N`, `Specials`) so the app's season chips apply.
+
+CloudStream library: the plugin API (`com.lagradost.cloudstream3` MainAPI, extractors, `app`, utils, ...) is no longer hand-copied.
+`syncCloudStreamLibrary` (`cloudStreamCommon/build.gradle.kts`) sparse-fetches `library/src` of `recloudstream/cloudstream` at the pinned
+`upstreamSha` into `build/cloudstream-upstream` and adds `commonMain`, `jvmCommonMain` and `androidMain` as source dirs (desktop compiles the
+androidMain actuals over the bridge's Android-compat layer). Bump the SHA to follow upstream; only app-side classes the library lacks
+(`AppShims.kt`, `BridgeActivityShims.kt`: MainActivity/CommonActivity/UiText/ResultEpisode, `RepositoryManager`, plus `ExtensionLoader`) stay in the repo. `BytecodeEditor.restoreLocalClassOwner` puts the `EnclosingMethod` back on Kotlin local classes (`Outer$func$Local`) that dex dropped it from, otherwise kotlin-reflect (Jackson's Kotlin module) fails with "Unresolved class" (MegaProvider's `VerifiedRepo`). MegaProvider is a repository adder, not a source: it calls `RepositoryManager.addRepository`, which the bridge keeps in memory only.
+`MDL_API_KEY` / `TRAKT_CLIENT_ID` in the generated `BuildConfig` are empty. Popular/latest call the provider's `getMainPage` (first/second
+main page entry) and fall back to an empty search. The installed list is a change stream: the loader keeps one entry per plugin (`queued` / `converting` / `loading` / `failed` / `ready` with its sources / `removed`) with a version counter, `extensionChanges {since, waitMs}` long-polls for entries newer than `since` and `scanExtensions {path}` starts preparing new or changed files without waiting. The desktop Dart class (`_watch` / `_apply`) applies each entry to just that plugin's rows, in place (placeholder rows `Source.isPlaceholder`, id `loading:<path>`, with `installProgress` set while converting; a failed one keeps a delete button), so installing or deleting one plugin never reloads the others. Uninstall deletes the file, drops that plugin's rows locally and tells the runtime to unload it (desktop `scanExtensions`; Android's `refreshExtensions` is incremental too: only new/changed/removed plugins load or unload). Uninstall matches the plugin file by `sourcePlugin` (one plugin can register several providers).
 
 CloudStream desktop jar from a terminal (loads every `.cs3` in a folder, prints how many loaded and which failed):
 

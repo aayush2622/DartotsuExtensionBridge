@@ -11,6 +11,10 @@ class Source {
   String? repo;
   bool? hasUpdate;
 
+  static const placeholderPrefix = 'loading:';
+
+  bool get isPlaceholder => id?.startsWith(placeholderPrefix) ?? false;
+
   Source({
     this.id = '',
     this.name = '',

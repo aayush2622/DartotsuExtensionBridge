@@ -16,6 +16,7 @@ class CdSource extends CloudStreamSource {
     super.hasUpdate,
     super.internalName,
     super.pluginUrl,
+    super.sourcePlugin,
   });
 
   factory CdSource.fromJson(Map<String, dynamic> json) {
@@ -36,6 +37,7 @@ class CdSource extends CloudStreamSource {
       itemType: ItemType.anime,
       internalName: json['internalName'] ?? json['name'],
       pluginUrl: json['pluginUrl'] ?? json['plugin'] ?? json['url'],
+      sourcePlugin: json['sourcePlugin'] as String?,
     );
   }
 

@@ -82,6 +82,9 @@ mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
 
   Future<void> onSourceFileDeleted(File file) async {}
 
+  /// Asks the runtime to drop plugins whose file is gone, without reloading the others.
+  Future<void> unloadRemovedPlugins() async {}
+
   @override
   Set<RepoFormat> get repoFormats => const {RepoFormat.cloudStream};
 
@@ -256,10 +259,20 @@ mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
       s.name ?? s.id ?? 'extension',
     ).toLowerCase();
 
+    final loadedFrom = s.sourcePlugin;
+    final loadedName = loadedFrom == null || loadedFrom.isEmpty
+        ? null
+        : p.basename(loadedFrom).toLowerCase();
+
     await for (final entity in dir!.list()) {
       if (entity is! File) continue;
+      if (loadedName != null &&
+          p.basename(entity.path).toLowerCase() == loadedName) {
+        pluginFile = entity;
+        break;
+      }
       var baseName = p.basenameWithoutExtension(entity.path);
-      if (baseName.toLowerCase() == expectedBaseName) {
+      if (loadedName == null && baseName.toLowerCase() == expectedBaseName) {
         pluginFile = entity;
         break;
       }
@@ -273,22 +286,36 @@ mixin CloudStreamRepoBackend<T extends CloudStreamSource> on Extension {
       Logger.log("Private extension file not found: ${s.name}");
     }
 
-    switch (type) {
-      case ItemType.anime:
-        await fetchInstalledAnimeExtensions();
-        break;
-      default:
-        throw Exception("Unsupported item type: $type");
+    if (type != ItemType.anime) {
+      throw Exception("Unsupported item type: $type");
     }
 
-    final raw = state(type).rawAvailable.value;
+    final plugin = pluginFile == null ? null : p.basename(pluginFile.path);
+    final installed = state(type).installed;
+    installed.value = installed.value
+        .where((e) {
+          final owner = e is CloudStreamSource ? e.sourcePlugin : null;
+          if (plugin != null && owner != null && owner.isNotEmpty) {
+            return p.basename(owner).toLowerCase() != plugin.toLowerCase();
+          }
+          return e.id != s.id;
+        })
+        .toList(growable: false);
+    state(
+      type,
+    ).installProgress.remove('${Source.placeholderPrefix}${loadedFrom ?? ''}');
+
+    unawaited(unloadRemovedPlugins());
+
+    syncAvailable(type);
+    detectUpdates(state(type).rawAvailable.value, type);
+  }
+
+  void syncAvailable(ItemType type) {
     final installedIds = state(type).installed.value.map((e) => e.id).toSet();
-
     state(type).available.value = List.unmodifiable(
-      raw.where((e) => !installedIds.contains(e.id)),
+      state(type).rawAvailable.value.where((e) => !installedIds.contains(e.id)),
     );
-
-    detectUpdates(raw, type);
   }
 
   @override

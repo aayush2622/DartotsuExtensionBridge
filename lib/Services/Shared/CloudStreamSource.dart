@@ -3,6 +3,7 @@ import '../../Models/Source.dart';
 abstract class CloudStreamSource extends Source {
   String? internalName;
   String? pluginUrl;
+  String? sourcePlugin;
 
   CloudStreamSource({
     super.id,
@@ -18,5 +19,6 @@ abstract class CloudStreamSource extends Source {
     super.hasUpdate,
     this.internalName,
     this.pluginUrl,
+    this.sourcePlugin,
   });
 }

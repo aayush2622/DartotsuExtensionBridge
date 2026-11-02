@@ -94,6 +94,19 @@ class CloudStreamExtensions extends Extension
   }
 
   @override
+  Future<void> unloadRemovedPlugins() async {
+    final dir = await extensionsDir;
+    try {
+      await platform.invokeMethod<String>(
+        "getInstalledAnimeExtensions",
+        dir?.path,
+      );
+    } catch (e) {
+      Logger.log("Could not unload removed CloudStream plugins: $e");
+    }
+  }
+
+  @override
   Future<void> fetchAnimeExtensions() async {
     await super.fetchAnimeExtensions();
     anime.available.value = await fetchExtensions(ItemType.anime);
