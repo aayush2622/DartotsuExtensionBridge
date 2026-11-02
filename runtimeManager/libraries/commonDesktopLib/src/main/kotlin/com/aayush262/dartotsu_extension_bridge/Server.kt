@@ -162,6 +162,17 @@ object Server {
             ((api as? com.aayush262.dartotsu_extension_bridge.common.ExtensionLoadStatus)
                 ?.pendingExtensions() ?: 0).toString()
 
+        "extensionChanges" ->
+            (api as? com.aayush262.dartotsu_extension_bridge.common.ExtensionLoadStatus)
+                ?.extensionChanges(params["since"].asLong, params["waitMs"].asLong)
+                ?: """{"version":0,"entries":[]}"""
+
+        "scanExtensions" -> {
+            (api as? com.aayush262.dartotsu_extension_bridge.common.ExtensionLoadStatus)
+                ?.scanExtensions(params["path"].asString)
+            "true"
+        }
+
         "ping" -> "\"pong\""
 
         else -> throw IllegalArgumentException("Unknown method: $method")

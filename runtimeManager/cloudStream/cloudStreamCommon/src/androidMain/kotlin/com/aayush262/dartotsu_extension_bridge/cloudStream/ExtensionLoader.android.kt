@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.Coroutines
 import com.lagradost.cloudstream3.utils.PREFERENCES_NAME
 import com.lagradost.cloudstream3.utils.extractorApis
 import java.io.File
@@ -29,14 +30,35 @@ actual object ExtensionLoader {
 
     actual fun pendingExtensions(): Int = 0
 
+    actual fun changeVersion(): Long = 0L
+
+    actual fun changesSince(since: Long): String = """{"version":0,"entries":[]}"""
+
     actual fun preloadExtensions(path: String) {}
 
     actual fun refreshExtensions(path: String, waitMs: Long) {
-        unloadExtensions()
-        loadExtensions(path)
+        sync(path)
     }
 
     actual fun loadExtensions(path: String) {
+        unloadExtensions()
+        sync(path)
+    }
+
+    private fun unloadPlugin(path: String) {
+        plugins.remove(path)?.let {
+            try {
+                it.plugin.beforeUnload()
+            } catch (_: Exception) {
+            }
+        }
+        AndroidPreferenceRecorder.unregister(File(path).nameWithoutExtension)
+        APIHolder.allProviders.removeAll { it.sourcePlugin == path }
+        APIHolder.apis = APIHolder.apis.filter { it.sourcePlugin != path }
+        extractorApis.removeAll { it.sourcePlugin == path }
+    }
+
+    private fun sync(path: String) {
         val privateDir = File(context.filesDir, "cloudstream-plugins")
         val externalDir = File(path)
 
@@ -79,11 +101,14 @@ actual object ExtensionLoader {
             }
         }
 
-        plugins.keys.forEach { AndroidPreferenceRecorder.unregister(File(it).nameWithoutExtension) }
-        plugins.clear()
+        for ((pluginPath, loaded) in plugins.entries.toList()) {
+            val file = File(pluginPath)
+            if (!file.exists() || file.lastModified() != loaded.stamp) unloadPlugin(pluginPath)
+        }
 
         privateDir.listFiles()
             ?.filter { it.isFile && (it.extension == "apk" || it.extension == "cs3") }
+            ?.filter { !plugins.containsKey(it.absolutePath) }
             ?.forEach { file ->
                 val loaded = try {
                     loadPlugin(file)
@@ -149,7 +174,8 @@ actual object ExtensionLoader {
 
             plugins[file.absolutePath] = LoadedPlugin(
                 plugin = plugin,
-                manifest = manifest
+                manifest = manifest,
+                stamp = file.lastModified()
             )
             if (plugin is Plugin) {
                 plugin.load(context.applicationContext)
@@ -207,7 +233,7 @@ actual object ExtensionLoader {
 
     actual fun unloadExtensions() {
         APIHolder.allProviders.clear()
-        APIHolder.apis.clear()
+        APIHolder.apis = Coroutines.atomicListOf()
 
         plugins.forEach { (path, loaded) ->
             try {

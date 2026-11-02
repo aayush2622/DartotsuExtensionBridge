@@ -82,6 +82,7 @@ object PackageTools {
     fun dex2jar(
         dexFile: String,
         jarFile: String,
+        onProgress: ((Double) -> Unit)? = null,
     ) {
         val finalPath = File(jarFile).toPath()
         val parent = finalPath.parent ?: Path("")
@@ -101,11 +102,20 @@ object PackageTools {
                 .noCode(false)
                 .skipExceptions(false)
                 .dontSanitizeNames(true)
+            onProgress?.invoke(0.02)
+            val started = System.nanoTime()
             writeJar(converter, tmp)
+            val dexMs = (System.nanoTime() - started) / 1_000_000
+            onProgress?.invoke(0.3)
             if (handler.hasException()) {
                 Logger.log("dex2jar reported exceptions while converting $dexFile; running bytecode fixups anyway", LogLevel.ERROR)
             }
-            BytecodeEditor.fixAndroidClasses(tmp, File(dexFile).toPath())
+            val editStarted = System.nanoTime()
+            BytecodeEditor.fixAndroidClasses(tmp, File(dexFile).toPath()) { onProgress?.invoke(0.3 + 0.7 * it) }
+            Logger.log(
+                "Converted ${File(dexFile).name}: dex2jar ${dexMs}ms, bytecode fixups ${(System.nanoTime() - editStarted) / 1_000_000}ms",
+                LogLevel.INFO,
+            )
             Files.move(tmp, finalPath, StandardCopyOption.REPLACE_EXISTING)
         } finally {
             Files.deleteIfExists(tmp)

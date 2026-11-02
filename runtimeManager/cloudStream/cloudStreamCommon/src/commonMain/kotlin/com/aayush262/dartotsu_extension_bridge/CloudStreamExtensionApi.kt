@@ -1,6 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge
 
 import com.aayush262.dartotsu_extension_bridge.cloudStream.CloudStreamSourceMethods
+import com.aayush262.dartotsu_extension_bridge.cloudStream.CloudStreamSources
 import com.aayush262.dartotsu_extension_bridge.cloudStream.ExtensionLoader
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionLoadStatus
@@ -12,7 +13,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import com.lagradost.cloudstream3.APIHolder.allProviders
-import com.lagradost.cloudstream3.APIHolder.mapper
+import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.app
 import kotlin.collections.get
@@ -77,24 +78,20 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi, ExtensionLoadS
 
     override fun pendingExtensions(): Int = ExtensionLoader.pendingExtensions()
 
+    override suspend fun extensionChanges(since: Long, waitMs: Long): String {
+        val deadline = System.currentTimeMillis() + waitMs
+        while (ExtensionLoader.changeVersion() <= since && System.currentTimeMillis() < deadline) {
+            delay(100)
+        }
+        return ExtensionLoader.changesSince(since)
+    }
+
+    override fun scanExtensions(path: String) = ExtensionLoader.refreshExtensions(path, 0)
+
     override suspend fun getInstalledAnimeExtensions(path: String?): String {
         val dir = path ?: return "[]"
         withContext(Dispatchers.IO) { ExtensionLoader.refreshExtensions(dir, LIST_WAIT_MS) }
-        return mapper.writeValueAsString(
-            allProviders.toList().map {
-                mapOf(
-                    "id" to it.name,
-                    "name" to it.name,
-                    "lang" to it.lang,
-                    "supportsLatest" to true,
-                    "sourcePlugin" to it.sourcePlugin,
-                    "baseUrl" to it.mainUrl,
-                    "iconUrl" to "https://avatars.githubusercontent.com/u/110591699?s=48&v=4",
-                    "itemType" to 1,
-                    "version" to ExtensionLoader.plugins[it.sourcePlugin]?.manifest?.version.toString()
-                )
-            }
-        )
+        return mapper.writeValueAsString(CloudStreamSources.all())
     }
 
     private companion object {
@@ -108,7 +105,7 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi, ExtensionLoadS
         page: Int
     ): String {
         return mapper.writeValueAsString(
-            methods(sourceId).search("", page)
+            methods(sourceId).browse(page, 0)
         )
     }
 
@@ -118,7 +115,7 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi, ExtensionLoadS
         page: Int
     ): String {
         return mapper.writeValueAsString(
-            methods(sourceId).search("", page)
+            methods(sourceId).browse(page, 1)
         )
     }
 

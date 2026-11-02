@@ -3,6 +3,7 @@ package com.aayush262.dartotsu_extension_bridge.cloudStream
 
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.fasterxml.jackson.core.type.TypeReference
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.net.URI
@@ -12,8 +13,7 @@ private const val TAG = "CloudStreamMethods"
 private fun Any?.toRawMap(): Map<String, Any?>? {
     if (this == null) return null
     return try {
-        val mapper = APIHolder.mapper
-        val json = mapper.writeValueAsString(this)
+                val json = mapper.writeValueAsString(this)
         mapper.readValue(
             json,
             object : TypeReference<Map<String, Any?>>() {}
@@ -61,6 +61,26 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         } catch (e: Exception) {
             Logger.log("ERROR: '${provider.name}' search failed for query '$query'", e)
             mapOf("list" to emptyList<Any>(), "hasNextPage" to false)
+        } catch (_: NotImplementedError) {
+            mapOf("list" to emptyList<Any>(), "hasNextPage" to false)
+        }
+    }
+
+    suspend fun browse(page: Int, index: Int): Map<String, Any?> {
+        val entry = provider.mainPage.getOrNull(index) ?: provider.mainPage.firstOrNull()
+        if (!provider.hasMainPage || entry == null) return search("", page)
+        val request = MainPageRequest(entry.name, entry.data, entry.horizontalImages)
+        return try {
+            val res = provider.getMainPage(page, request)
+            val items = res?.items?.flatMap { it.list }.orEmpty()
+            if (items.isEmpty()) return search("", page)
+            mapOf(
+                "list" to items.distinctBy { it.url }.map { it.toMap() },
+                "hasNextPage" to (res?.hasNext ?: false)
+            )
+        } catch (e: Exception) {
+            Logger.log("ERROR: '${provider.name}' main page failed", e)
+            search("", page)
         }
     }
 

@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.plugins
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 
 data class Repository(
@@ -12,9 +13,17 @@ data class Repository(
 )
 
 object RepositoryManager {
-    fun getRepositories(): Array<RepositoryData> = emptyArray()
+    private val repositories = java.util.concurrent.CopyOnWriteArrayList<RepositoryData>()
 
-    suspend fun parseRepository(url: String): Repository? = null
+    fun getRepositories(): Array<RepositoryData> = repositories.toTypedArray()
 
-    suspend fun addRepository(repository: RepositoryData) {}
+    suspend fun parseRepository(url: String): Repository? = try {
+        app.get(url).parsedSafe<Repository>()
+    } catch (_: Exception) {
+        null
+    }
+
+    suspend fun addRepository(repository: RepositoryData) {
+        if (repositories.none { it.url == repository.url }) repositories.add(repository)
+    }
 }
