@@ -252,12 +252,14 @@ class _Host {
 
   List<Map<String, Object?>> mediaList(dynamic raw) {
     if (raw is! List) return const [];
-    return [
+    final items = [
       for (final e in raw.whereType<Map>())
-        () {
-          final n = NovelItem.fromJson(Map<String, dynamic>.from(e));
-          return DMedia(title: n.name, url: n.path, cover: n.cover).toJson();
-        }(),
+        NovelItem.fromJson(Map<String, dynamic>.from(e)),
+    ];
+    return [
+      for (final n in items)
+        if (n.path.isNotEmpty)
+          DMedia(title: n.name, url: n.path, cover: n.cover).toJson(),
     ];
   }
 

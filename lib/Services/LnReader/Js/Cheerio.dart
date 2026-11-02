@@ -53,7 +53,6 @@ class JsCheerio {
           case 'innerHtml':
           case 'outerHtml':
           case 'val':
-          case 'attr':
             return '';
           case 'attribs':
             return jsonEncode(<String, String>{});
@@ -66,6 +65,9 @@ class JsCheerio {
           case 'last':
           case 'clone':
           case 'closest':
+          case 'attr':
+          case 'tagName':
+          case 'data':
           case 'nodeType':
             return jsonEncode(null);
           default:
@@ -101,7 +103,19 @@ class JsCheerio {
               element is Element && element.classes.contains(methodArgs[0]);
           break;
         case 'attr':
-          result = element.attributes[methodArgs[0]] ?? '';
+          result = jsonEncode(element.attributes[methodArgs[0]]);
+          break;
+        case 'tagName':
+          result = jsonEncode(element is Element ? element.localName : null);
+          break;
+        case 'data':
+          result = jsonEncode(
+            element is Text
+                ? element.data
+                : element is Comment
+                ? element.data
+                : null,
+          );
           break;
         case 'setAttr':
           element.attributes[methodArgs[0]] = methodArgs[1];
@@ -371,9 +385,14 @@ class Element {
   val() { return this._call("val"); }
   attr(name, value) {
     if (value !== undefined) return this.setAttr(name, value);
-    return this._call("attr", [name]);
+    const found = JSON.parse(this._call("attr", [name]));
+    return found === null ? undefined : found;
   }
   hasClass(cls) { return this._call("hasClass", [cls]); }
+  get name() {
+    const tag = JSON.parse(this._call("tagName"));
+    return tag === null ? undefined : tag;
+  }
 
   addClass(cls) { this._call("addClass", [cls]); return this; }
   removeClass(cls) { this._call("removeClass", [cls]); return this; }
@@ -426,6 +445,21 @@ class Element {
 
   get nodeType() {
     return JSON.parse(this._call("nodeType"));
+  }
+
+  get type() {
+    const kind = this.nodeType;
+    if (kind === null) return undefined;
+    return kind === 1 ? "tag" : kind === 3 ? "text" : kind === 8 ? "comment" : "root";
+  }
+
+  get tagName() {
+    return this.name;
+  }
+
+  get data() {
+    const text = JSON.parse(this._call("data"));
+    return text === null ? undefined : text;
   }
 
   get attribs() {
@@ -742,7 +776,11 @@ function load(html) {
     } else if (input instanceof Element) {
       return input;
     } else if (typeof input === "string") {
-      return root.find(input); // returns ElementCollection
+      const found = root.find(input);
+      if (found.length === 0 && /^\\s*(html|body)\\s*\$/i.test(input)) {
+        return new ElementCollection([root]);
+      }
+      return found;
     } else if (input && input._key) {
       return new ElementCollection([new Element(input._key)]);
     } else {

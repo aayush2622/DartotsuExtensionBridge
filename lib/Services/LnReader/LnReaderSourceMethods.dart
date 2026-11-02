@@ -90,20 +90,51 @@ class LnReaderSourceMethods extends SourceMethods {
   Future<Pages> search(String query, int page, List<dynamic> filters) =>
       _pages('search', {'query': query, 'page': page});
 
+  final Map<String, ({Future<DMedia> load, DateTime? finished})> _details = {};
+
+  static const _detailReuse = Duration(seconds: 20);
+
   @override
-  Future<DMedia> getDetail(DMedia media) async {
+  Future<DMedia> getDetail(DMedia media) {
+    final key = media.url ?? '';
+    final known = _details[key];
+    if (known != null) {
+      final finished = known.finished;
+      if (finished == null ||
+          DateTime.now().difference(finished) < _detailReuse) {
+        return known.load;
+      }
+    }
+    final load = _loadDetail(media);
+    _details[key] = (load: load, finished: null);
+    unawaited(
+      load.then<void>(
+        (_) {
+          if (identical(_details[key]?.load, load)) {
+            _details[key] = (load: load, finished: DateTime.now());
+          }
+        },
+        onError: (Object _) {
+          if (identical(_details[key]?.load, load)) _details.remove(key);
+        },
+      ),
+    );
+    return load;
+  }
+
+  Future<DMedia> _loadDetail(DMedia media) async {
     final worker = await _ensureWorker();
     return DMedia.fromJson(await worker.detail(media));
   }
 
   @override
   Future<String?> getNovelContent(DEpisode episode) async {
+    final worker = await _ensureWorker();
     try {
-      final worker = await _ensureWorker();
       return await worker.content(episode.url ?? '');
     } catch (e) {
       Logger.log('LNReader parseChapter failed: $e');
-      return null;
+      rethrow;
     }
   }
 

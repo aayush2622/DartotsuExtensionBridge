@@ -15,14 +15,14 @@ class ChapterItem {
 
   factory ChapterItem.fromJson(Map<String, dynamic> json) {
     return ChapterItem(
-      name: json['name'],
-      path: json['path'],
-      releaseTime: json['releaseTime'],
+      name: (json['name'] ?? '').toString(),
+      path: (json['path'] ?? '').toString(),
+      releaseTime: json['releaseTime']?.toString(),
       chapterNumber: json['chapterNumber'] != null
           ? (json['chapterNumber'] as num?)?.toInt() ??
                 int.tryParse(json['chapterNumber'])
           : null,
-      page: json['page'],
+      page: json['page']?.toString(),
     );
   }
 
@@ -46,9 +46,9 @@ class NovelItem {
 
   factory NovelItem.fromJson(Map<String, dynamic> json) {
     return NovelItem(
-      name: json['name'],
-      path: json['path'],
-      cover: json['cover'],
+      name: (json['name'] ?? '').toString(),
+      path: (json['path'] ?? '').toString(),
+      cover: json['cover']?.toString(),
     );
   }
 
