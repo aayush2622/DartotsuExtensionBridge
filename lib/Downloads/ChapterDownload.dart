@@ -94,21 +94,16 @@ Future<void> downloadPages(
         if (await _existing(dir, base) == null) {
           final urlExt = extensionOf(page.url, fallback: '');
           final provisional = File(p.join(dir.path, '$base.tmp'));
-          final fetch = page.fetch;
-          if (fetch != null) {
-            await provisional.writeAsBytes(await fetch(), flush: true);
-          } else {
-            await fetchWithRetry(
-              () => fetchFile(
-                url: page.url,
-                target: provisional,
-                cancel: cancel,
-                headers: page.headers,
-                onProgress: (_, _) {},
-              ),
+          await fetchWithRetry(
+            () => fetchFile(
+              url: page.url,
+              target: provisional,
               cancel: cancel,
-            );
-          }
+              headers: page.headers,
+              onProgress: (_, _) {},
+            ),
+            cancel: cancel,
+          );
           final process = page.process;
           if (process != null) {
             final processed = await process(await provisional.readAsBytes());

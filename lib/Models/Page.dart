@@ -8,9 +8,7 @@ class PageUrl {
   /// sources that scramble or re-encode their pages. Not part of the JSON form.
   Future<Uint8List> Function(Uint8List data)? process;
 
-  Future<Uint8List> Function()? fetch;
-
-  PageUrl(this.url, {this.headers, this.process, this.fetch});
+  PageUrl(this.url, {this.headers, this.process});
 
   factory PageUrl.fromJson(Map<String, dynamic> json) {
     // See the matching comment in Models/Video.dart: a missing url must not
