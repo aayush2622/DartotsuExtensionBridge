@@ -54,6 +54,7 @@ actual object CloudStreamPlatformInit {
         application.onCreate()
 
         DataStore.init(application)
+        com.lagradost.api.setContext(application)
         AcraApplication.context = application
         CloudStreamApp.context = application
 

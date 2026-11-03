@@ -8,6 +8,7 @@ import '../../Models/DMedia.dart';
 import '../../Models/Page.dart';
 import '../../Models/Pages.dart';
 import '../../Models/Source.dart';
+import '../../Network/PageProxy.dart';
 import '../../Models/SourceFilter.dart';
 import '../../Models/SourcePreference.dart';
 import '../../Models/Video.dart';
@@ -120,7 +121,31 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
     });
 
     final pages = await compute(parsePageUrls, result);
-    return pagesWithHeaders(pages, baseUrl: source.baseUrl);
+    final withHeaders = pagesWithHeaders(pages, baseUrl: source.baseUrl);
+    await _serveFetched(withHeaders, result);
+    return withHeaders;
+  }
+
+  Future<void> _serveFetched(List<PageUrl> pages, List<dynamic> raw) async {
+    final wanted = [
+      for (final e in raw)
+        if (e is Map && e['url'] != null) e,
+    ];
+    if (wanted.length != pages.length) return;
+    for (final (i, entry) in wanted.indexed) {
+      final fetch = entry['fetch'];
+      if (fetch == null) continue;
+      final payload = jsonEncode(fetch);
+      pages[i]
+        ..url = await PageProxy.serve(() async {
+          final result = await bridge.call<Map<dynamic, dynamic>>(
+            'getPageImage',
+            {'sourceId': source.id, 'isAnime': isAnime, 'page': payload},
+          );
+          return base64Decode(result['data'] as String);
+        })
+        ..headers = null;
+    }
   }
 
   @override

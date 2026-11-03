@@ -132,8 +132,10 @@ class EmbeddedJvmBridge implements JavaBridge {
         'logDirectory': logDirectory,
       });
     } catch (e) {
-      Logger.log('[JVM] Start failed after ${watch.elapsedMilliseconds} ms: $e',
-          show: true);
+      Logger.log(
+        '[JVM] Start failed after ${watch.elapsedMilliseconds} ms: $e',
+        show: true,
+      );
       if (await flag.exists()) await flag.delete();
       rethrow;
     }
@@ -142,9 +144,13 @@ class EmbeddedJvmBridge implements JavaBridge {
   }
 
   @override
-  Future<void> init({required String pluginJarPath}) async {
+  Future<void> init({
+    required String pluginJarPath,
+    List<String> libraryJarPaths = const [],
+  }) async {
     if (_loaded) return;
-    _jarPath = pluginJarPath;
+    final classpath = [...libraryJarPaths, pluginJarPath].join(':');
+    _jarPath = classpath;
 
     await (_vmStart ??= _startVm().catchError((Object e) {
       _vmStart = null;
@@ -153,15 +159,13 @@ class EmbeddedJvmBridge implements JavaBridge {
 
     final watch = Stopwatch()..start();
     try {
-      await _channel.invokeMethod<void>('load', {'jarPath': pluginJarPath});
+      await _channel.invokeMethod<void>('load', {'jarPath': classpath});
     } catch (e) {
-      Logger.log('[JVM] Loading $pluginJarPath failed: $e', show: true);
+      Logger.log('[JVM] Loading $classpath failed: $e', show: true);
       rethrow;
     }
     _loaded = true;
-    Logger.log(
-      '[JVM] Loaded $pluginJarPath in ${watch.elapsedMilliseconds} ms',
-    );
+    Logger.log('[JVM] Loaded $classpath in ${watch.elapsedMilliseconds} ms');
   }
 
   @override
@@ -235,11 +239,11 @@ class EmbeddedJvmBridge implements JavaBridge {
     _jarPath = null;
     if (jar == null) return;
     unawaited(
-      _channel
-          .invokeMethod<void>('unload', {'jarPath': jar})
-          .catchError((Object e) {
-            Logger.log('[JVM] Unloading $jar failed: $e');
-          }),
+      _channel.invokeMethod<void>('unload', {'jarPath': jar}).catchError((
+        Object e,
+      ) {
+        Logger.log('[JVM] Unloading $jar failed: $e');
+      }),
     );
   }
 

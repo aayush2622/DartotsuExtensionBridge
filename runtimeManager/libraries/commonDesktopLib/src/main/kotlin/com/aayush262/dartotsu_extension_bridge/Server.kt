@@ -132,6 +132,12 @@ object Server {
             params["episode"].asString,
         )
 
+        "getPageImage" -> api.getPageImage(
+            params["sourceId"].asString,
+            params["isAnime"].asBoolean,
+            params["page"].asString,
+        )
+
         "getNovelContent" -> api.getNovelContent(
             params["sourceId"].asString,
             params["episode"].asString,
@@ -147,6 +153,25 @@ object Server {
             params["key"].asString,
             params["value"].asString,
         ).toString()
+
+        "releaseCachedJar" -> api.releaseCachedJar(
+            params["jarPath"].asString,
+        ).toString()
+
+        "pendingExtensions" ->
+            ((api as? com.aayush262.dartotsu_extension_bridge.common.ExtensionLoadStatus)
+                ?.pendingExtensions() ?: 0).toString()
+
+        "extensionChanges" ->
+            (api as? com.aayush262.dartotsu_extension_bridge.common.ExtensionLoadStatus)
+                ?.extensionChanges(params["since"].asLong, params["waitMs"].asLong)
+                ?: """{"version":0,"entries":[]}"""
+
+        "scanExtensions" -> {
+            (api as? com.aayush262.dartotsu_extension_bridge.common.ExtensionLoadStatus)
+                ?.scanExtensions(params["path"].asString)
+            "true"
+        }
 
         "ping" -> "\"pong\""
 

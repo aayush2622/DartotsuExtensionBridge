@@ -8,10 +8,16 @@ import 'DomSelector.dart';
 
 class JsCheerio {
   late JavascriptRuntime runtime;
-  final Map<int, Element?> _elements = {};
+  final Map<int, Node?> _elements = {};
   int _elementKey = 0;
 
   JsCheerio(this.runtime);
+
+  int _register(Node node) {
+    _elementKey++;
+    _elements[_elementKey] = node;
+    return _elementKey;
+  }
 
   void init() {
     runtime.onMessage('load', (dynamic args) {
@@ -19,15 +25,55 @@ class JsCheerio {
       final doc = parse(html);
       _elementKey++;
       _elements[_elementKey] = doc.body;
-      return _elementKey;
+      return jsonEncode(_elementKey);
     });
 
     runtime.onMessage('element_call', (dynamic args) {
       final method = args[0] as String;
-      final key = args[1] as int;
-      final element = _elements[key];
+      final key = args[1] as int?;
+      final element = key == null ? null : _elements[key];
 
-      if (element == null) return null;
+      if (element == null) {
+        switch (method) {
+          case 'find':
+          case 'children':
+          case 'contents':
+          case 'parents':
+          case 'siblings':
+          case 'nextAll':
+          case 'prevAll':
+          case 'nextUntil':
+          case 'prevUntil':
+            return jsonEncode(<int>[]);
+          case 'hasClass':
+          case 'is':
+            return false;
+          case 'text':
+          case 'html':
+          case 'innerHtml':
+          case 'outerHtml':
+          case 'val':
+            return '';
+          case 'attribs':
+            return jsonEncode(<String, String>{});
+          case 'index':
+            return jsonEncode(-1);
+          case 'parent':
+          case 'next':
+          case 'prev':
+          case 'first':
+          case 'last':
+          case 'clone':
+          case 'closest':
+          case 'attr':
+          case 'tagName':
+          case 'data':
+          case 'nodeType':
+            return jsonEncode(null);
+          default:
+            return null;
+        }
+      }
 
       final methodArgs = args.length > 2 ? args[2] : [];
 
@@ -39,22 +85,37 @@ class JsCheerio {
           break;
         case 'html':
         case 'innerHtml':
-          result = element.innerHtml;
+          result = element is Element ? element.innerHtml : '';
           break;
         case 'outerHtml':
-          result = element.outerHtml;
+          result = element is Element
+              ? element.outerHtml
+              : (element.text ?? '');
           break;
         case 'addClass':
-          element.classes.add(methodArgs[0]);
+          if (element is Element) element.classes.add(methodArgs[0]);
           break;
         case 'removeClass':
-          element.classes.remove(methodArgs[0]);
+          if (element is Element) element.classes.remove(methodArgs[0]);
           break;
         case 'hasClass':
-          result = element.classes.contains(methodArgs[0]);
+          result =
+              element is Element && element.classes.contains(methodArgs[0]);
           break;
         case 'attr':
-          result = element.attributes[methodArgs[0]] ?? '';
+          result = jsonEncode(element.attributes[methodArgs[0]]);
+          break;
+        case 'tagName':
+          result = jsonEncode(element is Element ? element.localName : null);
+          break;
+        case 'data':
+          result = jsonEncode(
+            element is Text
+                ? element.data
+                : element is Comment
+                ? element.data
+                : null,
+          );
           break;
         case 'setAttr':
           element.attributes[methodArgs[0]] = methodArgs[1];
@@ -83,17 +144,19 @@ class JsCheerio {
           if (parent != null) {
             _elementKey++;
             _elements[_elementKey] = parent;
-            result = _elementKey;
+            return jsonEncode(_elementKey);
           }
-          break;
+          return jsonEncode(null);
         case 'find':
+          if (element is! Element) {
+            result = jsonEncode(<int>[]);
+            break;
+          }
           final selector = methodArgs[0];
           final elements = element.select(selector);
           List<int> keys = [];
           for (var el in elements ?? []) {
-            _elementKey++;
-            _elements[_elementKey] = el;
-            keys.add(_elementKey);
+            keys.add(_register(el));
           }
           result = jsonEncode(keys);
           break;
@@ -102,32 +165,38 @@ class JsCheerio {
           if (first != null) {
             _elementKey++;
             _elements[_elementKey] = first;
-            result = _elementKey;
+            return jsonEncode(_elementKey);
           }
-          break;
+          return jsonEncode(null);
         case 'last':
           final last = element.children.lastOrNull;
           if (last != null) {
             _elementKey++;
             _elements[_elementKey] = last;
-            result = _elementKey;
+            return jsonEncode(_elementKey);
           }
-          break;
+          return jsonEncode(null);
         case 'next':
-          final next = element.nextElementSibling;
+          final next = element is Element ? element.nextElementSibling : null;
           if (next != null) {
-            _elementKey++;
-            _elements[_elementKey] = next;
-            result = _elementKey;
+            return jsonEncode(_register(next));
           }
-          break;
+          return jsonEncode(null);
         case 'prev':
-          final prev = element.previousElementSibling;
+          final prev = element is Element
+              ? element.previousElementSibling
+              : null;
           if (prev != null) {
-            _elementKey++;
-            _elements[_elementKey] = prev;
-            result = _elementKey;
+            return jsonEncode(_register(prev));
           }
+          return jsonEncode(null);
+        case 'clone':
+          final cloned = element.clone(true);
+          return jsonEncode(_register(cloned));
+        case 'is':
+          result =
+              element is Element &&
+              elementMatches(element, methodArgs[0] as String);
           break;
         case 'append':
           final htmlToAppend = methodArgs[0];
@@ -149,6 +218,150 @@ class JsCheerio {
         case 'remove':
           element.remove();
           break;
+        case 'nodeType':
+          return jsonEncode(element.nodeType);
+        case 'attribs':
+          if (element is! Element) {
+            return jsonEncode(<String, String>{});
+          }
+          return jsonEncode(
+            element.attributes.map((k, v) => MapEntry(k.toString(), v)),
+          );
+        case 'contents':
+          if (element is! Element) {
+            return jsonEncode(<int>[]);
+          }
+          result = jsonEncode([for (final n in element.nodes) _register(n)]);
+          break;
+        case 'replaceWith':
+        case 'before':
+        case 'after':
+          final parent = element.parentNode;
+          if (parent != null) {
+            final idx = parent.nodes.indexOf(element);
+            if (idx != -1) {
+              final fragment = parseFragment(methodArgs[0]?.toString() ?? '');
+              final newNodes = fragment.nodes.toList();
+              if (method == 'replaceWith') {
+                parent.nodes.removeAt(idx);
+                parent.nodes.insertAll(idx, newNodes);
+              } else if (method == 'before') {
+                parent.nodes.insertAll(idx, newNodes);
+              } else {
+                parent.nodes.insertAll(idx + 1, newNodes);
+              }
+            }
+          }
+          break;
+        case 'index':
+          if (element is Element) {
+            final parent = element.parent;
+            if (parent != null) {
+              return jsonEncode(parent.children.indexOf(element));
+            }
+          }
+          return jsonEncode(-1);
+        case 'siblings':
+          if (element is! Element || element.parent == null) {
+            return jsonEncode(<int>[]);
+          }
+          result = jsonEncode([
+            for (final sib in element.parent!.children)
+              if (sib != element) _register(sib),
+          ]);
+          break;
+        case 'nextAll':
+          if (element is! Element) {
+            return jsonEncode(<int>[]);
+          }
+          {
+            final keys = <int>[];
+            var cur = element.nextElementSibling;
+            while (cur != null) {
+              keys.add(_register(cur));
+              cur = cur.nextElementSibling;
+            }
+            result = jsonEncode(keys);
+          }
+          break;
+        case 'prevAll':
+          if (element is! Element) {
+            return jsonEncode(<int>[]);
+          }
+          {
+            final keys = <int>[];
+            var cur = element.previousElementSibling;
+            while (cur != null) {
+              keys.add(_register(cur));
+              cur = cur.previousElementSibling;
+            }
+            result = jsonEncode(keys.reversed.toList());
+          }
+          break;
+        case 'nextUntil':
+          if (element is! Element) {
+            return jsonEncode(<int>[]);
+          }
+          {
+            final selector = methodArgs.isNotEmpty
+                ? methodArgs[0] as String?
+                : null;
+            final keys = <int>[];
+            var cur = element.nextElementSibling;
+            while (cur != null) {
+              if (selector != null && elementMatches(cur, selector)) break;
+              keys.add(_register(cur));
+              cur = cur.nextElementSibling;
+            }
+            result = jsonEncode(keys);
+          }
+          break;
+        case 'prevUntil':
+          if (element is! Element) {
+            return jsonEncode(<int>[]);
+          }
+          {
+            final selector = methodArgs.isNotEmpty
+                ? methodArgs[0] as String?
+                : null;
+            final keys = <int>[];
+            var cur = element.previousElementSibling;
+            while (cur != null) {
+              if (selector != null && elementMatches(cur, selector)) break;
+              keys.add(_register(cur));
+              cur = cur.previousElementSibling;
+            }
+            result = jsonEncode(keys.reversed.toList());
+          }
+          break;
+        case 'parents':
+          {
+            final selector = methodArgs.isNotEmpty
+                ? methodArgs[0] as String?
+                : null;
+            final keys = <int>[];
+            var cur = element.parent;
+            while (cur != null) {
+              if (selector == null || elementMatches(cur, selector)) {
+                keys.add(_register(cur));
+              }
+              cur = cur.parent;
+            }
+            result = jsonEncode(keys);
+          }
+          break;
+        case 'closest':
+          {
+            final selector = methodArgs[0] as String;
+            Element? cur = element is Element ? element : element.parent;
+            while (cur != null) {
+              if (elementMatches(cur, selector)) {
+                return jsonEncode(_register(cur));
+              }
+              cur = cur.parent;
+            }
+            return jsonEncode(null);
+          }
         default:
           result = 'Unsupported method: $method';
       }
@@ -170,8 +383,16 @@ class Element {
   html() { return this._call("html"); }
   outerHtml() { return this._call("outerHtml"); }
   val() { return this._call("val"); }
-  attr(name) { return this._call("attr", [name]); }
+  attr(name, value) {
+    if (value !== undefined) return this.setAttr(name, value);
+    const found = JSON.parse(this._call("attr", [name]));
+    return found === null ? undefined : found;
+  }
   hasClass(cls) { return this._call("hasClass", [cls]); }
+  get name() {
+    const tag = JSON.parse(this._call("tagName"));
+    return tag === null ? undefined : tag;
+  }
 
   addClass(cls) { this._call("addClass", [cls]); return this; }
   removeClass(cls) { this._call("removeClass", [cls]); return this; }
@@ -195,29 +416,116 @@ class Element {
   }
 
   parent() {
-    return new Element(this._call("parent"));
+    return new Element(JSON.parse(this._call("parent")));
   }
 
   next() {
-    return new Element(this._call("next"));
+    return new Element(JSON.parse(this._call("next")));
   }
 
   prev() {
-    return new Element(this._call("prev"));
+    return new Element(JSON.parse(this._call("prev")));
   }
 
   first() {
-    return new Element(this._call("first"));
+    return new Element(JSON.parse(this._call("first")));
   }
 
   last() {
-    return new Element(this._call("last"));
+    return new Element(JSON.parse(this._call("last")));
   }
+
+  clone() {
+    return new Element(JSON.parse(this._call("clone")));
+  }
+
+  is(selector) {
+    return this._call("is", [selector]);
+  }
+
+  get nodeType() {
+    return JSON.parse(this._call("nodeType"));
+  }
+
+  get type() {
+    const kind = this.nodeType;
+    if (kind === null) return undefined;
+    return kind === 1 ? "tag" : kind === 3 ? "text" : kind === 8 ? "comment" : "root";
+  }
+
+  get tagName() {
+    return this.name;
+  }
+
+  get data() {
+    const text = JSON.parse(this._call("data"));
+    return text === null ? undefined : text;
+  }
+
+  get attribs() {
+    return JSON.parse(this._call("attribs"));
+  }
+
+  contents() {
+    const keys = JSON.parse(this._call("contents"));
+    return new ElementCollection(keys.map(k => new Element(k)), new ElementCollection([this]));
+  }
+
+  replaceWith(html) { this._call("replaceWith", [html]); return this; }
+  before(html) { this._call("before", [html]); return this; }
+  after(html) { this._call("after", [html]); return this; }
+
+  index() { return JSON.parse(this._call("index")); }
+
+  siblings(selector) {
+    const keys = JSON.parse(this._call("siblings"));
+    let els = keys.map(k => new Element(k));
+    if (selector) els = els.filter(el => el.is(selector));
+    return new ElementCollection(els, new ElementCollection([this]));
+  }
+
+  nextAll(selector) {
+    const keys = JSON.parse(this._call("nextAll"));
+    let els = keys.map(k => new Element(k));
+    if (selector) els = els.filter(el => el.is(selector));
+    return new ElementCollection(els, new ElementCollection([this]));
+  }
+
+  prevAll(selector) {
+    const keys = JSON.parse(this._call("prevAll"));
+    let els = keys.map(k => new Element(k));
+    if (selector) els = els.filter(el => el.is(selector));
+    return new ElementCollection(els, new ElementCollection([this]));
+  }
+
+  nextUntil(selector) {
+    const keys = JSON.parse(this._call("nextUntil", [selector]));
+    return new ElementCollection(keys.map(k => new Element(k)), new ElementCollection([this]));
+  }
+
+  prevUntil(selector) {
+    const keys = JSON.parse(this._call("prevUntil", [selector]));
+    return new ElementCollection(keys.map(k => new Element(k)), new ElementCollection([this]));
+  }
+
+  parents(selector) {
+    const keys = JSON.parse(this._call("parents", [selector || null]));
+    return new ElementCollection(keys.map(k => new Element(k)), new ElementCollection([this]));
+  }
+
+  closest(selector) {
+    return new Element(JSON.parse(this._call("closest", [selector])));
+  }
+
+  prop(name) { return this._call("attr", [name]); }
+
+  css(name, value) { return value === undefined ? "" : this; }
 }
 
 class ElementCollection {
-  constructor(elements) {
+  constructor(elements, prevObject = null) {
     this.elements = elements;
+    this.prevObject = prevObject;
   }
 
   text() {
@@ -227,38 +535,42 @@ class ElementCollection {
   }
 
   html() {
-    return this.first()?.html();
+    return this.get(0).html();
   }
 
   outerHtml() {
-    return this.first()?.outerHtml();
+    return this.get(0).outerHtml();
   }
 
-  attr(name) {
-    return this.first()?.attr(name);
+  attr(name, value) {
+    if (value !== undefined) {
+      this.elements.forEach(el => el.attr(name, value));
+      return this;
+    }
+    return this.get(0).attr(name);
   }
 
   hasClass(cls) {
-    return this.first()?.hasClass(cls);
+    return this.get(0).hasClass(cls);
   }
 
   each(fn) {
-    this.elements.forEach((el, i) => fn(i, el));
+    this.elements.forEach((el, i) => fn.call(el, i, el));
     return this;
   }
 
   map(fn) {
-    return new ElementCollection(this.elements.map((el, i) => fn(i, el)));
+    return new ElementCollection(this.elements.map((el, i) => fn.call(el, i, el)));
   }
 
   filter(fn) {
-    return new ElementCollection(this.elements.filter(function (el, i) {
+    return new ElementCollection(this.elements.filter((el, i) => {
       try {
-        return fn(i, el);
+        return fn.call(el, i, el);
       } catch (_) {
         return false;
       }
-    }));
+    }), this);
   }
 
   addClass(cls) {
@@ -311,7 +623,7 @@ class ElementCollection {
       const keys = JSON.parse(el._call("find", [selector]));
       return keys.map(k => new Element(k));
     });
-    return new ElementCollection(found);
+    return new ElementCollection(found, this);
   }
 
   children() {
@@ -319,37 +631,129 @@ class ElementCollection {
       const keys = JSON.parse(el._call("children"));
       return keys.map(k => new Element(k));
     });
-    return new ElementCollection(children);
+    return new ElementCollection(children, this);
+  }
+
+  contents() {
+    const all = this.elements.flatMap(el => el.contents().toArray());
+    return new ElementCollection(all, this);
+  }
+
+  addBack(selector) {
+    const prev = this.prevObject;
+    if (!prev) return this;
+    let merged = [...prev.elements, ...this.elements];
+    if (selector) merged = merged.filter(el => el.is(selector));
+    return new ElementCollection(merged, this);
+  }
+
+  end() {
+    return this.prevObject || this;
+  }
+
+  replaceWith(html) { this.elements.forEach(el => el.replaceWith(html)); return this; }
+  before(html) { this.elements.forEach(el => el.before(html)); return this; }
+  after(html) { this.elements.forEach(el => el.after(html)); return this; }
+
+  not(selector) {
+    return new ElementCollection(this.elements.filter(el => !el.is(selector)), this);
+  }
+
+  add(other) {
+    let extra = [];
+    if (other instanceof ElementCollection) extra = other.elements;
+    else if (other instanceof Element) extra = [other];
+    else if (Array.isArray(other)) extra = other;
+    return new ElementCollection([...this.elements, ...extra]);
+  }
+
+  eq(index) {
+    const el = this.elements[index < 0 ? this.elements.length + index : index];
+    return new ElementCollection(el !== undefined ? [el] : [], this);
+  }
+
+  index() {
+    return this.get(0).index();
+  }
+
+  closest(selector) {
+    const found = this.elements.map(el => el.closest(selector)).filter(el => el._key != null);
+    return new ElementCollection(found, this);
+  }
+
+  parents(selector) {
+    const all = this.elements.flatMap(el => el.parents(selector).toArray());
+    return new ElementCollection(all, this);
+  }
+
+  siblings(selector) {
+    const all = this.elements.flatMap(el => el.siblings(selector).toArray());
+    return new ElementCollection(all, this);
+  }
+
+  nextAll(selector) {
+    const all = this.elements.flatMap(el => el.nextAll(selector).toArray());
+    return new ElementCollection(all, this);
+  }
+
+  prevAll(selector) {
+    const all = this.elements.flatMap(el => el.prevAll(selector).toArray());
+    return new ElementCollection(all, this);
+  }
+
+  prop(name) {
+    return this.get(0).prop(name);
+  }
+
+  css(name, value) {
+    if (value === undefined) return "";
+    this.elements.forEach(el => el.css(name, value));
+    return this;
   }
 
   parent() {
-    const parents = this.elements.map(el => new Element(el._call("parent")));
-    return new ElementCollection(parents);
+    const parents = this.elements.map(el => el.parent()).filter(el => el._key != null);
+    return new ElementCollection(parents, this);
   }
 
   next() {
-    const nextEls = this.elements.map(el => new Element(el._call("next")));
-    return new ElementCollection(nextEls);
+    const nextEls = this.elements.map(el => el.next()).filter(el => el._key != null);
+    return new ElementCollection(nextEls, this);
   }
 
   prev() {
-    const prevEls = this.elements.map(el => new Element(el._call("prev")));
-    return new ElementCollection(prevEls);
+    const prevEls = this.elements.map(el => el.prev()).filter(el => el._key != null);
+    return new ElementCollection(prevEls, this);
+  }
+
+  clone() {
+    return new ElementCollection(this.elements.map(el => el.clone()));
+  }
+
+  is(selector) {
+    return this.elements.some(el => el.is(selector));
   }
 
   first() {
-    return this.get(0);
+    const el = this.get(0);
+    return new ElementCollection(el._key != null ? [el] : [], this);
   }
 
   last() {
-    return this.get(this.elements.length - 1);
+    const el = this.get(this.elements.length - 1);
+    return new ElementCollection(el._key != null ? [el] : [], this);
   }
 
   get(index) {
-    return this.elements[index] || new Stub();
+    if (index === undefined) {
+      return this.elements;
+    }
+    const i = index < 0 ? this.elements.length + index : index;
+    const el = this.elements[i];
+    return el !== undefined ? el : new Element(null);
   }
 
-  length() {
+  get length() {
     return this.elements.length;
   }
 
@@ -362,29 +766,8 @@ class ElementCollection {
   }
 }
 
-class Stub {
-  text() {
-    return null;
-  }
-  html() {
-    return null;
-  }
-  outerHtml() {
-    return null;
-  }
-  val() {
-    return null;
-  }
-  attr(name) {
-    return null;
-  }
-  hasClass(cls) {
-    return false;
-  }
-}
-
 function load(html) {
-  const rootKey = sendMessage("load", JSON.stringify([html]));
+  const rootKey = JSON.parse(sendMessage("load", JSON.stringify([html])));
   const root = new Element(rootKey);
 
   const \$ = function(input) {
@@ -393,7 +776,11 @@ function load(html) {
     } else if (input instanceof Element) {
       return input;
     } else if (typeof input === "string") {
-      return root.find(input); // returns ElementCollection
+      const found = root.find(input);
+      if (found.length === 0 && /^\\s*(html|body)\\s*\$/i.test(input)) {
+        return new ElementCollection([root]);
+      }
+      return found;
     } else if (input && input._key) {
       return new ElementCollection([new Element(input._key)]);
     } else {
@@ -401,10 +788,20 @@ function load(html) {
     }
   };
 
-  \$.html = function() {
-    return root.html();
+  \$.html = function(selector) {
+    if (selector === undefined) return root.html();
+    const sel = selector instanceof Element || selector instanceof ElementCollection
+      ? selector
+      : \$(selector);
+    if (sel instanceof Element) return sel.outerHtml();
+    return sel.elements.map(el => el.outerHtml()).join("");
   };
-  \$.root = root;
+  \$.text = function() {
+    return root.text();
+  };
+  \$.root = function() {
+    return root;
+  };
   \$.Element = Element;
   \$.Collection = ElementCollection;
 

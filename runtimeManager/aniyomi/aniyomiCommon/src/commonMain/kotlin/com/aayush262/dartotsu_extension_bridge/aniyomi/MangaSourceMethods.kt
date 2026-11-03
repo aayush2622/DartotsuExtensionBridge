@@ -5,6 +5,7 @@ import com.aayush262.dartotsu_extension_bridge.applyFilterJson
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.aayush262.dartotsu_extension_bridge.toFilterJson
 import eu.kanade.tachiyomi.PreferenceScreen
+import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.FetchType
@@ -21,14 +22,22 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.sourcePreferences
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.JsonObject
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.Collections
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 @Suppress("PrivatePropertyName")
-class MangaSourceMethods(sourceID: String) : AniyomiSourceMethods {
+class MangaSourceMethods(private val sourceID: String) : AniyomiSourceMethods {
 
     private val source: CatalogueSource
 
@@ -72,6 +81,20 @@ class MangaSourceMethods(sourceID: String) : AniyomiSourceMethods {
         )
     }
 
+    override fun imageRequestOf(page: Page) = (source as? HttpSource)?.requestForImage(page)
+
+    override fun fetchesImages(): Boolean {
+        val http = source as? HttpSource ?: return false
+        return http.client.interceptors.size > Injekt.get<NetworkHelper>().client.interceptors.size
+    }
+
+    override suspend fun fetchImage(page: Page): ByteArray {
+        val http = source as? HttpSource ?: throw UnsupportedOperationException("Source has no HTTP client.")
+        return withContext(Dispatchers.IO) {
+            http.getImage(page).use { it.body.bytes() }
+        }
+    }
+
     override fun getFilterListJson(): String = source.getFilterList().toFilterJson()
 
     override suspend fun getDetails(media: SAnime): Pair<SAnime, List<SEpisode>> {
@@ -82,11 +105,41 @@ class MangaSourceMethods(sourceID: String) : AniyomiSourceMethods {
             fetchChapters = true
         )
 
+        data.chapters.forEach { chapterCache["$sourceID|${it.url}"] = it }
+
         return data.manga.toSAnime() to data.chapters.map { it.toSEpisode() }
     }
 
-    override suspend fun getPageList( chapter: SChapter): List<Page> {
-       return (source).getPageList(chapter)
+    // Some sources key their own internal staleness checks off the exact
+    // SChapter instance returned by getDetails rather than its field values
+    // (Mihon always hands the same instance back); the bridge otherwise
+    // rebuilds a fresh SChapter from the JSON sent to Dart and back, which
+    // such a source sees as "this chapter was never fetched" and rejects.
+    override suspend fun getPageList(chapter: SChapter): List<Page> {
+        val cached = chapterCache["$sourceID|${chapter.url}"]
+        val pages = source.getPageList(cached ?: chapter)
+        val http = source as? HttpSource ?: return pages
+        if (pages.none { it.imageUrl.isNullOrEmpty() }) return pages
+        val gate = Semaphore(IMAGE_URL_PARALLELISM)
+        coroutineScope {
+            pages.filter { it.imageUrl.isNullOrEmpty() }.map { page ->
+                async {
+                    gate.withPermit { page.imageUrl = http.getImageUrl(page) }
+                }
+            }.awaitAll()
+        }
+        return pages
+    }
+
+    companion object {
+        private const val CHAPTER_CACHE_LIMIT = 2000
+        private const val IMAGE_URL_PARALLELISM = 4
+        private val chapterCache = Collections.synchronizedMap(
+            object : LinkedHashMap<String, SChapter>(16, 0.75f, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, SChapter>) =
+                    size > CHAPTER_CACHE_LIMIT
+            }
+        )
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {

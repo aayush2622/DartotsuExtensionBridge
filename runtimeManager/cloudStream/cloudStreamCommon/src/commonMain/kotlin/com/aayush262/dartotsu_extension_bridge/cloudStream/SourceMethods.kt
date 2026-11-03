@@ -3,6 +3,7 @@ package com.aayush262.dartotsu_extension_bridge.cloudStream
 
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.fasterxml.jackson.core.type.TypeReference
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.net.URI
@@ -12,8 +13,7 @@ private const val TAG = "CloudStreamMethods"
 private fun Any?.toRawMap(): Map<String, Any?>? {
     if (this == null) return null
     return try {
-        val mapper = APIHolder.mapper
-        val json = mapper.writeValueAsString(this)
+                val json = mapper.writeValueAsString(this)
         mapper.readValue(
             json,
             object : TypeReference<Map<String, Any?>>() {}
@@ -61,6 +61,26 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         } catch (e: Exception) {
             Logger.log("ERROR: '${provider.name}' search failed for query '$query'", e)
             mapOf("list" to emptyList<Any>(), "hasNextPage" to false)
+        } catch (_: NotImplementedError) {
+            mapOf("list" to emptyList<Any>(), "hasNextPage" to false)
+        }
+    }
+
+    suspend fun browse(page: Int, index: Int): Map<String, Any?> {
+        val entry = provider.mainPage.getOrNull(index) ?: provider.mainPage.firstOrNull()
+        if (!provider.hasMainPage || entry == null) return search("", page)
+        val request = MainPageRequest(entry.name, entry.data, entry.horizontalImages)
+        return try {
+            val res = provider.getMainPage(page, request)
+            val items = res?.items?.flatMap { it.list }.orEmpty()
+            if (items.isEmpty()) return search("", page)
+            mapOf(
+                "list" to items.distinctBy { it.url }.map { it.toMap() },
+                "hasNextPage" to (res?.hasNext ?: false)
+            )
+        } catch (e: Exception) {
+            Logger.log("ERROR: '${provider.name}' main page failed", e)
+            search("", page)
         }
     }
 
@@ -71,20 +91,17 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         )
 
         val episodes: List<Map<String, Any?>> = when (res) {
-            is TvSeriesLoadResponse -> res.episodes.let { list ->
-                list.mapIndexed { i, ep -> episodeToMap(ep, fallbackNumber(list, i)) }
-            }
-            is AnimeLoadResponse -> {
+            is TvSeriesLoadResponse -> episodeMaps(
+                res.episodes.dedupeEpisodeListings { it }.map { it to emptyMap<String, Any?>() }
+            )
+            is AnimeLoadResponse -> episodeMaps(
                 res.episodes.flatMap { (key, epList) ->
                     epList.map { it to key }
                 }
                     .distinctBy { it.first.data }
-                    .let { list ->
-                        list.mapIndexed { i, (ep, key) ->
-                            episodeToMap(ep, fallbackNumber(list.map { it.first }, i), mapOf("episodeGroup" to key))
-                        }
-                    }
-            }
+                    .dedupeEpisodeListings { it.first }
+                    .map { (ep, key) -> ep to mapOf<String, Any?>("episodeGroup" to key) }
+            )
             is MovieLoadResponse -> listOf(
                 mapOf(
                     "name" to res.name,
@@ -129,7 +146,7 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         )
         Logger.log(
             "'${provider.name}' details '${res.name}': sent to the app (reversed): " +
-                edge(sent.reversed().map { "#${it["episodeNumber"]} '${it["name"]}'" })
+                edge(sent.reversed().map { "#${it["episodeNumber"]}${it["scanlator"]?.let { s -> " [$s]" } ?: ""} '${it["name"]}'" })
         )
     }
 
@@ -347,10 +364,73 @@ private fun fallbackNumber(list: List<Episode>, index: Int): Int {
     return if (newestFirst) list.size - index else index + 1
 }
 
+private fun <T> List<T>.dedupeEpisodeListings(episodeOf: (T) -> Episode): List<T> {
+    val seen = LinkedHashMap<String, T>()
+    val result = mutableListOf<T>()
+    for (item in this) {
+        val ep = episodeOf(item)
+        val name = ep.name?.trim()
+        if (name.isNullOrEmpty()) {
+            result += item
+            continue
+        }
+        val key = "$name|${ep.date}"
+        val existing = seen[key]
+        if (existing == null) {
+            seen[key] = item
+            result += item
+        } else if (ep.episode != null && episodeOf(existing).episode == null) {
+            val idx = result.indexOf(existing)
+            if (idx >= 0) result[idx] = item
+            seen[key] = item
+        }
+    }
+    return result
+}
+
+private fun seasonLabel(season: Int?): String = when (season) {
+    null -> "Other"
+    0 -> "Specials"
+    else -> "Season $season"
+}
+
+/**
+ * Episodes of a show with several seasons restart their number every season. They are handed to
+ * the app grouped by season (the season name in `scanlator`, the way a manga's scanlators work) so
+ * "episode 1" of season 1 and 2 stay two episodes instead of becoming 1.1 and 1.2. Shows whose
+ * numbers already run on across seasons are left alone.
+ */
+private fun episodeMaps(items: List<Pair<Episode, Map<String, Any?>>>): List<Map<String, Any?>> {
+    val seasons = items.mapNotNull { it.first.season }.toSet()
+    val bySeason = items.groupBy { it.first.season }
+    val restarts = seasons.size > 1 && (
+        items.any { it.first.episode == null } ||
+            bySeason.values
+                .flatMap { group -> group.mapNotNull { it.first.episode }.toSet() }
+                .let { numbers -> numbers.size != numbers.toSet().size }
+        )
+    val groups = if (restarts) items.indices.groupBy { items[it].first.season } else mapOf(null to items.indices.toList())
+    val out = arrayOfNulls<Map<String, Any?>>(items.size)
+    for ((season, indices) in groups) {
+        val episodes = indices.map { items[it].first }
+        indices.forEachIndexed { position, index ->
+            val (ep, extra) = items[index]
+            out[index] = episodeToMap(
+                ep,
+                fallbackNumber(episodes, position),
+                extra,
+                scanlator = if (restarts) seasonLabel(season) else null,
+            )
+        }
+    }
+    return out.map { it!! }
+}
+
 fun episodeToMap(
     ep: Episode,
     fallbackNumber: Int,
-    additionalExtra: Map<String, Any?> = emptyMap()
+    additionalExtra: Map<String, Any?> = emptyMap(),
+    scanlator: String? = null,
 ): Map<String, Any?> {
     val rawNum = ep.episode?.toDouble() ?: fallbackNumber.toDouble()
     val topLevel = mapOf(
@@ -360,7 +440,7 @@ fun episodeToMap(
         "thumbnail" to ep.posterUrl,
         "description" to ep.description,
         "dateUpload" to ep.date?.toString(),
-        "scanlator" to null,
+        "scanlator" to scanlator,
         "filler" to false,
     )
     val usedKeys = setOf("name", "data", "episode", "posterUrl", "description", "date")

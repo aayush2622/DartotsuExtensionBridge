@@ -27,6 +27,7 @@ import java.io.StringWriter
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -90,7 +91,7 @@ import java.util.zip.ZipOutputStream
  */
 object BytecodeEditor {
 
-    fun fixAndroidClasses(jarFile: Path, dexFile: Path? = null) {
+    fun fixAndroidClasses(jarFile: Path, dexFile: Path? = null, progress: ((Double) -> Unit)? = null) {
         val jarLabel = jarFile.fileName?.toString() ?: jarFile.toString()
         Logger.log("[$jarLabel] BytecodeEditor starting", LogLevel.INFO)
 
@@ -139,6 +140,11 @@ object BytecodeEditor {
             }
         }
         Logger.log("[$jarLabel] Parsed ${classNodes.size} classes", LogLevel.INFO)
+        progress?.invoke(0.1)
+
+        val started = System.nanoTime()
+        fun lap(phase: String) =
+            Logger.log("[$jarLabel] $phase done at ${(System.nanoTime() - started) / 1_000_000_000}s", LogLevel.INFO)
 
         for (cn in classNodes.values) {
             rewriteReplacedReferences(cn)
@@ -152,16 +158,31 @@ object BytecodeEditor {
             adoptPluginRequests(cn, jarLabel)
         }
 
+        for (cn in classNodes.values) {
+            restoreLocalClassOwner(cn, classNodes)
+        }
+
+        progress?.invoke(0.2)
+
         val runtimeLoader = loader.parent
         val resolved = HashMap<String, Boolean>()
         for (cn in classNodes.values) {
             skipMissingUiCalls(cn, classNodes.keys, runtimeLoader, resolved, jarLabel)
         }
 
+        val weights = classNodes.mapValues { (_, cn) -> cn.methods.sumOf { it.instructions.size() }.coerceAtLeast(1) }
+        val totalWeight = weights.values.sum().coerceAtLeast(1).toDouble()
+
         val constructorsNeeded = LinkedHashSet<Pair<String, String>>() // (owner, desc)
+        var repaired = 0L
         for (cn in classNodes.values) {
             repairMalformedConstructions(cn, classNodes, loader, constructorsNeeded, jarLabel, dexNewInstances)
+            repaired += weights[cn.name] ?: 1
+            progress?.invoke(0.2 + 0.2 * repaired / totalWeight)
         }
+
+        lap("Construction repair")
+        progress?.invoke(0.4)
 
         clearErroneousAbstractFlags(classNodes, jarLabel)
 
@@ -179,7 +200,10 @@ object BytecodeEditor {
 
         // entry name -> rewritten bytes (absent = keep the original entry bytes)
         val rewritten = HashMap<String, ByteArray>()
+        var framed = 0L
         for ((name, cn) in classNodes) {
+            progress?.invoke(0.4 + 0.55 * framed / totalWeight)
+            framed += weights[name] ?: 1
             val entryName = entryNameByClass[name] ?: continue
 
             val attempt1Bytes = try {
@@ -212,6 +236,7 @@ object BytecodeEditor {
                 try {
                     val freshNode = ClassNode(Opcodes.ASM9)
                     ClassReader(remapReplaced(bytes)).accept(freshNode, ClassReader.EXPAND_FRAMES)
+                    restoreLocalClassOwner(freshNode, classNodes)
                     recomputeFramesAndVerify(freshNode, loader, jarLabel)
                 } catch (e: Throwable) {
                     Logger.log(
@@ -236,6 +261,8 @@ object BytecodeEditor {
                 ?.let { rewritten[entryName] = it }
         }
 
+        lap("Frames and verification")
+        progress?.invoke(0.95)
         writeJarAtomically(jarFile, entries, rewritten, jarLabel)
 
         Logger.log("[$jarLabel] BytecodeEditor finished", LogLevel.INFO)
@@ -250,6 +277,34 @@ object BytecodeEditor {
         val bytes: ByteArray,
         val isDirectory: Boolean,
     )
+
+    /**
+     * A Kotlin class declared inside a function (`Outer$func$Local`) loses its `EnclosingMethod`
+     * attribute on the way through dex, and its `InnerClasses` entry then names it as a member of
+     * `Outer`. kotlin-reflect (Jackson's Kotlin module uses it) takes that for a nested class
+     * `Outer.func.Local`, cannot find it and fails with "Unresolved class". Restore the owner
+     * method and mark the class local again.
+     */
+    private fun restoreLocalClassOwner(cn: ClassNode, classNodes: Map<String, ClassNode>) {
+        if (cn.outerClass != null) return
+        if (cn.visibleAnnotations?.any { it.desc == "Lkotlin/Metadata;" } != true) return
+        val self = cn.innerClasses?.firstOrNull { it.name == cn.name } ?: return
+        val outerName = self.outerName ?: return
+        val innerName = self.innerName ?: return
+        val prefix = "$outerName$"
+        val suffix = "$$innerName"
+        if (!cn.name.startsWith(prefix) || !cn.name.endsWith(suffix)) return
+        if (cn.name.length <= prefix.length + suffix.length) return
+        val function = cn.name.substring(prefix.length, cn.name.length - suffix.length)
+        val owner = classNodes[outerName] ?: return
+        val method = owner.methods.firstOrNull { it.name == function } ?: return
+
+        cn.outerClass = outerName
+        cn.outerMethod = method.name
+        cn.outerMethodDesc = method.desc
+        self.outerName = null
+        owner.innerClasses?.filter { it.name == cn.name }?.forEach { it.outerName = null }
+    }
 
     private fun readJarEntries(jarFile: Path): List<JarEntryData> {
         val out = ArrayList<JarEntryData>()
@@ -311,6 +366,18 @@ object BytecodeEditor {
         private val classes: Map<String, ByteArray>,
         parent: ClassLoader,
     ) : ClassLoader(parent) {
+        private val failed = ConcurrentHashMap<String, Throwable>()
+
+        override fun loadClass(name: String, resolve: Boolean): Class<*> {
+            failed[name]?.let { throw it }
+            try {
+                return super.loadClass(name, resolve)
+            } catch (e: Throwable) {
+                failed.putIfAbsent(name, e)
+                throw e
+            }
+        }
+
         override fun findClass(name: String): Class<*> {
             val bytes = classes[name] ?: throw ClassNotFoundException(name)
             return defineClass(name, bytes, 0, bytes.size)
@@ -922,11 +989,11 @@ object BytecodeEditor {
         }
         return result
     }
-    // 5150 instructions analyzed in ~2.4s; 18239 instructions (a real
-    // extension's giant generated dispatch method) didn't finish in 40s and
-    // was still climbing. This sits with a wide safety margin above the
-    // former and well below the latter.
-    private const val MAX_REPAIR_METHOD_SIZE = 8000
+    // The analysis grows much faster than the method does: ~4000 instructions
+    // take under a second, 6000 take ~2.5s, 7500 take ~8s, 8000 take ~14s and
+    // 18239 (a generated dispatch method) didn't finish in 40s. StreamPlay has
+    // a handful of methods between 6000 and 8000 that cost ~35s of a ~60s repair.
+    private const val MAX_REPAIR_METHOD_SIZE = 5000
 
     private fun repairMalformedConstructions(
         cn: ClassNode,
@@ -938,6 +1005,7 @@ object BytecodeEditor {
     ) {
         for (method in cn.methods) {
             method.maxStack += method.instructions.size() + 16
+            if (!callsConstructor(method)) continue
 
             // ProvenanceInterpreter's merge keeps a growing set of possible
             // producer instructions per stack/local slot, unlike ASM's own
@@ -1138,6 +1206,15 @@ object BytecodeEditor {
                 }
             }
         }
+    }
+
+    private fun callsConstructor(method: MethodNode): Boolean {
+        var node = method.instructions.first
+        while (node != null) {
+            if (node is MethodInsnNode && node.opcode == Opcodes.INVOKESPECIAL && node.name == "<init>") return true
+            node = node.next
+        }
+        return false
     }
 
     /**

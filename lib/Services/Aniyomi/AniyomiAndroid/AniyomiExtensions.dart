@@ -17,7 +17,11 @@ import '../AniyomiSourceMethods.dart';
 import 'Models/Source.dart';
 
 class AniyomiExtensions extends Extension
-    with JvmBackend, AndroidJvmBackend, TachiyomiRepoBackend, AndroidApkInstallMixin {
+    with
+        JvmBackend,
+        AndroidJvmBackend,
+        TachiyomiRepoBackend,
+        AndroidApkInstallMixin {
   final _client = MClient.init();
 
   @override
@@ -60,7 +64,6 @@ class AniyomiExtensions extends Extension
   @override
   String get androidExtensionsDirName => 'aniyomi-extensions';
 
-
   @override
   Future<void> fetchInstalledAnimeExtensions() async {
     await super.fetchInstalledAnimeExtensions();
@@ -94,7 +97,7 @@ class AniyomiExtensions extends Extension
   }
 
   @override
-  Set<String> get schemes => {"aniyomi", "tachiyomi"};
+  Set<String> get schemes => {"aniyomi", "tachiyomi", "mihon"};
 
   @override
   void handleSchemes(Uri uri) {

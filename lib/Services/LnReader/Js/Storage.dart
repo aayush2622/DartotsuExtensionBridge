@@ -13,12 +13,19 @@ import '../../../Settings/KvStore.dart';
 class JsStorage {
   final JavascriptRuntime runtime;
   final String namespace;
+  final String? seed;
+  final void Function(String namespace, String json)? persist;
+  Map<String, dynamic>? _cache;
 
-  JsStorage(this.runtime, {required String sourceId})
-    : namespace = 'lnreader-storage-$sourceId';
+  JsStorage(this.runtime, {required String sourceId, this.seed, this.persist})
+    : namespace = namespaceFor(sourceId);
 
-  Map<String, dynamic> _load() {
-    final raw = getVal<String>(namespace);
+  static String namespaceFor(String sourceId) => 'lnreader-storage-$sourceId';
+
+  Map<String, dynamic> _load() =>
+      _cache ??= _decode(persist == null ? getVal<String>(namespace) : seed);
+
+  static Map<String, dynamic> _decode(String? raw) {
     if (raw == null || raw.isEmpty) return {};
     try {
       final decoded = jsonDecode(raw);
@@ -28,7 +35,16 @@ class JsStorage {
     }
   }
 
-  void _save(Map<String, dynamic> map) => setVal(namespace, jsonEncode(map));
+  void _save(Map<String, dynamic> map) {
+    _cache = map;
+    final json = jsonEncode(map);
+    final out = persist;
+    if (out != null) {
+      out(namespace, json);
+    } else {
+      setVal(namespace, json);
+    }
+  }
 
   void init() {
     runtime.onMessage('storage_get', (dynamic args) {

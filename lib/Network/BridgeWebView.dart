@@ -26,11 +26,12 @@ import 'WebViewCookieSync.dart';
 class BridgeWebView {
   BridgeWebView._();
 
-  static const _channel = 'DartotsuResolver';
+  static const channel = 'DartotsuResolver';
 
   static Future<Map<String, dynamic>> run(Map<String, dynamic> request) async {
     final url = Uri.parse(request['url'] as String);
-    final headers = (request['headers'] as Map?)?.map(
+    final headers =
+        (request['headers'] as Map?)?.map(
           (k, v) => MapEntry(k.toString(), v.toString()),
         ) ??
         const <String, String>{};
@@ -57,7 +58,9 @@ class BridgeWebView {
     }
 
     void seen(String requestUrl) {
-      if (intercept != null && matched == null && intercept.hasMatch(requestUrl)) {
+      if (intercept != null &&
+          matched == null &&
+          intercept.hasMatch(requestUrl)) {
         matched = requestUrl;
       }
       for (final regex in additional) {
@@ -73,11 +76,11 @@ class BridgeWebView {
       await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
       await controller.setUserAgent(userAgent);
       await controller.addJavaScriptChannel(
-        _channel,
+        channel,
         onMessageReceived: (message) => seen(message.message),
       );
       await controller.addUserScript(
-        const WebViewUserScript(source: _requestHook, forMainFrameOnly: false),
+        const WebViewUserScript(source: requestHook, forMainFrameOnly: false),
       );
       await controller.setNavigationDelegate(
         NavigationDelegate(
@@ -133,11 +136,12 @@ class BridgeWebView {
 
   /// Reports every URL the page (and its frames) requests: `fetch`, XHR,
   /// resource timing entries and media/iframe `src` attributes.
-  static const _requestHook = '''
+  static const requestHook =
+      '''
 (function () {
   if (window.__dartotsuResolver) return;
   window.__dartotsuResolver = true;
-  var channel = window.$_channel;
+  var channel = window.$channel;
   var sent = {};
   function report(u) {
     try {

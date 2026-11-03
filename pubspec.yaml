@@ -11,33 +11,30 @@ dependencies:
   flutter:
     sdk: flutter
   ffi: ^2.2.0
-  archive: ^4.5.1
-  image: ^4.5.4
+  archive: ^4.6.0
+  image: ^4.12.0
   plugin_platform_interface: ^2.1.8
   http: ^1.6.0
   isar_community: ^3.4.1
   isar_community_flutter_libs: ^3.4.1
-  d4rt: ^0.2.4
+  d4rt: ^0.2.6
   get: ^4.7.3
   path_provider: ^2.1.6
   path: ^1.9.1
   http_interceptor: ^3.0.0
   html: ^0.15.7
   intl: any
-  webview_all: ^1.4.4
+  webview_all: ^1.4.11
+  xml: ^6.6.1
   pseudom: ^1.0.1
   encrypt: ^5.0.3
   convert: ^3.1.2
   xpath_selector_html_parser: ^3.0.1
   js_packer: ^0.0.6
-  crypto: ^3.0.7
-  wasd: ^0.5.2
+  crypto: ^3.0.8
+  wasd: ^0.6.1
   flutter_qjs:
     git:
-      # Fork of kodjodevf/flutter_qjs (upstream ref: main, resolved-ref
-      # b64d2e3) with one patch on top: _openLib() no longer crashes when
-      # Platform.resolvedExecutable is unset on iOS. See
-      # https://github.com/aayush2622/flutter_qjs/pull/new/dartotsu-ios-exedir-fix
       url: https://github.com/aayush2622/flutter_qjs.git
       ref: dartotsu-ios-exedir-fix
 
@@ -52,7 +49,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   isar_community_generator: ^3.4.1
-  build_runner: ^2.15.0
+  build_runner: ^2.16.2
 
 flutter:
   assets:

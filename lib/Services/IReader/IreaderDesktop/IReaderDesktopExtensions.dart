@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
+import '../../Shared/DesktopCorePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../Extensions/ExtensionSettings.dart';
 import '../../../Network/MClient.dart';
@@ -14,11 +15,16 @@ import '../../../dartotsu_extension_bridge.dart';
 import '../../Shared/JvmBackend.dart';
 import '../../Shared/TachiyomiJavaDesktopExtension.dart';
 import '../../Shared/TachiyomiRepo.dart';
+import '../IReaderIcons.dart';
 import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
 
 class IReaderDesktopExtensions extends Extension
-    with JvmBackend, DesktopJvmBackend, TachiyomiRepoBackend, TachiyomiJavaDesktopExtension {
+    with
+        JvmBackend,
+        DesktopJvmBackend,
+        TachiyomiRepoBackend,
+        TachiyomiJavaDesktopExtension {
   @override
   Set<RepoFormat> get repoFormats => const {RepoFormat.iReader};
 
@@ -65,7 +71,9 @@ class IReaderDesktopExtensions extends Extension
   @override
   bool get refreshExtensionCountOnFetch => true;
 
-
+  @override
+  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async =>
+      withIreaderIcons(await super.fetchRepo(repo, type), repo.url, repoClient);
 
   @override
   Future<void> fetchInstalledNovelExtensions() async {
@@ -102,6 +110,7 @@ class IReaderDesktopExtensions extends Extension
     args.$2,
     args.$3,
     prefixes: const {'ireader: ': ItemType.novel},
+    unprefixedType: ItemType.novel,
     factory: _sourceFromEntry,
   );
 
@@ -121,7 +130,7 @@ class IReaderDesktopExtensions extends Extension
   );
 }
 
-class IreaderDesktopPlugin extends DownloadablePlugin {
+class IreaderDesktopPlugin extends DesktopPlugin {
   @override
   String get name => "ireaderDesktop";
 

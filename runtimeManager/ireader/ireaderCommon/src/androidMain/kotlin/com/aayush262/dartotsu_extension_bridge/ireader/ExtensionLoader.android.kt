@@ -17,8 +17,6 @@ import ireader.core.source.CatalogSource
 import ireader.core.source.Dependencies
 import ireader.core.source.HttpSource
 import org.koin.mp.KoinPlatform.getKoin
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 import java.lang.reflect.Modifier
 
@@ -34,7 +32,7 @@ actual object ExtensionLoader {
     @SuppressLint("WrongConstant")
     actual fun loadExtensions(path: String): List<LoadedExtension> {
         plugins.clear()
-        val context = Injekt.get<Context>()
+        val context: Context = getKoin().get<Application>()
         val pkgManager = context.packageManager
         val installedPkgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             pkgManager.getInstalledPackages(

@@ -64,8 +64,10 @@ class CustomMethods(var networkChannel: MethodChannel) : BridgeCallbacks {
     override fun getUserAgent(): String? =
         invokeBlocking("getUserAgent", emptyMap(), 500) as? String
 
-    override fun solveCloudflare(url: String): Boolean =
-        invokeBlocking("solveCloudflare", mapOf("url" to url), SLOW_TIMEOUT_MS) == true
+    override fun solveCloudflare(url: String): Boolean = solveCloudflare(url, false)
+
+    override fun solveCloudflare(url: String, retried: Boolean): Boolean =
+        invokeBlocking("solveCloudflare", mapOf("url" to url, "retried" to retried), SLOW_TIMEOUT_MS) == true
 
     override fun webView(request: String): String? =
         invokeBlocking("webView", mapOf("request" to request), SLOW_TIMEOUT_MS) as? String

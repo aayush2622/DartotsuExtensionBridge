@@ -1,16 +1,21 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:d4rt/d4rt.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_interceptor/http_interceptor.dart';
 
 import '../../../Network/MClient.dart';
 
+typedef LnFetcher = Future<String> Function(String method, List args);
+
+Future<String> lnHttpFetch(Client client, String method, List args) =>
+    _toHttpResponse(client, method, args);
+
 class JsHttpClient {
   late JavascriptRuntime runtime;
-  JsHttpClient(this.runtime);
+  final LnFetcher? fetcher;
+  JsHttpClient(this.runtime, {this.fetcher});
 
   // Reused for every request this instance makes, rather than calling
   // MClient.init() fresh per call - when the host app hasn't supplied its
@@ -21,26 +26,76 @@ class JsHttpClient {
 
   void init() {
     InterceptedClient client() => _client ??= MClient.init();
+    Future<String> fetch(String method, dynamic args) {
+      final send = fetcher;
+      return send != null
+          ? send(method, args as List)
+          : _toHttpResponse(client(), method, args as List);
+    }
 
     runtime.onMessage('http_head', (dynamic args) async {
-      return await _toHttpResponse(client(), "HEAD", args);
+      return await fetch("HEAD", args);
     });
     runtime.onMessage('http_get', (dynamic args) async {
-      return await _toHttpResponse(client(), "GET", args);
+      return await fetch("GET", args);
     });
     runtime.onMessage('http_post', (dynamic args) async {
-      return await _toHttpResponse(client(), "POST", args);
+      return await fetch("POST", args);
     });
     runtime.onMessage('http_put', (dynamic args) async {
-      return await _toHttpResponse(client(), "PUT", args);
+      return await fetch("PUT", args);
     });
     runtime.onMessage('http_delete', (dynamic args) async {
-      return await _toHttpResponse(client(), "DELETE", args);
+      return await fetch("DELETE", args);
     });
     runtime.onMessage('http_patch', (dynamic args) async {
-      return await _toHttpResponse(client(), "PATCH", args);
+      return await fetch("PATCH", args);
     });
     runtime.evaluate('''
+class Headers {
+  constructor(obj) {
+    this._map = {};
+    if (obj) {
+      for (const k in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, k)) {
+          this._map[k.toLowerCase()] = obj[k];
+        }
+      }
+    }
+  }
+  get(name) {
+    const v = this._map[String(name).toLowerCase()];
+    return v === undefined ? null : v;
+  }
+  has(name) {
+    return Object.prototype.hasOwnProperty.call(this._map, String(name).toLowerCase());
+  }
+  set(name, value) {
+    this._map[String(name).toLowerCase()] = String(value);
+  }
+  append(name, value) {
+    const key = String(name).toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(this._map, key)) {
+      this._map[key] += ", " + value;
+    } else {
+      this._map[key] = String(value);
+    }
+  }
+  delete(name) {
+    delete this._map[String(name).toLowerCase()];
+  }
+  forEach(fn) {
+    for (const k in this._map) fn(this._map[k], k, this);
+  }
+  entries() {
+    const map = this._map;
+    return Object.keys(map).map(function(k) { return [k, map[k]]; });
+  }
+  toJSON() {
+    return this._map;
+  }
+}
+
 class Response {
   constructor(url, result) {
     this.url = url;
@@ -59,7 +114,7 @@ class Response {
     return this.response.isRedirect;
   }
   get headers() {
-    return this.response.headers;
+    return new Headers(this.response.headers);
   }
   get body() {
     return this.response.body;
@@ -86,6 +141,10 @@ async function fetchApi(url, init) {
   );
   return new Response(url, result);
 }
+
+// Some plugins call the bare global `fetch` instead of @libs/fetch's
+// `fetchApi` - same Fetch API shape, so alias it.
+var fetch = fetchApi;
 
 // @libs/fetch also exports fetchText: a `.text()` shortcut that never throws.
 async function fetchText(url, init, _encoding) {
@@ -121,7 +180,7 @@ Future<String> _toHttpResponse(Client client, String method, List args) async {
         "application/json",
       )) ??
       false) {
-    request.body = json.encode(body);
+    request.body = body is String ? body : json.encode(body);
     request.headers.addAll(headers);
     http.StreamedResponse response = await client.send(request);
     final res = Response(
@@ -138,12 +197,12 @@ Future<String> _toHttpResponse(Client client, String method, List args) async {
     return jsonEncode(resMap);
   }
   String? formData;
-  if (body is Map && body.containsKey("_data")) {
-    formData = (body.get("_data") as List<dynamic>)
+  if (body is Map) {
+    formData = body.entries
         .map(
           (e) =>
-              "${Uri.encodeQueryComponent(e[0])}"
-              "=${Uri.encodeQueryComponent(e[1])}",
+              "${Uri.encodeQueryComponent(e.key)}"
+              "=${Uri.encodeQueryComponent(e.value?.toString() ?? '')}",
         )
         .join("&");
     headers["content-type"] =

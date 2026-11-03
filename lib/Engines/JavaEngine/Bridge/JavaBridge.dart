@@ -1,5 +1,8 @@
 abstract class JavaBridge {
-  Future<void> init({required String pluginJarPath});
+  Future<void> init({
+    required String pluginJarPath,
+    List<String> libraryJarPaths = const [],
+  });
 
   Future<T> call<T>(
     String method, [

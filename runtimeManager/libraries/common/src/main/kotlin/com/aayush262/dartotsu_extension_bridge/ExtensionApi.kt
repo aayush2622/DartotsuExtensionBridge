@@ -38,6 +38,10 @@ interface ExtensionApi {
         sourceId: String, isAnime: Boolean, episode: String
     ): String = ""
 
+    suspend fun getPageImage(
+        sourceId: String, isAnime: Boolean, page: String
+    ): String = ""
+
     suspend fun getNovelContent(
         sourceId: String, episode: String
     ): String = ""
@@ -49,4 +53,6 @@ interface ExtensionApi {
     suspend fun saveSourcePreference(
         sourceId: String, key: String, value: String?
     ): Boolean = false
+
+    suspend fun releaseCachedJar(jarPath: String): Boolean = false
 }

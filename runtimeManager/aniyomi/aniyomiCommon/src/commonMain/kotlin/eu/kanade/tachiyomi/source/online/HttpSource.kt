@@ -431,6 +431,8 @@ abstract class HttpSource : CatalogueSource {
      */
     protected open fun imageRequest(page: Page): Request = GET(page.imageUrl!!, headers)
 
+    fun requestForImage(page: Page): Request = imageRequest(page)
+
     /**
      * Assigns the url of the chapter without the scheme and domain. It saves some redundancy from
      * database and the urls could still work after a domain change.

@@ -22,7 +22,10 @@ data class Artifact(
     val extension: String,
     val platform: String,
     val type: String,
+    val needsCore: Boolean = false,
 )
+
+val hasFatTwin = tasks.findByName("fatJar") != null
 
 fun requiredProperty(key: String): String =
     project.findProperty(key)?.toString()
@@ -31,7 +34,7 @@ fun requiredProperty(key: String): String =
 fun optionalProperty(key: String, default: String): String =
     project.findProperty(key)?.toString() ?: default
 
-fun findArtifact(): Artifact {
+fun findArtifact(legacy: Boolean = false): Artifact {
 
     val releaseApkDir = layout.projectDirectory
         .dir("build/outputs/apk/release")
@@ -42,7 +45,13 @@ fun findArtifact(): Artifact {
         ?.let { return Artifact(it, "apk", "android", "apk") }
 
     // The same JAR runs on desktop (sidecar) and in the iOS embedded VM.
-    val jarPlatform = "desktop"
+    if (legacy) {
+        val fat = layout.buildDirectory.file("libs/${project.name}-fat.jar").get().asFile
+        if (fat.exists()) return Artifact(fat, "jar", "desktop", "jar")
+        throw GradleException("[$pluginName] Could not locate the fat JAR.")
+    }
+
+    val jarPlatform = "desktopSplit"
 
     val shadowJar = layout.buildDirectory
         .file("libs/${project.name}-all.jar")
@@ -50,7 +59,7 @@ fun findArtifact(): Artifact {
         .asFile
 
     if (shadowJar.exists()) {
-        return Artifact(shadowJar, "jar", jarPlatform, "jar")
+        return Artifact(shadowJar, "jar", jarPlatform, "jar", needsCore = hasFatTwin)
     }
 
     val normalJar = layout.buildDirectory
@@ -86,8 +95,45 @@ fun buildMetadata(artifact: Artifact, outputFile: File): LinkedHashMap<String, A
     json["fileSize"] = outputFile.length()
     // Filled in by CI once the release/tag/host is known.
     json["downloadUrl"] = ""
+    if (artifact.needsCore) {
+        (extra.properties["pluginRequires"] as? List<*>)?.let { names ->
+            json["requires"] = names.associate { it.toString() to 1 }
+        }
+    }
 
     return json
+}
+
+fun publish(artifact: Artifact, baseName: String) {
+    val outputDir = outputDirectory()
+    val destination = File(outputDir, "$baseName.${artifact.extension}")
+    val metadataFile = File(outputDir, "$baseName.json")
+
+    artifact.file.copyTo(destination, overwrite = true)
+
+    metadataFile.writeText(
+        JsonOutput.prettyPrint(
+            JsonOutput.toJson(buildMetadata(artifact, destination))
+        )
+    )
+
+    logger.lifecycle("")
+    logger.lifecycle("========================================")
+    logger.lifecycle("Plugin   : $pluginName")
+    logger.lifecycle("Artifact : ${destination.name}")
+    logger.lifecycle("Platform : ${artifact.platform}")
+    logger.lifecycle("Output   : ${outputDir.absolutePath}")
+    logger.lifecycle("========================================")
+    logger.lifecycle("")
+}
+
+if (hasFatTwin) {
+    tasks.register("buildLegacyPlugin") {
+        group = "plugin"
+        description = "Build the self-contained jar older app builds install for $pluginName"
+        dependsOn("fatJar")
+        doLast { publish(findArtifact(legacy = true), "$pluginName-plugin") }
+    }
 }
 
 tasks.register("buildPlugin") {
@@ -102,30 +148,10 @@ tasks.register("buildPlugin") {
             else -> "jar"
         }
     )
+    if (hasFatTwin) dependsOn("buildLegacyPlugin")
 
     doLast {
-
-        val artifact = findArtifact()
-        val outputDir = outputDirectory()
-        val destination =
-            File(outputDir, "$pluginName-plugin.${artifact.extension}")
-        val metadataFile = File(outputDir, "$pluginName-plugin.json")
-
-        artifact.file.copyTo(destination, overwrite = true)
-
-        metadataFile.writeText(
-            JsonOutput.prettyPrint(
-                JsonOutput.toJson(buildMetadata(artifact, destination))
-            )
-        )
-
-        logger.lifecycle("")
-        logger.lifecycle("========================================")
-        logger.lifecycle("Plugin   : $pluginName")
-        logger.lifecycle("Artifact : ${destination.name}")
-        logger.lifecycle("Platform : ${artifact.platform}")
-        logger.lifecycle("Output   : ${outputDir.absolutePath}")
-        logger.lifecycle("========================================")
-        logger.lifecycle("")
+        val baseName = if (hasFatTwin) "$pluginName-split" else "$pluginName-plugin"
+        publish(findArtifact(), baseName)
     }
 }

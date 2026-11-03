@@ -1,17 +1,24 @@
 [versions]
 injekt = "1.16.1"
-nicehttp = "0.4.16"
+nicehttp = "0.4.18"
 fuzzywuzzy = "1.4.0"
 preference = "1.2.1"
-coroutines = "1.10.2"
-newpipe = "v0.24.4"
-rhino = "1.7.15"
+coroutines = "1.11.0"
+newpipe = "v0.26.3"
+rhino = { strictly = "1.8.1" }
 tmdb = "2.10.0"
 retrofit = "2.11.0"
 jackson = "2.13.1"
-ktor = "3.3.2"
+ktor = "3.5.0"
 serialization = "1.11.0"
 ksoup = "0.2.6"
+kotlin = "2.4.0"
+datetime = "0.8.0"
+kotlinxio = "0.9.1"
+atomicfu = "0.33.0"
+cryptography = "0.6.0"
+jsoup = "1.22.1"
+annotation = "1.10.0"
 [libraries]
 injekt-core = { module = "uy.kohesive.injekt:injekt-core", version.ref = "injekt" }
 
@@ -30,6 +37,15 @@ newpipe-extractor = { module = "com.github.TeamNewPipe:NewPipeExtractor", versio
 
 rhino = { module = "org.mozilla:rhino", version.ref = "rhino" }
 
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
+kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinxio" }
+kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
+cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version.ref = "cryptography" }
+cryptography-provider-optimal = { module = "dev.whyoleg.cryptography:cryptography-provider-optimal", version.ref = "cryptography" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
+ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 ksoup-jvm = { module = "com.fleeksoft.ksoup:ksoup-jvm", version.ref = "ksoup" }
 
 
@@ -62,4 +78,12 @@ common = [
     "retrofit-jackson",
     "ktor-http",
     "serialization-json",
+    "kotlinx-datetime",
+    "kotlinx-io-core",
+    "kotlinx-atomicfu",
+    "cryptography-core",
+    "cryptography-provider-optimal",
+    "jsoup",
+    "androidx-annotation",
+    "ksoup",
 ]

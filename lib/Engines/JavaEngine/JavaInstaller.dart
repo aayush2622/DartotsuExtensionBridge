@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../../Logger.dart';
 import '../../Network/MClient.dart';
-import '../../dartotsu_extension_bridge.dart';
+import 'RuntimePaths.dart';
 
 class JavaRuntimeManager {
   // The ireader-core dependency (io.github.ireaderorg:source-api-desktop) is
@@ -17,23 +17,14 @@ class JavaRuntimeManager {
   static const _minJavaMajorVersion = 21;
 
   static String? _cachedJavaPath;
+  static bool _cancelled = false;
+
+  static void cancel() => _cancelled = true;
   static Future<String?>? _installFuture;
-  static Future<Directory> get _runtimeDir async {
-    final dir = await DartotsuExtensionBridge.context.getDirectory(
-      // Versioned so a bump to _minJavaMajorVersion can't resolve a stale
-      // bundled JRE extracted by an older build of this class.
-      subPath: 'bridge/jre-$_minJavaMajorVersion',
-      useSystemPath: true,
-      useCustomPath: false,
-    );
-
-    if (dir == null) {
-      throw Exception('Unable to get runtime directory');
-    }
-
-    await dir.create(recursive: true);
-    return dir;
-  }
+  // Versioned so a bump to _minJavaMajorVersion can't resolve a stale
+  // bundled JRE extracted by an older build of this class.
+  static Future<Directory> get _runtimeDir =>
+      runtimeDirectory('bridge/jre-$_minJavaMajorVersion');
 
   static Future<bool> isInstalled() async {
     return await getSystemJavaPath() != null || await getJavaPath() != null;
@@ -56,7 +47,21 @@ class JavaRuntimeManager {
     return first;
   }
 
-  static Future<String?> getSystemJavaPath() async {
+  static Future<String?>? _systemProbe;
+  static DateTime? _systemProbedAt;
+
+  static Future<String?> getSystemJavaPath() {
+    final probedAt = _systemProbedAt;
+    if (_systemProbe != null &&
+        probedAt != null &&
+        DateTime.now().difference(probedAt) < const Duration(seconds: 30)) {
+      return _systemProbe!;
+    }
+    _systemProbedAt = DateTime.now();
+    return _systemProbe = _probeSystemJava();
+  }
+
+  static Future<String?> _probeSystemJava() async {
     try {
       final result = await Process.run('java', ['-version'], runInShell: true);
 
@@ -80,13 +85,20 @@ class JavaRuntimeManager {
     return null;
   }
 
-  static Future<String?> ensureInstalled() {
-    return _installFuture ??= _ensureInstalledImpl().whenComplete(() {
-      _installFuture = null;
-    });
+  static Future<String?> ensureInstalled({
+    void Function(int received, int total)? onProgress,
+    void Function()? onExtract,
+  }) {
+    return _installFuture ??= _ensureInstalledImpl(onProgress, onExtract)
+        .whenComplete(() {
+          _installFuture = null;
+        });
   }
 
-  static Future<String?> _ensureInstalledImpl() async {
+  static Future<String?> _ensureInstalledImpl(
+    void Function(int received, int total)? onProgress,
+    void Function()? onExtract,
+  ) async {
     final systemJava = await getSystemJavaPath();
 
     if (systemJava != null) {
@@ -99,11 +111,13 @@ class JavaRuntimeManager {
       return bundledJava;
     }
 
+    _cancelled = false;
     Logger.log('Installing Java Runtime...', show: true);
 
-    final archive = await _download();
+    final archive = await _download(onProgress);
 
     try {
+      onExtract?.call();
       await _extract(archive);
     } finally {
       if (await archive.exists()) {
@@ -146,7 +160,9 @@ class JavaRuntimeManager {
     return null;
   }
 
-  static Future<File> _download() async {
+  static Future<File> _download(
+    void Function(int received, int total)? onProgress,
+  ) async {
     final root = await _runtimeDir;
 
     final extension = _jreUrl.endsWith('.zip') ? 'zip' : 'tar.gz';
@@ -173,8 +189,14 @@ class JavaRuntimeManager {
     await for (final chunk in response.stream.timeout(
       const Duration(seconds: 60),
     )) {
+      if (_cancelled) {
+        await sink.close();
+        client.close();
+        throw Exception('Cancelled');
+      }
       downloaded += chunk.length;
       sink.add(chunk);
+      onProgress?.call(downloaded, total);
 
       final now = DateTime.now().millisecondsSinceEpoch;
 

@@ -7,22 +7,46 @@ import 'package:path/path.dart' as p;
 
 import '../Logger.dart';
 import 'ArchiveCheck.dart';
+import 'InstallStep.dart';
+import '../Engines/JavaEngine/RuntimePaths.dart';
 import '../Network/MClient.dart';
 import '../Settings/KvStore.dart';
-import '../dartotsu_extension_bridge.dart';
 
-abstract class DownloadablePlugin {
+abstract class DownloadablePlugin implements PluginDependency {
   String get name;
   String get fileName;
 
   final RxBool installed = false.obs;
   final RxBool availableInRepo = false.obs;
+  final Rxn<String> indexError = Rxn<String>();
   final _client = MClient.init();
 
   String get _versionKey => "${name}_version";
 
   // iOS runs the desktop JARs unchanged in its embedded VM.
-  static String get _platformKey => Platform.isAndroid ? "android" : "desktop";
+  static String get _platformKey =>
+      Platform.isAndroid ? "android" : "desktopSplit";
+
+  List<PluginDependency> get dependencies => const [];
+
+  @override
+  String get key => name;
+
+  String get stepId => "plugin";
+
+  late final InstallStep step = InstallStep(
+    stepId,
+    name,
+    progress: progress,
+    receivedBytes: receivedBytes,
+    totalBytes: totalBytes,
+    speed: speed,
+  );
+
+  late final RxList<InstallStep> _steps = <InstallStep>[step].obs;
+
+  @override
+  List<InstallStep> get steps => _steps;
 
   Future<bool> _needsUpdate(Map<String, dynamic> remote) async {
     final remoteVersion = remote["versionCode"] ?? 0;
@@ -52,8 +76,37 @@ abstract class DownloadablePlugin {
     return false;
   }
 
+  final RxBool updateAvailable = false.obs;
+
+  static const _autoUpdateKey = "plugin_auto_update";
+
+  static final RxBool autoUpdateEnabled = _autoUpdate();
+
+  static RxBool _autoUpdate() {
+    final flag = (getVal<bool>(_autoUpdateKey, defaultValue: true) ?? true).obs;
+    flag.listen((v) => setVal(_autoUpdateKey, v));
+    return flag;
+  }
+
   final RxDouble progress = 0.0.obs;
   final RxBool downloading = false.obs;
+  final RxnString error = RxnString();
+  final RxInt receivedBytes = 0.obs;
+  final RxInt totalBytes = 0.obs;
+  final RxDouble speed = 0.0.obs;
+
+  bool _cancelled = false;
+  http.Client? _transfer;
+
+  @override
+  void cancel() {
+    if (!downloading.value) return;
+    _cancelled = true;
+    _transfer?.close();
+    for (final dependency in dependencies) {
+      dependency.cancel();
+    }
+  }
 
   static const _indexUrlKey = "plugin_index_url";
 
@@ -75,60 +128,79 @@ abstract class DownloadablePlugin {
     setVal(_indexUrlKey, trimmed);
 
     _cachedIndex = null;
+    _indexFetchedAt = null;
   }
 
   static Future<List<Map<String, dynamic>>>? _loadingIndex;
+  static DateTime? _indexFetchedAt;
+
+  static const _indexFresh = Duration(seconds: 20);
+
+  static bool get _indexIsStale {
+    final fetched = _indexFetchedAt;
+    return fetched == null || DateTime.now().difference(fetched) > _indexFresh;
+  }
 
   static Future<List<Map<String, dynamic>>> _loadIndex(
     http.Client client, {
     bool forceRefresh = false,
   }) {
-    if (forceRefresh) {
-      _cachedIndex = null;
-      _loadingIndex = null;
-    }
+    final pending = _loadingIndex;
+    if (pending != null) return pending;
 
-    if (_cachedIndex != null) {
+    if (!forceRefresh && _cachedIndex != null) {
       return Future.value(_cachedIndex!);
     }
 
-    return _loadingIndex ??=
+    return _loadingIndex =
         () async {
-          final url = indexUrl;
-          if (url.isEmpty) {
-            throw Exception("No plugin index URL set");
-          }
+              final url = indexUrl;
+              if (url.isEmpty) {
+                throw Exception("No plugin index URL set");
+              }
 
-          final res = await client.get(Uri.parse(url));
-          if (res.statusCode != 200) {
-            throw Exception("Failed to fetch plugin index (${res.statusCode})");
-          }
+              http.Response? res;
+              Object? failure;
+              for (var attempt = 1; attempt <= 3; attempt++) {
+                try {
+                  res = await client
+                      .get(Uri.parse(url))
+                      .timeout(const Duration(seconds: 20));
+                  failure = null;
+                  break;
+                } catch (e) {
+                  failure = e;
+                  await Future.delayed(Duration(seconds: attempt));
+                }
+              }
+              if (res == null) throw failure!;
+              if (res.statusCode != 200) {
+                throw Exception(
+                  "Failed to fetch plugin index (${res.statusCode})",
+                );
+              }
 
-          final decoded = jsonDecode(res.body);
-          if (decoded is! List) {
-            throw Exception("Plugin index is not a JSON array");
-          }
+              final decoded = jsonDecode(res.body);
+              if (decoded is! List) {
+                throw Exception("Plugin index is not a JSON array");
+              }
 
-          _cachedIndex = decoded.cast<Map<String, dynamic>>();
-          return _cachedIndex!;
-        }().whenComplete(() {
-          _loadingIndex = null;
-        });
+              _indexFetchedAt = DateTime.now();
+              return _cachedIndex = decoded.cast<Map<String, dynamic>>();
+            }()
+            .catchError((Object e) {
+              final previous = _cachedIndex;
+              if (previous == null) throw e;
+              Logger.log("Plugin index refresh failed, using the last one: $e");
+              return previous;
+            })
+            .whenComplete(() {
+              _loadingIndex = null;
+            });
   }
   // ---------------------------------------------------------------------
 
-  Future<Directory> get _dir async {
-    final dir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'bridge/plugins',
-      useSystemPath: true,
-      useCustomPath: false,
-    );
-
-    if (dir == null) throw Exception("Plugin dir null");
-
-    await dir.create(recursive: true);
-    return dir;
-  }
+  Future<Directory> get _dir => runtimeDirectory('bridge/plugins');
 
   Future<File> get _file async {
     final dir = await _dir;
@@ -149,26 +221,31 @@ abstract class DownloadablePlugin {
     if (_cachedMeta != null) return _cachedMeta;
 
     try {
-      final entries = await DownloadablePlugin._loadIndex(_client);
+      final entries = await DownloadablePlugin._loadIndex(
+        _client,
+        forceRefresh: forceRefresh && DownloadablePlugin._indexIsStale,
+      );
       final named = entries.where((e) => e["name"] == name).toList();
-      final entry =
-          named.firstWhere(
-            (e) => e["platform"] == _platformKey,
-            orElse: () => named.firstWhere(
-              (e) => e["platform"] == null,
-              orElse: () => const {},
-            ),
-          );
+      final entry = named.firstWhere(
+        (e) => e["platform"] == _platformKey,
+        orElse: () => named.firstWhere(
+          (e) => e["platform"] == null,
+          orElse: () => const {},
+        ),
+      );
 
+      indexError.value = null;
       if (entry.isEmpty) {
         availableInRepo.value = false;
         return _cachedMeta = null;
       }
 
       availableInRepo.value = true;
+      indexError.value = null;
       return _cachedMeta = entry;
     } catch (e) {
       Logger.log("$name index lookup failed: $e");
+      indexError.value = e.toString().replaceFirst("Exception: ", "");
       availableInRepo.value = false;
       return _cachedMeta = null;
     }
@@ -179,31 +256,72 @@ abstract class DownloadablePlugin {
     return remote != null;
   }
 
-  Future<void> download() async {
-    if (await isInstalled() || downloading.value) return;
+  Future<bool> download() async {
+    if (await isInstalled() || downloading.value) return false;
 
     final remote = await fetchRemote();
     if (remote == null) {
-      Logger.log("$name not found in plugin index", show: true);
-      return;
+      final reason = indexError.value;
+      Logger.log(
+        reason == null
+            ? "$name not found in plugin index"
+            : "$name could not read the plugin index: $reason",
+        show: true,
+      );
+      error.value = reason == null
+          ? "$name is not in the plugin index"
+          : "Could not reach the plugin index ($reason)";
+      return false;
     }
 
-    downloading.value = true;
-    progress.value = 0;
-
+    _begin();
     Logger.log("Downloading $name plugin", show: true);
 
     try {
+      await _installDependencies(remote);
       await _download(remote["downloadUrl"], remote["versionCode"] ?? 0);
       installed.value = true;
+      return true;
     } catch (e) {
-      Logger.log("$name download failed: $e");
-      // Otherwise progress is left stuck at whatever partial fraction the
-      // failed attempt reached until the next successful download.
-      progress.value = 0;
+      _fail(e);
+      return false;
     } finally {
-      downloading.value = false;
+      _end();
     }
+  }
+
+  void _begin() {
+    _cancelled = false;
+    error.value = null;
+    downloading.value = true;
+    progress.value = 0;
+    receivedBytes.value = 0;
+    totalBytes.value = 0;
+    speed.value = 0;
+    step.state.value = StepStatus.waiting;
+    step.error.value = null;
+  }
+
+  void _end() {
+    _transfer?.close();
+    _transfer = null;
+    speed.value = 0;
+    downloading.value = false;
+  }
+
+  void _fail(Object e) {
+    Logger.log("$name download failed: $e");
+    progress.value = 0;
+    error.value = _cancelled ? null : _describe(e);
+    if (step.active) {
+      step.state.value = _cancelled ? StepStatus.waiting : StepStatus.failed;
+      step.error.value = error.value;
+    }
+  }
+
+  static String _describe(Object e) {
+    final text = e.toString().replaceFirst("Exception: ", "");
+    return text.isEmpty ? "Download failed" : text;
   }
 
   Future<void> delete() async {
@@ -218,13 +336,13 @@ abstract class DownloadablePlugin {
     installed.value = false;
   }
 
-  Future<bool> checkForUpdate() async {
-    if (!await isInstalled()) return false;
+  Future<bool> checkForUpdate({bool forceRefresh = false}) async {
+    if (!await isInstalled()) return updateAvailable.value = false;
 
-    final remote = await fetchRemote();
-    if (remote == null) return false;
+    final remote = await fetchRemote(forceRefresh: forceRefresh);
+    if (remote == null) return updateAvailable.value = false;
 
-    return _needsUpdate(remote);
+    return updateAvailable.value = await _needsUpdate(remote);
   }
 
   /// Called after [update] has replaced the file, so whatever runs the old
@@ -239,7 +357,8 @@ abstract class DownloadablePlugin {
     final remote = await fetchRemote();
     if (remote == null) return;
 
-    if (!await _needsUpdate(remote)) return;
+    final own = await _needsUpdate(remote);
+    if (!own && !await _dependenciesPending(remote)) return;
 
     final remoteVersion = remote["versionCode"] ?? 0;
 
@@ -249,19 +368,24 @@ abstract class DownloadablePlugin {
     // the exact same underlying transfer silently, so a UI observing those
     // two Rx values (e.g. a progress bar) never lit up for a background
     // update even though bytes were moving.
-    downloading.value = true;
-    progress.value = 0;
+    _begin();
 
     try {
-      await _download(remote["downloadUrl"], remoteVersion);
+      await _installDependencies(remote);
+      if (own) {
+        await _download(remote["downloadUrl"], remoteVersion);
+      } else {
+        step.state.value = StepStatus.upToDate;
+      }
+      updateAvailable.value = false;
     } catch (e) {
-      Logger.log("$name update failed: $e");
-      progress.value = 0;
+      _fail(e);
       rethrow;
     } finally {
-      downloading.value = false;
+      _end();
     }
 
+    if (!own) return;
     try {
       await onUpdated?.call();
     } catch (e) {
@@ -269,18 +393,165 @@ abstract class DownloadablePlugin {
     }
   }
 
+  @override
   Future<void> autoUpdate() async {
     if (!await isInstalled()) return;
 
     try {
+      if (autoUpdateEnabled.value) {
+        for (final dependency in dependencies) {
+          await dependency.autoUpdate();
+        }
+      }
       final hasUpdate = await checkForUpdate();
-      if (hasUpdate) {
+      if (hasUpdate && autoUpdateEnabled.value) {
         await update();
       }
     } catch (e) {
       Logger.log("$name autoUpdate failed: $e");
     }
   }
+
+  Future<void>? _ensuring;
+
+  @override
+  Future<void> ensure({int minimum = 0, bool latest = false}) async {
+    // a restart triggered by this plugin's own update must not wait on that install
+    if (!latest && !downloading.value && await _satisfies(minimum)) {
+      _settled();
+      return;
+    }
+
+    while (_ensuring != null) {
+      await _ensuring!.catchError((_) {});
+    }
+
+    // no await between the loop check and this claim, or two callers both install
+    final job = _ensuring = _installIfNeeded(minimum, latest);
+    try {
+      await job;
+    } finally {
+      _ensuring = null;
+    }
+    if (!await _satisfies(minimum)) {
+      throw Exception("$name v$minimum is not available");
+    }
+  }
+
+  Future<void> _installIfNeeded(int minimum, bool latest) async {
+    if (await _satisfies(minimum) && !(latest && await checkForUpdate())) {
+      _settled();
+      return;
+    }
+    await _installLatest();
+  }
+
+  void _settled() {
+    if (step.active || step.state.value == StepStatus.done) return;
+    step.state.value = StepStatus.upToDate;
+    step.progress.value = 1;
+  }
+
+  Future<bool> _satisfies(int minimum) async {
+    if (!await isInstalled()) return false;
+    return (getVal<int>(_versionKey) ?? 0) >= minimum;
+  }
+
+  Future<void> _installLatest() async {
+    while (downloading.value) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+    if (await isInstalled()) {
+      await update();
+      return;
+    }
+    if (!await download()) {
+      throw Exception(error.value ?? "$name could not be installed");
+    }
+  }
+
+  int _minimumOf(PluginDependency dependency, Map<String, dynamic> remote) {
+    final needs = remote["requires"];
+    return needs is Map ? (needs[dependency.key] as num?)?.toInt() ?? 0 : 0;
+  }
+
+  Future<bool> _dependenciesPending(Map<String, dynamic> remote) async {
+    for (final dependency in dependencies) {
+      final planned = await dependency.plan(
+        minimum: _minimumOf(dependency, remote),
+      );
+      if (planned.any((s) => !s.finished)) return true;
+    }
+    return false;
+  }
+
+  Future<void> _installDependencies(Map<String, dynamic> remote) async {
+    for (final dependency in dependencies) {
+      await dependency.ensure(
+        minimum: _minimumOf(dependency, remote),
+        latest: true,
+      );
+    }
+  }
+
+  @override
+  Future<List<InstallStep>> plan({
+    int minimum = 0,
+    bool refresh = false,
+  }) async {
+    final remote = await fetchRemote(forceRefresh: refresh);
+    final here = await isInstalled();
+    final outdated =
+        here &&
+        remote != null &&
+        (await _needsUpdate(remote) ||
+            (getVal<int>(_versionKey) ?? 0) < minimum);
+    final size = remote?["fileSize"];
+
+    if (!step.active) {
+      step.reset(
+        to: here && !outdated ? StepStatus.upToDate : StepStatus.waiting,
+        bytes: size is int ? size : 0,
+        version: remote?["versionName"] as String?,
+        replaces: outdated,
+      );
+    }
+
+    final planned = <InstallStep>[];
+    var pending = false;
+    for (final dependency in dependencies) {
+      final fromDependency = await dependency.plan(
+        minimum: remote == null ? 0 : _minimumOf(dependency, remote),
+        refresh: refresh,
+      );
+      pending = pending || fromDependency.any((s) => !s.finished);
+      planned.addAll(fromDependency);
+    }
+    planned.add(step);
+    _steps.assignAll(planned);
+    updateAvailable.value = here && (outdated || pending);
+    return planned;
+  }
+
+  Future<List<String>> installDependencies() async {
+    if (dependencies.isEmpty) return const [];
+    try {
+      for (final dependency in dependencies) {
+        await dependency.ensure();
+      }
+    } catch (e) {
+      Logger.log("$name could not install what it needs: $e", show: true);
+    }
+    return [
+      for (final dependency in dependencies) ...await dependency.classpath(),
+    ];
+  }
+
+  @override
+  Future<List<String>> classpath() async => [
+    for (final dependency in dependencies) ...await dependency.classpath(),
+    if (await isInstalled()) await getPath(),
+  ];
 
   String formatSize(int bytes) {
     const kb = 1024;
@@ -303,12 +574,12 @@ abstract class DownloadablePlugin {
     final marker = File("${file.path}.tmp.version");
     if (await temp.exists()) {
       final started = await marker.exists() ? await marker.readAsString() : "";
-      if (started.trim() != "$version") {
+      if (started.trim() != "$version $url") {
         Logger.log("Dropping a partial $name download from another version");
         await temp.delete();
       }
     }
-    await marker.writeAsString("$version");
+    await marker.writeAsString("$version $url");
 
     int retries = 0;
     const maxRetries = 10;
@@ -317,17 +588,33 @@ abstract class DownloadablePlugin {
       var resumeFrom = await temp.exists() ? await temp.length() : 0;
 
       final request = http.Request("GET", Uri.parse(url));
+      _transfer?.close();
+      final client = _transfer = MClient.init();
 
       if (resumeFrom > 0) {
         request.headers["Range"] = "bytes=$resumeFrom-";
         Logger.log("Resuming $name from ${formatSize(resumeFrom)}");
       }
 
+      step.state.value = StepStatus.downloading;
+      step.error.value = null;
+
       try {
-        final response = await _client.send(request);
+        final response = await client.send(request);
+
+        if (response.statusCode == 416 && resumeFrom > 0) {
+          Logger.log("$name partial download no longer fits, starting over");
+          await temp.delete();
+          continue;
+        }
 
         if (response.statusCode != 200 && response.statusCode != 206) {
-          throw Exception("Download failed (${response.statusCode})");
+          final status = response.statusCode;
+          final message = "Download failed ($status)";
+          if (status >= 400 && status < 500 && status != 408 && status != 429) {
+            throw _NoRetry(message);
+          }
+          throw Exception(message);
         }
 
         // A 200 means the server ignored our Range header and is streaming the
@@ -341,17 +628,33 @@ abstract class DownloadablePlugin {
         );
 
         int received = resumeFrom;
+        var windowStart = DateTime.now();
+        var windowBytes = 0;
 
         final int? total = resuming
             ? (response.contentLength == null
                   ? null
                   : resumeFrom + response.contentLength!)
             : response.contentLength;
+        totalBytes.value = total ?? 0;
+        receivedBytes.value = received;
 
         try {
           await for (final chunk in response.stream) {
             sink.add(chunk);
             received += chunk.length;
+            windowBytes += chunk.length;
+            receivedBytes.value = received;
+
+            final elapsed = DateTime.now().difference(windowStart);
+            if (elapsed >= const Duration(milliseconds: 600)) {
+              final rate = windowBytes / (elapsed.inMilliseconds / 1000);
+              speed.value = speed.value == 0
+                  ? rate
+                  : speed.value * 0.6 + rate * 0.4;
+              windowStart = DateTime.now();
+              windowBytes = 0;
+            }
 
             if (total != null && total > 0) {
               progress.value = received / total;
@@ -366,6 +669,8 @@ abstract class DownloadablePlugin {
           throw Exception("Incomplete download");
         }
 
+        step.state.value = StepStatus.installing;
+
         if (_isArchive(file.path) && !await zipIsIntact(temp.path)) {
           await temp.delete();
           throw Exception("Downloaded $name file is corrupt");
@@ -374,7 +679,9 @@ abstract class DownloadablePlugin {
         try {
           await beforeSwap?.call();
         } catch (e) {
-          Logger.log("$name beforeSwap failed, swapping in the update anyway: $e");
+          Logger.log(
+            "$name beforeSwap failed, swapping in the update anyway: $e",
+          );
         }
 
         try {
@@ -394,10 +701,13 @@ abstract class DownloadablePlugin {
         if (await marker.exists()) await marker.delete();
         setVal(_versionKey, version);
         progress.value = 1.0;
+        step.state.value = StepStatus.done;
 
         Logger.log("$name:v$version installed", show: true);
         return;
       } catch (e) {
+        if (_cancelled) throw Exception("Cancelled");
+        if (e is _NoRetry) throw Exception(e.message);
         retries++;
 
         Logger.log("$name download interrupted ($retries/$maxRetries): $e");
@@ -410,4 +720,10 @@ abstract class DownloadablePlugin {
       }
     }
   }
+}
+
+class _NoRetry implements Exception {
+  final String message;
+
+  _NoRetry(this.message);
 }

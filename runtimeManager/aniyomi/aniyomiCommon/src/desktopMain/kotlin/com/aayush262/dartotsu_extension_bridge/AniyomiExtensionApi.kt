@@ -14,6 +14,7 @@ import com.google.gson.Gson
 import eu.kanade.tachiyomi.PreferenceScreen
 import eu.kanade.tachiyomi.network.NetworkHelper
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
@@ -50,6 +51,7 @@ actual object AniyomiPlatformInit {
                         single<Application> { context }
                         single { NetworkHelper(context) }
                         single { Json { ignoreUnknownKeys = true } }
+                        single<ProtoBuf> { ProtoBuf }
                         single { AniyomiExtensionManager() }
                     },
                     androidCompatModule(root),

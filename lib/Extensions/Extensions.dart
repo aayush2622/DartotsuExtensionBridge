@@ -48,6 +48,19 @@ Stream<double> progressStream(
   return controller.stream;
 }
 
+/// The installer finished but the existing copy is still the one installed,
+/// usually because it was signed with another key. [Extension.reinstallSource]
+/// removes it and installs the new version.
+class ExtensionUpdateConflict implements Exception {
+  final Source source;
+
+  const ExtensionUpdateConflict(this.source);
+
+  @override
+  String toString() =>
+      'The new version of ${source.name} was not installed over the existing one';
+}
+
 class ExtensionState {
   final installed = Rx<List<Source>>([]);
   final available = Rx<List<Source>>([]);
@@ -182,9 +195,7 @@ abstract class Extension {
 
     try {
       await initialize();
-    } catch (_) {
-
-    }
+    } catch (_) {}
 
     return _initState == InitState.success;
   }
@@ -207,19 +218,19 @@ abstract class Extension {
       switch (type) {
         case ItemType.anime:
           if (supportsAnime) {
-            unawaited(fetchInstalledAnimeExtensions());
+            _trackInstalled(s, fetchInstalledAnimeExtensions());
           }
           break;
 
         case ItemType.manga:
           if (supportsManga) {
-            unawaited(fetchInstalledMangaExtensions());
+            _trackInstalled(s, fetchInstalledMangaExtensions());
           }
           break;
 
         case ItemType.novel:
           if (supportsNovel) {
-            unawaited(fetchInstalledNovelExtensions());
+            _trackInstalled(s, fetchInstalledNovelExtensions());
           }
           break;
       }
@@ -227,6 +238,17 @@ abstract class Extension {
     } catch (e, s) {
       Logger.log('Error initializing extension $id: $e\n$s');
     }
+  }
+
+  void _trackInstalled(ExtensionState state, Future<void> fetch) {
+    state.loadingInstalled.value = true;
+    unawaited(
+      fetch
+          .catchError((Object e, StackTrace st) {
+            Logger.log('Error fetching installed extensions for $id: $e\n$st');
+          })
+          .whenComplete(() => state.loadingInstalled.value = false),
+    );
   }
 
   @mustCallSuper
@@ -286,6 +308,13 @@ abstract class Extension {
 
   /// Progress in `[0.0, 1.0]`. See [progressStream].
   Stream<double> updateSource(Source source);
+
+  /// Removes [source] and installs it again, for an update that could not be
+  /// applied over the installed copy ([ExtensionUpdateConflict]).
+  Stream<double> reinstallSource(Source source) => progressStream((_) async {
+    await uninstallSource(source);
+    await installSource(source).drain<void>();
+  });
 
   @mustCallSuper
   Future<void> fetchAnimeExtensions() async {

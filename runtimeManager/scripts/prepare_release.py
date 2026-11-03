@@ -23,7 +23,18 @@ For each builds/<plugin>/<plugin>-plugin.json:
      by 1 and bump the patch segment of versionName.
   4. If unchanged: keep the previous version numbers as-is.
   5. Set downloadUrl to point at the (recreated) "latest" release.
-  6. Write the patched JSON back in place.
+  6. A desktop backend is published twice: the self-contained jar app builds
+     from before the split know (`<name>-plugin.jar`, platform "desktop",
+     versioned exactly as it always was) and the thin one for builds with the
+     shared core (`<name>-split.jar`, platform "desktopSplit"). The split
+     entry's first version is the fat one's plus one, so a client that has
+     the fat jar always sees the split one as newer.
+  7. A plugin that needs another one on its classpath (the desktop plugins
+     need desktopCore) carries `requires: {name: minimum versionCode}`. When
+     the plugin changed, the minimum is the required plugin's version in this
+     release; when it did not, the plugin keeps the minimum it already had
+     (its bytes are the same, so what it was built against is the same).
+  8. Write the patched JSON back in place.
 
 Finally, writes builds/plugins.json as an aggregate index of every
 plugin's metadata, and reports via $GITHUB_OUTPUT whether *anything*
@@ -44,6 +55,7 @@ BUILDS_DIR = Path("builds")
 PREVIOUS_DIR = Path("previous-release")
 REPO_PLUGINS_JSON = Path("../plugins.json")
 TAG = "latest"
+SPLIT_PLATFORM = "desktopSplit"
 
 
 def sha256(path: Path) -> str:
@@ -89,6 +101,9 @@ def process_plugin(metadata_path: Path, repo: str, previous_index: dict[str, dic
     previous_metadata = previous_index.get(file_name, {})
     previous_artifact = PREVIOUS_DIR / file_name
 
+    if not previous_metadata and metadata.get("platform") == SPLIT_PLATFORM:
+        previous_metadata = previous_index.get(f"{metadata['name']}-plugin.jar", {})
+
     changed = True
     if previous_artifact.exists():
         changed = sha256(artifact_path) != sha256(previous_artifact)
@@ -108,12 +123,41 @@ def process_plugin(metadata_path: Path, repo: str, previous_index: dict[str, dic
     return metadata, changed
 
 
+def resolve_requires(results: list[tuple[Path, dict, bool]], previous_index: dict[str, dict]) -> None:
+    """Replace the placeholder minimums Gradle wrote into `requires`."""
+    versions = {
+        metadata["name"]: int(metadata["versionCode"])
+        for _, metadata, _ in results
+        if metadata.get("platform") == SPLIT_PLATFORM
+    }
+
+    for metadata_path, metadata, changed in results:
+        needs = metadata.get("requires")
+        if not needs:
+            continue
+
+        previous = previous_index.get(metadata["fileName"], {}).get("requires", {})
+        resolved = {}
+        for dependency in needs:
+            if dependency not in versions:
+                sys.exit(f"[{metadata['name']}] requires {dependency}, which was not built.")
+            if changed or dependency not in previous:
+                resolved[dependency] = versions[dependency]
+            else:
+                resolved[dependency] = previous[dependency]
+
+        metadata["requires"] = resolved
+        metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
+
+
 def main() -> None:
     repo = os.environ.get("GITHUB_REPOSITORY")
     if not repo:
         sys.exit("GITHUB_REPOSITORY environment variable is required.")
 
-    metadata_files = sorted(BUILDS_DIR.glob("*/*-plugin.json"))
+    metadata_files = sorted(
+        [*BUILDS_DIR.glob("*/*-plugin.json"), *BUILDS_DIR.glob("*/*-split.json")]
+    )
     if not metadata_files:
         print("No plugin metadata found under builds/ — nothing to release.")
         write_output("changed", "false")
@@ -121,15 +165,21 @@ def main() -> None:
 
     previous_index = load_previous_index()
 
-    index = []
+    results = []
     any_changed = False
 
     for metadata_path in metadata_files:
         metadata, changed = process_plugin(metadata_path, repo, previous_index)
-        index.append(metadata)
+        results.append((metadata_path, metadata, changed))
         any_changed = any_changed or changed
         status = "changed" if changed else "unchanged"
-        print(f"[{metadata['name']}] {status} -> v{metadata['versionName']} ({metadata['versionCode']})")
+        print(
+            f"[{metadata['name']} / {metadata['platform']}] {status} -> "
+            f"v{metadata['versionName']} ({metadata['versionCode']})"
+        )
+
+    resolve_requires(results, previous_index)
+    index = [metadata for _, metadata, _ in results]
 
     (BUILDS_DIR / "plugins.json").write_text(json.dumps(index, indent=2) + "\n")
 

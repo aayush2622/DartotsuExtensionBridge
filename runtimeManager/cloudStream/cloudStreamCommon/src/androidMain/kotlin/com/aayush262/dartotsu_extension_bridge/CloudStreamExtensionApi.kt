@@ -14,6 +14,7 @@ actual object CloudStreamPlatformInit {
         AcraApplication.context = recording
         CloudStreamApp.context = recording
         DataStore.init(recording)
+        com.lagradost.api.setContext(recording)
         AndroidPreferenceRecorder.init(app)
     }
 

@@ -13,11 +13,16 @@ import '../../../dartotsu_extension_bridge.dart';
 import '../../Shared/JvmBackend.dart';
 import '../../Shared/AndroidApkInstallMixin.dart';
 import '../../Shared/TachiyomiRepo.dart';
+import '../IReaderIcons.dart';
 import '../IReaderSourceMethods.dart';
 import 'Models/Source.dart';
 
 class IReaderExtensions extends Extension
-    with JvmBackend, AndroidJvmBackend, TachiyomiRepoBackend, AndroidApkInstallMixin {
+    with
+        JvmBackend,
+        AndroidJvmBackend,
+        TachiyomiRepoBackend,
+        AndroidApkInstallMixin {
   @override
   Set<RepoFormat> get repoFormats => const {RepoFormat.iReader};
 
@@ -49,6 +54,10 @@ class IReaderExtensions extends Extension
   http.Client get repoClient => _client;
 
   @override
+  Future<List<Source>> fetchRepo(Repo repo, ItemType type) async =>
+      withIreaderIcons(await super.fetchRepo(repo, type), repo.url, repoClient);
+
+  @override
   List<Source> Function((Uint8List body, String repoUrl, ItemType type))
   get parseIndexIsolate => _parseExtensions;
   @override
@@ -63,7 +72,6 @@ class IReaderExtensions extends Extension
 
   @override
   String get androidExtensionsDirName => 'ireader-extensions';
-
 
   @override
   Future<void> fetchInstalledNovelExtensions() async {
@@ -117,6 +125,7 @@ class IReaderExtensions extends Extension
     args.$2,
     args.$3,
     prefixes: const {'ireader: ': ItemType.novel},
+    unprefixedType: ItemType.novel,
     factory: _sourceFromEntry,
   );
 

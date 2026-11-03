@@ -34,7 +34,7 @@ class CloudflareInterceptor : Interceptor {
 
         // The clearance the app reported did not pass; the app asks the user this time.
         Logger.log("Cloudflare still blocks ${request.url.host} after clearing, asking again", LogLevel.DEBUG)
-        if (!Cloudflare.solve(request.url)) return retried
+        if (!Cloudflare.solve(request.url, retried = true)) return retried
         retried.close()
         return chain.proceed(request.newBuilder().header("User-Agent", Network.userAgent).build())
     }
@@ -63,7 +63,7 @@ object Cloudflare {
      * the same host share one attempt. Returns true once the app has fresh
      * clearance cookies.
      */
-    fun solve(url: HttpUrl): Boolean {
+    fun solve(url: HttpUrl, retried: Boolean = false): Boolean {
         val callbacks = customMethods ?: return false
         val mine = CompletableFuture<Boolean>()
         val running = inflight.putIfAbsent(url.host, mine)
@@ -71,7 +71,7 @@ object Cloudflare {
             return runCatching { running.get(6, TimeUnit.MINUTES) }.getOrDefault(false)
         }
         return try {
-            val solved = runCatching { callbacks.solveCloudflare(url.toString()) }.getOrDefault(false)
+            val solved = runCatching { callbacks.solveCloudflare(url.toString(), retried) }.getOrDefault(false)
             if (solved) Network.refreshUserAgent()
             Logger.log(
                 if (solved) "Cloudflare cleared for ${url.host}" else "Cloudflare not cleared for ${url.host}",

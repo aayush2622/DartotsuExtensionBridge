@@ -7,6 +7,7 @@ import '../Engines/JavaEngine/JavaBridgeServer.dart';
 import '../ExtensionBridge.dart';
 import '../Logger.dart';
 import 'BridgeWebView.dart';
+import 'BridgeWebViewSessions.dart';
 import 'CloudflareSolver.dart';
 import 'MClient.dart';
 
@@ -106,7 +107,7 @@ class NativeNetwork {
       case 'solveCloudflare':
         final url = Uri.tryParse(args['url'] as String? ?? '');
         if (url == null || !url.hasAuthority) return false;
-        return CloudflareSolver.solve(url);
+        return CloudflareSolver.solve(url, retried: args['retried'] == true);
 
       case 'webView':
         final request = jsonDecode(args['request'] as String) as Map;
@@ -115,6 +116,9 @@ class NativeNetwork {
         );
 
       default:
+        if (method.startsWith('wv')) {
+          return BridgeWebViewSessions.handle(method, args);
+        }
         throw Exception('Unknown method: $method');
     }
   }

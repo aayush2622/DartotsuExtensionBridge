@@ -22,8 +22,7 @@ import kotlinx.coroutines.sync.withPermit
  * `@Synchronized`, so this only ever runs one batch at a time.
  */
 object ExtensionConvert {
-    private val parallelism =
-        Runtime.getRuntime().availableProcessors().coerceIn(2, 4)
+    private val parallelism = 2
 
     /**
      * Runs [load] over [items] up to [parallelism] at a time, in the caller's

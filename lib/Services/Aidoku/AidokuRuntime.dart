@@ -381,9 +381,7 @@ class AidokuRuntime {
     _lastContexts.clear();
     final known = _chapters[episode.url];
     final manga =
-        mangaCache[known?.manga] ??
-        mangaCache[_lastDetailKey] ??
-        _lastManga();
+        mangaCache[known?.manga] ?? mangaCache[_lastDetailKey] ?? _lastManga();
     if (manga == null) {
       throw Exception('No manga context available for this chapter');
     }

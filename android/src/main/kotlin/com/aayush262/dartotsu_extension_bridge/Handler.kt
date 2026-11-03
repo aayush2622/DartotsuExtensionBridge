@@ -2,7 +2,9 @@ package com.aayush262.dartotsu_extension_bridge
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.pm.ApplicationInfo
+import android.content.res.AssetManager
 import android.os.Build
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
 import dalvik.system.DexClassLoader
@@ -128,6 +130,14 @@ class Handler(
                     )
                 }
 
+                "getPageImage" -> launch(call, result) {
+                    val args = call.arguments as Map<*, *>
+
+                    api.getPageImage(
+                        args["sourceId"] as String, args["isAnime"] as Boolean, args["page"] as String
+                    )
+                }
+
                 "getNovelContent" -> launch (call, result) {
                     val args = call.arguments as Map<*, *>
 
@@ -189,7 +199,9 @@ class Handler(
                 0
             )
 
-            val classLoader = createPluginLoader(File(appInfo.sourceDir))
+            val apk = File(appInfo.sourceDir)
+            val classLoader = createPluginLoader(apk)
+            initializeOkHttpPlatform(classLoader, context, apk)
 
             val clazz = classLoader.loadClass(apiClassName)
 
@@ -214,6 +226,44 @@ class Handler(
             )
         }
     }
+    // A plugin APK is loaded by hand via DexClassLoader rather than installed
+    // as a real package, so the OS never instantiates its merged
+    // androidx.startup ContentProvider - any androidx.startup Initializer the
+    // plugin bundles (e.g. okhttp-android's PlatformInitializer, which sets
+    // the Context AndroidPlatform.applicationContext needs) never runs,
+    // leaving its networking failing with "Platform applicationContext not
+    // initialized". Run it ourselves against the plugin's own classloader.
+    //
+    // okhttp-android ships its public suffix list as an Android asset
+    // (assets/PublicSuffixDatabase.list), read via context.assets - the host
+    // app's own AssetManager only sees the host APK's assets, not this
+    // dynamically loaded plugin's, so that lookup needs an AssetManager
+    // pointed at the plugin file itself (same trick as CloudStream's
+    // pluginResources()).
+    private fun initializeOkHttpPlatform(classLoader: ClassLoader, context: Context, apk: File) {
+        try {
+            val initializerClass =
+                classLoader.loadClass("okhttp3.internal.platform.PlatformInitializer")
+            val instance = initializerClass.getDeclaredConstructor().newInstance()
+            val create = initializerClass.getMethod("create", Context::class.java)
+            create.invoke(instance, pluginAssetsContext(context, apk))
+        } catch (_: ClassNotFoundException) {
+            // Plugin doesn't bundle okhttp-android - nothing to do.
+        } catch (e: Throwable) {
+            Logger.log("OkHttp platform init failed: ${e.message}", LogLevel.INFO)
+        }
+    }
+
+    private fun pluginAssetsContext(context: Context, apk: File): Context {
+        val assets = AssetManager::class.java.getDeclaredConstructor().newInstance()
+        AssetManager::class.java.getMethod("addAssetPath", String::class.java)
+            .invoke(assets, apk.absolutePath)
+
+        return object : ContextWrapper(context) {
+            override fun getAssets(): AssetManager = assets
+        }
+    }
+
     private fun createPluginLoader(apk: File): ClassLoader {
         val libDir = extractNativeLibraries(apk)
         val optimizedDir = File(context.codeCacheDir, "plugin_opt")
@@ -308,6 +358,7 @@ class Handler(
             Logger.log("Creating plugin class loader...", LogLevel.INFO)
 
             val classLoader = createPluginLoader(dst)
+            initializeOkHttpPlatform(classLoader, context, dst)
 
             Logger.log("Plugin class loader ready", LogLevel.INFO)
 

@@ -183,6 +183,7 @@ List<T> parseTachiyomiRepoIndex<T extends Source>({
   required ItemType targetType,
   required Map<String, ItemType> prefixes,
   required T Function(TachiyomiRepoEntry entry) factory,
+  ItemType? unprefixedType,
 }) {
   try {
     final decoded = jsonDecode(body);
@@ -210,14 +211,25 @@ List<T> parseTachiyomiRepoIndex<T extends Source>({
         }
       }
 
+      final unprefixed = detectedType == null && unprefixedType != null;
+      if (unprefixed) detectedType = unprefixedType;
+
       if (detectedType != targetType) continue;
 
       final sourcesList = map['sources'];
-      final id = (sourcesList is List && sourcesList.isNotEmpty)
+      final listed = (sourcesList is List && sourcesList.isNotEmpty)
           ? (sourcesList.first['id']?.toString() ?? '')
-          : '';
+          : (map['id']?.toString() ?? '');
+      final id = listed.isNotEmpty
+          ? listed
+          : (map['pkg']?.toString() ?? '').isNotEmpty
+          ? map['pkg'].toString()
+          : name;
 
       final apkName = map['apk'] as String?;
+      final jarName = unprefixed && apkName != null && apkName.endsWith('.apk')
+          ? '${apkName.substring(0, apkName.length - 4)}.jar'
+          : null;
 
       sources.add(
         factory(
@@ -228,8 +240,9 @@ List<T> parseTachiyomiRepoIndex<T extends Source>({
             apkName: apkName,
             lang: map['lang'] as String?,
             version: map['version']?.toString(),
-            isNsfw: map['nsfw'] == 1,
+            isNsfw: map['nsfw'] == 1 || map['nsfw'] == true,
             itemType: detectedType!,
+            jarUrl: jarName == null ? null : '$baseIconUrl/jar/$jarName',
             repo: repoUrl,
             iconUrl: '$baseIconUrl/icon/${map['pkg']}.png',
             // The JSON index doesn't state a download URL, but the Tachiyomi
@@ -335,6 +348,7 @@ List<T> parseTachiyomiIndexBytes<T extends Source>(
   ItemType targetType, {
   required Map<String, ItemType> prefixes,
   required T Function(TachiyomiRepoEntry entry) factory,
+  ItemType? unprefixedType,
 }) {
   if (tachiyomiIndexFormat(repoUrl) == RepoIndexFormat.protobuf) {
     return parseTachiyomiPbIndex<T>(
@@ -350,6 +364,7 @@ List<T> parseTachiyomiIndexBytes<T extends Source>(
     targetType: targetType,
     prefixes: prefixes,
     factory: factory,
+    unprefixedType: unprefixedType,
   );
 }
 

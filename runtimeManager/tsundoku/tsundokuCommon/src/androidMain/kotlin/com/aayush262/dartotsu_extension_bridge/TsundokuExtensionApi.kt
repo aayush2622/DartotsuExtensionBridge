@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.network.NetworkHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.protobuf.ProtoBuf
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
@@ -24,6 +25,8 @@ actual object TsundokuPlatformInit {
         Injekt.addSingletonFactory<Context> { ctx }
         Injekt.addSingletonFactory { NetworkHelper(ctx) }
         Injekt.addSingletonFactory { Injekt.get<NetworkHelper>().client }
+
+        Injekt.addSingletonFactory<ProtoBuf> { ProtoBuf }
 
         Injekt.addSingletonFactory {
             Json {

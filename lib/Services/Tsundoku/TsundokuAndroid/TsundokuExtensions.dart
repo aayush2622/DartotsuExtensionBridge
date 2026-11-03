@@ -17,7 +17,11 @@ import '../TsundokuSourceMethods.dart';
 import 'Models/Source.dart';
 
 class TsundokuExtensions extends Extension
-    with JvmBackend, AndroidJvmBackend, TachiyomiRepoBackend, AndroidApkInstallMixin {
+    with
+        JvmBackend,
+        AndroidJvmBackend,
+        TachiyomiRepoBackend,
+        AndroidApkInstallMixin {
   final _client = MClient.init();
 
   @override
@@ -62,7 +66,6 @@ class TsundokuExtensions extends Extension
 
   @override
   String get androidExtensionsDirName => 'tsundoku-extensions';
-
 
   @override
   Future<void> fetchInstalledNovelExtensions() async {

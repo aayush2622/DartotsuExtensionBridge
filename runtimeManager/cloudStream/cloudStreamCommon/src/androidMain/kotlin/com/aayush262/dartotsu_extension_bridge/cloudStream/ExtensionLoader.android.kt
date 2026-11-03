@@ -12,6 +12,8 @@ import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.Coroutines
+import com.lagradost.cloudstream3.utils.PREFERENCES_NAME
 import com.lagradost.cloudstream3.utils.extractorApis
 import java.io.File
 import java.io.IOException
@@ -25,7 +27,38 @@ actual object ExtensionLoader {
             ?: AcraApplication.context
             ?: error("Context is null")
     actual var plugins = mutableMapOf<String, LoadedPlugin>()
+
+    actual fun pendingExtensions(): Int = 0
+
+    actual fun changeVersion(): Long = 0L
+
+    actual fun changesSince(since: Long): String = """{"version":0,"entries":[]}"""
+
+    actual fun preloadExtensions(path: String) {}
+
+    actual fun refreshExtensions(path: String, waitMs: Long) {
+        sync(path)
+    }
+
     actual fun loadExtensions(path: String) {
+        unloadExtensions()
+        sync(path)
+    }
+
+    private fun unloadPlugin(path: String) {
+        plugins.remove(path)?.let {
+            try {
+                it.plugin.beforeUnload()
+            } catch (_: Exception) {
+            }
+        }
+        AndroidPreferenceRecorder.unregister(File(path).nameWithoutExtension)
+        APIHolder.allProviders.removeAll { it.sourcePlugin == path }
+        APIHolder.apis = APIHolder.apis.filter { it.sourcePlugin != path }
+        extractorApis.removeAll { it.sourcePlugin == path }
+    }
+
+    private fun sync(path: String) {
         val privateDir = File(context.filesDir, "cloudstream-plugins")
         val externalDir = File(path)
 
@@ -68,11 +101,14 @@ actual object ExtensionLoader {
             }
         }
 
-        plugins.keys.forEach { AndroidPreferenceRecorder.unregister(File(it).nameWithoutExtension) }
-        plugins.clear()
+        for ((pluginPath, loaded) in plugins.entries.toList()) {
+            val file = File(pluginPath)
+            if (!file.exists() || file.lastModified() != loaded.stamp) unloadPlugin(pluginPath)
+        }
 
         privateDir.listFiles()
             ?.filter { it.isFile && (it.extension == "apk" || it.extension == "cs3") }
+            ?.filter { !plugins.containsKey(it.absolutePath) }
             ?.forEach { file ->
                 val loaded = try {
                     loadPlugin(file)
@@ -93,6 +129,11 @@ actual object ExtensionLoader {
 
     fun loadPlugin(
         file: File,
+    ): Boolean = loadPlugin(file, 0)
+
+    private fun loadPlugin(
+        file: File,
+        attempt: Int,
     ): Boolean {
 
         if (!file.exists()) {
@@ -133,7 +174,8 @@ actual object ExtensionLoader {
 
             plugins[file.absolutePath] = LoadedPlugin(
                 plugin = plugin,
-                manifest = manifest
+                manifest = manifest,
+                stamp = file.lastModified()
             )
             if (plugin is Plugin) {
                 plugin.load(context.applicationContext)
@@ -147,12 +189,35 @@ actual object ExtensionLoader {
 
             true
         } catch (e: Throwable) {
+            if (attempt < MAX_HEALS && healBadSetting(file.nameWithoutExtension, e)) {
+                AndroidPreferenceRecorder.unregister(file.nameWithoutExtension)
+                return loadPlugin(file, attempt + 1)
+            }
             AndroidPreferenceRecorder.unregister(file.nameWithoutExtension)
             Logger.log(
                 "Failed loading ${file.name}: ${e.message}\n${e.stackTraceToString()}"
             )
             false
         }
+    }
+
+    private const val MAX_HEALS = 6
+
+    private fun healBadSetting(owner: String, error: Throwable): Boolean {
+        if (!generateSequence(error) { it.cause }.any { it is kotlinx.serialization.SerializationException }) {
+            return false
+        }
+        val key = AndroidPreferenceRecorder.lastTouched(owner) ?: return false
+        if (key.store != PREFERENCES_NAME) return false
+        val prefs = AndroidPreferenceRecorder.storeNamed(key.store) ?: return false
+        val stored = prefs.getString(key.key, null) ?: return false
+        val isText = runCatching {
+            com.google.gson.JsonParser.parseString(stored).let { it.isJsonPrimitive && it.asJsonPrimitive.isString }
+        }.getOrDefault(true)
+        if (!isText) return false
+        prefs.edit().remove(key.key).commit()
+        Logger.log("Reset setting ${key.key} of $owner: its saved value could not be read")
+        return true
     }
 
     private fun pluginResources(file: File): Resources {
@@ -164,9 +229,11 @@ actual object ExtensionLoader {
         return Resources(assets, base.displayMetrics, base.configuration)
     }
 
+    actual fun releaseCachedJar(jarPath: String) {}
+
     actual fun unloadExtensions() {
         APIHolder.allProviders.clear()
-        APIHolder.apis.clear()
+        APIHolder.apis = Coroutines.atomicListOf()
 
         plugins.forEach { (path, loaded) ->
             try {

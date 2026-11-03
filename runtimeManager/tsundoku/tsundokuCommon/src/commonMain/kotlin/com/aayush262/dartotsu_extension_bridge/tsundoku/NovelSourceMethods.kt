@@ -29,11 +29,12 @@ import eu.kanade.tachiyomi.source.sourcePreferences
 import kotlinx.serialization.json.JsonObject
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.Collections
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 @Suppress("PrivatePropertyName")
-class NovelSourceMethods(sourceID: String) : AniyomiSourceMethods {
+class NovelSourceMethods(private val sourceID: String) : AniyomiSourceMethods {
 
 
     private val source: CatalogueSource
@@ -88,14 +89,32 @@ class NovelSourceMethods(sourceID: String) : AniyomiSourceMethods {
             fetchChapters = true
         )
 
+        data.chapters.forEach { chapterCache["$sourceID|${it.url}"] = it }
+
         return data.manga.toSAnime() to data.chapters.map { it.toSEpisode() }
     }
 
-    override suspend fun getPageList( chapter: SChapter): List<Page> {
+    // Some sources key their own internal staleness checks off the exact
+    // SChapter instance returned by getDetails rather than its field values
+    // (Mihon always hands the same instance back); the bridge otherwise
+    // rebuilds a fresh SChapter from the JSON sent to Dart and back, which
+    // such a source sees as "this chapter was never fetched" and rejects.
+    override suspend fun getPageList(chapter: SChapter): List<Page> {
+        val resolved = chapterCache["$sourceID|${chapter.url}"] ?: chapter
         if (source.isNovelSource()) {
-            return listOf(Page(0, chapter.url))
+            return listOf(Page(0, resolved.url))
         }
-        return (source).getPageList(chapter)
+        return source.getPageList(resolved)
+    }
+
+    companion object {
+        private const val CHAPTER_CACHE_LIMIT = 2000
+        private val chapterCache = Collections.synchronizedMap(
+            object : LinkedHashMap<String, SChapter>(16, 0.75f, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, SChapter>) =
+                    size > CHAPTER_CACHE_LIMIT
+            }
+        )
     }
 
     override suspend fun fetchPageText(page: Page): String {

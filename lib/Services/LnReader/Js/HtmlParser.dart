@@ -1,201 +1,95 @@
+import 'dart:convert';
+
 import 'package:flutter_qjs/flutter_qjs.dart';
+
+import 'HtmlStream.dart';
 
 class JsHtmlParser {
   late JavascriptRuntime runtime;
   JsHtmlParser(this.runtime);
 
+  final Map<int, HtmlStream> _streams = {};
+  int _next = 0;
+
   void init() {
+    runtime.onMessage('hp_create', (dynamic args) {
+      final id = ++_next;
+      _streams[id] = HtmlStream();
+      return jsonEncode(id);
+    });
+
+    runtime.onMessage('hp_write', (dynamic args) {
+      final stream = _streams[args[0] as int];
+      if (stream == null) return jsonEncode(const []);
+      return jsonEncode(stream.write(args[1] as String));
+    });
+
+    runtime.onMessage('hp_end', (dynamic args) {
+      final stream = _streams.remove(args[0] as int);
+      if (stream == null) return jsonEncode(const []);
+      return jsonEncode(stream.end());
+    });
+
     runtime.evaluate('''
 class Parser {
-    constructor(options = {}) {
-        this.options = options;
-        this.buffer = '';
+  constructor(options = {}) {
+    this.options = options || {};
+    this._id = JSON.parse(sendMessage("hp_create", JSON.stringify([])));
+  }
+
+  isVoidElement(name) {
+    return [
+      "area", "base", "basefont", "br", "col", "command", "embed", "frame",
+      "hr", "img", "input", "isindex", "keygen", "link", "meta", "param",
+      "source", "track", "wbr",
+    ].includes(String(name).toLowerCase());
+  }
+
+  _dispatch(events) {
+    const o = this.options;
+    for (const e of events) {
+      switch (e[0]) {
+        case "t":
+          if (o.ontext) o.ontext(e[1]);
+          break;
+        case "o":
+          if (o.onopentagname) o.onopentagname(e[1]);
+          if (o.onattribute) {
+            for (const k in e[2]) o.onattribute(k, e[2][k]);
+          }
+          if (o.onopentag) o.onopentag(e[1], e[2]);
+          if (o.onopentagend) o.onopentagend();
+          break;
+        case "c":
+          if (o.onclosetag) o.onclosetag(e[1], e[2]);
+          break;
+        case "m":
+          if (o.oncomment) o.oncomment(e[1]);
+          break;
+      }
     }
+  }
 
-    isVoidElement(name) {
-      return [
-        "area",
-        "base",
-        "basefont",
-        "br",
-        "col",
-        "command",
-        "embed",
-        "frame",
-        "hr",
-        "img",
-        "input",
-        "isindex",
-        "keygen",
-        "link",
-        "meta",
-        "param",
-        "source",
-        "track",
-        "wbr",
-      ].includes(name);
-    }
+  write(chunk) {
+    if (this._id === null) return;
+    this._dispatch(
+      JSON.parse(sendMessage("hp_write", JSON.stringify([this._id, String(chunk)])))
+    );
+  }
 
-    write(html) {
-        this.buffer += html;
-        let i = 0;
-        let textStart = 0;
-        const len = this.buffer.length;
-        let insideQuote = null;
+  end(chunk) {
+    if (chunk !== undefined && chunk !== null) this.write(chunk);
+    if (this._id === null) return;
+    const id = this._id;
+    this._id = null;
+    this._dispatch(JSON.parse(sendMessage("hp_end", JSON.stringify([id]))));
+    if (this.options.onend) this.options.onend();
+  }
 
-        while (i < len) {
-            const ch = this.buffer[i];
-
-            // Track string literals
-            if ((ch === '"' || ch === "'")) {
-                if (insideQuote === ch) {
-                    insideQuote = null;
-                } else if (insideQuote === null) {
-                    insideQuote = ch;
-                }
-                i++;
-                continue;
-            }
-
-            if (ch === '<' && insideQuote === null) {
-                // Emit any text before the tag
-                if (i > textStart && this.options.ontext) {
-                    const text = this.buffer.slice(textStart, i);
-                    this.options.ontext(text);
-                }
-
-                const tagStart = i;
-                i++;
-
-                const isClosing = this.buffer[i] === '/';
-                if (isClosing) i++;
-
-                // Parse tag name
-                const nameStart = i;
-                while (i < len && /[a-zA-Z0-9:-]/.test(this.buffer[i])) i++;
-                const nameEnd = i;
-                const tagName = this.buffer.slice(nameStart, nameEnd);
-
-                if (isClosing) {
-                    if (this.options.onclosetag) {
-                        this.options.onclosetag(tagName);
-                    }
-                } else {
-                    if (this.options.onopentagname) {
-                        this.options.onopentagname(tagName);
-                    }
-                }
-
-                // Parse attributes
-                let attrs = {};
-                let attrName = '';
-                let attrValue = '';
-                let readingAttrName = true;
-                let inAttrQuote = null;
-
-                while (i < len && this.buffer[i] !== '>') {
-                    const c = this.buffer[i];
-
-                    // Skip over whitespace
-                    if (/\\s/.test(c)) {
-                        i++;
-                        continue;
-                    }
-
-                    // Handle self-closing tag
-                    if (c === '/' && this.buffer[i + 1] === '>') {
-                        if (!isClosing && this.options.onselfclosingtag) {
-                            this.options.onselfclosingtag();
-                        }
-                        i += 2;
-                        textStart = i;
-                        if (this.options.onopentag) {
-                            this.options.onopentag(tagName, attrs);
-                        }
-                        if (this.options.onopentagend) {
-                            this.options.onopentagend();
-                        }
-                        continue;
-                    }
-
-                    // Parse attribute name
-                    let attrStart = i;
-                    while (i < len && /[^\\s=>]/.test(this.buffer[i])) i++;
-                    attrName = this.buffer.slice(attrStart, i);
-
-                    // Skip whitespace after name
-                    while (i < len && /\\s/.test(this.buffer[i])) i++;
-
-                    // Expect '='
-                    if (this.buffer[i] === '=') {
-                        i++; // skip '='
-
-                        // Skip whitespace after '='
-                        while (i < len && /\\s/.test(this.buffer[i])) i++;
-
-                        const quote = this.buffer[i];
-                        if (quote === '"' || quote === "'") {
-                            inAttrQuote = quote;
-                            i++; // skip quote
-
-                            const valStart = i;
-                            while (i < len && this.buffer[i] !== inAttrQuote) i++;
-                            attrValue = this.buffer.slice(valStart, i);
-                            i++; // skip closing quote
-                        } else {
-                            // Unquoted value
-                            const valStart = i;
-                            while (i < len && /[^\\s>]/.test(this.buffer[i])) i++;
-                            attrValue = this.buffer.slice(valStart, i);
-                        }
-
-                        // Emit merged attribute callback
-                        if (this.options.onattribute) {
-                            this.options.onattribute(attrName, attrValue);
-                        }
-
-                        attrs[attrName] = attrValue;
-                        attrName = '';
-                        attrValue = '';
-                    } else {
-                        // attribute without value (e.g. `disabled`)
-                        if (this.options.onattribute) {
-                            this.options.onattribute(attrName, null);
-                        }
-                        attrs[attrName] = null;
-                        attrName = '';
-                    }
-                }
-
-                // Closing normal tag '>'
-                i++; // skip '>'
-
-                if (!isClosing && this.options.onopentag) {
-                    this.options.onopentag(tagName, attrs);
-                }
-
-                if (this.options.onopentagend) {
-                    this.options.onopentagend();
-                }
-
-                textStart = i;
-            } else {
-                i++;
-            }
-        }
-
-        // Emit any remaining text
-        if (textStart < len && this.options.ontext) {
-            const text = this.buffer.slice(textStart, len);
-            this.options.ontext(text);
-        }
-    }
-
-    end() {
-        if (this.options.onend) {
-            this.options.onend();
-        }
-    }
+  parseComplete(data) {
+    this.write(data);
+    this.end();
+  }
 }
 ''');
   }

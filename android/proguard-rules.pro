@@ -35,7 +35,7 @@
 
 -keep,allowoptimization class kotlin.** { public protected *; }
 -keep,allowoptimization class kotlinx.coroutines.** { public protected *; }
--keep,allowoptimization class kotlinx.serialization.** { public protected *; }
+-keep class kotlinx.serialization.** { *; }
 
 -keep,allowoptimization class uy.kohesive.injekt.** { public protected *; }
 -keepclassmembers class uy.kohesive.injekt.api.FullTypeReference {

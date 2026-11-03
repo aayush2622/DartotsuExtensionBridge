@@ -12,6 +12,7 @@ import '../Shared/JsonRepoBackend.dart';
 import '../Shared/SimpleInstalledSourceStore.dart';
 import 'MangayomiSourceMethods.dart';
 import 'Models/Source.dart';
+import 'Util/extension_preferences_providers.dart' show knownSources;
 import 'Util/lib.dart';
 
 class MangayomiExtensions extends Extension
@@ -95,6 +96,10 @@ class MangayomiExtensions extends Extension
         final previousCode = m.sourceCode;
         m.sourceCode = res.body;
 
+        final id = m.id;
+        final previousKnown = id == null ? null : knownSources[id];
+        if (id != null) knownSources[id] = m;
+
         final String headers;
         try {
           final service = getExtensionService(m);
@@ -105,6 +110,13 @@ class MangayomiExtensions extends Extension
           }
         } catch (_) {
           m.sourceCode = previousCode;
+          if (id != null) {
+            if (previousKnown != null) {
+              knownSources[id] = previousKnown;
+            } else {
+              knownSources.remove(id);
+            }
+          }
           rethrow;
         }
 

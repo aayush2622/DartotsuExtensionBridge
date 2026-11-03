@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../../Engines/JavaEngine/Bridge/JavaBridgeFactory.dart';
 import '../../../Engines/JavaEngine/Bridge/JavaBridge.dart';
 import '../../../Extensions/DownloadablePlugin.dart';
+import '../../Shared/DesktopCorePlugin.dart';
 import '../../../Extensions/ExtensionBridge.dart';
 import '../../../dartotsu_extension_bridge.dart';
 import '../../Shared/JvmBackend.dart';
@@ -11,7 +12,10 @@ import '../../Shared/KotatsuRepoBackend.dart';
 import '../KotatsuSourceMethods.dart';
 
 class KotatsuDesktopExtensions extends Extension
-    with JvmBackend, DesktopJvmBackend, KotatsuRepoBackend<KotatsuDesktopSource> {
+    with
+        JvmBackend,
+        DesktopJvmBackend,
+        KotatsuRepoBackend<KotatsuDesktopSource> {
   @override
   String get activeSourcesKey => 'kotatsu_desktop_active_sources';
 
@@ -46,9 +50,6 @@ class KotatsuDesktopExtensions extends Extension
   @override
   final JavaBridge java = createJavaBridge();
 
-
-
-
   @override
   String get javaDataDir => 'kotatsu';
 
@@ -56,11 +57,12 @@ class KotatsuDesktopExtensions extends Extension
   Future<Directory?> get javaDataDirectory => sourcesDir;
 
   @override
-  Future<Directory?> get sourcesDir => DartotsuExtensionBridge.context.getDirectory(
-    subPath: 'bridge/kotatsu',
-    useSystemPath: false,
-    useCustomPath: true,
-  );
+  Future<Directory?> get sourcesDir =>
+      DartotsuExtensionBridge.context.getDirectory(
+        subPath: 'bridge/kotatsu',
+        useSystemPath: false,
+        useCustomPath: true,
+      );
 
   @override
   Future<List<KotatsuDesktopSource>> loadInstalledFromNative(
@@ -77,7 +79,7 @@ class KotatsuDesktopExtensions extends Extension
   }
 }
 
-class KotatsuDesktopPlugin extends DownloadablePlugin {
+class KotatsuDesktopPlugin extends DesktopPlugin {
   @override
   String get name => "kotatsuDesktop";
 

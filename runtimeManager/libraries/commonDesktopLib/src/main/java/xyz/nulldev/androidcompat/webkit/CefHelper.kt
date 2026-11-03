@@ -30,7 +30,6 @@ import kotlin.io.path.div
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
 import kotlin.io.path.listDirectoryEntries
-import kotlin.io.path.moveTo
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
@@ -225,7 +224,9 @@ object CefHelper {
                 }
             }
 
-            val extractTemp = Files.createTempDirectory("dartotsu-jcef-extract")
+            val staging = cefDir.parent ?: error("CEF install dir has no parent")
+            staging.createDirectories()
+            val extractTemp = Files.createTempDirectory(staging, "dartotsu-jcef-extract")
             try {
                 extractTarGz(tempArchive, extractTemp)
                 flattenInto(extractTemp, cefDir, os)
@@ -307,12 +308,62 @@ object CefHelper {
 
         val libSource = if (os == "osx") topLevel / "Contents" / "Home" / "lib" else topLevel / "lib"
         if (!libSource.exists()) throw IOException("CEF archive missing lib/ directory")
-        libSource.moveTo(cefDir / "lib")
+        placeDirectory(libSource, cefDir / "lib")
 
         if (os == "osx") {
             val frameworks = topLevel / "Contents" / "Frameworks"
             if (frameworks.exists()) {
-                frameworks.moveTo(cefDir / "Frameworks")
+                placeDirectory(frameworks, cefDir / "Frameworks")
+            }
+        }
+    }
+
+    /**
+     * Moves [source] to [target], replacing whatever an interrupted install left there. A rename is
+     * tried first; moving a non-empty directory across file systems throws
+     * [java.nio.file.DirectoryNotEmptyException], so that case falls back to copy + delete.
+     */
+    private fun placeDirectory(
+        source: java.nio.file.Path,
+        target: java.nio.file.Path,
+    ) {
+        target.toFile().deleteRecursively()
+        target.parent?.createDirectories()
+        try {
+            Files.move(source, target)
+        } catch (_: java.nio.file.DirectoryNotEmptyException) {
+            copyTree(source, target)
+            source.toFile().deleteRecursively()
+        } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
+            copyTree(source, target)
+            source.toFile().deleteRecursively()
+        }
+    }
+
+    private fun copyTree(
+        source: java.nio.file.Path,
+        target: java.nio.file.Path,
+    ) {
+        Files.walk(source).use { paths ->
+            paths.forEach { path ->
+                val dest = target.resolve(source.relativize(path).toString())
+                when {
+                    Files.isSymbolicLink(path) -> {
+                        dest.parent?.createDirectories()
+                        Files.deleteIfExists(dest)
+                        Files.createSymbolicLink(dest, Files.readSymbolicLink(path))
+                    }
+                    Files.isDirectory(path) -> dest.createDirectories()
+                    else -> {
+                        dest.parent?.createDirectories()
+                        Files.copy(
+                            path,
+                            dest,
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                            java.nio.file.StandardCopyOption.COPY_ATTRIBUTES,
+                        )
+                    }
+                }
             }
         }
     }
