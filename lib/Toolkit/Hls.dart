@@ -162,6 +162,29 @@ List<HlsAudio> audiosFor(List<HlsAudio> audios, HlsVariant? variant) {
   ];
 }
 
+List<HlsAudio> pickAudios(
+  List<HlsAudio> audios,
+  HlsVariant? variant,
+  List<String> labels,
+) {
+  final options = audiosFor(audios, variant);
+  if (options.isEmpty) return const [];
+  final out = <HlsAudio>[];
+  final seen = <Uri?>{};
+  for (final label in labels) {
+    final wanted = label.toLowerCase();
+    final match = options
+        .where((a) => a.label.toLowerCase() == wanted)
+        .firstOrNull;
+    if (match != null && seen.add(match.uri)) out.add(match);
+  }
+  if (out.isEmpty) {
+    final fallback = pickAudio(audios, variant, null);
+    if (fallback != null) out.add(fallback);
+  }
+  return out;
+}
+
 HlsAudio? pickAudio(List<HlsAudio> audios, HlsVariant? variant, String? label) {
   final options = audiosFor(audios, variant);
   if (options.isEmpty) return null;
@@ -318,15 +341,19 @@ String buildLocalPlaylist(
 }
 
 String buildLocalMaster({
-  required HlsAudio audio,
-  required String audioPath,
+  required List<(HlsAudio, String)> audios,
   required String videoPath,
 }) {
-  final language = audio.language == null
-      ? ''
-      : ',LANGUAGE="${audio.language}"';
-  return '#EXTM3U\n'
-      '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="${audio.label.replaceAll('"', "'")}"$language,DEFAULT=YES,AUTOSELECT=YES,URI="$audioPath"\n'
-      '#EXT-X-STREAM-INF:BANDWIDTH=1,AUDIO="audio"\n'
-      '$videoPath\n';
+  final out = StringBuffer('#EXTM3U\n');
+  for (final (i, (audio, path)) in audios.indexed) {
+    final language = audio.language == null
+        ? ''
+        : ',LANGUAGE="${audio.language}"';
+    final first = i == 0 ? 'YES' : 'NO';
+    out.write(
+      '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="${audio.label.replaceAll('"', "'")}"$language,DEFAULT=$first,AUTOSELECT=YES,URI="$path"\n',
+    );
+  }
+  out.write('#EXT-X-STREAM-INF:BANDWIDTH=1,AUDIO="audio"\n$videoPath\n');
+  return out.toString();
 }
