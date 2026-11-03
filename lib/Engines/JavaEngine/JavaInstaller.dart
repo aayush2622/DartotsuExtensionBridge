@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../../Logger.dart';
 import '../../Network/MClient.dart';
-import '../../dartotsu_extension_bridge.dart';
+import 'RuntimePaths.dart';
 
 class JavaRuntimeManager {
   // The ireader-core dependency (io.github.ireaderorg:source-api-desktop) is
@@ -21,22 +21,10 @@ class JavaRuntimeManager {
 
   static void cancel() => _cancelled = true;
   static Future<String?>? _installFuture;
-  static Future<Directory> get _runtimeDir async {
-    final dir = await DartotsuExtensionBridge.context.getDirectory(
-      // Versioned so a bump to _minJavaMajorVersion can't resolve a stale
-      // bundled JRE extracted by an older build of this class.
-      subPath: 'bridge/jre-$_minJavaMajorVersion',
-      useSystemPath: true,
-      useCustomPath: false,
-    );
-
-    if (dir == null) {
-      throw Exception('Unable to get runtime directory');
-    }
-
-    await dir.create(recursive: true);
-    return dir;
-  }
+  // Versioned so a bump to _minJavaMajorVersion can't resolve a stale
+  // bundled JRE extracted by an older build of this class.
+  static Future<Directory> get _runtimeDir =>
+      runtimeDirectory('bridge/jre-$_minJavaMajorVersion');
 
   static Future<bool> isInstalled() async {
     return await getSystemJavaPath() != null || await getJavaPath() != null;

@@ -8,9 +8,9 @@ import 'package:path/path.dart' as p;
 import '../Logger.dart';
 import 'ArchiveCheck.dart';
 import 'InstallStep.dart';
+import '../Engines/JavaEngine/RuntimePaths.dart';
 import '../Network/MClient.dart';
 import '../Settings/KvStore.dart';
-import '../dartotsu_extension_bridge.dart';
 
 abstract class DownloadablePlugin implements PluginDependency {
   String get name;
@@ -200,18 +200,7 @@ abstract class DownloadablePlugin implements PluginDependency {
   }
   // ---------------------------------------------------------------------
 
-  Future<Directory> get _dir async {
-    final dir = await DartotsuExtensionBridge.context.getDirectory(
-      subPath: 'bridge/plugins',
-      useSystemPath: true,
-      useCustomPath: false,
-    );
-
-    if (dir == null) throw Exception("Plugin dir null");
-
-    await dir.create(recursive: true);
-    return dir;
-  }
+  Future<Directory> get _dir => runtimeDirectory('bridge/plugins');
 
   Future<File> get _file async {
     final dir = await _dir;
