@@ -5,6 +5,7 @@ library;
 
 export './Toolkit/Episodes.dart';
 export './Toolkit/FileNames.dart';
+export './Toolkit/Dash.dart';
 export './Toolkit/Hls.dart';
 export './Toolkit/Languages.dart';
 export './Toolkit/SourceTester.dart';
