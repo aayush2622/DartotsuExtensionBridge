@@ -91,12 +91,18 @@ import java.util.zip.ZipOutputStream
  */
 object BytecodeEditor {
 
-    fun fixAndroidClasses(jarFile: Path, dexFile: Path? = null, progress: ((Double) -> Unit)? = null) {
+    fun fixAndroidClasses(
+        jarFile: Path,
+        dexFile: Path? = null,
+        skipMissingUi: Boolean = true,
+        repairConstructions: Boolean = true,
+        progress: ((Double) -> Unit)? = null,
+    ) {
         val jarLabel = jarFile.fileName?.toString() ?: jarFile.toString()
         Logger.log("[$jarLabel] BytecodeEditor starting", LogLevel.INFO)
 
         val dexNewInstances: Map<String, List<String>> =
-            dexFile?.let { DexNewInstanceOracle.load(it, jarLabel) } ?: emptyMap()
+            if (repairConstructions) dexFile?.let { DexNewInstanceOracle.load(it, jarLabel) } ?: emptyMap() else emptyMap()
 
         // Read every entry into memory, rewrite in place, then write a fresh
         // jar and swap it in with one atomic move. The desktop loaders run
@@ -164,10 +170,12 @@ object BytecodeEditor {
 
         progress?.invoke(0.2)
 
-        val runtimeLoader = loader.parent
-        val resolved = HashMap<String, Boolean>()
-        for (cn in classNodes.values) {
-            skipMissingUiCalls(cn, classNodes.keys, runtimeLoader, resolved, jarLabel)
+        if (skipMissingUi) {
+            val runtimeLoader = loader.parent
+            val resolved = HashMap<String, Boolean>()
+            for (cn in classNodes.values) {
+                skipMissingUiCalls(cn, classNodes.keys, runtimeLoader, resolved, jarLabel)
+            }
         }
 
         val weights = classNodes.mapValues { (_, cn) -> cn.methods.sumOf { it.instructions.size() }.coerceAtLeast(1) }
@@ -175,10 +183,12 @@ object BytecodeEditor {
 
         val constructorsNeeded = LinkedHashSet<Pair<String, String>>() // (owner, desc)
         var repaired = 0L
-        for (cn in classNodes.values) {
-            repairMalformedConstructions(cn, classNodes, loader, constructorsNeeded, jarLabel, dexNewInstances)
-            repaired += weights[cn.name] ?: 1
-            progress?.invoke(0.2 + 0.2 * repaired / totalWeight)
+        if (repairConstructions) {
+            for (cn in classNodes.values) {
+                repairMalformedConstructions(cn, classNodes, loader, constructorsNeeded, jarLabel, dexNewInstances)
+                repaired += weights[cn.name] ?: 1
+                progress?.invoke(0.2 + 0.2 * repaired / totalWeight)
+            }
         }
 
         lap("Construction repair")

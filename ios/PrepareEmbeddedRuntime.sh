@@ -22,15 +22,12 @@ trap 'rm -rf "${WORK_DIR}"' EXIT
 # Built by: (cd runtimeManager && ./gradlew buildEmbeddedBridge)
 #   -> runtimeManager/libraries/commonDesktopLib/build/libs/embedded-bridge.jar
 # .github/workflows/build.yml stages it into every `latest` release. That tag
-# is rolling (deleted + recreated on every CI run), so BRIDGE_JAR_SHA256 can
-# go stale if embedded-bridge.jar's contents ever change - re-download and
-# re-hash it then. A future improvement is publishing it under an immutable
-# `ios-runtime-v*` tag instead, so this can stop needing manual re-pinning.
-# To skip the download entirely, drop the jar by hand at
-# ios/dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/embedded-bridge.jar.
+# is rolling (deleted + recreated on every CI run), so it is fetched on every
+# build instead of being pinned: a conditional request keeps the cached copy
+# when the release is unchanged, and a failed download falls back to it.
+# To use your own build, copy it over the cached jar and set BRIDGE_JAR_OFFLINE=1.
 BRIDGE_JAR="${CACHE_DIR}/embedded-bridge.jar"
 BRIDGE_JAR_URL="https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/embedded-bridge.jar"
-BRIDGE_JAR_SHA256="1b700ffe27b6035dee6e3538e3b89c9108595ec64526d1a8e640c4bf33036fee"
 
 OPENJDK_ZIP="${CACHE_DIR}/OpenJDK.xcframework.zip"
 JAVA_BUNDLE_ZIP="${CACHE_DIR}/java_bundle-device.zip"
@@ -40,12 +37,34 @@ OPENJDK_SHA256="f21681caae40e508647e7f18c9082f27fa9aa67ee7f1376725eae528fa2d38cb
 JAVA_BUNDLE_URL="https://github.com/1Selxo/Mangatan/releases/download/embedded-openjdk-ios13-v16/java_bundle-device.zip"
 JAVA_BUNDLE_SHA256="15369b9bb9dfdd400c18c56b30e2f6cf316b81d4e0bae5ddd6b1fe72355c4b0b"
 
-if [ -d "${FRAMEWORKS_DIR}/OpenJDKRuntime.xcframework" ] &&
-   [ -f "${RUNTIME_DIR}/embedded-bridge.jar" ]; then
+mkdir -p "${CACHE_DIR}" "${RUNTIME_DIR}"
+
+refresh_bridge_jar() {
+  if [ "${BRIDGE_JAR_OFFLINE:-0}" = 1 ]; then
+    test -f "${BRIDGE_JAR}"
+    /bin/cp "${BRIDGE_JAR}" "${RUNTIME_DIR}/embedded-bridge.jar"
+    return
+  fi
+  temporary="${BRIDGE_JAR}.download"
+  rm -f "${temporary}"
+  if [ -f "${BRIDGE_JAR}" ]; then
+    /usr/bin/curl --fail --location --retry 3 -z "${BRIDGE_JAR}" --output "${temporary}" "${BRIDGE_JAR_URL}" || rm -f "${temporary}"
+  else
+    /usr/bin/curl --fail --location --retry 3 --output "${temporary}" "${BRIDGE_JAR_URL}"
+  fi
+  if [ -s "${temporary}" ]; then
+    mv "${temporary}" "${BRIDGE_JAR}"
+  fi
+  rm -f "${temporary}"
+  test -f "${BRIDGE_JAR}"
+  /bin/cp "${BRIDGE_JAR}" "${RUNTIME_DIR}/embedded-bridge.jar"
+}
+
+refresh_bridge_jar
+
+if [ -d "${FRAMEWORKS_DIR}/OpenJDKRuntime.xcframework" ]; then
   exit 0
 fi
-
-mkdir -p "${CACHE_DIR}"
 
 download_verified() {
   url="$1"
@@ -68,10 +87,6 @@ download_verified() {
   mv "${temporary}" "${destination}"
 }
 
-# The shim JAR may be staged by hand; only fetch it when it isn't there.
-if [ ! -f "${RUNTIME_DIR}/embedded-bridge.jar" ] && [ ! -f "${BRIDGE_JAR}" ]; then
-  download_verified "${BRIDGE_JAR_URL}" "${BRIDGE_JAR}" "${BRIDGE_JAR_SHA256}"
-fi
 download_verified "${OPENJDK_URL}" "${OPENJDK_ZIP}" "${OPENJDK_SHA256}"
 download_verified "${JAVA_BUNDLE_URL}" "${JAVA_BUNDLE_ZIP}" "${JAVA_BUNDLE_SHA256}"
 
@@ -155,9 +170,6 @@ mkdir -p "${FRAMEWORKS_DIR}" "${RUNTIME_DIR}/lib/security"
   -framework "${DEVICE_FRAMEWORK}" \
   -framework "${SIMULATOR_FRAMEWORK}" \
   -output "${FRAMEWORKS_DIR}/OpenJDKRuntime.xcframework"
-if [ -f "${BRIDGE_JAR}" ]; then
-  /bin/cp "${BRIDGE_JAR}" "${RUNTIME_DIR}/embedded-bridge.jar"
-fi
 /bin/cp "${WORK_DIR}/java-logging-shim.jar" "${RUNTIME_DIR}/java-logging-shim.jar"
 /bin/cp "${JAVA_ROOT}/lib/security/cacerts" "${RUNTIME_DIR}/lib/security/cacerts"
 /bin/cp "${JAVA_ROOT}/release" "${RUNTIME_DIR}/release"

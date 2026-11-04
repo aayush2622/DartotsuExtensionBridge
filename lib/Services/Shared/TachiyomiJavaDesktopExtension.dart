@@ -31,15 +31,18 @@ mixin TachiyomiJavaDesktopExtension on Extension {
   ) async {
     try {
       final dir = await _extensionsDir(type);
+      final scanned = await _packageFiles(dir!);
 
       final result = await java.call<List<Map<String, dynamic>>>(javaMethod, {
-        "path": dir!.path,
+        "path": dir.path,
       });
 
       final sources = result.map(fromJson).where((s) => s.itemType == type);
 
       final deduped = _dedupeById(sources);
-      if (deduped.isNotEmpty) await _pruneObsoletePackageFiles(dir, deduped);
+      if (deduped.isNotEmpty) {
+        await _pruneObsoletePackageFiles(scanned, deduped);
+      }
       return deduped;
     } catch (e, s) {
       Logger.log("Desktop loadInstalled error: $e\n$s");
@@ -47,8 +50,16 @@ mixin TachiyomiJavaDesktopExtension on Extension {
     }
   }
 
+  Future<Set<String>> _packageFiles(Directory dir) async {
+    if (!await dir.exists()) return {};
+    return {
+      await for (final entry in dir.list())
+        if (entry is File && p.extension(entry.path) == '.apk') entry.path,
+    };
+  }
+
   Future<void> _pruneObsoletePackageFiles(
-    Directory dir,
+    Set<String> scanned,
     List<PackagedSource> installed,
   ) async {
     final keep = installed
@@ -57,19 +68,16 @@ mixin TachiyomiJavaDesktopExtension on Extension {
         .map(p.basename)
         .toSet();
 
-    if (!await dir.exists()) return;
-
-    await for (final entry in dir.list()) {
-      if (entry is! File || p.extension(entry.path) != '.apk') continue;
-      if (keep.contains(p.basename(entry.path))) continue;
+    for (final path in scanned) {
+      if (keep.contains(p.basename(path))) continue;
 
       try {
-        await entry.delete();
-        Logger.log('Deleted obsolete extension file: ${entry.path}');
+        final file = File(path);
+        if (!await file.exists()) continue;
+        await file.delete();
+        Logger.log('Deleted obsolete extension file: $path');
       } catch (e) {
-        Logger.log(
-          'Failed to delete obsolete extension file ${entry.path}: $e',
-        );
+        Logger.log('Failed to delete obsolete extension file $path: $e');
       }
     }
   }

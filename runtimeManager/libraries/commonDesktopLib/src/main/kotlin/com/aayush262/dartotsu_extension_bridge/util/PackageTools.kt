@@ -83,6 +83,8 @@ object PackageTools {
         dexFile: String,
         jarFile: String,
         onProgress: ((Double) -> Unit)? = null,
+        skipMissingUi: Boolean = true,
+        repairConstructions: Boolean = true,
     ) {
         val finalPath = File(jarFile).toPath()
         val parent = finalPath.parent ?: Path("")
@@ -111,7 +113,7 @@ object PackageTools {
                 Logger.log("dex2jar reported exceptions while converting $dexFile; running bytecode fixups anyway", LogLevel.ERROR)
             }
             val editStarted = System.nanoTime()
-            BytecodeEditor.fixAndroidClasses(tmp, File(dexFile).toPath()) { onProgress?.invoke(0.3 + 0.7 * it) }
+            BytecodeEditor.fixAndroidClasses(tmp, File(dexFile).toPath(), skipMissingUi, repairConstructions) { onProgress?.invoke(0.3 + 0.7 * it) }
             Logger.log(
                 "Converted ${File(dexFile).name}: dex2jar ${dexMs}ms, bytecode fixups ${(System.nanoTime() - editStarted) / 1_000_000}ms",
                 LogLevel.INFO,
@@ -121,6 +123,12 @@ object PackageTools {
             Files.deleteIfExists(tmp)
         }
     }
+
+    fun cloudStreamToJar(
+        dexFile: String,
+        jarFile: String,
+        onProgress: ((Double) -> Unit)? = null,
+    ) = dex2jar(dexFile, jarFile, onProgress, skipMissingUi = false, repairConstructions = true)
 
     private val zipFsAvailable: Boolean by lazy {
         FileSystemProvider.installedProviders().any { it.scheme.equals("jar", ignoreCase = true) }
