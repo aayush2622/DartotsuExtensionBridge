@@ -75,6 +75,7 @@ class SidecarBridge implements JavaBridge {
       '-Dsun.stderr.encoding=UTF-8',
       '-Xms128m',
       '-Xmx3072m',
+      if (Platform.isWindows) '-Djavax.net.ssl.trustStoreType=Windows-ROOT',
       if (_libraryJarPaths.isEmpty) ...[
         '-jar',
         pluginJarPath,

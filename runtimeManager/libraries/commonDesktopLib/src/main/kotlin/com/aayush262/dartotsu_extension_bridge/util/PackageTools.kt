@@ -35,18 +35,21 @@ object PackageTools {
     }
 
     /**
-     * Identifies the converter itself: a hash of the compiled [BytecodeEditor]. A cached jar is only
+     * Identifies the converter itself: a hash of the compiled [BytecodeEditor] and [PackageTools] plus the dex2jar library. A cached jar is only
      * stale when this changes, not on every plugin update — rebuilding a big extension takes minutes.
      */
     private val converterVersion: String by lazy {
         runCatching {
-            val bytes = BytecodeEditor::class.java
-                .getResourceAsStream("BytecodeEditor.class")!!
-                .use { it.readBytes() }
-            java.security.MessageDigest.getInstance("SHA-1")
-                .digest(bytes)
-                .joinToString("") { "%02x".format(it) }
-                .take(16)
+            val digest = java.security.MessageDigest.getInstance("SHA-1")
+            for (type in listOf(BytecodeEditor::class.java, PackageTools::class.java)) {
+                val name = type.name.substringAfterLast('.') + ".class"
+                digest.update(type.getResourceAsStream(name)!!.use { it.readBytes() })
+            }
+            val dex2jar = runCatching {
+                File(Dex2jar::class.java.protectionDomain.codeSource.location.toURI())
+            }.getOrNull()
+            if (dex2jar != null) digest.update("${dex2jar.name}:${dex2jar.length()}".toByteArray())
+            digest.digest().joinToString("") { "%02x".format(it) }.take(16)
         }.getOrDefault("unknown")
     }
 
