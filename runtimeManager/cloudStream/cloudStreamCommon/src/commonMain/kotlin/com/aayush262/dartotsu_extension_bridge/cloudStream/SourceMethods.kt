@@ -6,9 +6,32 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import java.net.URI
 import java.util.concurrent.CopyOnWriteArrayList
 private const val TAG = "CloudStreamMethods"
+private const val LINK_GRACE_MS = 15_000L
+private const val LINK_HARD_MS = 50_000L
+
+private suspend fun collectBounded(count: () -> Int, run: suspend () -> Unit) = coroutineScope {
+    val work = async { run() }
+    val started = System.currentTimeMillis()
+    var firstAt = 0L
+    while (work.isActive) {
+        delay(200)
+        val now = System.currentTimeMillis()
+        if (firstAt == 0L && count() > 0) firstAt = now
+        val graceOver = firstAt != 0L && now - firstAt >= LINK_GRACE_MS
+        if (graceOver || now - started >= LINK_HARD_MS) {
+            Logger.log("loadLinks: returning ${count()} links, stopping the providers that are still running")
+            work.cancel()
+            break
+        }
+    }
+    if (work.isCancelled) work.join() else work.await()
+}
 
 private fun Any?.toRawMap(): Map<String, Any?>? {
     if (this == null) return null
@@ -160,26 +183,28 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         val subtitles = CopyOnWriteArrayList<Map<String, Any?>>()
 
         try {
-            provider.loadLinks(
-                data,
-                false,
-                { subtitle ->
-                     Logger.log("Subtitle found: ${subtitle.url}")
-                    subtitles.add(
-                        subtitle.withExtraData(
-                            mapOf(
-                                "file" to subtitle.url,
-                                "label" to subtitle.lang
-                            ),
-                            setOf("url", "lang")
+            collectBounded({ links.size }) {
+                provider.loadLinks(
+                    data,
+                    false,
+                    { subtitle ->
+                        Logger.log("Subtitle found: ${subtitle.url}")
+                        subtitles.add(
+                            subtitle.withExtraData(
+                                mapOf(
+                                    "file" to subtitle.url,
+                                    "label" to subtitle.lang
+                                ),
+                                setOf("url", "lang")
+                            )
                         )
-                    )
-                },
-                { link ->
-                    Logger.log( "Link found: ${link.url}")
-                    links.add(linkToMap(link, subtitles.toList()))
-                }
-            )
+                    },
+                    { link ->
+                        Logger.log( "Link found: ${link.url}")
+                        links.add(linkToMap(link, subtitles.toList()))
+                    }
+                )
+            }
         } catch (e: Exception) {
             val isJsonError = e.javaClass.name.contains("JsonParseException") ||
                     e.message?.contains("Unrecognized token") == true ||
