@@ -75,42 +75,30 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python3 scripts/prepare_release.py
 
-      - name: Publish plugins.json to repo root
-        working-directory: ${{ github.workspace }}
-        run: |
-          cp runtimeManager/builds/plugins.json plugins.json
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add plugins.json
-
-          if git diff --cached --quiet; then
-            echo "plugins.json unchanged — nothing to commit."
-          else
-            git commit -m "chore: update plugins.json"
-            git push
-          fi
-
-      - name: Commit embedded-bridge.jar for the iOS build
+      - name: Commit plugins.json and embedded-bridge.jar
         working-directory: ${{ github.workspace }}
         run: |
           target=ios/dartotsu_extension_bridge/Sources/dartotsu_embedded_jvm/Runtime/embedded-bridge.jar
           built=runtimeManager/builds/embeddedBridge/embedded-bridge.jar
           crcs() { unzip -v "$1" | awk 'NR>3 && NF>=8 {print $7, $8}' | sort; }
 
-          if [ -f "$target" ] && [ "$(crcs "$target")" = "$(crcs "$built")" ]; then
-            echo "embedded-bridge.jar content unchanged — nothing to commit."
-            exit 0
+          cp runtimeManager/builds/plugins.json plugins.json
+          git add plugins.json
+
+          if [ ! -f "$target" ] || [ "$(crcs "$target")" != "$(crcs "$built")" ]; then
+            cp "$built" "$target"
+            git add "$target"
           fi
 
-          cp "$built" "$target"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$target"
-          git commit -m "chore: update embedded-bridge.jar"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push
+          if git diff --cached --quiet; then
+            echo "plugins.json and embedded-bridge.jar unchanged — nothing to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: update plugins.json"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push
+          fi
 
       - name: Delete previous release and tag
         if: steps.release-prep.outputs.changed == 'true'
