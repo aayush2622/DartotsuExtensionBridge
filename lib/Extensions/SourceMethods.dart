@@ -28,6 +28,10 @@ abstract class SourceMethods {
 
   Future<List<Video>> getVideoList(DEpisode episode);
 
+  Stream<List<Video>> getVideoStream(DEpisode episode) async* {
+    yield await getVideoList(episode);
+  }
+
   Future<String?> getNovelContent(DEpisode episode);
 
   Future<List<SourcePreference>> getPreference();

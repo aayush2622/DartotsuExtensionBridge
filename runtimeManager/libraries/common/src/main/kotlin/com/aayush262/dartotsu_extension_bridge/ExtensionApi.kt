@@ -34,6 +34,11 @@ interface ExtensionApi {
         sourceId: String, isAnime: Boolean, episode: String
     ): String = ""
 
+    suspend fun getVideoListStream(
+        sourceId: String, isAnime: Boolean, episode: String,
+        emit: suspend (String) -> Unit,
+    ): String = getVideoList(sourceId, isAnime, episode)
+
     suspend fun getPageList(
         sourceId: String, isAnime: Boolean, episode: String
     ): String = ""

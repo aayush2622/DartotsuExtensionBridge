@@ -226,6 +226,14 @@ class EmbeddedJvmBridge implements JavaBridge {
     }
   }
 
+  @override
+  Stream<dynamic> callStream(
+    String method, [
+    Map<String, dynamic>? args,
+  ]) async* {
+    yield await call<dynamic>(method, args);
+  }
+
   String _label(String method, Map<String, dynamic>? args) {
     final name = _jarPath?.split('/').last ?? '?';
     final source = args?['sourceId'];
