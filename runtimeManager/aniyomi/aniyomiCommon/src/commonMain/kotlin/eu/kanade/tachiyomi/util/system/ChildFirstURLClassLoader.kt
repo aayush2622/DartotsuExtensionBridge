@@ -20,7 +20,7 @@ class ChildFirstURLClassLoader(
             return c
         }
 
-        if (systemClassLoader != null) {
+        if (systemClassLoader != null && name?.contains('.') != false) {
             try {
                 val sys = systemClassLoader.loadClass(name)
 
