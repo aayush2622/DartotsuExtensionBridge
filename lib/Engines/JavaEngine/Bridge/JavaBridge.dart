@@ -10,6 +10,8 @@ abstract class JavaBridge {
     bool throwError = false,
   ]);
 
+  Stream<dynamic> callStream(String method, [Map<String, dynamic>? args]);
+
   void dispose();
 
   Future<void> disposeAndAwaitExit() async => dispose();

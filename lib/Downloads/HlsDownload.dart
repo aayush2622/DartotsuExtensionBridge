@@ -84,8 +84,8 @@ Future<void> downloadHls({
   required void Function() onFinishing,
   Map<String, String>? headers,
   int? height,
-  String? audioLabel,
-  String? audioUrl,
+  List<String> audioLabels = const [],
+  List<String> audioUrls = const [],
   int workers = 4,
   Future<String> Function(String url)? getText,
   Future<void> Function(Uri uri, File target)? getFile,
@@ -94,35 +94,48 @@ Future<void> downloadHls({
       getText?.call(u) ?? fetchText(u, headers: headers, cancel: cancel);
   var playlistUrl = url;
   var text = await text0(url);
-  HlsAudio? audio;
+  var audios = <HlsAudio>[];
   if (isMasterPlaylist(text)) {
     final base = Uri.parse(url);
     final variants = parseMaster(text, base);
     if (variants.isEmpty) throw const HlsUnsupported('Empty master playlist');
     final variant = pickVariant(variants, height: height);
     playlistUrl = variant.uri.toString();
-    audio = pickAudio(parseAudios(text, base), variant, audioLabel);
+    audios = pickAudios(parseAudios(text, base), variant, audioLabels);
     text = await text0(playlistUrl);
-  } else if (audioUrl != null && audioUrl.isNotEmpty) {
-    audio = HlsAudio(
-      Uri.parse(audioUrl),
-      audioLabel ?? '',
-      null,
-      'audio',
-      true,
-    );
+  } else {
+    for (final (i, audioUrl) in audioUrls.indexed) {
+      if (audioUrl.isEmpty) continue;
+      audios.add(
+        HlsAudio(
+          Uri.parse(audioUrl),
+          i < audioLabels.length ? audioLabels[i] : '',
+          null,
+          'audio',
+          i == 0,
+        ),
+      );
+    }
   }
   final media = parseMedia(text, Uri.parse(playlistUrl));
-  final audioMedia = audio == null
-      ? null
-      : parseMedia(await text0(audio.uri.toString()), audio.uri!);
+  final audioMedias = [
+    for (final audio in audios)
+      parseMedia(await text0(audio.uri.toString()), audio.uri!),
+  ];
   final name = p.basenameWithoutExtension(output.path);
   final dir = Directory(
     p.join(output.parent.path, ffmpeg == null ? name : '.$name'),
   );
   await dir.create(recursive: true);
-  final audioDir = Directory(p.join(dir.path, 'audio'));
-  if (audioMedia != null) await audioDir.create(recursive: true);
+  final audioDirs = [
+    for (var i = 0; i < audioMedias.length; i++)
+      Directory(
+        p.join(dir.path, audioMedias.length == 1 ? 'audio' : 'audio$i'),
+      ),
+  ];
+  for (final audioDir in audioDirs) {
+    await audioDir.create(recursive: true);
+  }
 
   Future<void> grab(Directory into, Uri uri, String name) async {
     final target = File(p.join(into.path, name));
@@ -140,7 +153,9 @@ Future<void> downloadHls({
     );
   }
 
-  final total = media.segments.length + (audioMedia?.segments.length ?? 0);
+  final total =
+      media.segments.length +
+      audioMedias.fold<int>(0, (sum, m) => sum + m.segments.length);
   var done = 0;
   Object? failure;
 
@@ -213,32 +228,35 @@ Future<void> downloadHls({
   );
 
   final videoNames = await pull(media, dir);
-  final audioNames = audioMedia == null
-      ? null
-      : await pull(audioMedia, audioDir);
+  final audioNames = [
+    for (final (i, m) in audioMedias.indexed) await pull(m, audioDirs[i]),
+  ];
 
   final videoPlaylist = File(
     p.join(
       dir.path,
       ffmpeg != null
           ? 'local.m3u8'
-          : (audioMedia == null ? 'index.m3u8' : 'video.m3u8'),
+          : (audioMedias.isEmpty ? 'index.m3u8' : 'video.m3u8'),
     ),
   );
   await writePlaylist(media, videoPlaylist, videoNames);
-  File? audioPlaylist;
-  if (audioMedia != null) {
-    audioPlaylist = File(
-      p.join(audioDir.path, ffmpeg != null ? 'local.m3u8' : 'audio.m3u8'),
+  final audioPlaylists = <File>[];
+  for (final (i, m) in audioMedias.indexed) {
+    final file = File(
+      p.join(audioDirs[i].path, ffmpeg != null ? 'local.m3u8' : 'audio.m3u8'),
     );
-    await writePlaylist(audioMedia, audioPlaylist, audioNames!);
+    await writePlaylist(m, file, audioNames[i]);
+    audioPlaylists.add(file);
   }
   if (ffmpeg == null) {
-    if (audio != null) {
+    if (audios.isNotEmpty) {
       await File(p.join(dir.path, 'index.m3u8')).writeAsString(
         buildLocalMaster(
-          audio: audio,
-          audioPath: 'audio/audio.m3u8',
+          audios: [
+            for (final (i, audio) in audios.indexed)
+              (audio, '${p.basename(audioDirs[i].path)}/audio.m3u8'),
+          ],
           videoPath: 'video.m3u8',
         ),
       );
@@ -248,7 +266,7 @@ Future<void> downloadHls({
   onFinishing();
   final temp = File('${output.path}.part.mp4');
   if (await temp.exists()) await temp.delete();
-  if (audioPlaylist == null) {
+  if (audioPlaylists.isEmpty) {
     await ffmpeg.remuxPlaylist(
       playlist: videoPlaylist.path,
       output: temp.path,
@@ -265,12 +283,21 @@ Future<void> downloadHls({
     await ffmpeg.run([
       ...input,
       videoPlaylist.path,
-      ...input,
-      audioPlaylist.path,
+      for (final file in audioPlaylists) ...[...input, file.path],
       '-map',
       '0:v:0',
-      '-map',
-      '1:a:0',
+      for (var i = 0; i < audioPlaylists.length; i++) ...[
+        '-map',
+        '${i + 1}:a:0',
+      ],
+      for (final (i, audio) in audios.indexed) ...[
+        '-metadata:s:a:$i',
+        'title=${audio.label}',
+        if (audio.language != null && audio.language!.isNotEmpty) ...[
+          '-metadata:s:a:$i',
+          'language=${audio.language}',
+        ],
+      ],
       '-c',
       'copy',
       '-bsf:a',

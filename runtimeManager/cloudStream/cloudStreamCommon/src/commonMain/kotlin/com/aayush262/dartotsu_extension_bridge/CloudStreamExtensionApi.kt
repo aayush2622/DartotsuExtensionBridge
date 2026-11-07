@@ -153,6 +153,19 @@ class CloudStreamExtensionApi : ExtensionApi, ExtensionBridgeApi, ExtensionLoadS
         )
     }
 
+    override suspend fun getVideoListStream(
+        sourceId: String,
+        isAnime: Boolean,
+        episode: String,
+        emit: suspend (String) -> Unit,
+    ): String {
+        val epMap = decode(episode)
+        val all = methods(sourceId).loadLinks(epMap["url"] as String) { batch ->
+            emit(mapper.writeValueAsString(batch))
+        }
+        return mapper.writeValueAsString(all)
+    }
+
     override suspend fun getPreference(sourceId: String, isAnime: Boolean): String =
         withContext(Dispatchers.IO) { SourcePreferences.get(provider(sourceId)) }
 

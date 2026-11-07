@@ -3,8 +3,10 @@ package com.aayush262.dartotsu_extension_bridge
 import com.aayush262.dartotsu_extension_bridge.common.ExtensionBridgeApi
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -25,6 +27,8 @@ object Server {
      * threads, so both need the same guard. Calls to *different* sources still
      * run in parallel.
      */
+    private val running = java.util.concurrent.ConcurrentHashMap<Int, Job>()
+
     private val sourceLocks = java.util.concurrent.ConcurrentHashMap<String, Mutex>()
 
     private suspend fun <T> withSourceLock(params: JsonObject, block: suspend () -> T): T {
@@ -188,20 +192,47 @@ object Server {
             val line = reader.readLine() ?: break
             if (line.isBlank()) continue
 
-            requestScope.launch {
-                var id: Int? = null
-                try {
-                    val req = gson.fromJson(
-                        line,
-                        JsonObject::class.java,
-                    )
+            val parsed = runCatching { gson.fromJson(line, JsonObject::class.java) }.getOrNull()
+            val jobId = parsed?.get("id")?.takeIf { !it.isJsonNull }?.asInt
 
-                    id = req["id"]?.asInt
+            if (parsed?.get("cancel")?.asBoolean == true) {
+                jobId?.let { running.remove(it)?.cancel() }
+                continue
+            }
+
+            val job = requestScope.launch {
+                var id: Int? = jobId
+                try {
+                    val req = parsed ?: gson.fromJson(line, JsonObject::class.java)
 
                     val method = req["method"].asString
                     val params = req["args"]?.asJsonObject ?: JsonObject()
+                    val stream = req["stream"]?.asBoolean == true
 
-                    val result = withSourceLock(params) { handle(api, method, params) }
+                    val result = withSourceLock(params) {
+                        if (stream && method == "getVideoList") {
+                            api.getVideoListStream(
+                                params["sourceId"].asString,
+                                params["isAnime"].asBoolean,
+                                params["episode"].asString,
+                            ) { batch ->
+                                synchronized(outputLock) {
+                                    println(
+                                        gson.toJson(
+                                            mapOf(
+                                                "id" to id,
+                                                "partial" to true,
+                                                "data" to batch,
+                                            ),
+                                        ),
+                                    )
+                                    System.out.flush()
+                                }
+                            }
+                        } else {
+                            handle(api, method, params)
+                        }
+                    }
 
                     synchronized(outputLock) {
                         println(
@@ -216,6 +247,8 @@ object Server {
                         System.out.flush()
 
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Throwable) {
                     synchronized(outputLock) {
                         println(
@@ -232,6 +265,10 @@ object Server {
                     }
 
                 }
+            }
+            if (jobId != null) {
+                running[jobId] = job
+                job.invokeOnCompletion { running.remove(jobId) }
             }
         }
     }

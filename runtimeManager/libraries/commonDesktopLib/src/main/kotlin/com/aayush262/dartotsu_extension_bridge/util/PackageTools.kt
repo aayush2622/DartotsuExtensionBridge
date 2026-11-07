@@ -35,18 +35,21 @@ object PackageTools {
     }
 
     /**
-     * Identifies the converter itself: a hash of the compiled [BytecodeEditor]. A cached jar is only
+     * Identifies the converter itself: a hash of the compiled [BytecodeEditor] and [PackageTools] plus the dex2jar library. A cached jar is only
      * stale when this changes, not on every plugin update — rebuilding a big extension takes minutes.
      */
     private val converterVersion: String by lazy {
         runCatching {
-            val bytes = BytecodeEditor::class.java
-                .getResourceAsStream("BytecodeEditor.class")!!
-                .use { it.readBytes() }
-            java.security.MessageDigest.getInstance("SHA-1")
-                .digest(bytes)
-                .joinToString("") { "%02x".format(it) }
-                .take(16)
+            val digest = java.security.MessageDigest.getInstance("SHA-1")
+            for (type in listOf(BytecodeEditor::class.java, PackageTools::class.java)) {
+                val name = type.name.substringAfterLast('.') + ".class"
+                digest.update(type.getResourceAsStream(name)!!.use { it.readBytes() })
+            }
+            val dex2jar = runCatching {
+                File(Dex2jar::class.java.protectionDomain.codeSource.location.toURI())
+            }.getOrNull()
+            if (dex2jar != null) digest.update("${dex2jar.name}:${dex2jar.length()}".toByteArray())
+            digest.digest().joinToString("") { "%02x".format(it) }.take(16)
         }.getOrDefault("unknown")
     }
 
@@ -83,6 +86,8 @@ object PackageTools {
         dexFile: String,
         jarFile: String,
         onProgress: ((Double) -> Unit)? = null,
+        skipMissingUi: Boolean = true,
+        repairConstructions: Boolean = true,
     ) {
         val finalPath = File(jarFile).toPath()
         val parent = finalPath.parent ?: Path("")
@@ -111,7 +116,7 @@ object PackageTools {
                 Logger.log("dex2jar reported exceptions while converting $dexFile; running bytecode fixups anyway", LogLevel.ERROR)
             }
             val editStarted = System.nanoTime()
-            BytecodeEditor.fixAndroidClasses(tmp, File(dexFile).toPath()) { onProgress?.invoke(0.3 + 0.7 * it) }
+            BytecodeEditor.fixAndroidClasses(tmp, File(dexFile).toPath(), skipMissingUi, repairConstructions) { onProgress?.invoke(0.3 + 0.7 * it) }
             Logger.log(
                 "Converted ${File(dexFile).name}: dex2jar ${dexMs}ms, bytecode fixups ${(System.nanoTime() - editStarted) / 1_000_000}ms",
                 LogLevel.INFO,
@@ -121,6 +126,12 @@ object PackageTools {
             Files.deleteIfExists(tmp)
         }
     }
+
+    fun cloudStreamToJar(
+        dexFile: String,
+        jarFile: String,
+        onProgress: ((Double) -> Unit)? = null,
+    ) = dex2jar(dexFile, jarFile, onProgress, skipMissingUi = false, repairConstructions = true)
 
     private val zipFsAvailable: Boolean by lazy {
         FileSystemProvider.installedProviders().any { it.scheme.equals("jar", ignoreCase = true) }

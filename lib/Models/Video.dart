@@ -6,6 +6,7 @@ class Video {
   List<Track>? subtitles;
   List<Track>? audios;
   List<TimeStamp>? timeStamps;
+  String? hoster;
   Video(
     this.title,
     this.url,
@@ -14,6 +15,7 @@ class Video {
     this.subtitles,
     this.audios,
     this.timeStamps,
+    this.hoster,
   });
 
   factory Video.fromJson(Map<String, dynamic> json) {
@@ -36,6 +38,7 @@ class Video {
       subtitles: _parseTracks(json['subtitles']),
       audios: _parseTracks(json['audios']),
       timeStamps: _parseTimeStamps(json['timeStamps']),
+      hoster: json['hoster']?.toString().trim(),
     );
   }
 
@@ -80,6 +83,7 @@ class Video {
     'subtitles': subtitles?.map((e) => e.toJson()).toList(),
     'audios': audios?.map((e) => e.toJson()).toList(),
     'timeStamps': timeStamps?.map((e) => e.toJson()).toList(),
+    'hoster': hoster,
   };
 }
 

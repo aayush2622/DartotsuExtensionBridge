@@ -201,7 +201,7 @@ actual object ExtensionLoader {
                         PackageTools.invalidateClassLoader(jarFile.absolutePath)
 
                         var reported = 0.0
-                        PackageTools.dex2jar(
+                        PackageTools.cloudStreamToJar(
                             file.absolutePath,
                             jarFile.absolutePath
                         ) { value ->

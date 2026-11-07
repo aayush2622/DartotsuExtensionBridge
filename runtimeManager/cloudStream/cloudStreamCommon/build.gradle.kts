@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val upstreamRepo = "https://github.com/recloudstream/cloudstream.git"
 val upstreamSha = "5024ace2922a148d38df2a816b483b529789cf58"
+val upstreamPatchRev = "1"
 val upstreamDir = layout.buildDirectory.dir("cloudstream-upstream")
 val upstreamSrc = upstreamDir.map { it.dir("library/src") }
 
@@ -10,7 +11,8 @@ val syncCloudStreamLibrary = tasks.register("syncCloudStreamLibrary") {
     val stamp = File(dir, ".sha")
     outputs.file(stamp)
     doLast {
-        if (stamp.exists() && stamp.readText().trim() == upstreamSha) return@doLast
+        val expected = "$upstreamSha+$upstreamPatchRev"
+        if (stamp.exists() && stamp.readText().trim() == expected) return@doLast
         dir.deleteRecursively()
         dir.mkdirs()
         fun git(vararg args: String) {
@@ -35,7 +37,21 @@ val syncCloudStreamLibrary = tasks.register("syncCloudStreamLibrary") {
             }
             """.trimIndent() + "\n"
         )
-        stamp.writeText(upstreamSha)
+        val mainApi = File(dir, "library/src/commonMain/kotlin/com/lagradost/cloudstream3/MainAPI.kt")
+        val dateFormat = "                val fmt = DateTimeComponents.Format { byUnicodePattern(format) }\n"
+        val source = mainApi.readText()
+        if (!source.contains(dateFormat)) throw GradleException("MainAPI.addDate changed upstream; update the month-name patch")
+        mainApi.writeText(
+            source.replace(
+                dateFormat,
+                "                if (format.contains(\"MMM\")) return@getOrElse bridgeParseNamedMonth(date, format)\n" + dateFormat,
+            ) + """
+
+internal fun bridgeParseNamedMonth(date: String, format: String): Long =
+    java.text.SimpleDateFormat(format, java.util.Locale.ENGLISH).parse(date.trim())!!.time
+""",
+        )
+        stamp.writeText(expected)
     }
 }
 

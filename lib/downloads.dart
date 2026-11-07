@@ -7,6 +7,7 @@ library;
 export './Downloads/Archives.dart';
 export './Downloads/BookText.dart';
 export './Downloads/ChapterDownload.dart';
+export './Downloads/DashDownload.dart';
 export './Downloads/DownloadCancel.dart';
 export './Downloads/DownloadPaths.dart';
 export './Downloads/FileFetcher.dart';

@@ -19,6 +19,8 @@ class SidecarBridge implements JavaBridge {
 
   final _pending = <int, Completer<dynamic>>{};
 
+  final _streams = <int, _StreamCall>{};
+
   int _nextId = 0;
 
   bool _initialized = false;
@@ -75,6 +77,7 @@ class SidecarBridge implements JavaBridge {
       '-Dsun.stderr.encoding=UTF-8',
       '-Xms128m',
       '-Xmx3072m',
+      if (Platform.isWindows) '-Djavax.net.ssl.trustStoreType=Windows-ROOT',
       if (_libraryJarPaths.isEmpty) ...[
         '-jar',
         pluginJarPath,
@@ -121,6 +124,13 @@ class SidecarBridge implements JavaBridge {
         }
 
         _pending.clear();
+
+        for (final entry in _streams.values) {
+          entry.idle?.cancel();
+          entry.controller.close();
+        }
+
+        _streams.clear();
       }),
     );
 
@@ -134,6 +144,12 @@ class SidecarBridge implements JavaBridge {
       final json = jsonDecode(line);
 
       final id = json['id'];
+
+      final stream = _streams[id];
+      if (stream != null) {
+        _handleStreamLine(id as int, stream, json);
+        return;
+      }
 
       final completer = _pending.remove(id);
 
@@ -152,6 +168,78 @@ class SidecarBridge implements JavaBridge {
     } catch (_) {
       Logger.log(line);
     }
+  }
+
+  void _handleStreamLine(int id, _StreamCall stream, dynamic json) {
+    if (json['partial'] == true) {
+      stream.partials = true;
+      stream.touch(_callTimeout, () => _expire(id, stream));
+      stream.controller.add(_decode(json['data'] as String));
+      return;
+    }
+    _streams.remove(id);
+    stream.idle?.cancel();
+    if (json['success'] == true) {
+      if (!stream.partials) {
+        stream.controller.add(_decode(json['data'] as String));
+      }
+    } else {
+      Logger.log('[SIDECAR] Error: ${json['error']}', show: true);
+    }
+    stream.controller.close();
+  }
+
+  void _expire(int id, _StreamCall stream) {
+    if (_streams.remove(id) == null) return;
+    Logger.log('[SIDECAR] Stream call $id timed out', show: true);
+    _process?.stdin.writeln(jsonEncode({'id': id, 'cancel': true}));
+    stream.controller.close();
+  }
+
+  dynamic _decode(String text) =>
+      text.trim().isEmpty ? null : _toDart(jsonDecode(text));
+
+  @override
+  Stream<dynamic> callStream(String method, [Map<String, dynamic>? args]) {
+    final stream = _StreamCall();
+    int? id;
+    stream.controller = StreamController<dynamic>(
+      onListen: () async {
+        try {
+          if (!_initialized || _process == null) {
+            final jar = _pluginJarPath;
+            if (jar == null) throw Exception('Sidecar bridge not initialized');
+            await init(pluginJarPath: jar, libraryJarPaths: _libraryJarPaths);
+          }
+          final process = _process;
+          if (process == null || stream.controller.isClosed) {
+            throw Exception('Sidecar bridge not initialized');
+          }
+          final callId = id = _nextId++;
+          _streams[callId] = stream;
+          stream.touch(_callTimeout, () => _expire(callId, stream));
+          process.stdin.writeln(
+            jsonEncode({
+              'id': callId,
+              'method': method,
+              'args': args ?? {},
+              'stream': true,
+            }),
+          );
+        } catch (e, c) {
+          Logger.log('[SIDECAR] Call failed: $e\n$c', show: true);
+          if (!stream.controller.isClosed) await stream.controller.close();
+        }
+      },
+      onCancel: () {
+        final callId = id;
+        stream.idle?.cancel();
+        if (callId != null && _streams.remove(callId) != null) {
+          _process?.stdin.writeln(jsonEncode({'id': callId, 'cancel': true}));
+        }
+      },
+    );
+    return stream.controller.stream;
   }
 
   @override
@@ -275,6 +363,13 @@ class SidecarBridge implements JavaBridge {
 
     _pending.clear();
 
+    for (final entry in _streams.values) {
+      entry.idle?.cancel();
+      entry.controller.close();
+    }
+
+    _streams.clear();
+
     _process = null;
 
     _initialized = false;
@@ -293,6 +388,17 @@ class SidecarBridge implements JavaBridge {
     try {
       await process.exitCode.timeout(_exitTimeout);
     } catch (_) {}
+  }
+}
+
+class _StreamCall {
+  late final StreamController<dynamic> controller;
+  bool partials = false;
+  Timer? idle;
+
+  void touch(Duration timeout, void Function() onTimeout) {
+    idle?.cancel();
+    idle = Timer(timeout, onTimeout);
   }
 }
 

@@ -113,6 +113,19 @@ abstract class BridgeSourceMethods<T extends Source> extends SourceMethods {
   }
 
   @override
+  Stream<List<Video>> getVideoStream(DEpisode episode) async* {
+    final args = {
+      'sourceId': source.id,
+      'isAnime': isAnime,
+      'episode': jsonEncode(_episodeToJson(episode)),
+    };
+    await for (final raw in bridge.stream('getVideoList', args)) {
+      if (raw is! List) continue;
+      yield await compute(parseVideos, List<dynamic>.from(raw));
+    }
+  }
+
+  @override
   Future<List<PageUrl>> getPageList(DEpisode episode) async {
     final result = await bridge.call<List<dynamic>>('getPageList', {
       'sourceId': source.id,

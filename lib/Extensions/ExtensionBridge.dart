@@ -6,6 +6,8 @@ import '../Engines/JavaEngine/Bridge/JavaBridge.dart';
 
 abstract class ExtensionBridge {
   Future<T> call<T>(String method, Map<String, dynamic> args);
+
+  Stream<dynamic> stream(String method, Map<String, dynamic> args);
 }
 
 class MethodChannelBridge implements ExtensionBridge {
@@ -23,6 +25,11 @@ class MethodChannelBridge implements ExtensionBridge {
 
     return result as T;
   }
+
+  @override
+  Stream<dynamic> stream(String method, Map<String, dynamic> args) async* {
+    yield await call<dynamic>(method, args);
+  }
 }
 
 class JavaExtensionBridge implements ExtensionBridge {
@@ -33,4 +40,8 @@ class JavaExtensionBridge implements ExtensionBridge {
   @override
   Future<T> call<T>(String method, Map<String, dynamic> args) =>
       bridge.call(method, args);
+
+  @override
+  Stream<dynamic> stream(String method, Map<String, dynamic> args) =>
+      bridge.callStream(method, args);
 }

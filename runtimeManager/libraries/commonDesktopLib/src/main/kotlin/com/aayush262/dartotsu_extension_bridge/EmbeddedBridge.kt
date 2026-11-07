@@ -23,8 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
  * A backend is a thin plugin JAR plus the shared `desktopCore` JAR (its
  * kotlin-stdlib, coroutines, gson, koin, okhttp, AndroidCompat, tachiyomi
  * framework and `com.aayush262.dartotsu_extension_bridge.**`). The caller
- * passes both as one class path string (`core.jar:plugin.jar`, split on
- * [File.pathSeparator]; a lone self-contained JAR works too). They are loaded
+ * passes both as one class path string (`core.jar:plugin.jar`, split on `:`; a lone self-contained JAR works too). They are loaded
  * in one [URLClassLoader] per backend whose parent is the **platform** class
  * loader — JDK classes only, *not* this shim's loader, so the core's classes
  * are loaded again for every backend. Consequences:
@@ -41,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap
  * resolve.
  */
 object EmbeddedBridge {
+    private const val CLASSPATH_SEPARATOR = ':'
     private const val MAIN_CLASS = "com.aayush262.dartotsu_extension_bridge.Main"
 
     private class Loaded(
@@ -97,7 +97,7 @@ object EmbeddedBridge {
         loaded.computeIfAbsent(jarPath) {
             val started = System.nanoTime()
             try {
-                val files = jarPath.split(File.pathSeparatorChar)
+                val files = jarPath.split(CLASSPATH_SEPARATOR)
                     .filter { it.isNotEmpty() }
                     .map(::File)
                 require(files.isNotEmpty()) { "No backend JAR given" }

@@ -6,9 +6,37 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import java.net.URI
 import java.util.concurrent.CopyOnWriteArrayList
 private const val TAG = "CloudStreamMethods"
+private const val LINK_GRACE_MS = 15_000L
+private const val LINK_HARD_MS = 50_000L
+
+private suspend fun collectBounded(
+    count: () -> Int,
+    onTick: suspend () -> Unit,
+    run: suspend () -> Unit,
+) = coroutineScope {
+    val work = async { run() }
+    val started = System.currentTimeMillis()
+    var firstAt = 0L
+    while (work.isActive) {
+        delay(200)
+        onTick()
+        val now = System.currentTimeMillis()
+        if (firstAt == 0L && count() > 0) firstAt = now
+        val graceOver = firstAt != 0L && now - firstAt >= LINK_GRACE_MS
+        if (graceOver || now - started >= LINK_HARD_MS) {
+            Logger.log("loadLinks: returning ${count()} links, stopping the providers that are still running")
+            work.cancel()
+            break
+        }
+    }
+    if (work.isCancelled) work.join() else work.await()
+}
 
 private fun Any?.toRawMap(): Map<String, Any?>? {
     if (this == null) return null
@@ -150,7 +178,10 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         )
     }
 
-    suspend fun loadLinks(data: String): List<Map<String, Any?>> {
+    suspend fun loadLinks(
+        data: String,
+        onBatch: (suspend (List<Map<String, Any?>>) -> Unit)? = null,
+    ): List<Map<String, Any?>> {
         Logger.log("loadLinks called with data: $data")
         if (isInvalidData(data)) {
             Logger.log("isInvalidData returned true for: $data")
@@ -158,28 +189,39 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
         }
         val links = CopyOnWriteArrayList<Map<String, Any?>>()
         val subtitles = CopyOnWriteArrayList<Map<String, Any?>>()
+        var emitted = 0
+        suspend fun flush() {
+            if (onBatch == null) return
+            val snapshot = links.toList()
+            if (snapshot.size <= emitted) return
+            val batch = snapshot.subList(emitted, snapshot.size)
+            emitted = snapshot.size
+            onBatch(batch)
+        }
 
         try {
-            provider.loadLinks(
-                data,
-                false,
-                { subtitle ->
-                     Logger.log("Subtitle found: ${subtitle.url}")
-                    subtitles.add(
-                        subtitle.withExtraData(
-                            mapOf(
-                                "file" to subtitle.url,
-                                "label" to subtitle.lang
-                            ),
-                            setOf("url", "lang")
+            collectBounded({ links.size }, { flush() }) {
+                provider.loadLinks(
+                    data,
+                    false,
+                    { subtitle ->
+                        Logger.log("Subtitle found: ${subtitle.url}")
+                        subtitles.add(
+                            subtitle.withExtraData(
+                                mapOf(
+                                    "file" to subtitle.url,
+                                    "label" to subtitle.lang
+                                ),
+                                setOf("url", "lang")
+                            )
                         )
-                    )
-                },
-                { link ->
-                    Logger.log( "Link found: ${link.url}")
-                    links.add(linkToMap(link, subtitles.toList()))
-                }
-            )
+                    },
+                    { link ->
+                        Logger.log( "Link found: ${link.url}")
+                        links.add(linkToMap(link, subtitles.toList()))
+                    }
+                )
+            }
         } catch (e: Exception) {
             val isJsonError = e.javaClass.name.contains("JsonParseException") ||
                     e.message?.contains("Unrecognized token") == true ||
@@ -263,7 +305,8 @@ class CloudStreamSourceMethods(val provider: MainAPI) {
             }
         }
 
-         Logger.log("loadLinks returning ${links.size} links")
+        flush()
+        Logger.log("loadLinks returning ${links.size} links")
         return links
     }
 
