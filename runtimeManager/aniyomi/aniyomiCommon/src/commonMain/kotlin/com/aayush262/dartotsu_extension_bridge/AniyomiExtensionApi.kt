@@ -268,7 +268,7 @@ class AniyomiExtensionApi : ExtensionApi, ExtensionBridgeApi {
         }
 
         val result = media(sourceId, isAnime).getVideoList(ep).map {
-            mapOf("title" to it.videoTitle, "url" to it.videoUrl, "quality" to it.resolution, "headers" to it.headers?.toMap(), "subtitles" to it.subtitleTracks.map { t ->
+            mapOf("title" to it.videoTitle, "url" to it.videoUrl, "quality" to it.resolution, "hoster" to (it.memo["hoster"] as? kotlinx.serialization.json.JsonPrimitive)?.content, "headers" to it.headers?.toMap(), "subtitles" to it.subtitleTracks.map { t ->
                 mapOf("file" to t.url, "label" to t.lang)
             }, "audios" to it.audioTracks.map { t ->
                 mapOf("file" to t.url, "label" to t.lang)

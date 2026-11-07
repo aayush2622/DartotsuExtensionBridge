@@ -25,6 +25,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Collections
@@ -184,9 +186,18 @@ class AnimeSourceMethods(private val sourceId: String) : AniyomiSourceMethods {
                                 "${hoster.hosterName} - ${resolved.videoTitle}"
                             }
 
+                            val named = hoster.hosterName.isNotBlank() &&
+                                hoster.hosterName != NO_HOSTER_LIST
                             resolved.copy(
                                 videoTitle = title,
-                                initialized = true
+                                initialized = true,
+                                memo = if (named) {
+                                    JsonObject(
+                                        resolved.memo + ("hoster" to JsonPrimitive(hoster.hosterName))
+                                    )
+                                } else {
+                                    resolved.memo
+                                }
                             )
                         }
                     }
