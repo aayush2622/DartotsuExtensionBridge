@@ -7,6 +7,18 @@ plugins {
 
 }
 
+// Tsuki ships its own copy of org.koitharu.kotatsu.core.parser.CSSBackground,
+// which this module also vendors for Kotatsu parser jars; two copies cannot
+// both go into the Android dex, so the vendored one stays and Tsuki's is cut.
+val tsukiRaw: Configuration by configurations.creating { isTransitive = false }
+dependencies { tsukiRaw("com.github.UsagiApp:Tsuki:1.0.5") }
+val tsukiStripped = tasks.register<Jar>("tsukiStripped") {
+    archiveFileName.set("tsuki-stripped.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("tsuki"))
+    from({ zipTree(tsukiRaw.singleFile) })
+    exclude("org/koitharu/**")
+}
+
 kotlin {
     jvm("desktop")
     android {
@@ -29,9 +41,9 @@ kotlin {
 
                 }
                 implementation("androidx.collection:collection:1.6.0")
-                implementation("com.github.UsagiApp:Tsuki:1.0.5") {
-                    exclude(group = "org.json")
-                }
+                implementation(files(tsukiStripped))
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+                implementation("org.jsoup:jsoup:1.17.2")
 
                 if (!isAndroidBuild) {
                     compileOnly(projects.libraries.commonDesktopLib)

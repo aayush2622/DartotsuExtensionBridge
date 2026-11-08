@@ -22,8 +22,62 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
 
   Future<List<T>> loadInstalledFromNative(Directory dir);
 
-  File _jarFile(Directory dir, String repoUrl) =>
-      File('${dir.path}/kotatsu_${_repoFileId(repoUrl)}.jar');
+  /// Every repository keeps its jar (and what the loader caches next to it)
+  /// in a folder of its own, so a scan only ever sees the active repository's
+  /// sources.
+  Directory _repoDir(Directory dir, String repoUrl) =>
+      Directory('${dir.path}/${_repoFileId(repoUrl)}');
+
+  File _jarFile(Directory dir, String repoUrl) => File(
+    '${_repoDir(dir, repoUrl).path}/kotatsu_${_repoFileId(repoUrl)}.jar',
+  );
+
+  /// Moves a jar saved by an older version (next to the other repositories)
+  /// into its folder.
+  Future<void> _adopt(Directory dir, String repoUrl) async {
+    final legacy = File('${dir.path}/kotatsu_${_repoFileId(repoUrl)}.jar');
+    if (!await legacy.exists()) return;
+    final target = _jarFile(dir, repoUrl);
+    await target.parent.create(recursive: true);
+    if (await target.exists()) {
+      await legacy.delete();
+      return;
+    }
+    try {
+      await legacy.rename(target.path);
+    } on FileSystemException {
+      await legacy.copy(target.path);
+      await legacy.delete();
+    }
+  }
+
+  Repo? _activeRepo() {
+    final repos = loadRepos(ItemType.manga);
+    if (repos.isEmpty) return null;
+    return loadActiveRepo(ItemType.manga) ?? repos.first;
+  }
+
+  void _syncRepoState() {
+    final s = state(ItemType.manga);
+    s.repos.value = List.unmodifiable(loadRepos(ItemType.manga));
+    final active = _activeRepo();
+    s.activeRepo.value = active;
+    if (active != null) saveActiveRepo(ItemType.manga, active);
+  }
+
+  void _select(Repo repo) {
+    saveActiveRepo(ItemType.manga, repo);
+    state(ItemType.manga).activeRepo.value = repo;
+    _invalidateSourcesCache();
+  }
+
+  /// Switching repository shows only the new one's sources.
+  @override
+  Future<void> selectRepo(Repo repo, ItemType type) async {
+    _select(repo);
+    await fetchInstalledMangaExtensions();
+    await fetchMangaExtensions();
+  }
 
   String _repoFileId(String repoUrl) =>
       md5.convert(utf8.encode(repoUrl)).toString();
@@ -42,12 +96,14 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
         if (!await dir.exists()) await dir.create(recursive: true);
 
         final jarFile = _jarFile(dir, url);
+        await jarFile.parent.create(recursive: true);
         final temp = File('${jarFile.path}.tmp');
         final source = await resolveJarUrl(url);
-        await _download(source, temp, (fraction) {
+        final validator = await _download(source, temp, (fraction) {
           state(type).repoLoadProgress.value = fraction;
           report(fraction);
         });
+        if (validator != null) setVal(_validatorKey(url), validator);
 
         if (!await hasZipSignature(temp)) {
           final head = await temp
@@ -64,13 +120,11 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
           await temp.delete();
         }
 
-        final repos = [
-          ...loadRepos(type),
-          Repo(url: url, name: repoNameFromUrl(url)),
-        ];
+        final repo = Repo(url: url, name: repoNameFromUrl(url));
+        final repos = [...loadRepos(type), repo];
         saveRepos(repos, type);
         state(type).repos.value = List.unmodifiable(repos);
-        _invalidateSourcesCache();
+        _select(repo);
 
         await fetchMangaExtensions();
         await fetchInstalledMangaExtensions();
@@ -165,38 +219,54 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
       final fileName = source.uri.pathSegments.last;
       final url = '$_localRepoPrefix$fileName';
       final jarFile = _jarFile(dir, url);
+      await jarFile.parent.create(recursive: true);
       await source.copy(jarFile.path);
       report(0.5);
 
-      final repos = [
-        ...loadRepos(type).where((r) => r.url != url),
-        Repo(url: url, name: fileName),
-      ];
+      final repo = Repo(url: url, name: fileName);
+      final repos = [...loadRepos(type).where((r) => r.url != url), repo];
       saveRepos(repos, type);
       state(type).repos.value = List.unmodifiable(repos);
-      _invalidateSourcesCache();
+      _select(repo);
 
       await fetchMangaExtensions();
       await fetchInstalledMangaExtensions();
     });
   }
 
-  Future<void> _download(
+  String _validatorKey(String repoUrl) =>
+      'kotatsu_validator_${_repoFileId(repoUrl)}';
+
+  /// Downloads [url] into [target]. With a [validator] from an earlier
+  /// download the server can answer "not modified", and then nothing is
+  /// downloaded and null is returned; otherwise the new validator ('' when
+  /// the server sends none).
+  Future<String?> _download(
     String url,
     File target,
-    void Function(double fraction) onProgress,
-  ) async {
+    void Function(double fraction) onProgress, {
+    String? validator,
+  }) async {
     final http.StreamedResponse response;
     try {
-      response = await MClient.download().send(
-        http.Request('GET', Uri.parse(url)),
-      );
+      final request = http.Request('GET', Uri.parse(url));
+      if (validator != null && validator.isNotEmpty) {
+        request.headers[validator.startsWith('W/') || validator.startsWith('"')
+                ? 'If-None-Match'
+                : 'If-Modified-Since'] =
+            validator;
+      }
+      response = await MClient.download().send(request);
     } catch (e) {
       throw RepoException(
         'Could not reach the repository: ${Extension.describeError(e)}',
       );
     }
 
+    if (response.statusCode == 304) {
+      await response.stream.drain<void>();
+      return null;
+    }
     if (response.statusCode != 200) {
       await response.stream.drain<void>();
       throw RepoException(
@@ -219,6 +289,7 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
     } finally {
       await sink.close();
     }
+    return response.headers['etag'] ?? response.headers['last-modified'] ?? '';
   }
 
   @override
@@ -232,8 +303,18 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
 
       final dir = await sourcesDir;
       if (dir != null) {
-        final jar = _jarFile(dir, repoUrl);
-        if (await jar.exists()) await jar.delete();
+        final folder = _repoDir(dir, repoUrl);
+        if (await folder.exists()) await folder.delete(recursive: true);
+        final legacy = File('${dir.path}/kotatsu_${_repoFileId(repoUrl)}.jar');
+        if (await legacy.exists()) await legacy.delete();
+      }
+      final active = loadActiveRepo(type);
+      if (repos.isEmpty) {
+        setVal('$id${type.name}ActiveRepo', null);
+        state(type).activeRepo.value = null;
+      } else if (active == null || active.url == repoUrl) {
+        saveActiveRepo(type, repos.first);
+        state(type).activeRepo.value = repos.first;
       }
       _invalidateSourcesCache();
 
@@ -250,6 +331,7 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
   @override
   Future<void> fetchInstalledMangaExtensions() async {
     await super.fetchInstalledMangaExtensions();
+    _syncRepoState();
     final all = await _loadAll();
     final active = _activeIds();
     state(ItemType.manga).installed.value = List.unmodifiable(
@@ -260,6 +342,7 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
   @override
   Future<void> fetchMangaExtensions() async {
     await super.fetchMangaExtensions();
+    _syncRepoState();
     final all = await _loadAll();
     final active = _activeIds();
     state(ItemType.manga).available.value = List.unmodifiable(
@@ -282,9 +365,13 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
     try {
       final dir = await sourcesDir;
       if (dir == null || !await dir.exists()) return const [];
-      if (loadRepos(ItemType.manga).isEmpty) return const [];
+      final repo = _activeRepo();
+      if (repo == null) return const [];
+      await _adopt(dir, repo.url);
+      final folder = _repoDir(dir, repo.url);
+      if (!await folder.exists()) return const [];
 
-      final sources = await loadInstalledFromNative(dir);
+      final sources = await loadInstalledFromNative(folder);
       _cachedSources = sources;
       return sources;
     } catch (e) {
@@ -320,10 +407,48 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
 
   @override
   Stream<double> updateSource(Source source) {
-    return progressStream((_) async {
+    return progressStream((report) async {
+      await _refreshJars(report);
       await fetchInstalledMangaExtensions();
       await fetchMangaExtensions();
     });
+  }
+
+  /// Downloads a repository's jar again only when the server says it changed
+  /// (an ETag / Last-Modified check, so an unchanged jar costs one tiny
+  /// request instead of the whole file).
+  Future<void> _refreshJars(void Function(double) report) async {
+    final dir = await sourcesDir;
+    if (dir == null) return;
+    var changed = false;
+    for (final repo in loadRepos(ItemType.manga)) {
+      if (repo.url.startsWith(_localRepoPrefix)) continue;
+      await _adopt(dir, repo.url);
+      final jarFile = _jarFile(dir, repo.url);
+      final temp = File('${jarFile.path}.tmp');
+      try {
+        final validator = await _download(
+          await resolveJarUrl(repo.url),
+          temp,
+          (fraction) => report(fraction),
+          validator: await jarFile.exists()
+              ? getVal<String>(_validatorKey(repo.url))
+              : null,
+        );
+        if (validator == null) continue;
+        if (!await hasZipSignature(temp)) {
+          await temp.delete();
+          continue;
+        }
+        await temp.rename(jarFile.path);
+        setVal(_validatorKey(repo.url), validator);
+        changed = true;
+      } catch (e) {
+        Logger.log('Could not refresh the Kotatsu repo ${repo.url}: $e');
+        if (await temp.exists()) await temp.delete();
+      }
+    }
+    if (changed) _invalidateSourcesCache();
   }
 
   @override
