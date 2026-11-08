@@ -45,17 +45,18 @@ class CloudflareResult {
 ///
 /// A background WebView loads the page with the app's User-Agent and cookies
 /// and waits for a fresh `cf_clearance`, which lands in the app's cookie jar
-/// for every client. Only when that fails (an interactive Turnstile, say) is
-/// the user shown [CloudflareChallengePage] through
-/// [BridgeNetwork.presentChallenge], and it closes itself as soon as the
-/// challenge is passed so the waiting request carries on.
+/// for every client. A host the background attempt could not clear is skipped
+/// (the request fails as it would without the solver) and not tried again for
+/// a while. The user is shown [CloudflareChallengePage] through
+/// [BridgeNetwork.presentChallenge] only for the source they are using right
+/// now ([focus]) and only when the background WebView met a challenge it
+/// cannot pass by itself (an interactive Turnstile); it closes itself as soon
+/// as the challenge is passed so the waiting request carries on.
 ///
 /// Calls for the same host share one attempt. A request that was already in
 /// flight when a clearance landed (a search over several pages, a list of
 /// covers) also gets its challenge response late: it is retried with the new
-/// cookies instead of starting another attempt. The user is asked only when a
-/// retry with the clearance was rejected (`retried`), never for work the app
-/// does by itself ([quietly]) and never again for a while after a dismissal.
+/// cookies instead of starting another attempt.
 class CloudflareSolver {
   CloudflareSolver._();
 
@@ -65,13 +66,40 @@ class CloudflareSolver {
   static const _settleTime = Duration(seconds: 2);
   static const _lateWindow = Duration(seconds: 20);
   static const _askAgainAfter = Duration(minutes: 10);
+  static const _skipFor = Duration(minutes: 5);
+  static const _focusFor = Duration(minutes: 30);
 
   static final _inflight = <String, Future<CloudflareResult>>{};
   static final _dismissed = <String, DateTime>{};
   static final _clearedAt = <String, DateTime>{};
   static final _results = <String, CloudflareResult>{};
+  static final _skipped = <String, CloudflareResult>{};
+  static final _noChallengeAt = <String, DateTime>{};
   static Future<void> _promptQueue = Future.value();
   static int _quiet = 0;
+  static String? _focusDomain;
+  static DateTime _focusAt = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// Marks the site the user is using right now. Only its challenges may open
+  /// the visible page; every other host is cleared in the background or
+  /// skipped. Pass null to clear it.
+  static void focus(String? url) {
+    final host = url == null ? null : Uri.tryParse(url)?.host;
+    _focusDomain = host == null || host.isEmpty ? null : _domainOf(host);
+    _focusAt = DateTime.now();
+  }
+
+  static bool _isFocused(String host) =>
+      _focusDomain != null &&
+      DateTime.now().difference(_focusAt) < _focusFor &&
+      _domainOf(host) == _focusDomain;
+
+  static String _domainOf(String host) {
+    final parts = host.toLowerCase().split('.');
+    return parts.length <= 2
+        ? host.toLowerCase()
+        : parts.skip(parts.length - 2).join('.');
+  }
 
   /// Runs [job] without ever showing the challenge page: a challenge met
   /// while it runs is still cleared in the background when possible, but a
@@ -113,8 +141,26 @@ class CloudflareSolver {
     bool force = false,
   }) {
     final host = url.host;
+    final skipped = _skipped[host];
+    if (!force && skipped != null) {
+      if (DateTime.now().difference(skipped.at) < _skipFor) {
+        Logger.log('[Cloudflare] $host: skipped, it failed a moment ago');
+        return Future.value(skipped);
+      }
+      _skipped.remove(host);
+    }
     return _inflight[host] ??= _solve(url, interactive, retried, force)
-        .then((result) => _results[host] = result)
+        .then((result) {
+          if (!result.cleared &&
+              !result.noChallenge &&
+              result.failure != CloudflareFailure.quiet &&
+              result.failure != CloudflareFailure.unavailable) {
+            _skipped[host] = result;
+          } else {
+            _skipped.remove(host);
+          }
+          return _results[host] = result;
+        })
         .whenComplete(() => _inflight.remove(host));
   }
 
@@ -148,10 +194,19 @@ class CloudflareSolver {
         return done(cleared: true);
       }
     }
+    final calm = _noChallengeAt[host];
+    if (!retried && calm != null) {
+      if (DateTime.now().difference(calm) < const Duration(minutes: 1)) {
+        return done(cleared: true, noChallenge: true);
+      }
+    }
     if (retried) {
       _clearedAt.remove(host);
+      _noChallengeAt.remove(host);
       Logger.log('[Cloudflare] $host: clearance was rejected');
-      if (!interactive) return done(failure: CloudflareFailure.rejected);
+      if (!interactive || !(force || _isFocused(host))) {
+        return done(failure: CloudflareFailure.rejected);
+      }
       final asked = await _askUser(url, force: force);
       return done(
         cleared: asked.cleared,
@@ -166,10 +221,19 @@ class CloudflareSolver {
         _clearedAt[host] = DateTime.now();
         return done(cleared: true);
       case _Outcome.noChallenge:
-        return done(noChallenge: true);
+        // The page opened without a challenge, so the WebView's cookies are
+        // all there is to hand over: let the request go out once more with
+        // them. When it is challenged again ([retried]) there is nothing
+        // left to try in the background.
+        _noChallengeAt[host] = DateTime.now();
+        return done(cleared: true, noChallenge: true);
       case _Outcome.unsolved:
         final failure = background.failure ?? CloudflareFailure.timeout;
-        if (!interactive || failure == CloudflareFailure.blocked) {
+        if (!interactive ||
+            failure == CloudflareFailure.blocked ||
+            failure == CloudflareFailure.loadFailed ||
+            failure == CloudflareFailure.webView ||
+            !(force || _isFocused(host))) {
           return done(failure: failure);
         }
         final asked = await _askUser(url, force: force);
