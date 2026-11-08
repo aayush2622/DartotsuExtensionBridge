@@ -67,8 +67,30 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
 
   void _select(Repo repo) {
     saveActiveRepo(ItemType.manga, repo);
-    state(ItemType.manga).activeRepo.value = repo;
+    final s = state(ItemType.manga);
+    s.activeRepo.value = repo;
+    s.installed.value = const [];
+    s.available.value = const [];
     _invalidateSourcesCache();
+  }
+
+  int _scans = 0;
+
+  /// Keeps the loading flags up while any scan of the jar runs (converting a
+  /// big jar takes a while).
+  Future<R> _scanning<R>(Future<R> Function() job) async {
+    final s = state(ItemType.manga);
+    _scans++;
+    s.loadingInstalled.value = true;
+    s.loadingAvailable.value = true;
+    try {
+      return await job();
+    } finally {
+      if (--_scans == 0) {
+        s.loadingInstalled.value = false;
+        s.loadingAvailable.value = false;
+      }
+    }
   }
 
   /// Switching repository shows only the new one's sources.
@@ -332,36 +354,56 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
   Future<void> fetchInstalledMangaExtensions() async {
     await super.fetchInstalledMangaExtensions();
     _syncRepoState();
-    final all = await _loadAll();
-    final active = _activeIds();
-    state(ItemType.manga).installed.value = List.unmodifiable(
-      all.where((s) => active.contains(s.id)),
-    );
+    await _scanning(() async {
+      final all = await _loadAll();
+      final active = _activeIds();
+      state(ItemType.manga).installed.value = List.unmodifiable(
+        all.where((s) => active.contains(s.id)),
+      );
+    });
   }
 
   @override
   Future<void> fetchMangaExtensions() async {
     await super.fetchMangaExtensions();
     _syncRepoState();
-    final all = await _loadAll();
-    final active = _activeIds();
-    state(ItemType.manga).available.value = List.unmodifiable(
-      all.where((s) => !active.contains(s.id)),
-    );
+    await _scanning(() async {
+      final all = await _loadAll();
+      final active = _activeIds();
+      state(ItemType.manga).available.value = List.unmodifiable(
+        all.where((s) => !active.contains(s.id)),
+      );
+    });
   }
 
   List<T>? _cachedSources;
   Future<List<T>>? _loadingSources;
+  int _generation = 0;
 
   Future<List<T>> _loadAll() {
     final cached = _cachedSources;
     if (cached != null) return Future.value(cached);
-    return _loadingSources ??= _loadAllUncached();
+    final running = _loadingSources;
+    if (running != null) return running;
+    final future = _loadAllUncached(_generation);
+    _loadingSources = future;
+    unawaited(
+      future.then((_) {}, onError: (_) {}).whenComplete(() {
+        if (identical(_loadingSources, future)) _loadingSources = null;
+      }),
+    );
+    return future;
   }
 
-  void _invalidateSourcesCache() => _cachedSources = null;
+  /// Drops what was loaded and makes a scan that is still running for the
+  /// previous repository irrelevant.
+  void _invalidateSourcesCache() {
+    _generation++;
+    _cachedSources = null;
+    _loadingSources = null;
+  }
 
-  Future<List<T>> _loadAllUncached() async {
+  Future<List<T>> _loadAllUncached(int generation) async {
     try {
       final dir = await sourcesDir;
       if (dir == null || !await dir.exists()) return const [];
@@ -372,13 +414,12 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
       if (!await folder.exists()) return const [];
 
       final sources = await loadInstalledFromNative(folder);
+      if (generation != _generation) return await _loadAll();
       _cachedSources = sources;
       return sources;
     } catch (e) {
       Logger.log('Failed to load Kotatsu parsers: $e');
       return const [];
-    } finally {
-      _loadingSources = null;
     }
   }
 
