@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi' show Abi;
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
@@ -42,6 +43,15 @@ class TorrServerControllerSubprocess implements TorrServerController {
 
   /// Recent process stdout/stderr log output lines.
   List<String> get processLogs => List.unmodifiable(_processLogs);
+
+  /// Android's dynamic linker matches the process bitness: 32-bit ABIs
+  /// (armeabi-v7a, x86) use `linker`, 64-bit ones use `linker64`.
+  String get _androidLinker {
+    final abi = Abi.current();
+    return (abi == Abi.androidArm || abi == Abi.androidIA32)
+        ? '/system/bin/linker'
+        : '/system/bin/linker64';
+  }
 
   Future<void>? _startFuture;
 
@@ -111,7 +121,7 @@ class TorrServerControllerSubprocess implements TorrServerController {
 
     try {
       final process = await Process.start(
-        Platform.isAndroid ? '/system/bin/linker64' : binaryPath,
+        Platform.isAndroid ? _androidLinker : binaryPath,
         Platform.isAndroid ? [binaryPath, ...args] : args,
         mode: ProcessStartMode.normal,
       );
