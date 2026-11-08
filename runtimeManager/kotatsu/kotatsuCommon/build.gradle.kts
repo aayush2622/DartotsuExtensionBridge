@@ -29,6 +29,9 @@ kotlin {
 
                 }
                 implementation("androidx.collection:collection:1.6.0")
+                implementation("com.github.UsagiApp:Tsuki:1.0.5") {
+                    exclude(group = "org.json")
+                }
 
                 if (!isAndroidBuild) {
                     compileOnly(projects.libraries.commonDesktopLib)
@@ -52,7 +55,8 @@ kotlin {
             "-opt-in=kotlin.RequiresOptIn",
             "-opt-in=kotlin.contracts.ExperimentalContracts",
             "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-            "-opt-in=org.koitharu.kotatsu.parsers.InternalParsersApi"
+            "-opt-in=org.koitharu.kotatsu.parsers.InternalParsersApi",
+            "-opt-in=tsuki.InternalParsersApi"
         )
 
     }

@@ -13,6 +13,8 @@ import '../../Network/MClient.dart';
 import '../../Settings/KvStore.dart';
 import 'ZipValidation.dart';
 
+const _localRepoPrefix = 'local:';
+
 mixin KotatsuRepoBackend<T extends Source> on Extension {
   String get activeSourcesKey;
 
@@ -41,7 +43,8 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
 
         final jarFile = _jarFile(dir, url);
         final temp = File('${jarFile.path}.tmp');
-        await _download(url, temp, (fraction) {
+        final source = await resolveJarUrl(url);
+        await _download(source, temp, (fraction) {
           state(type).repoLoadProgress.value = fraction;
           report(fraction);
         });
@@ -72,6 +75,111 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
         await fetchMangaExtensions();
         await fetchInstalledMangaExtensions();
       });
+
+  /// A GitHub repository, releases or release page is resolved to the `.jar`
+  /// asset of its (latest) release; direct links are used as they are.
+  Future<String> resolveJarUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (uri.host != 'github.com' || uri.path.toLowerCase().endsWith('.jar')) {
+      return url;
+    }
+    final seg = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+    if (seg.length < 2) return url;
+    if (seg.length >= 4 && seg[2] == 'releases' && seg[3] == 'download') {
+      return url;
+    }
+    final base = 'https://api.github.com/repos/${seg[0]}/${seg[1]}';
+    final tag = seg.length >= 5 && seg[2] == 'releases' && seg[3] == 'tag'
+        ? seg[4]
+        : null;
+    final jar =
+        await _jarAsset(
+          tag != null ? '$base/releases/tags/$tag' : '$base/releases/latest',
+        ) ??
+        (tag == null ? await _jarAsset('$base/releases?per_page=10') : null);
+    if (jar == null) {
+      throw RepoException(
+        'No .jar file was found in the releases of ${seg[0]}/${seg[1]}. '
+        'Use the direct link to the .jar file.',
+      );
+    }
+    return jar;
+  }
+
+  Future<String?> _jarAsset(String api) async {
+    try {
+      final res = await MClient.download()
+          .get(
+            Uri.parse(api),
+            headers: const {'Accept': 'application/vnd.github+json'},
+          )
+          .timeout(const Duration(seconds: 20));
+      if (res.statusCode != 200) return null;
+      final body = jsonDecode(res.body);
+      final releases = body is List ? body : [body];
+      for (final release in releases) {
+        final assets = (release as Map)['assets'];
+        if (assets is! List) continue;
+        final jars = [
+          for (final a in assets)
+            if ((a['name'] as String).toLowerCase().endsWith('.jar') &&
+                a['browser_download_url'] is String)
+              a,
+        ];
+        if (jars.isEmpty) continue;
+        jars.sort((a, b) {
+          int rank(String n) =>
+              RegExp(r'raw|source|javadoc', caseSensitive: false).hasMatch(n)
+              ? 1
+              : 0;
+          return rank(a['name']).compareTo(rank(b['name']));
+        });
+        return jars.first['browser_download_url'] as String;
+      }
+    } catch (e) {
+      Logger.log('Could not read the releases at $api: $e');
+    }
+    return null;
+  }
+
+  @override
+  List<String> get importExtensions => const ['jar'];
+
+  /// Adds a parsers jar picked from the device as a repository of its own.
+  @override
+  Stream<double> importFile(String path, ItemType type) {
+    return progressStream((report) async {
+      final source = File(path);
+      if (!await source.exists()) {
+        throw const RepoException('That file does not exist any more.');
+      }
+      if (!await hasZipSignature(source)) {
+        throw const RepoException('This is not a .jar file.');
+      }
+      final dir = await sourcesDir;
+      if (dir == null) {
+        throw Exception('Could not get Kotatsu plugin directory');
+      }
+      if (!await dir.exists()) await dir.create(recursive: true);
+
+      final fileName = source.uri.pathSegments.last;
+      final url = '$_localRepoPrefix$fileName';
+      final jarFile = _jarFile(dir, url);
+      await source.copy(jarFile.path);
+      report(0.5);
+
+      final repos = [
+        ...loadRepos(type).where((r) => r.url != url),
+        Repo(url: url, name: fileName),
+      ];
+      saveRepos(repos, type);
+      state(type).repos.value = List.unmodifiable(repos);
+      _invalidateSourcesCache();
+
+      await fetchMangaExtensions();
+      await fetchInstalledMangaExtensions();
+    });
+  }
 
   Future<void> _download(
     String url,

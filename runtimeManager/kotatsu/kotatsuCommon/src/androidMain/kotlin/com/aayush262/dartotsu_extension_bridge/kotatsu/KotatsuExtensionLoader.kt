@@ -218,7 +218,10 @@ actual object KotatsuExtensionLoader {
         }
     }
 
-    actual suspend fun loadExtensions(folderPath: String?): List<Map<String, Any?>> {
+    actual suspend fun loadExtensions(folderPath: String?): List<Map<String, Any?>> =
+        loadKotatsuExtensions(folderPath) + TsukiExtensionLoader.loadExtensions(folderPath)
+
+    private suspend fun loadKotatsuExtensions(folderPath: String?): List<Map<String, Any?>> {
         val context = Injekt.get<Context>()
         return scanMutex.withLock {
             initialize(context)
@@ -227,13 +230,17 @@ actual object KotatsuExtensionLoader {
             if (!folder.exists() || !folder.isDirectory) return@withLock emptyList()
 
             val cacheFile = File(folder, "kotatsu_extensions_cache.json")
-            if (cacheFile.exists()) {
+            val signatureFile = File(folder, cacheFile.name + ".sig")
+            val signature = folder.listFiles { file -> KotatsuJars.isPluginJar(file) && !KotatsuJars.isTsuki(file) }
+                .orEmpty().sortedBy { it.name }
+                .joinToString("\n") { "${it.name}:${it.length()}:${it.lastModified()}" }
+            if (cacheFile.exists() && signatureFile.exists() && signatureFile.readText() == signature) {
                 try {
                     val cachedText = cacheFile.readText()
                     val jsonArray = JSONArray(cachedText)
                     val cachedList = mutableListOf<Map<String, Any?>>()
 
-                    folder.listFiles { file -> file.name == "plugin.jar" || file.name == "kotatsu_plugin.jar" || (file.extension == "jar" && file.name.contains("kotatsu")) }?.forEach { jar ->
+                    folder.listFiles { file -> KotatsuJars.isPluginJar(file) && !KotatsuJars.isTsuki(file) }?.forEach { jar ->
                         try {
                             val tempJar = File(context.cacheDir, "kotatsu_${jar.name}")
                             if (tempJar.exists()) {
@@ -284,7 +291,7 @@ actual object KotatsuExtensionLoader {
 
             val list = mutableListOf<Map<String, Any?>>()
 
-            folder.listFiles { file -> file.name == "plugin.jar" || file.name == "kotatsu_plugin.jar" || (file.extension == "jar" && file.name.contains("kotatsu")) }?.forEach { jar ->
+            folder.listFiles { file -> KotatsuJars.isPluginJar(file) && !KotatsuJars.isTsuki(file) }?.forEach { jar ->
                 System.err.println("[Kotatsu-Android] Scanning JAR: ${jar.name}")
 
                 try {
@@ -482,6 +489,7 @@ actual object KotatsuExtensionLoader {
                     jsonArr.put(jsonObj)
                 }
                 cacheFile.writeText(jsonArr.toString())
+                signatureFile.writeText(signature)
                 System.err.println("[Kotatsu-Android] Saved cache to ${cacheFile.absolutePath}")
             } catch (e: Exception) {
                 System.err.println("[Kotatsu-Android] Failed to save cache: ${e.message}")
@@ -491,7 +499,10 @@ actual object KotatsuExtensionLoader {
         }
     }
 
-    actual suspend fun getPopular(sourceId: String, page: Int): Map<String, Any?> = withContext(Dispatchers.IO) {
+    actual suspend fun getPopular(sourceId: String, page: Int): Map<String, Any?> =
+        if (KotatsuJars.isUsagiId(sourceId)) TsukiExtensionLoader.getPopular(sourceId, page) else getKotatsuPopular(sourceId, page)
+
+    private suspend fun getKotatsuPopular(sourceId: String, page: Int): Map<String, Any?> = withContext(Dispatchers.IO) {
         val parser = getOrLoadParser(sourceId) ?: return@withContext mapOf("list" to emptyList<Any>(), "hasNextPage" to false)
         try {
             val offset = (page - 1) * getPageSize(parser)
@@ -510,7 +521,10 @@ actual object KotatsuExtensionLoader {
         }
     }
 
-    actual suspend fun getLatestUpdates(sourceId: String, page: Int): Map<String, Any?> = withContext(Dispatchers.IO) {
+    actual suspend fun getLatestUpdates(sourceId: String, page: Int): Map<String, Any?> =
+        if (KotatsuJars.isUsagiId(sourceId)) TsukiExtensionLoader.getLatestUpdates(sourceId, page) else getKotatsuLatestUpdates(sourceId, page)
+
+    private suspend fun getKotatsuLatestUpdates(sourceId: String, page: Int): Map<String, Any?> = withContext(Dispatchers.IO) {
         val parser = getOrLoadParser(sourceId) ?: return@withContext mapOf("list" to emptyList<Any>(), "hasNextPage" to false)
         try {
             val offset = (page - 1) * getPageSize(parser)
@@ -529,7 +543,10 @@ actual object KotatsuExtensionLoader {
         }
     }
 
-    actual suspend fun search(sourceId: String, query: String, page: Int): Map<String, Any?> = withContext(Dispatchers.IO) {
+    actual suspend fun search(sourceId: String, query: String, page: Int): Map<String, Any?> =
+        if (KotatsuJars.isUsagiId(sourceId)) TsukiExtensionLoader.search(sourceId, query, page) else searchKotatsu(sourceId, query, page)
+
+    private suspend fun searchKotatsu(sourceId: String, query: String, page: Int): Map<String, Any?> = withContext(Dispatchers.IO) {
         val parser = getOrLoadParser(sourceId) ?: return@withContext mapOf("list" to emptyList<Any>(), "hasNextPage" to false)
         try {
             val offset = (page - 1) * getPageSize(parser)
@@ -549,7 +566,10 @@ actual object KotatsuExtensionLoader {
         }
     }
 
-    actual suspend fun getDetails(sourceId: String, url: String, title: String, cover: String): Map<String, Any?> = withContext(Dispatchers.IO) {
+    actual suspend fun getDetails(sourceId: String, url: String, title: String, cover: String): Map<String, Any?> =
+        if (KotatsuJars.isUsagiId(sourceId)) TsukiExtensionLoader.getDetails(sourceId, url, title, cover) else getKotatsuDetails(sourceId, url, title, cover)
+
+    private suspend fun getKotatsuDetails(sourceId: String, url: String, title: String, cover: String): Map<String, Any?> = withContext(Dispatchers.IO) {
         val parser = getOrLoadParser(sourceId) ?: return@withContext emptyMap()
         try {
             val dummyManga = Manga(
@@ -603,7 +623,10 @@ actual object KotatsuExtensionLoader {
         }
     }
 
-    actual suspend fun getPageList(sourceId: String, url: String, name: String): List<Map<String, Any?>> = withContext(Dispatchers.IO) {
+    actual suspend fun getPageList(sourceId: String, url: String, name: String): List<Map<String, Any?>> =
+        if (KotatsuJars.isUsagiId(sourceId)) TsukiExtensionLoader.getPageList(sourceId, url, name) else getKotatsuPageList(sourceId, url, name)
+
+    private suspend fun getKotatsuPageList(sourceId: String, url: String, name: String): List<Map<String, Any?>> = withContext(Dispatchers.IO) {
         val parser = getOrLoadParser(sourceId) ?: return@withContext emptyList()
         try {
             val dummyChapter = MangaChapter(

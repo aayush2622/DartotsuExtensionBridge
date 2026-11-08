@@ -492,6 +492,14 @@ abstract class Extension {
   /// The repository formats this backend reads.
   Set<RepoFormat> get repoFormats => const {};
 
+  /// File extensions of a local file this backend can import as a repository
+  /// (empty when it can't).
+  List<String> get importExtensions => const [];
+
+  /// Adds the file at [path] as a repository; see [importExtensions].
+  Stream<double> importFile(String path, ItemType type) =>
+      throw RepoException('$name cannot import files.');
+
   final _primedRepos = <String, List<Source>>{};
 
   String _primeKey(ItemType type, String url) => '${type.name}|$url';
