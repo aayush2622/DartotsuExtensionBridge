@@ -25,7 +25,7 @@ class ChildFirstURLClassLoader(
     ): Class<*> {
         var c = findLoadedClass(name)
 
-        if (c == null && systemClassLoader != null) {
+        if (c == null && systemClassLoader != null && name?.contains('.') != false) {
             try {
                 c = systemClassLoader.loadClass(name)
             } catch (_: ClassNotFoundException) {
