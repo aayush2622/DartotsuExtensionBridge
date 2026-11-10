@@ -14,15 +14,15 @@
   },
   {
     "name": "aniyomiDesktop",
-    "versionCode": 40,
-    "versionName": "2.0.38",
+    "versionCode": 41,
+    "versionName": "2.0.39",
     "description": "A plugin that allows you to run Aniyomi extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1794066926244,
+    "createdAt": 1794289426895,
     "platform": "desktop",
     "type": "jar",
     "fileName": "aniyomiDesktop-plugin.jar",
-    "fileSize": 65421289,
+    "fileSize": 65421378,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/aniyomiDesktop-plugin.jar"
   },
   {
@@ -56,15 +56,15 @@
   },
   {
     "name": "cloudStreamDesktop",
-    "versionCode": 34,
-    "versionName": "2.0.32",
+    "versionCode": 35,
+    "versionName": "2.0.33",
     "description": "A plugin that allows you to run cloudstream extensions on desktop",
     "author": "aayush262/Ryan",
-    "createdAt": 1793982297160,
+    "createdAt": 1794289448320,
     "platform": "desktop",
     "type": "jar",
     "fileName": "cloudStreamDesktop-plugin.jar",
-    "fileSize": 82799484,
+    "fileSize": 82799573,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/cloudStreamDesktop-plugin.jar"
   },
   {
@@ -85,15 +85,15 @@
   },
   {
     "name": "desktopCore",
-    "versionCode": 7,
-    "versionName": "1.0.7",
+    "versionCode": 8,
+    "versionName": "1.0.8",
     "description": "The libraries and runtime shared by every desktop plugin (kotlin, okhttp, jsoup, ICU, dex2jar, the Android compat layer). Installed once; the desktop plugins load it on their classpath.",
     "author": "aayush262",
-    "createdAt": 1793982324134,
+    "createdAt": 1794289491100,
     "platform": "desktopSplit",
     "type": "jar",
     "fileName": "desktopCore-plugin.jar",
-    "fileSize": 64798634,
+    "fileSize": 64798723,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/desktopCore-plugin.jar"
   },
   {
@@ -111,15 +111,15 @@
   },
   {
     "name": "ireaderDesktop",
-    "versionCode": 29,
-    "versionName": "2.0.27",
+    "versionCode": 30,
+    "versionName": "2.0.28",
     "description": "A plugin that allows you to run ireader extensions on desktop",
     "author": "aayush262",
-    "createdAt": 1793982307434,
+    "createdAt": 1794289467838,
     "platform": "desktop",
     "type": "jar",
     "fileName": "ireaderDesktop-plugin.jar",
-    "fileSize": 72298273,
+    "fileSize": 72298362,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/ireaderDesktop-plugin.jar"
   },
   {
@@ -153,15 +153,15 @@
   },
   {
     "name": "kotatsuDesktop",
-    "versionCode": 30,
-    "versionName": "2.0.28",
+    "versionCode": 31,
+    "versionName": "2.0.29",
     "description": "A plugin that allows you to run kotatsu extensions on desktop",
     "author": "aayush262/Ryan",
-    "createdAt": 1794164889546,
+    "createdAt": 1794289490386,
     "platform": "desktop",
     "type": "jar",
     "fileName": "kotatsuDesktop-plugin.jar",
-    "fileSize": 66560295,
+    "fileSize": 66560384,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/kotatsuDesktop-plugin.jar"
   },
   {
@@ -195,15 +195,15 @@
   },
   {
     "name": "shosetsuDesktop",
-    "versionCode": 9,
-    "versionName": "1.0.9",
+    "versionCode": 10,
+    "versionName": "1.0.10",
     "description": "A plugin that allows you to run Shosetsu extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1793982336694,
+    "createdAt": 1794289501716,
     "platform": "desktop",
     "type": "jar",
     "fileName": "shosetsuDesktop-plugin.jar",
-    "fileSize": 68301468,
+    "fileSize": 68301557,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/shosetsuDesktop-plugin.jar"
   },
   {
@@ -237,15 +237,15 @@
   },
   {
     "name": "tsundokuDesktop",
-    "versionCode": 40,
-    "versionName": "2.0.38",
+    "versionCode": 41,
+    "versionName": "2.0.39",
     "description": "A plugin that allows you to run Tsundoku extensions on desktop using a custom runtime manager.",
     "author": "aayush262",
-    "createdAt": 1794067012764,
+    "createdAt": 1794289508931,
     "platform": "desktop",
     "type": "jar",
     "fileName": "tsundokuDesktop-plugin.jar",
-    "fileSize": 65557264,
+    "fileSize": 65557353,
     "downloadUrl": "https://github.com/aayush2622/DartotsuExtensionBridge/releases/download/latest/tsundokuDesktop-plugin.jar"
   },
   {
