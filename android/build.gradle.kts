@@ -87,6 +87,7 @@ val buildCommonJar = tasks.register<Exec>("buildCommonJar") {
         ).absolutePath,
         "-p",
         runtimeManagerDir.absolutePath,
+        "--configure-on-demand",
         ":libraries:common:jar",
     )
 
