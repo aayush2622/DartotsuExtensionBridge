@@ -370,8 +370,10 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
     await _scanning(() async {
       final all = await _loadAll();
       final active = _activeIds();
-      state(ItemType.manga).available.value = List.unmodifiable(
-        all.where((s) => !active.contains(s.id)),
+      final s = state(ItemType.manga);
+      s.rawAvailable.value = List.unmodifiable(all);
+      s.available.value = List.unmodifiable(
+        all.where((e) => !active.contains(e.id)),
       );
     });
   }
@@ -413,7 +415,14 @@ mixin KotatsuRepoBackend<T extends Source> on Extension {
       final folder = _repoDir(dir, repo.url);
       if (!await folder.exists()) return const [];
 
-      final sources = await loadInstalledFromNative(folder);
+      List<T> sources;
+      try {
+        sources = await loadInstalledFromNative(folder);
+      } catch (e) {
+        Logger.log('Kotatsu parsers failed to load, retrying: $e');
+        await Future<void>.delayed(const Duration(seconds: 2));
+        sources = await loadInstalledFromNative(folder);
+      }
       if (generation != _generation) return await _loadAll();
       _cachedSources = sources;
       return sources;
