@@ -230,7 +230,17 @@ class CloudflareSolver {
         failure: asked.cleared ? null : asked.failure,
       );
     }
-    final background = await _solveInBackground(url);
+    var background = await _solveInBackground(url);
+    if (background.outcome != _Outcome.unsolved &&
+        await _stillChallenged(url)) {
+      Logger.log(
+        '[Cloudflare] $host: the clearance from the background WebView was rejected',
+      );
+      background = const _Background(
+        _Outcome.unsolved,
+        CloudflareFailure.turnstile,
+      );
+    }
     Logger.log('[Cloudflare] $host: background attempt ${background.name}');
     switch (background.outcome) {
       case _Outcome.cleared:
@@ -258,6 +268,33 @@ class CloudflareSolver {
           byUser: asked.cleared,
           failure: asked.cleared ? null : asked.failure,
         );
+    }
+  }
+
+  /// Whether the site still challenges a request that carries the app's
+  /// cookies and User-Agent. A clearance a background WebView earned is not
+  /// always accepted, so it is only trusted once a real request passes.
+  static Future<bool> _stillChallenged(Uri url) async {
+    final network = DartotsuExtensionBridge.context.network;
+    if (network == null) return false;
+    try {
+      final root = Uri(
+        scheme: url.scheme,
+        host: url.host,
+        port: url.hasPort ? url.port : null,
+        path: '/',
+      );
+      final res = await network.httpClient
+          .get(root)
+          .timeout(const Duration(seconds: 20));
+      if (!const {403, 429, 503}.contains(res.statusCode)) return false;
+      if (res.headers['cf-mitigated']?.toLowerCase() == 'challenge') {
+        return true;
+      }
+      return res.body.contains('challenge-platform') ||
+          res.body.contains('Just a moment');
+    } catch (_) {
+      return false;
     }
   }
 

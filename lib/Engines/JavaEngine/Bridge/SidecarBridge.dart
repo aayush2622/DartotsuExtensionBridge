@@ -249,31 +249,71 @@ class SidecarBridge implements JavaBridge {
     Map<String, dynamic>? args,
     bool throwError = false,
   ]) async {
+    final restarting = _restarting;
+    if (restarting != null) await restarting;
+
     if (!_initialized || _process == null) {
-      final jar = _pluginJarPath;
-      if (jar == null) throw Exception('Sidecar bridge not initialized');
+      if (_pluginJarPath == null) {
+        throw Exception('Sidecar bridge not initialized');
+      }
       Logger.log('Sidecar not running, restarting');
-      await init(pluginJarPath: jar, libraryJarPaths: _libraryJarPaths);
+      await _restart();
     }
+
+    if (_replayed.contains(method)) _replay[method] = args ?? const {};
 
     try {
       return await _callOnce<T>(method, args, throwError);
     } on _SidecarExited catch (e) {
       // The sidecar died mid-call: restart it once and retry.
-      final jar = _pluginJarPath;
-      if (jar == null) {
+      if (_pluginJarPath == null) {
         if (throwError) rethrow;
         return emptyJavaBridgeValue<T>();
       }
       Logger.log('Sidecar died during "$method" ($e), restarting', show: true);
       try {
-        await init(pluginJarPath: jar, libraryJarPaths: _libraryJarPaths);
+        await _restart();
         return await _callOnce<T>(method, args, throwError);
       } catch (e2) {
         if (throwError) rethrow;
         return emptyJavaBridgeValue<T>();
       }
     }
+  }
+
+  /// The calls a backend makes once after [init] to boot its runtime
+  /// (`initializeDesktop` starts Koin, `initClient` the network settings).
+  /// A restarted sidecar is a fresh JVM, so they are sent to it again.
+  static const _replayed = {'initializeDesktop', 'initClient'};
+  final _replay = <String, Map<String, dynamic>>{};
+  Future<void>? _restarting;
+
+  Future<void> _restart() {
+    return _restarting ??= () async {
+      await init(
+        pluginJarPath: _pluginJarPath!,
+        libraryJarPaths: _libraryJarPaths,
+      );
+      for (final entry in _replay.entries.toList()) {
+        try {
+          await _callOnce<void>(entry.key, entry.value, true);
+        } catch (e) {
+          Logger.log('Could not restore "${entry.key}" after a restart: $e');
+        }
+      }
+    }().whenComplete(() => _restarting = null);
+  }
+
+  /// Asks the JVM for a thread dump (it prints to stdout, which ends up in the
+  /// log, so a hung call shows what it was waiting on), then kills it.
+  void _killAfterDump(Process process) {
+    if (Platform.isWindows) {
+      process.kill();
+      return;
+    }
+    Logger.log('[SIDECAR] Thread dump of the hung sidecar follows');
+    process.kill(ProcessSignal.sigquit);
+    Timer(const Duration(seconds: 2), process.kill);
   }
 
   Future<T> _callOnce<T>(
@@ -307,7 +347,7 @@ class SidecarBridge implements JavaBridge {
               'Sidecar call "$method" timed out, restarting the sidecar',
               show: true,
             );
-            process.kill();
+            _killAfterDump(process);
           }
           throw TimeoutException(
             'Sidecar call "$method" timed out',
