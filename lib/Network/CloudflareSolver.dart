@@ -121,6 +121,22 @@ class CloudflareSolver {
   /// Whether an attempt on [host] is running.
   static bool isSolving(String host) => _inflight.containsKey(host);
 
+  /// Whether any attempt is running, including one waiting on the user.
+  static bool get busy => _inflight.isNotEmpty;
+
+  /// Forgets everything remembered about [host] (failures, cooldowns, the
+  /// "cleared a moment ago" window), so the next challenge starts fresh. Call
+  /// it when the user clears the host's cookies or clears it by hand.
+  static void reset(String host) {
+    final domain = _domainOf(host);
+    bool mine(String h) => _domainOf(h) == domain;
+    _skipped.removeWhere((h, _) => mine(h));
+    _dismissed.removeWhere((h, _) => mine(h));
+    _clearedAt.removeWhere((h, _) => mine(h));
+    _noChallengeAt.removeWhere((h, _) => mine(h));
+    _results.removeWhere((h, _) => mine(h));
+  }
+
   /// Clears the challenge for [url]. Returns true once the app's cookie jar
   /// holds clearance the request can be retried with. [retried] means the
   /// request already went out again with the app's clearance and was

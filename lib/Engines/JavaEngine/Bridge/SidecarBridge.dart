@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../../Logger.dart';
+import '../../../Network/CloudflareSolver.dart';
 import '../JavaInstaller.dart';
 import 'JavaBridge.dart';
 
@@ -301,6 +302,13 @@ class SidecarBridge implements JavaBridge {
         _callTimeout,
         onTimeout: () {
           _pending.remove(id);
+          if (!CloudflareSolver.busy) {
+            Logger.log(
+              'Sidecar call "$method" timed out, restarting the sidecar',
+              show: true,
+            );
+            process.kill();
+          }
           throw TimeoutException(
             'Sidecar call "$method" timed out',
             _callTimeout,

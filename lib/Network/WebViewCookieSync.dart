@@ -38,7 +38,9 @@ class WebViewCookieSync {
           WebViewCookie(
             name: name,
             value: value,
-            domain: hostOnly ? domain : '.${domain.replaceFirst('.', '')}',
+            domain: hostOnly
+                ? domain
+                : '.${domain.replaceFirst(RegExp(r'^\.'), '')}',
             path: entry['path'] as String? ?? '/',
           ),
         );

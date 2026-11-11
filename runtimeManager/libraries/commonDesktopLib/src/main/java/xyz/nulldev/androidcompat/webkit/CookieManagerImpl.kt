@@ -40,7 +40,15 @@ class CookieManagerImpl : CookieManager() {
                 URI("http://$url")
             }
 
-        HttpCookie.parse(value).forEach {
+        if (value.isNullOrBlank()) return
+
+        val cookies =
+            try {
+                HttpCookie.parse(value)
+            } catch (_: IllegalArgumentException) {
+                return
+            }
+        cookies.forEach {
             cookieHandler.cookieStore.add(uri, it)
         }
     }
@@ -50,8 +58,14 @@ class CookieManagerImpl : CookieManager() {
         value: String?,
         callback: ValueCallback<Boolean>?,
     ) {
-        setCookie(url, value)
-        callback?.onReceiveValue(true)
+        val stored =
+            try {
+                setCookie(url, value)
+                true
+            } catch (_: Exception) {
+                false
+            }
+        callback?.onReceiveValue(stored)
     }
 
     override fun getCookie(url: String): String {
