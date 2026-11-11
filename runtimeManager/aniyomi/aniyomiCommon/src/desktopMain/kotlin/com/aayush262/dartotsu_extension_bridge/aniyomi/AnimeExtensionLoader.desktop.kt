@@ -1,6 +1,7 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import com.aayush262.dartotsu_extension_bridge.util.ExtensionConvert
+import com.aayush262.dartotsu_extension_bridge.util.ApkInfo
 import com.aayush262.dartotsu_extension_bridge.util.PackageTools
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
@@ -55,8 +56,17 @@ actual object AnimeExtensionLoader {
     }
 
     private fun loadExtensionInternal(apkFile: File): AnimeExtension.Installed {
+        val apkInfo = PackageTools.getPackageInfo(apkFile.absolutePath)
+        try {
+            return buildInstalled(apkFile, apkInfo)
+        } finally {
+            // A failed load must not leave the apk open: Windows can't delete it then.
+            runCatching { apkInfo.apkFile.close() }
+        }
+    }
+
+    private fun buildInstalled(apkFile: File, apkInfo: ApkInfo): AnimeExtension.Installed {
         val apkPath = apkFile.absolutePath
-        val apkInfo = PackageTools.getPackageInfo(apkPath)
         val packageInfo = apkInfo.packageInfo
         val apkParser = apkInfo.apkFile
 

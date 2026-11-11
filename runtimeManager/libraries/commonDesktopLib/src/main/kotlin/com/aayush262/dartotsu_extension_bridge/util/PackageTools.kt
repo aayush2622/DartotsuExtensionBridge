@@ -89,6 +89,9 @@ object PackageTools {
         skipMissingUi: Boolean = true,
         repairConstructions: Boolean = true,
     ) {
+        // The jar being replaced may still be open (the previous version's
+        // class loader); Windows refuses to overwrite a file that is open.
+        invalidateClassLoader(File(jarFile).absolutePath)
         val finalPath = File(jarFile).toPath()
         val parent = finalPath.parent ?: Path("")
         Files.createDirectories(parent)
@@ -325,6 +328,7 @@ object PackageTools {
     fun extractAssetsFromApk(apkPath: String, jarPath: String) {
         val apkFile = File(apkPath)
         val jarFile = File(jarPath)
+        invalidateClassLoader(jarFile.absolutePath)
 
         // Private temp dir + jar so two threads staging the same APK / jar
         // (the loaders run concurrently) can't clobber each other's scratch

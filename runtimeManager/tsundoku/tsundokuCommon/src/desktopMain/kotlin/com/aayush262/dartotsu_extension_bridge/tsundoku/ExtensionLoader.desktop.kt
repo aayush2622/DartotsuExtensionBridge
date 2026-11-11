@@ -2,6 +2,7 @@ package com.aayush262.dartotsu_extension_bridge.tsundoku
 
 import com.aayush262.dartotsu_extension_bridge.logger.Logger
 import com.aayush262.dartotsu_extension_bridge.util.ExtensionConvert
+import com.aayush262.dartotsu_extension_bridge.util.ApkInfo
 import com.aayush262.dartotsu_extension_bridge.util.PackageTools
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.source.Source
@@ -53,8 +54,17 @@ actual object NovelExtensionLoader {
         return byPackage.values.associate { it.first to it.second }
     }
     private fun loadExtensionInternal(apkFile: File): MangaExtension.Installed {
+        val apkInfo = PackageTools.getPackageInfo(apkFile.absolutePath)
+        try {
+            return buildInstalled(apkFile, apkInfo)
+        } finally {
+            // A failed load must not leave the apk open: Windows can't delete it then.
+            runCatching { apkInfo.apkFile.close() }
+        }
+    }
+
+    private fun buildInstalled(apkFile: File, apkInfo: ApkInfo): MangaExtension.Installed {
         val apkPath = apkFile.absolutePath
-        val apkInfo = PackageTools.getPackageInfo(apkPath)
         val packageInfo = apkInfo.packageInfo
         val apkParser = apkInfo.apkFile
 

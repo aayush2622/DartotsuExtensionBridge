@@ -68,8 +68,16 @@ mixin TachiyomiJavaDesktopExtension on Extension {
         .map(p.basename)
         .toSet();
 
+    // `aniyomi-en.anipm-v16.9.apk` -> `aniyomi-en.anipm`.
+    String stem(String name) =>
+        p.basename(name).replaceFirst(RegExp(r'-v[\d.]+\.apk$'), '');
+    final keepStems = keep.map(stem).toSet();
+
     for (final path in scanned) {
       if (keep.contains(p.basename(path))) continue;
+      // An apk that failed to load is not a duplicate of a loaded one; it
+      // stays so it can be tried again instead of the extension vanishing.
+      if (!keepStems.contains(stem(path))) continue;
 
       try {
         final file = File(path);
@@ -158,21 +166,35 @@ mixin TachiyomiJavaDesktopExtension on Extension {
 
       s.apkPath = file.path;
 
-      if (oldApkPath != null && oldApkPath != file.path) {
-        final oldFile = File(oldApkPath);
-        if (await oldFile.exists()) {
-          await oldFile.delete();
-          Logger.log('Deleted old extension: ${oldFile.path}');
-        }
-      }
-
       final avail = state(type).available;
       avail.value = avail.value.where((e) => e.id != s.id).toList();
       await fetchInstalledExtensions(type);
       if (!state(type).installed.value.any((e) => e.id == s.id)) {
+        // Keep the version that worked: drop the new file, bring the old back.
+        if (oldApkPath != null && oldApkPath != file.path) {
+          s.apkPath = oldApkPath;
+          try {
+            if (await file.exists()) await file.delete();
+          } catch (e) {
+            Logger.log('Could not remove ${file.path}: $e');
+          }
+          await fetchInstalledExtensions(type);
+        }
         throw Exception(
           'The Java engine could not load ${s.name ?? 'the extension'}',
         );
+      }
+
+      if (oldApkPath != null && oldApkPath != file.path) {
+        try {
+          final oldFile = File(oldApkPath);
+          if (await oldFile.exists()) {
+            await oldFile.delete();
+            Logger.log('Deleted old extension: ${oldFile.path}');
+          }
+        } catch (e) {
+          Logger.log('Could not delete the old extension $oldApkPath: $e');
+        }
       }
       detectUpdates(state(type).rawAvailable.value, type);
     });
