@@ -68,7 +68,7 @@ mixin TachiyomiJavaDesktopExtension on Extension {
         .map(p.basename)
         .toSet();
 
-    // `aniyomi-en.anipm-v16.9.apk` -> `aniyomi-en.anipm`.
+    // `<package>-v<version>.apk` -> `<package>`.
     String stem(String name) =>
         p.basename(name).replaceFirst(RegExp(r'-v[\d.]+\.apk$'), '');
     final keepStems = keep.map(stem).toSet();
