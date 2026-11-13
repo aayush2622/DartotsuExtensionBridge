@@ -39,4 +39,10 @@ abstract class Plugin : BasePlugin() {
      * This will add a button in the settings allowing you to add custom settings
      */
     var openSettings: ((context: Context) -> Unit)? = null
+
+    companion object {
+        // Plugins built with the Compose compiler read this field from their superclass
+        @JvmField
+        val `$stable`: Int = 0
+    }
 }
