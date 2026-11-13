@@ -20,6 +20,7 @@ abstract final class NativeLibrary {
   }
 
   static void ensureInitialized({String? libmpv}) {
+    if (libmpv == null && _resolved != null) return;
     if (libmpv != null) {
       DynamicLibrary.open(libmpv);
       _resolved = libmpv;

@@ -5,6 +5,7 @@ import 'package:ffi/ffi.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dartotsu_extension_bridge/player.dart';
+import 'package:dartotsu_extension_bridge/Player/Engine/Core/NativeLibrary.dart';
 
 void main() {
   final lib = Platform.environment['LIBMPV_LIBRARY_PATH'];
@@ -94,4 +95,14 @@ void main() {
     skip: !Platform.isLinux,
     timeout: const Timeout(Duration(seconds: 60)),
   );
+
+  test('initialising again without a path keeps the path that was given', () {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final link = Link(
+      '${Directory.systemTemp.createTempSync('libmpv').path}/libmpv.so.2',
+    )..createSync(lib!);
+    NativeLibrary.ensureInitialized(libmpv: link.path);
+    NativeLibrary.ensureInitialized();
+    expect(NativeLibrary.path, link.path);
+  }, skip: lib == null || !Platform.isLinux);
 }

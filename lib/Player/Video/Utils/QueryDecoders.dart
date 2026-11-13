@@ -20,7 +20,6 @@ Future<HashSet<String>> queryDecoders(int handle) {
       return _decoders;
     }
 
-    NativeLibrary.ensureInitialized();
     final mpv = MPV(DynamicLibrary.open(NativeLibrary.path));
 
     final decoders = readNativeNode(
