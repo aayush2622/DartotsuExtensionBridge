@@ -242,7 +242,9 @@ class SoraExtensions extends Extension
 
         installed[index] = installed[index]
           ..sourceCode = res.body
-          ..version = s.version
+          ..version = (s.hasUpdate ?? false)
+              ? (s.versionLast ?? s.version)
+              : s.version
           ..hasUpdate = false;
 
         saveInstalled(installed, type);

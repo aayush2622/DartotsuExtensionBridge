@@ -150,7 +150,9 @@ class LnReaderExtensions extends Extension
 
       list[i] = list[i]
         ..sourceCode = res.body
-        ..version = s.version
+        ..version = (s.hasUpdate ?? false)
+            ? (s.versionLast ?? s.version)
+            : s.version
         ..hasUpdate = false;
       saveInstalled(list, type);
       state(type).installed.value = List.unmodifiable(list);

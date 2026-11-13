@@ -157,7 +157,9 @@ class AidokuExtensions extends Extension
       list[i] = list[i]
         ..wasmBytesBase64 = base64Encode(_extractWasm(res.bodyBytes))
         ..defaults = extractAidokuDefaults(res.bodyBytes)
-        ..version = s.version
+        ..version = (s.hasUpdate ?? false)
+            ? (s.versionLast ?? s.version)
+            : s.version
         ..hasUpdate = false;
       saveInstalled(list, type);
       state(type).installed.value = List.unmodifiable(list);

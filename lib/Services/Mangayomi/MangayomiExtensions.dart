@@ -194,7 +194,9 @@ class MangayomiExtensions extends Extension
 
       installed[index] = installed[index]
         ..sourceCode = res.body
-        ..version = s.version
+        ..version = (s.hasUpdate ?? false)
+            ? (s.versionLast ?? s.version)
+            : s.version
         ..hasUpdate = false;
 
       MangayomiSourceMethods.invalidate(s.id);
