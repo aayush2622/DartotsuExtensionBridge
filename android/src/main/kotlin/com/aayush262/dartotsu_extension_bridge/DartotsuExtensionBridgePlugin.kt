@@ -1,5 +1,6 @@
 package com.aayush262.dartotsu_extension_bridge
 
+import com.alexmercerind.mediakitandroidhelper.MediaKitAndroidHelper
 import com.aayush262.dartotsu_extension_bridge.aniyomi.AniyomiBridge
 import com.aayush262.dartotsu_extension_bridge.CustomMethods
 import com.aayush262.dartotsu_extension_bridge.cloudStream.CloudStreamBridge
@@ -30,6 +31,11 @@ class DartotsuExtensionBridgePlugin : FlutterPlugin {
         )
 
         Logger.init(loggerChannel)
+        try {
+            MediaKitAndroidHelper.setApplicationContextJava(binding.applicationContext)
+        } catch (_: Throwable) {
+            // The player engine is not part of this build.
+        }
         val customMethods = CustomMethods(networkChannel)
 
         aniyomiBridge = AniyomiBridge(binding.applicationContext, customMethods).apply {

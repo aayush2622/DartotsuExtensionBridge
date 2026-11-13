@@ -80,3 +80,6 @@
 
 -keep class me.xdrop.fuzzywuzzy.** { *; }
 
+
+# The JNI helper of the player engine calls back into these
+-keep class com.alexmercerind.mediakitandroidhelper.MediaKitAndroidHelper { *; }

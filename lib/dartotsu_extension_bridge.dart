@@ -2,6 +2,8 @@ library;
 
 export './AddonManager.dart';
 export './Engines/Ffmpeg/FfmpegAddon.dart';
+export './Engines/Mpv/Mpv.dart';
+export './Engines/Mpv/MpvAddon.dart';
 export './Engines/TorrentEngine/TorrentEngine.dart';
 export './ExtensionBridge.dart';
 export './ExtensionManager.dart';

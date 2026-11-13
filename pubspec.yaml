@@ -11,6 +11,19 @@ dependencies:
   flutter:
     sdk: flutter
   ffi: ^2.2.0
+  # Native texture / surface plugin of the player's video output; the Dart side
+  # is lib/Player (third_party/media_kit_video/lib is empty on purpose).
+  media_kit_video:
+    path: third_party/media_kit_video
+  hooks: '>=2.0.2 <3.0.0'
+  code_assets: '>=1.2.1 <3.0.0'
+  native_toolchain_c: '>=0.19.1 <0.20.0'
+  synchronized: ^3.1.0
+  uuid: '>=2.0.0 <5.0.0'
+  meta: ^1.8.0
+  collection: ^1.17.0
+  safe_local_storage: ^2.0.1
+  uri_parser: ^3.0.0
   archive: ^4.6.0
   image: ^4.12.0
   plugin_platform_interface: ^2.1.8
@@ -32,7 +45,7 @@ dependencies:
   xpath_selector_html_parser: ^3.0.1
   js_packer: ^0.0.6
   crypto: ^3.0.8
-  wasd: ^0.6.1
+  wasd: ^0.6.2
   flutter_qjs:
     git:
       url: https://github.com/aayush2622/flutter_qjs.git
