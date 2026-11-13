@@ -38,5 +38,5 @@ android {
 }
 
 dependencies {
-    implementation project(':media_kit')
+    implementation project(':dartotsu_extension_bridge')
 }
