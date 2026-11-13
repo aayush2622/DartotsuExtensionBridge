@@ -75,7 +75,7 @@ actual object ExtensionLoader {
         externalFiles.forEach { src ->
             val dst = File(privateDir, src.name)
 
-            val shouldCopy = !dst.exists() || dst.length() != src.length()
+            val shouldCopy = !dst.exists() || dst.length() != src.length() || src.lastModified() != dst.lastModified()
 
             if (shouldCopy) {
                 val tmp = File(privateDir, "${src.name}.tmp")
@@ -90,6 +90,8 @@ actual object ExtensionLoader {
                     tmp.delete()
                     throw IOException("Failed to finalize ${dst.name}")
                 }
+
+                dst.setLastModified(src.lastModified())
 
                 dst.setReadOnly()
             }
