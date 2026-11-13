@@ -31,6 +31,7 @@ final class NativeEventLoop implements Finalizable {
     Map<String, String> options = const {},
   }) async {
     final mpv = generated.MPV(library);
+    native.prepare();
     final handle = mpv.mpv_create();
     if (handle == nullptr) throw StateError('mpv_create failed');
     final loop = NativeEventLoop._(mpv, handle, callback);

@@ -1,4 +1,7 @@
+import 'dart:ffi';
 import 'dart:io';
+
+import 'package:ffi/ffi.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dartotsu_extension_bridge/player.dart';
@@ -61,4 +64,34 @@ void main() {
     await a.dispose();
     await b.dispose();
   }, timeout: const Timeout(Duration(seconds: 60)));
+
+  test(
+    'a player is created even when the process numeric locale is not C',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final setlocale = DynamicLibrary.process()
+          .lookupFunction<
+            Pointer<Utf8> Function(Int32, Pointer<Utf8>),
+            Pointer<Utf8> Function(int, Pointer<Utf8>)
+          >('setlocale');
+      const numeric = 1;
+      final name = 'en_IN.utf8'.toNativeUtf8();
+      try {
+        if (setlocale(numeric, name) == nullptr) {
+          markTestSkipped('the en_IN locale is not installed');
+          return;
+        }
+        MediaKit.ensureInitialized(libmpv: lib);
+        final player = Player(
+          configuration: const PlayerConfiguration(muted: true),
+        );
+        await (player.platform as NativePlayer).setProperty('ao', 'null');
+        await player.dispose();
+      } finally {
+        calloc.free(name);
+      }
+    },
+    skip: !Platform.isLinux,
+    timeout: const Timeout(Duration(seconds: 60)),
+  );
 }

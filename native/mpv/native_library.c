@@ -34,3 +34,11 @@ MK_EXPORT int32_t media_kit_library_path(void *symbol, char *buffer, int32_t cap
     return 0;
 #endif
 }
+
+MK_EXPORT void media_kit_prepare(void) {
+#ifndef _WIN32
+    // mpv_create refuses to run unless the numeric locale is C, and GTK and
+    // other toolkits switch it to the user's locale.
+    setlocale(LC_NUMERIC, "C");
+#endif
+}

@@ -22,6 +22,9 @@ external Pointer<Void> create(
   int port,
 );
 
+@Native<Void Function()>(symbol: 'media_kit_prepare')
+external void prepare();
+
 @Native<Void Function(Pointer<Void>)>(symbol: 'media_kit_event_loop_stop')
 external void stop(Pointer<Void> owner);
 
