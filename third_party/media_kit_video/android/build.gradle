@@ -37,6 +37,3 @@ android {
     }
 }
 
-dependencies {
-    implementation project(':dartotsu_extension_bridge')
-}
