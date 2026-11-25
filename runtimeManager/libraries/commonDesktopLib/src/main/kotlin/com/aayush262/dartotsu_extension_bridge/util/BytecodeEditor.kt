@@ -157,7 +157,7 @@ object BytecodeEditor {
         }
 
         for (cn in classNodes.values) {
-            fixSelfInstantiatingSingletons(cn, jarLabel)
+            fixSelfInstantiatingSingletons(cn, classNodes, jarLabel)
         }
 
         for (cn in classNodes.values) {
@@ -205,7 +205,7 @@ object BytecodeEditor {
                 )
                 continue
             }
-            ensureConstructor(target, desc, target.superName ?: "java/lang/Object", jarLabel)
+            ensureConstructor(target, desc, target.superName ?: "java/lang/Object", jarLabel, classNodes)
         }
 
         // entry name -> rewritten bytes (absent = keep the original entry bytes)
@@ -663,7 +663,11 @@ object BytecodeEditor {
     // Pass B: self-instantiating singletons (NEW <super> instead of NEW <self>)
     // ---------------------------------------------------------------------
 
-    private fun fixSelfInstantiatingSingletons(cn: ClassNode, jarLabel: String) {
+    private fun fixSelfInstantiatingSingletons(
+        cn: ClassNode,
+        classNodes: Map<String, ClassNode>,
+        jarLabel: String,
+    ) {
         val superName = cn.superName ?: return
 
         for (method in cn.methods.toList()) {
@@ -708,7 +712,7 @@ object BytecodeEditor {
                             val desc = invoke.desc
                             newInsn.desc = cn.name
                             invoke.owner = cn.name
-                            ensureConstructor(cn, desc, superName, jarLabel)
+                            ensureConstructor(cn, desc, superName, jarLabel, classNodes)
                         }
                     }
                 }
@@ -1302,7 +1306,13 @@ object BytecodeEditor {
     // Pass D: constructor synthesis
     // ---------------------------------------------------------------------
 
-    private fun ensureConstructor(cn: ClassNode, desc: String, superName: String, jarLabel: String) {
+    private fun ensureConstructor(
+        cn: ClassNode,
+        desc: String,
+        superName: String,
+        jarLabel: String,
+        classNodes: Map<String, ClassNode>,
+    ) {
         if (cn.methods.any { it.name == "<init>" && it.desc == desc }) return
 
         val ctor = MethodNode(Opcodes.ASM9, Opcodes.ACC_PUBLIC, "<init>", desc, null, null)
@@ -1323,5 +1333,8 @@ object BytecodeEditor {
 
         cn.methods.add(ctor)
         Logger.log("[$jarLabel] Synthesized constructor ${cn.name}.<init>$desc", LogLevel.INFO)
+
+        val parent = classNodes[superName] ?: return
+        ensureConstructor(parent, desc, parent.superName ?: "java/lang/Object", jarLabel, classNodes)
     }
 }
